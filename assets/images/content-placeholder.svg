@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" role="img" aria-labelledby="title description">
+  <title id="title">SD.Live content placeholder</title>
+  <desc id="description">A neutral production frame reserved for future project media.</desc>
+  <rect width="1200" height="800" fill="#0b0d14"/>
+  <path d="M0 560 315 245l210 210 130-130 545 475H0Z" fill="#121625"/>
+  <circle cx="922" cy="210" r="76" fill="#7c4dff" opacity=".55"/>
+  <path d="M132 667h936" stroke="#7c4dff" stroke-width="4" stroke-dasharray="18 22" opacity=".75"/>
+  <text x="600" y="710" fill="#d9dcef" font-family="Arial, sans-serif" font-size="30" letter-spacing="8" text-anchor="middle">CONTENT SLOT</text>
+</svg>
