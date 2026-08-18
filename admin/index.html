@@ -7,178 +7,241 @@
   <meta name="color-scheme" content="dark" />
   <title>SD.Live Admin</title>
   <link rel="icon" href="../assets/icons/favicon.ico" />
-  <link rel="stylesheet" href="./admin.css" />
+  <link rel="stylesheet" href="./dashboard.css" />
 </head>
 <body>
-  <div class="admin-shell" id="adminShell">
-    <aside class="sidebar" id="siteSidebar" aria-label="Admin navigation">
-      <div class="brand-row">
-        <img src="../assets/logos/sd-live-header-normal.png" alt="SD.Live" class="brand-logo" />
-        <span class="admin-label">Admin</span>
+  <div class="backoffice">
+    <aside class="app-sidebar" id="appSidebar">
+      <div class="brand">
+        <img src="../assets/logos/sd-live-header-normal.png" alt="SD.Live" />
+        <span>Admin</span>
       </div>
 
-      <div class="status-card">
-        <div class="status-line">
-          <span class="status-dot" aria-hidden="true"></span>
-          <strong id="cmsStatusTitle">Connecting CMS</strong>
-        </div>
-        <p id="cmsStatusText">Checking D1 + Access…</p>
-      </div>
+      <nav class="app-nav" aria-label="Back office">
+        <a class="app-nav__item is-active" href="./">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h7v7H4V4Zm9 0h7v4h-7V4ZM4 13h7v7H4v-7Zm9-3h7v10h-7V10Z"/></svg>
+          <span>Dashboard</span>
+        </a>
+        <a class="app-nav__item" href="./editor/">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 3h16v5H4V3Zm0 7h7v11H4V10Zm9 0h7v5h-7v-5Zm0 7h7v4h-7v-4Z"/></svg>
+          <span>Site Editor</span>
+        </a>
+        <a class="app-nav__item" href="https://mail.google.com/" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18v14H3V5Zm2.2 2 6.8 5.1L18.8 7H5.2ZM5 17h14V9.4l-7 5.2-7-5.2V17Z"/></svg>
+          <span>Inbox</span>
+          <small>Gmail ↗</small>
+        </a>
 
-      <nav class="section-nav" aria-label="Site sections">
-        <p class="nav-kicker">Navigate</p>
-        <button class="section-link is-active" data-section="hero" type="button">Home</button>
-        <button class="section-link" data-section="trustedTitle" type="button">Trusted by</button>
-        <button class="section-link" data-section="about" type="button">About</button>
-        <button class="section-link" data-section="travel" type="button">Worldwide</button>
-        <button class="section-link" data-section="services" type="button">Services</button>
-        <button class="section-link" data-section="picture" type="button">Sound for Picture</button>
-        <button class="section-link" data-section="work" type="button">Selected Work</button>
-        <button class="section-link" data-section="testimonials" type="button">Testimonials</button>
-        <button class="section-link" data-section="rental" type="button">Rental</button>
-        <button class="section-link" data-section="contact" type="button">Contact</button>
+        <p class="nav-label">Business</p>
+        <button class="app-nav__item is-disabled" type="button" disabled>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v16H4V4Zm2 3v2h12V7H6Zm0 4v2h8v-2H6Zm0 4v2h10v-2H6Z"/></svg>
+          <span>Leads</span><small>Soon</small>
+        </button>
+        <button class="app-nav__item is-disabled" type="button" disabled>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16v12H4V7Zm3-3h10v3h-1.5V5.5h-7V7H7V4Zm-.5 6v6h11v-6h-11Z"/></svg>
+          <span>Rental</span><small>Soon</small>
+        </button>
+        <button class="app-nav__item is-disabled" type="button" disabled>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h7l2 2h9v12H3V5Zm2 2v10h14V9h-7.8l-2-2H5Z"/></svg>
+          <span>Projects</span><small>Soon</small>
+        </button>
+        <button class="app-nav__item is-disabled" type="button" disabled>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h1.5v2H17V3h1.5v2H21v16H3V5h2V3Zm-0.5 7v9h15v-9h-15Z"/></svg>
+          <span>Calendar</span><small>Soon</small>
+        </button>
+
+        <p class="nav-label">Content & system</p>
+        <button class="app-nav__item is-disabled" type="button" disabled>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v16H4V4Zm2 2v7l3-3 3 3 2-2 4 4V6H6Zm0 11v1h12v-1l-4-4-2 2-3-3-3 3v2Z"/></svg>
+          <span>Media</span><small>R2</small>
+        </button>
+        <button class="app-nav__item is-disabled" type="button" disabled>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19V9h3v10H5Zm5 0V4h3v15h-3Zm5 0v-7h3v7h-3Z"/></svg>
+          <span>Analytics</span><small>Soon</small>
+        </button>
+        <button class="app-nav__item is-disabled" type="button" disabled>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h14v14H5V5Zm2 2v10h10V7H7Zm2 2h6v2H9V9Zm0 4h4v2H9v-2Z"/></svg>
+          <span>SEO</span><small>Soon</small>
+        </button>
+        <button class="app-nav__item is-disabled" type="button" disabled>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 1 0 18 9 9 0 0 1 0-18Zm0 1.5A7.5 7.5 0 1 0 12 19.5 7.5 7.5 0 0 0 12 4.5Zm-.75 3h1.5v5h-1.5v-5Zm0 6.5h1.5v1.5h-1.5V14Z"/></svg>
+          <span>System</span><small>Partial</small>
+        </button>
       </nav>
 
-      <div class="sidebar-footer">
-        <span class="secure-badge">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 4.5 5v6.2c0 4.8 3.2 9.2 7.5 10.8 4.3-1.6 7.5-6 7.5-10.8V5L12 2Zm0 4.1a3 3 0 0 1 3 3v1h.7c.5 0 .8.3.8.8v5.6c0 .5-.3.8-.8.8H8.3a.8.8 0 0 1-.8-.8v-5.6c0-.5.3-.8.8-.8H9v-1a3 3 0 0 1 3-3Zm0 1.5a1.5 1.5 0 0 0-1.5 1.5v1h3v-1A1.5 1.5 0 0 0 12 7.6Z"/></svg>
-          Cloudflare Access
+      <div class="sidebar-bottom">
+        <span class="secure">
+          <i></i> Cloudflare Access
         </span>
-        <span class="version">Visual editor · v5</span>
+        <button id="collapseSidebar" type="button">Collapse</button>
       </div>
     </aside>
 
-    <main class="workspace">
+    <main class="main">
       <header class="topbar">
-        <div class="topbar-title">
-          <span class="eyebrow">Site editor</span>
-          <h1 id="viewTitle">Home</h1>
+        <div>
+          <span class="eyebrow">SD.Live Back Office</span>
+          <h1>Dashboard</h1>
         </div>
-
-        <div class="toolbar" aria-label="Preview controls">
-          <button class="tool-button" id="toggleSidebar" type="button" title="Hide pages panel" aria-expanded="true" aria-controls="siteSidebar">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h18v16H3V4Zm1.5 1.5v13H8v-13H4.5Zm5 0v13h10v-13h-10Z"/></svg>
-            <span id="toggleSidebarLabel">Hide pages</span>
-          </button>
-
-          <button class="tool-button is-active" id="toggleSelectMode" type="button" title="Selection mode" aria-pressed="true">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 3 13.2 8-6.2 1.2 3.8 6.1-2 1.2-3.8-6.1L6 18 5 3Z"/></svg>
-            <span id="toggleSelectModeLabel">Select</span>
-          </button>
-
-          <button class="tool-button" id="toggleFocusMode" type="button" title="Focus preview" aria-pressed="false">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5v1.5H5.5V9H4Zm11-5h5v5h-1.5V5.5H15V4ZM5.5 15v3.5H9V20H4v-5h1.5Zm13 0H20v5h-5v-1.5h3.5V15Z"/></svg>
-            <span id="toggleFocusModeLabel">Focus</span>
-          </button>
-
-          <div class="segmented market-switch" role="group" aria-label="Market preview">
-            <button type="button" class="segment is-active" data-market="colombia" title="Colombia experience — includes Rental">COL</button>
-            <button type="button" class="segment" data-market="international" title="International experience — Rental hidden">INT</button>
-          </div>
-
-          <div class="segmented" role="group" aria-label="Language route">
-            <button type="button" class="segment is-active" data-lang="root">Default</button>
-            <button type="button" class="segment" data-lang="en">EN</button>
-            <button type="button" class="segment" data-lang="es">ES</button>
-          </div>
-
-          <div class="segmented" role="group" aria-label="Device preview">
-            <button type="button" class="icon-segment is-active" data-device="desktop" aria-label="Desktop preview" title="Desktop">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4.5h18v12H3v-12Zm1.5 1.5v9h15V6h-15ZM8 19h8v1.5H8V19Z"/></svg>
-            </button>
-            <button type="button" class="icon-segment" data-device="mobile" aria-label="Mobile preview" title="Mobile">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7.5 2.5h9A1.5 1.5 0 0 1 18 4v16a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 6 20V4a1.5 1.5 0 0 1 1.5-1.5ZM7.5 5v14h9V5h-9Zm3.25-1.5h2.5V4h-2.5v-.5Z"/></svg>
-            </button>
-          </div>
-
-          <button class="tool-button" id="toggleInspector" type="button" title="Hide editor" aria-expanded="true" aria-controls="contentInspector">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h18v16H3V4Zm1.5 1.5v13h10v-13h-10Zm11.5 0v13h3.5v-13H16Z"/></svg>
-            <span id="toggleInspectorLabel">Hide editor</span>
-          </button>
-
-          <button class="tool-button" id="refreshPreview" type="button" title="Reload preview">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18.7 5.3A9 9 0 1 0 21 12h-1.7A7.3 7.3 0 1 1 17.5 7l-2.7 2.7H21V3.5l-2.3 1.8Z"/></svg>
-            <span>Reload</span>
-          </button>
-
-          <a class="tool-button" id="openLive" href="/" target="_blank" rel="noopener">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6h-1.5V6.6l-7.7 7.7-1.1-1.1 7.7-7.7H14V4ZM5 6h6v1.5H6.5v10h10V13H18v6H5V6Z"/></svg>
-            <span>Open live</span>
-          </a>
+        <div class="top-actions">
+          <span class="identity" id="identity">Checking access…</span>
+          <a class="button button--ghost" href="/" target="_blank" rel="noopener">Open live site ↗</a>
+          <a class="button" href="./editor/">Open Site Editor</a>
         </div>
       </header>
 
-      <section class="preview-area" aria-label="Live site preview and editor">
-        <div class="preview-meta">
-          <div class="address-pill">
-            <span class="live-dot" aria-hidden="true"></span>
-            <span id="previewAddress">sdlive.show/</span>
+      <section class="content">
+        <div class="welcome">
+          <div>
+            <span class="eyebrow">Workspace</span>
+            <h2>One place to run SD.Live.</h2>
+            <p>The visual editor is live. Inbox, leads, rental, projects, media and analytics will plug into this same back office as they are activated.</p>
           </div>
-          <div class="meta-right">
-            <span class="selection-meta" id="selectionMeta">Nothing selected</span>
-            <span class="separator">·</span>
-            <span id="marketLabel">COL</span>
-            <span class="separator">·</span>
-            <span id="deviceLabel">Desktop</span>
-            <span class="separator">·</span>
-            <span id="contentStateLabel">Loading CMS…</span>
+          <div class="system-pill" id="systemPill">
+            <i></i>
+            <span>Checking CMS…</span>
           </div>
         </div>
 
-        <div class="workbench">
-          <div class="preview-stage" id="previewStage" data-device="desktop">
-            <div class="browser-frame">
-              <div class="browser-chrome" aria-hidden="true">
-                <span></span><span></span><span></span>
-              </div>
-              <iframe id="sitePreview" title="SD.Live site preview" loading="eager"></iframe>
+        <div class="metrics">
+          <article class="metric">
+            <span>CMS / D1</span>
+            <strong id="d1Status">Checking</strong>
+            <small id="d1Detail">Connecting to sdlive-cms-production…</small>
+          </article>
+          <article class="metric">
+            <span>Hero state</span>
+            <strong id="heroState">Checking</strong>
+            <small id="heroDetail">Reading Draft / Published…</small>
+          </article>
+          <article class="metric">
+            <span>Last publish</span>
+            <strong id="lastPublish">—</strong>
+            <small id="publishDetail">Hero CMS</small>
+          </article>
+          <article class="metric">
+            <span>Recent revisions</span>
+            <strong id="revisionCount">—</strong>
+            <small>Last 30 Hero revisions</small>
+          </article>
+        </div>
+
+        <section class="section">
+          <div class="section-head">
+            <div>
+              <span class="eyebrow">Quick access</span>
+              <h3>Workspaces</h3>
             </div>
           </div>
 
-          <aside class="inspector" id="contentInspector" aria-label="Content editor">
-            <div class="inspector-head">
+          <div class="workspace-grid">
+            <a class="module module--primary" href="./editor/">
+              <div class="module-icon">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 3h16v5H4V3Zm0 7h7v11H4V10Zm9 0h7v5h-7v-5Zm0 7h7v4h-7v-4Z"/></svg>
+              </div>
               <div>
-                <span class="eyebrow">Content</span>
-                <h2 id="editorTitle">Hero</h2>
+                <span class="module-status is-live">Live</span>
+                <h4>Site Editor</h4>
+                <p>Edit the real site, switch COL/INT, EN/ES and Desktop/Mobile, manage Draft and Publish.</p>
               </div>
-              <span class="editor-state-chip" id="editorStateChip">Loading</span>
-            </div>
+              <span class="arrow">→</span>
+            </a>
 
-            <div class="selection-card" id="selectionCard">
-              <div class="selection-card__head">
-                <span class="eyebrow">Visual selection</span>
-                <span class="selection-card__mode" id="selectionModeState">Select mode on</span>
+            <a class="module" href="https://mail.google.com/" target="_blank" rel="noopener">
+              <div class="module-icon">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18v14H3V5Zm2.2 2 6.8 5.1L18.8 7H5.2ZM5 17h14V9.4l-7 5.2-7-5.2V17Z"/></svg>
               </div>
-              <strong id="selectionName">Nothing selected</strong>
-              <code id="selectionSelector">Click an element in the preview.</code>
-              <span class="selection-card__hint" id="selectionHint">Selection is the base for upcoming drag, resize, visibility and layout controls.</span>
-            </div>
+              <div>
+                <span class="module-status">Bridge</span>
+                <h4>Inbox</h4>
+                <p>Open Google Workspace now. Native SD.Live Inbox integration is the next communication module.</p>
+              </div>
+              <span class="arrow">↗</span>
+            </a>
 
-            <div class="inspector-scroll" id="editorBody">
-              <div class="editor-loading">Loading Hero from D1…</div>
-            </div>
+            <article class="module is-coming">
+              <div class="module-icon">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v16H4V4Zm2 3v2h12V7H6Zm0 4v2h8v-2H6Zm0 4v2h10v-2H6Z"/></svg>
+              </div>
+              <div>
+                <span class="module-status">Planned</span>
+                <h4>Leads / CRM</h4>
+                <p>Turn enquiries into Contacted, Quoted, Confirmed or Lost opportunities.</p>
+              </div>
+            </article>
 
-            <div class="inspector-actions" id="editorActions">
-              <button class="editor-button editor-button--ghost" id="discardChanges" type="button" disabled>Discard</button>
-              <button class="editor-button" id="saveDraft" type="button" disabled>Save Draft</button>
-              <button class="editor-button editor-button--publish" id="publishContent" type="button" disabled>Publish</button>
+            <article class="module is-coming">
+              <div class="module-icon">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16v12H4V7Zm3-3h10v3h-1.5V5.5h-7V7H7V4Zm-.5 6v6h11v-6h-11Z"/></svg>
+              </div>
+              <div>
+                <span class="module-status">Planned</span>
+                <h4>Rental</h4>
+                <p>Inventory, requests, availability, quotes and project handoff in one place.</p>
+              </div>
+            </article>
+
+            <article class="module is-coming">
+              <div class="module-icon">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h7l2 2h9v12H3V5Zm2 2v10h14V9h-7.8l-2-2H5Z"/></svg>
+              </div>
+              <div>
+                <span class="module-status">Planned</span>
+                <h4>Projects</h4>
+                <p>Clients, dates, contacts, notes, files and production status.</p>
+              </div>
+            </article>
+
+            <article class="module is-coming">
+              <div class="module-icon">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v16H4V4Zm2 2v7l3-3 3 3 2-2 4 4V6H6Zm0 11v1h12v-1l-4-4-2 2-3-3-3 3v2Z"/></svg>
+              </div>
+              <div>
+                <span class="module-status">R2 next</span>
+                <h4>Media Library</h4>
+                <p>Upload logos, portfolio images and equipment media once, then reuse them in the editor.</p>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <div class="lower-grid">
+          <section class="section panel">
+            <div class="section-head">
+              <div>
+                <span class="eyebrow">CMS activity</span>
+                <h3>Recent Hero revisions</h3>
+              </div>
+              <a href="./editor/">Open editor →</a>
             </div>
-          </aside>
+            <div class="activity" id="activity">
+              <div class="activity-empty">Loading revisions…</div>
+            </div>
+          </section>
+
+          <section class="section panel">
+            <div class="section-head">
+              <div>
+                <span class="eyebrow">Communication</span>
+                <h3>Workspace email</h3>
+              </div>
+              <a href="https://mail.google.com/" target="_blank" rel="noopener">Open Gmail ↗</a>
+            </div>
+            <div class="mailboxes">
+              <span>hello@sdlive.show</span>
+              <span>info@sdlive.show</span>
+              <span>rental@sdlive.show</span>
+              <span>projects@sdlive.show</span>
+              <span>billing@sdlive.show</span>
+              <span>facturas@sdlive.show</span>
+            </div>
+            <p class="panel-note">Native Inbox will eventually let an email become a lead, rental request, project or billing item without leaving SD.Live Admin.</p>
+          </section>
         </div>
       </section>
-
-      <footer class="workspace-footer">
-        <div>
-          <strong id="footerStatus">Hero editor connected to D1.</strong>
-          <span id="footerDetail">Preview changes are local until Save Draft. Publish currently updates the CMS; live-site binding comes next.</span>
-        </div>
-        <span class="save-indicator" id="saveIndicator">Synced</span>
-      </footer>
     </main>
   </div>
 
-  <div class="toast-stack" id="toastStack" aria-live="polite" aria-atomic="true"></div>
-
-  <script src="./admin.js"></script>
+  <script src="./dashboard.js"></script>
 </body>
 </html>
