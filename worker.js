@@ -2,6 +2,11 @@ import { jwtVerify, createRemoteJWKSet } from "jose";
 
 const ADMIN_EMAIL = "sam@sdlive.show";
 
+/**
+ * Valida el JWT emitido por Cloudflare Access.
+ * Además de validar firma, issuer y audience,
+ * restringimos el CMS al email autorizado.
+ */
 async function verifyAccess(request, env) {
   if (!env.TEAM_DOMAIN || !env.POLICY_AUD) {
     throw new Error("Access configuration missing");
@@ -34,6 +39,10 @@ async function verifyAccess(request, env) {
   };
 }
 
+
+/**
+ * Respuestas JSON uniformes.
+ */
 function json(data, status = 200) {
   return Response.json(data, {
     status,
@@ -43,6 +52,10 @@ function json(data, status = 200) {
   });
 }
 
+
+/**
+ * Convierte los campos JSON guardados como TEXT en D1.
+ */
 function parseStoredJson(value) {
   try {
     return JSON.parse(value);
@@ -51,12 +64,39 @@ function parseStoredJson(value) {
   }
 }
 
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
-    // Public diagnostic endpoint.
-    if (url.pathname === "/api/health") {
+    /*
+     * Normaliza el path para aceptar:
+     *
+     * /api/admin/content/hero
+     * /api/admin/content/hero/
+     *
+     * como la misma ruta.
+     */
+    const path =
+      url.pathname.length > 1
+        ? url.pathname.replace(/\/+$/, "")
+        : url.pathname;
+
+
+    /*
+     * ---------------------------------------------------------
+     * PUBLIC API
+     * ---------------------------------------------------------
+     */
+
+    /**
+     * Health check público.
+     * Solo verifica que el Worker pueda comunicarse con D1.
+     */
+    if (
+      path === "/api/health" &&
+      request.method === "GET"
+    ) {
       try {
         const result = await env.CMS_DB
           .prepare("SELECT 1 AS ok")
@@ -66,7 +106,7 @@ export default {
           ok: result?.ok === 1,
           database: "sdlive-cms-production"
         });
-      } catch {
+      } catch (error) {
         return json(
           {
             ok: false,
@@ -77,127 +117,18 @@ export default {
       }
     }
 
-    // Everything under /api/admin/* requires Access.
-    if (url.pathname.startsWith("/api/admin/")) {
-      let user;
 
-      try {
-        user = await verifyAccess(request, env);
-      } catch {
-        return json(
-          {
-            ok: false,
-            error: "Unauthorized"
-          },
-          403
-        );
-      }
+    /*
+     * ---------------------------------------------------------
+     * ADMIN API
+     * ---------------------------------------------------------
+     *
+     * Todo lo que exista debajo de /api/admin/
+     * debe pasar primero por Cloudflare Access y,
+     * adicionalmente, por verifyAccess().
+     */
 
-      // Authentication test.
-      if (
-        url.pathname === "/api/admin/whoami" &&
-        request.method === "GET"
-      ) {
-        return json({
-          ok: true,
-          authenticated: true,
-          email: user.email
-        });
-      }
-
-      // Read Hero content from D1.
-      if (
-        url.pathname === "/api/admin/content/hero" &&
-        request.method === "GET"
-      ) {
-        const row = await env.CMS_DB
-          .prepare(`
-            SELECT
-              id,
-              section,
-              market,
-              route,
-              draft_json,
-              published_json,
-              updated_at,
-              published_at
-            FROM cms_entries
-            WHERE section = ?
-              AND market = ?
-              AND route = ?
-            LIMIT 1
-          `)
-          .bind("hero", "all", "root")
-          .first();
-
-        if (!row) {
-          return json(
-            {
-              ok: false,
-              error: "Hero content not found"
-            },
-            404
-          );
-        }
-
-        const draft = parseStoredJson(row.draft_json);
-        const published = parseStoredJson(row.published_json);
-
-        if (!draft || !published) {
-          return json(
-            {
-              ok: false,
-              error: "Stored Hero JSON is invalid"
-            },
-            500
-          );
-        }
-
-        return json({
-          ok: true,
-          entry: {
-            id: row.id,
-            section: row.section,
-            market: row.market,
-            route: row.route,
-            updatedAt: row.updated_at,
-            publishedAt: row.published_at,
-            draft,
-            published
-          }
-        });
-      }
-
-      return json(
-        {
-          ok: false,
-          error: "Admin API route not found"
-        },
-        404
-      );
-    }
-
-    return json(
-      {
-        ok: false,
-        error: "API route not found"
-      },
-      404
-    );
-  }
-};        return json(
-          {
-            ok: false,
-            error: "D1 connection failed"
-          },
-          500
-        );
-      }
-    }
-
-    // Everything under /api/admin/* requires a valid
-    // Cloudflare Access JWT AND the expected admin email.
-    if (url.pathname.startsWith("/api/admin/")) {
+    if (path.startsWith("/api/admin/")) {
       let user;
 
       try {
@@ -212,9 +143,17 @@ export default {
         );
       }
 
-      // First protected test endpoint.
+
+      /*
+       * -------------------------------------------------------
+       * WHO AM I
+       * -------------------------------------------------------
+       *
+       * Endpoint de diagnóstico de autenticación.
+       */
+
       if (
-        url.pathname === "/api/admin/whoami" &&
+        path === "/api/admin/whoami" &&
         request.method === "GET"
       ) {
         return json({
@@ -224,6 +163,97 @@ export default {
         });
       }
 
+
+      /*
+       * -------------------------------------------------------
+       * GET HERO
+       * -------------------------------------------------------
+       *
+       * Lee Draft + Published del Hero desde D1.
+       */
+
+      if (
+        path === "/api/admin/content/hero" &&
+        request.method === "GET"
+      ) {
+        try {
+          const row = await env.CMS_DB
+            .prepare(`
+              SELECT
+                id,
+                section,
+                market,
+                route,
+                draft_json,
+                published_json,
+                updated_at,
+                published_at
+              FROM cms_entries
+              WHERE section = ?
+                AND market = ?
+                AND route = ?
+              LIMIT 1
+            `)
+            .bind(
+              "hero",
+              "all",
+              "root"
+            )
+            .first();
+
+          if (!row) {
+            return json(
+              {
+                ok: false,
+                error: "Hero content not found"
+              },
+              404
+            );
+          }
+
+          const draft = parseStoredJson(row.draft_json);
+          const published = parseStoredJson(row.published_json);
+
+          if (!draft || !published) {
+            return json(
+              {
+                ok: false,
+                error: "Stored Hero JSON is invalid"
+              },
+              500
+            );
+          }
+
+          return json({
+            ok: true,
+            entry: {
+              id: row.id,
+              section: row.section,
+              market: row.market,
+              route: row.route,
+
+              updatedAt: row.updated_at,
+              publishedAt: row.published_at,
+
+              draft,
+              published
+            }
+          });
+        } catch (error) {
+          return json(
+            {
+              ok: false,
+              error: "Could not read Hero content"
+            },
+            500
+          );
+        }
+      }
+
+
+      /*
+       * Ruta /api/admin/... válida pero no implementada.
+       */
       return json(
         {
           ok: false,
@@ -232,6 +262,13 @@ export default {
         404
       );
     }
+
+
+    /*
+     * ---------------------------------------------------------
+     * UNKNOWN API ROUTE
+     * ---------------------------------------------------------
+     */
 
     return json(
       {
