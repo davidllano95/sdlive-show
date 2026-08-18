@@ -44,7 +44,7 @@
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 4.5 5v6.2c0 4.8 3.2 9.2 7.5 10.8 4.3-1.6 7.5-6 7.5-10.8V5L12 2Zm0 4.1a3 3 0 0 1 3 3v1h.7c.5 0 .8.3.8.8v5.6c0 .5-.3.8-.8.8H8.3a.8.8 0 0 1-.8-.8v-5.6c0-.5.3-.8.8-.8H9v-1a3 3 0 0 1 3-3Zm0 1.5a1.5 1.5 0 0 0-1.5 1.5v1h3v-1A1.5 1.5 0 0 0 12 7.6Z"/></svg>
           Cloudflare Access
         </span>
-        <span class="version">Admin preview · v1</span>
+        <span class="version">Admin preview · v2</span>
       </div>
     </aside>
 
@@ -56,6 +56,11 @@
         </div>
 
         <div class="toolbar" aria-label="Preview controls">
+          <div class="segmented market-switch" role="group" aria-label="Market preview">
+            <button type="button" class="segment is-active" data-market="colombia" title="Colombia experience — includes Rental">COL</button>
+            <button type="button" class="segment" data-market="international" title="International experience — Rental hidden">INT</button>
+          </div>
+
           <div class="segmented" role="group" aria-label="Language">
             <button type="button" class="segment is-active" data-lang="root">Default</button>
             <button type="button" class="segment" data-lang="en">EN</button>
@@ -90,6 +95,8 @@
             <span id="previewAddress">sdlive.show/</span>
           </div>
           <div class="meta-right">
+            <span id="marketLabel">COL</span>
+            <span class="separator">·</span>
             <span id="deviceLabel">Desktop</span>
             <span class="separator">·</span>
             <span>Published</span>

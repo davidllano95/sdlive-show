@@ -80,3 +80,18 @@ button { color: inherit; }
   .tool-button span { display:none; }
   .tool-button { width:35px; justify-content:center; padding:0; }
 }
+
+
+/* Market preview */
+.market-switch .segment {
+  min-width: 38px;
+}
+.market-switch .segment.is-active {
+  color: var(--text);
+}
+.section-link.is-market-hidden {
+  display: none;
+}
+.market-note {
+  color: var(--muted);
+}
