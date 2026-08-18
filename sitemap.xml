@@ -1,31 +1,39 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+
   <url>
     <loc>https://sdlive.show/</loc>
     <lastmod>2026-08-17</lastmod>
   </url>
+
   <url>
     <loc>https://sdlive.show/en/</loc>
     <lastmod>2026-08-17</lastmod>
   </url>
+
   <url>
-    <loc>https://sdlive.show/en/audio-equipment-rental-bogota.html</loc>
-    <lastmod>2026-08-17</lastmod>
+    <loc>https://sdlive.show/en/audio-equipment-rental-bogota</loc>
+    <lastmod>2026-08-18</lastmod>
   </url>
+
   <url>
     <loc>https://sdlive.show/es-co/</loc>
-    <lastmod>2026-08-17</lastmod>
+    <lastmod>2026-08-18</lastmod>
   </url>
+
   <url>
-    <loc>https://sdlive.show/audio-eventos-streaming-teatro-bogota.html</loc>
-    <lastmod>2026-08-17</lastmod>
+    <loc>https://sdlive.show/audio-eventos-streaming-teatro-bogota</loc>
+    <lastmod>2026-08-18</lastmod>
   </url>
+
   <url>
-    <loc>https://sdlive.show/alquiler-sonido-wing-midas-dl32-bogota.html</loc>
-    <lastmod>2026-08-17</lastmod>
+    <loc>https://sdlive.show/alquiler-sonido-wing-midas-dl32-bogota</loc>
+    <lastmod>2026-08-18</lastmod>
   </url>
+
   <url>
-    <loc>https://sdlive.show/theatre-sound-design-audio-post.html</loc>
-    <lastmod>2026-08-17</lastmod>
+    <loc>https://sdlive.show/theatre-sound-design-audio-post</loc>
+    <lastmod>2026-08-18</lastmod>
   </url>
+
 </urlset>
