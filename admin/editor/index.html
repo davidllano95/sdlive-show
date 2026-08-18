@@ -7,35 +7,83 @@
   <meta name="color-scheme" content="dark" />
   <title>Site Editor · SD.Live Admin</title>
   <link rel="icon" href="../../assets/icons/favicon.ico" />
+  <link rel="stylesheet" href="../dashboard.css" />
   <link rel="stylesheet" href="./admin.css" />
 </head>
-<body class="with-global-rail">
+<body>
 
-  <nav class="global-rail" id="globalRail" aria-label="SD.Live Admin">
-    <a class="global-rail__brand" href="../" title="Dashboard" aria-label="SD.Live Admin dashboard">
-      <img src="../../assets/logos/sd-live-header-normal-symbol.png" alt="" aria-hidden="true" />
-    </a>
-    <div class="global-rail__nav">
-      <a class="global-rail__item" href="../" title="Dashboard" aria-label="Dashboard">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 3 10.1V21h7v-6h4v6h7V10.1L12 3Zm0 2.1 7 5.6v8.8h-3.5v-6h-7v6H5v-8.8l7-5.6Z"/></svg>
-      </a>
-      <a class="global-rail__item is-active" href="./" title="Site Editor" aria-label="Site Editor">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 3 13.2 8-6.1 1.3 3.8 6-2.1 1.3-3.8-6.1L6 18 5 3Z"/></svg>
-      </a>
-      <a class="global-rail__item" href="https://mail.google.com/" target="_blank" rel="noopener" title="Open Gmail" aria-label="Open Gmail">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18v14H3V5Zm2.2 2 6.8 5.1L18.8 7H5.2ZM5 17h14V9.4l-7 5.2-7-5.2V17Z"/></svg>
-      </a>
-    </div>
-    <a class="global-rail__item global-rail__bottom" href="/" target="_blank" rel="noopener" title="Open live site" aria-label="Open live site">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6h-1.5V6.6l-7.7 7.7-1.1-1.1 7.7-7.7H14V4ZM5 6h6v1.5H6.5v10h10V13H18v6H5V6Z"/></svg>
-    </a>
-  </nav>
+  <div class="backoffice editor-backoffice" id="editorBackoffice">
+    <aside class="app-sidebar" id="appSidebar">
+      <div class="brand">
+        <img class="brand-full" src="../../assets/logos/sd-live-header-normal.png" alt="SD.Live" />
+        <img class="brand-symbol" src="../../assets/logos/sd-live-header-normal-symbol.png" alt="" aria-hidden="true" />
+        <span>Admin</span>
+      </div>
 
-  <div class="admin-shell" id="adminShell">
-    <aside class="sidebar" id="siteSidebar" aria-label="Admin navigation">
-      <div class="brand-row">
-        <img src="../../assets/logos/sd-live-header-normal.png" alt="SD.Live" class="brand-logo" />
-        <span class="admin-label">Admin</span>
+      <nav class="app-nav" aria-label="Back office">
+        <a class="app-nav__item is-active" href="./">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 3 10.1V21h7v-6h4v6h7V10.1L12 3Zm0 2.1 7 5.6v8.8h-3.5v-6h-7v6H5v-8.8l7-5.6Z"/></svg>
+          <span>Dashboard</span>
+        </a>
+        <a class="app-nav__item is-active" href="./">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 3 13.2 8-6.1 1.3 3.8 6-2.1 1.3-3.8-6.1L6 18 5 3Z"/></svg>
+          <span>Site Editor</span>
+        </a>
+        <a class="app-nav__item" href="https://mail.google.com/" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18v14H3V5Zm2.2 2 6.8 5.1L18.8 7H5.2ZM5 17h14V9.4l-7 5.2-7-5.2V17Z"/></svg>
+          <span>Inbox</span>
+          <small>Gmail ↗</small>
+        </a>
+
+        <p class="nav-label">Business</p>
+        <button class="app-nav__item is-disabled" type="button" disabled>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v16H4V4Zm2 3v2h12V7H6Zm0 4v2h8v-2H6Zm0 4v2h10v-2H6Z"/></svg>
+          <span>Leads</span><small>Soon</small>
+        </button>
+        <button class="app-nav__item is-disabled" type="button" disabled>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16v12H4V7Zm3-3h10v3h-1.5V5.5h-7V7H7V4Zm-.5 6v6h11v-6h-11Z"/></svg>
+          <span>Rental</span><small>Soon</small>
+        </button>
+        <button class="app-nav__item is-disabled" type="button" disabled>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h7l2 2h9v12H3V5Zm2 2v10h14V9h-7.8l-2-2H5Z"/></svg>
+          <span>Projects</span><small>Soon</small>
+        </button>
+        <button class="app-nav__item is-disabled" type="button" disabled>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h1.5v2H17V3h1.5v2H21v16H3V5h2V3Zm-0.5 7v9h15v-9h-15Z"/></svg>
+          <span>Calendar</span><small>Soon</small>
+        </button>
+
+        <p class="nav-label">Content & system</p>
+        <button class="app-nav__item is-disabled" type="button" disabled>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v16H4V4Zm2 2v7l3-3 3 3 2-2 4 4V6H6Zm0 11v1h12v-1l-4-4-2 2-3-3-3 3v2Z"/></svg>
+          <span>Media</span><small>R2</small>
+        </button>
+        <button class="app-nav__item is-disabled" type="button" disabled>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19V9h3v10H5Zm5 0V4h3v15h-3Zm5 0v-7h3v7h-3Z"/></svg>
+          <span>Analytics</span><small>Soon</small>
+        </button>
+        <button class="app-nav__item is-disabled" type="button" disabled>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h14v14H5V5Zm2 2v10h10V7H7Zm2 2h6v2H9V9Zm0 4h4v2H9v-2Z"/></svg>
+          <span>SEO</span><small>Soon</small>
+        </button>
+        <button class="app-nav__item is-disabled" type="button" disabled>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 1 0 18 9 9 0 0 1 0-18Zm0 1.5A7.5 7.5 0 1 0 12 19.5 7.5 7.5 0 0 0 12 4.5Zm-.75 3h1.5v5h-1.5v-5Zm0 6.5h1.5v1.5h-1.5V14Z"/></svg>
+          <span>System</span><small>Partial</small>
+        </button>
+      </nav>
+
+      <div class="sidebar-bottom">
+        <span class="secure">
+          <i></i> Cloudflare Access
+        </span>
+        <button id="collapseAdminSidebar" type="button">Collapse</button>
+      </div>
+    </aside>
+    <div class="editor-host">
+<div class="admin-shell" id="adminShell">
+    <aside class="sidebar" id="siteSidebar" aria-label="Site editor pages">
+      <div class="editor-panel-head">
+        <span class="editor-panel-label">EDITOR</span>
       </div>
 
       <div class="status-card">
@@ -65,7 +113,7 @@
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 4.5 5v6.2c0 4.8 3.2 9.2 7.5 10.8 4.3-1.6 7.5-6 7.5-10.8V5L12 2Zm0 4.1a3 3 0 0 1 3 3v1h.7c.5 0 .8.3.8.8v5.6c0 .5-.3.8-.8.8H8.3a.8.8 0 0 1-.8-.8v-5.6c0-.5.3-.8.8-.8H9v-1a3 3 0 0 1 3-3Zm0 1.5a1.5 1.5 0 0 0-1.5 1.5v1h3v-1A1.5 1.5 0 0 0 12 7.6Z"/></svg>
           Cloudflare Access
         </span>
-        <span class="version">Site Editor · v6</span>
+        <span class="version">Site Editor · v6.3</span>
       </div>
     </aside>
 
@@ -198,8 +246,13 @@
     </main>
   </div>
 
+  
+    </div>
+  </div>
+
   <div class="toast-stack" id="toastStack" aria-live="polite" aria-atomic="true"></div>
 
+  <script src="./admin-shell.js"></script>
   <script src="./admin.js"></script>
 </body>
 </html>

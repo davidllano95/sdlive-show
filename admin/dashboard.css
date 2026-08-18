@@ -114,3 +114,14 @@ a,button{font:inherit}
   line-height:1;
   transform:translateY(-.18em);
 }
+
+
+/* Admin v6.3 — global navigation sizing lock */
+.app-nav__item {
+  min-height:37px;
+}
+.app-nav__item svg {
+  width:15px;
+  height:15px;
+  flex:none;
+}

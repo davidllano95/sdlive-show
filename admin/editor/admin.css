@@ -992,3 +992,86 @@ body.editor-focus-mode.with-global-rail .admin-shell {
   margin-left:0;
   width:100vw;
 }
+
+
+/* =============================================
+   Admin v6.2 — uniform global navigation
+============================================= */
+.editor-backoffice {
+  min-height:100vh;
+  display:grid;
+  grid-template-columns:var(--sidebar,236px) minmax(0,1fr);
+  transition:grid-template-columns .22s ease;
+}
+
+.editor-backoffice.is-collapsed {
+  grid-template-columns:68px minmax(0,1fr);
+}
+
+.editor-host {
+  min-width:0;
+  height:100vh;
+  overflow:hidden;
+}
+
+.editor-host .admin-shell {
+  margin-left:0 !important;
+  width:100% !important;
+  height:100vh;
+}
+
+.with-global-rail .admin-shell,
+body.editor-focus-mode.with-global-rail .admin-shell {
+  margin-left:0 !important;
+  width:100% !important;
+}
+
+.global-rail {
+  display:none !important;
+}
+
+body.editor-focus-mode .app-sidebar {
+  display:none;
+}
+
+body.editor-focus-mode .editor-backoffice {
+  grid-template-columns:minmax(0,1fr);
+}
+
+body.editor-focus-mode .editor-host {
+  grid-column:1;
+}
+
+
+/* =============================================
+   Admin v6.3 — editor secondary sidebar cleanup
+============================================= */
+.editor-panel-head {
+  display:flex;
+  align-items:center;
+  min-height:42px;
+  padding:0 8px 16px;
+  border-bottom:1px solid var(--border);
+}
+
+.editor-panel-label {
+  display:inline-flex;
+  align-items:center;
+  min-height:24px;
+  padding:4px 8px;
+  border:1px solid rgba(var(--accent-rgb),.24);
+  border-radius:6px;
+  color:var(--accent);
+  background:rgba(var(--accent-rgb),.06);
+  font-size:10px;
+  font-weight:800;
+  letter-spacing:.10em;
+  text-transform:uppercase;
+}
+
+/* The editor pages sidebar no longer carries a second brand mark. */
+.sidebar .brand-row,
+.sidebar .brand-logo,
+.sidebar .admin-label {
+  display:none !important;
+}
