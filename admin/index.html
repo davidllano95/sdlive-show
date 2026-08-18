@@ -20,9 +20,9 @@
       <div class="status-card">
         <div class="status-line">
           <span class="status-dot" aria-hidden="true"></span>
-          <strong>Published site</strong>
+          <strong id="cmsStatusTitle">Connecting CMS</strong>
         </div>
-        <p>Read-only preview</p>
+        <p id="cmsStatusText">Checking D1 + Access…</p>
       </div>
 
       <nav class="section-nav" aria-label="Site sections">
@@ -44,14 +44,14 @@
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 4.5 5v6.2c0 4.8 3.2 9.2 7.5 10.8 4.3-1.6 7.5-6 7.5-10.8V5L12 2Zm0 4.1a3 3 0 0 1 3 3v1h.7c.5 0 .8.3.8.8v5.6c0 .5-.3.8-.8.8H8.3a.8.8 0 0 1-.8-.8v-5.6c0-.5.3-.8.8-.8H9v-1a3 3 0 0 1 3-3Zm0 1.5a1.5 1.5 0 0 0-1.5 1.5v1h3v-1A1.5 1.5 0 0 0 12 7.6Z"/></svg>
           Cloudflare Access
         </span>
-        <span class="version">Admin preview · v2</span>
+        <span class="version">Admin editor · v3</span>
       </div>
     </aside>
 
     <main class="workspace">
       <header class="topbar">
         <div class="topbar-title">
-          <span class="eyebrow">Site preview</span>
+          <span class="eyebrow">Site editor</span>
           <h1 id="viewTitle">Home</h1>
         </div>
 
@@ -61,7 +61,7 @@
             <button type="button" class="segment" data-market="international" title="International experience — Rental hidden">INT</button>
           </div>
 
-          <div class="segmented" role="group" aria-label="Language">
+          <div class="segmented" role="group" aria-label="Language route">
             <button type="button" class="segment is-active" data-lang="root">Default</button>
             <button type="button" class="segment" data-lang="en">EN</button>
             <button type="button" class="segment" data-lang="es">ES</button>
@@ -88,7 +88,7 @@
         </div>
       </header>
 
-      <section class="preview-area" aria-label="Live site preview">
+      <section class="preview-area" aria-label="Live site preview and editor">
         <div class="preview-meta">
           <div class="address-pill">
             <span class="live-dot" aria-hidden="true"></span>
@@ -99,29 +99,54 @@
             <span class="separator">·</span>
             <span id="deviceLabel">Desktop</span>
             <span class="separator">·</span>
-            <span>Published</span>
+            <span id="contentStateLabel">Loading CMS…</span>
           </div>
         </div>
 
-        <div class="preview-stage" id="previewStage" data-device="desktop">
-          <div class="browser-frame">
-            <div class="browser-chrome" aria-hidden="true">
-              <span></span><span></span><span></span>
+        <div class="workbench">
+          <div class="preview-stage" id="previewStage" data-device="desktop">
+            <div class="browser-frame">
+              <div class="browser-chrome" aria-hidden="true">
+                <span></span><span></span><span></span>
+              </div>
+              <iframe id="sitePreview" title="SD.Live site preview" loading="eager"></iframe>
             </div>
-            <iframe id="sitePreview" title="SD.Live published site preview" loading="eager"></iframe>
           </div>
+
+          <aside class="inspector" aria-label="Content editor">
+            <div class="inspector-head">
+              <div>
+                <span class="eyebrow">Content</span>
+                <h2 id="editorTitle">Hero</h2>
+              </div>
+              <span class="editor-state-chip" id="editorStateChip">Loading</span>
+            </div>
+
+            <div class="inspector-scroll" id="editorBody">
+              <div class="editor-loading">Loading Hero from D1…</div>
+            </div>
+
+            <div class="inspector-actions" id="editorActions">
+              <button class="editor-button editor-button--ghost" id="discardChanges" type="button" disabled>Discard</button>
+              <button class="editor-button" id="saveDraft" type="button" disabled>Save Draft</button>
+              <button class="editor-button editor-button--publish" id="publishContent" type="button" disabled>Publish</button>
+            </div>
+          </aside>
         </div>
       </section>
 
       <footer class="workspace-footer">
         <div>
-          <strong>Editing is intentionally disabled in v1.</strong>
-          <span>The next layer will add D1 drafts, revisions and publishing without rebuilding this preview.</span>
+          <strong id="footerStatus">Hero editor connected to D1.</strong>
+          <span id="footerDetail">Preview changes are local until Save Draft. Publish currently updates the CMS; live-site binding comes next.</span>
         </div>
-        <span class="read-only-chip">Read only</span>
+        <span class="save-indicator" id="saveIndicator">Synced</span>
       </footer>
     </main>
   </div>
+
+  <div class="toast-stack" id="toastStack" aria-live="polite" aria-atomic="true"></div>
+
   <script src="./admin.js"></script>
 </body>
 </html>
