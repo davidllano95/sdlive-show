@@ -2,10 +2,6 @@ import { jwtVerify, createRemoteJWKSet } from "jose";
 
 const ADMIN_EMAIL = "sam@sdlive.show";
 
-/**
- * Valida el JWT emitido por Cloudflare Access.
- * Comprueba firma, issuer, audience y email autorizado.
- */
 async function verifyAccess(request, env) {
   if (!env.TEAM_DOMAIN || !env.POLICY_AUD) {
     throw new Error("Access configuration missing");
@@ -35,6 +31,210 @@ async function verifyAccess(request, env) {
   return {
     email,
     sub: payload.sub || null
+  };
+}
+
+function json(data, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: {
+      "Content-Type": "application/json; charset=utf-8",
+      "Cache-Control": "no-store"
+    }
+  });
+}
+
+/**
+ * D1 devuelve BLOB como Array<number>.
+ * Lo convertimos nosotros a UTF-8 y después parseamos JSON.
+ */
+function parseBlobJson(blob) {
+  if (!Array.isArray(blob)) {
+    throw new Error("Expected D1 BLOB byte array");
+  }
+
+  const bytes = new Uint8Array(blob);
+
+  const text = new TextDecoder("utf-8", {
+    fatal: true
+  }).decode(bytes);
+
+  return JSON.parse(text);
+}
+
+export default {
+  async fetch(request, env) {
+    const url = new URL(request.url);
+
+    const path =
+      url.pathname.length > 1
+        ? url.pathname.replace(/\/+$/, "")
+        : url.pathname;
+
+    /*
+     * =========================================================
+     * PUBLIC API
+     * =========================================================
+     */
+
+    if (
+      path === "/api/health" &&
+      request.method === "GET"
+    ) {
+      try {
+        const result = await env.CMS_DB
+          .prepare("SELECT 1 AS ok")
+          .first();
+
+        return json({
+          ok: result?.ok === 1,
+          database: "sdlive-cms-production"
+        });
+      } catch {
+        return json(
+          {
+            ok: false,
+            error: "D1 connection failed"
+          },
+          500
+        );
+      }
+    }
+
+    /*
+     * =========================================================
+     * ADMIN API
+     * =========================================================
+     */
+
+    if (path.startsWith("/api/admin/")) {
+      let user;
+
+      try {
+        user = await verifyAccess(request, env);
+      } catch {
+        return json(
+          {
+            ok: false,
+            error: "Unauthorized"
+          },
+          403
+        );
+      }
+
+      /*
+       * WHOAMI
+       */
+
+      if (
+        path === "/api/admin/whoami" &&
+        request.method === "GET"
+      ) {
+        return json({
+          ok: true,
+          authenticated: true,
+          email: user.email
+        });
+      }
+
+      /*
+       * GET HERO
+       */
+
+      if (
+        path === "/api/admin/content/hero" &&
+        request.method === "GET"
+      ) {
+        try {
+          const row = await env.CMS_DB
+            .prepare(`
+              SELECT
+                id,
+                section,
+                market,
+                route,
+
+                CAST(draft_json AS BLOB) AS draft_blob,
+                CAST(published_json AS BLOB) AS published_blob,
+
+                updated_at,
+                published_at
+
+              FROM cms_entries
+
+              WHERE section = ?
+                AND market = ?
+                AND route = ?
+
+              LIMIT 1
+            `)
+            .bind(
+              "hero",
+              "all",
+              "root"
+            )
+            .first();
+
+          if (!row) {
+            return json(
+              {
+                ok: false,
+                error: "Hero content not found"
+              },
+              404
+            );
+          }
+
+          const draft = parseBlobJson(row.draft_blob);
+          const published = parseBlobJson(row.published_blob);
+
+          return json({
+            ok: true,
+
+            entry: {
+              id: row.id,
+              section: row.section,
+              market: row.market,
+              route: row.route,
+
+              updatedAt: row.updated_at,
+              publishedAt: row.published_at,
+
+              draft,
+              published
+            }
+          });
+
+        } catch (error) {
+          return json(
+            {
+              ok: false,
+              error: "Could not read Hero content",
+              detail: String(error?.message || error)
+            },
+            500
+          );
+        }
+      }
+
+      return json(
+        {
+          ok: false,
+          error: "Admin API route not found"
+        },
+        404
+      );
+    }
+
+    return json(
+      {
+        ok: false,
+        error: "API route not found"
+      },
+      404
+    );
+  }
+};    sub: payload.sub || null
   };
 }
 
