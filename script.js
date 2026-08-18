@@ -13,7 +13,7 @@ const SITE_CONFIG = {
   },
 
   contact: {
-    email: "davidllano95@icloud.com",
+    email: "hello@sdlive.show",
     whatsapp: "573192473948", // digits only: country code + number, no + or spaces
     whatsappUsername: "samd.llano95",
     instagram: "https://www.instagram.com/samd.llano95/",
