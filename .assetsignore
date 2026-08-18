@@ -1,6 +1,12 @@
+worker.js
 wrangler.jsonc
 .assetsignore
 README.md
+package.json
+package-lock.json
+deploy-test.txt
+
 **/.DS_Store
 **/.git
+**/.github
 **/node_modules
