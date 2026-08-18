@@ -1,9 +1,22 @@
 {
   "name": "fragrant-brook-7554",
   "compatibility_date": "2026-08-17",
+  "main": "./worker.js",
+
   "assets": {
     "directory": "./",
     "not_found_handling": "404-page",
-    "html_handling": "auto-trailing-slash"
-  }
+    "html_handling": "auto-trailing-slash",
+    "run_worker_first": [
+      "/api/*"
+    ]
+  },
+
+  "d1_databases": [
+    {
+      "binding": "CMS_DB",
+      "database_name": "sdlive-cms-production",
+      "database_id": "102616c5-bbe7-417a-9a7a-c0a062f91134"
+    }
+  ]
 }
