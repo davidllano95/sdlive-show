@@ -43,6 +43,14 @@ function json(data, status = 200) {
   });
 }
 
+function parseStoredJson(value) {
+  try {
+    return JSON.parse(value);
+  } catch {
+    return null;
+  }
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -58,8 +66,126 @@ export default {
           ok: result?.ok === 1,
           database: "sdlive-cms-production"
         });
-      } catch (error) {
+      } catch {
         return json(
+          {
+            ok: false,
+            error: "D1 connection failed"
+          },
+          500
+        );
+      }
+    }
+
+    // Everything under /api/admin/* requires Access.
+    if (url.pathname.startsWith("/api/admin/")) {
+      let user;
+
+      try {
+        user = await verifyAccess(request, env);
+      } catch {
+        return json(
+          {
+            ok: false,
+            error: "Unauthorized"
+          },
+          403
+        );
+      }
+
+      // Authentication test.
+      if (
+        url.pathname === "/api/admin/whoami" &&
+        request.method === "GET"
+      ) {
+        return json({
+          ok: true,
+          authenticated: true,
+          email: user.email
+        });
+      }
+
+      // Read Hero content from D1.
+      if (
+        url.pathname === "/api/admin/content/hero" &&
+        request.method === "GET"
+      ) {
+        const row = await env.CMS_DB
+          .prepare(`
+            SELECT
+              id,
+              section,
+              market,
+              route,
+              draft_json,
+              published_json,
+              updated_at,
+              published_at
+            FROM cms_entries
+            WHERE section = ?
+              AND market = ?
+              AND route = ?
+            LIMIT 1
+          `)
+          .bind("hero", "all", "root")
+          .first();
+
+        if (!row) {
+          return json(
+            {
+              ok: false,
+              error: "Hero content not found"
+            },
+            404
+          );
+        }
+
+        const draft = parseStoredJson(row.draft_json);
+        const published = parseStoredJson(row.published_json);
+
+        if (!draft || !published) {
+          return json(
+            {
+              ok: false,
+              error: "Stored Hero JSON is invalid"
+            },
+            500
+          );
+        }
+
+        return json({
+          ok: true,
+          entry: {
+            id: row.id,
+            section: row.section,
+            market: row.market,
+            route: row.route,
+            updatedAt: row.updated_at,
+            publishedAt: row.published_at,
+            draft,
+            published
+          }
+        });
+      }
+
+      return json(
+        {
+          ok: false,
+          error: "Admin API route not found"
+        },
+        404
+      );
+    }
+
+    return json(
+      {
+        ok: false,
+        error: "API route not found"
+      },
+      404
+    );
+  }
+};        return json(
           {
             ok: false,
             error: "D1 connection failed"
