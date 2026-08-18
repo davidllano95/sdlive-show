@@ -9,9 +9,24 @@
   const openLive = document.getElementById("openLive");
   const refresh = document.getElementById("refreshPreview");
   const previewArea = document.querySelector(".preview-area");
+  const adminShell = document.getElementById("adminShell");
+  const sidebar = document.getElementById("siteSidebar");
   const inspector = document.getElementById("contentInspector");
+
+  const toggleSidebarButton = document.getElementById("toggleSidebar");
+  const toggleSidebarLabel = document.getElementById("toggleSidebarLabel");
   const toggleInspectorButton = document.getElementById("toggleInspector");
   const toggleInspectorLabel = document.getElementById("toggleInspectorLabel");
+  const toggleFocusModeButton = document.getElementById("toggleFocusMode");
+  const toggleFocusModeLabel = document.getElementById("toggleFocusModeLabel");
+  const toggleSelectModeButton = document.getElementById("toggleSelectMode");
+  const toggleSelectModeLabel = document.getElementById("toggleSelectModeLabel");
+
+  const selectionMeta = document.getElementById("selectionMeta");
+  const selectionName = document.getElementById("selectionName");
+  const selectionSelector = document.getElementById("selectionSelector");
+  const selectionHint = document.getElementById("selectionHint");
+  const selectionModeState = document.getElementById("selectionModeState");
 
   const cmsStatusTitle = document.getElementById("cmsStatusTitle");
   const cmsStatusText = document.getElementById("cmsStatusText");
@@ -50,7 +65,11 @@
     market: localStorage.getItem("sdlive-admin-market") || "colombia",
     lang: localStorage.getItem("sdlive-admin-lang") || "root",
     device: localStorage.getItem("sdlive-admin-device") || "desktop",
+    sidebarCollapsed: localStorage.getItem("sdlive-admin-sidebar-collapsed") === "true",
     inspectorCollapsed: localStorage.getItem("sdlive-admin-inspector-collapsed") === "true",
+    focusMode: localStorage.getItem("sdlive-admin-focus-mode") === "true",
+    selectMode: localStorage.getItem("sdlive-admin-select-mode") !== "false",
+    selectedElement: null,
     section: "hero",
     userEmail: "",
     heroEntry: null,
@@ -382,6 +401,326 @@
       toggleInspectorLabel.textContent = collapsed
         ? "Show editor"
         : "Hide editor";
+    }
+  }
+
+
+  function updateSidebarVisibility() {
+    const collapsed = Boolean(state.sidebarCollapsed);
+
+    adminShell?.classList.toggle(
+      "is-sidebar-collapsed",
+      collapsed
+    );
+
+    sidebar?.setAttribute(
+      "aria-hidden",
+      collapsed ? "true" : "false"
+    );
+
+    toggleSidebarButton?.setAttribute(
+      "aria-expanded",
+      collapsed ? "false" : "true"
+    );
+
+    if (toggleSidebarButton) {
+      toggleSidebarButton.title = collapsed
+        ? "Show pages panel"
+        : "Hide pages panel";
+      toggleSidebarButton.classList.toggle("is-active", collapsed);
+    }
+
+    if (toggleSidebarLabel) {
+      toggleSidebarLabel.textContent = collapsed
+        ? "Show pages"
+        : "Hide pages";
+    }
+  }
+
+  function updateFocusMode() {
+    const active = Boolean(state.focusMode);
+
+    adminShell?.classList.toggle("is-focus-mode", active);
+
+    toggleFocusModeButton?.setAttribute(
+      "aria-pressed",
+      active ? "true" : "false"
+    );
+
+    if (toggleFocusModeButton) {
+      toggleFocusModeButton.title = active
+        ? "Exit focus preview"
+        : "Focus preview";
+      toggleFocusModeButton.classList.toggle("is-active", active);
+    }
+
+    if (toggleFocusModeLabel) {
+      toggleFocusModeLabel.textContent = active
+        ? "Exit focus"
+        : "Focus";
+    }
+  }
+
+  function updateSelectModeUI() {
+    const active = Boolean(state.selectMode);
+
+    toggleSelectModeButton?.setAttribute(
+      "aria-pressed",
+      active ? "true" : "false"
+    );
+
+    toggleSelectModeButton?.classList.toggle(
+      "is-active",
+      active
+    );
+
+    if (toggleSelectModeButton) {
+      toggleSelectModeButton.title = active
+        ? "Selection mode on — clicks select elements"
+        : "Selection mode off — preview is interactive";
+    }
+
+    if (toggleSelectModeLabel) {
+      toggleSelectModeLabel.textContent = active
+        ? "Select"
+        : "Interact";
+    }
+
+    if (selectionModeState) {
+      selectionModeState.textContent = active
+        ? "Select mode on"
+        : "Interact mode";
+    }
+  }
+
+  function injectVisualEditorStyles(doc) {
+    if (!doc || doc.getElementById("sdlive-admin-visual-style")) return;
+
+    const style = doc.createElement("style");
+    style.id = "sdlive-admin-visual-style";
+    style.textContent = `
+      .sdlive-admin-selected {
+        outline: 2px solid #a089e5 !important;
+        outline-offset: 3px !important;
+        border-radius: 3px;
+      }
+      .sdlive-admin-selected::selection {
+        background: rgba(160,137,229,.35);
+      }
+      html[data-sdlive-admin-select="true"] a,
+      html[data-sdlive-admin-select="true"] button,
+      html[data-sdlive-admin-select="true"] [role="button"] {
+        cursor: default !important;
+      }
+    `;
+
+    (doc.head || doc.documentElement).appendChild(style);
+  }
+
+  function selectionLabel(element) {
+    if (!element) return "Nothing selected";
+
+    const explicit =
+      element.getAttribute?.("aria-label") ||
+      element.getAttribute?.("alt") ||
+      element.dataset?.rentalItem ||
+      element.dataset?.supportedReveal ||
+      element.id;
+
+    if (explicit) return explicit;
+
+    const text = String(element.textContent || "")
+      .replace(/\s+/g, " ")
+      .trim();
+
+    if (text) {
+      return text.length > 48
+        ? `${text.slice(0, 45)}…`
+        : text;
+    }
+
+    return element.tagName
+      ? element.tagName.toLowerCase()
+      : "Element";
+  }
+
+  function selectionCssPath(element) {
+    if (!element?.tagName) return "";
+
+    if (element.id) {
+      return `#${element.id}`;
+    }
+
+    for (const key of [
+      "rentalItem",
+      "supportedReveal",
+      "section"
+    ]) {
+      if (element.dataset?.[key]) {
+        const attr =
+          key === "rentalItem"
+            ? "data-rental-item"
+            : key === "supportedReveal"
+              ? "data-supported-reveal"
+              : "data-section";
+
+        return `[${attr}="${element.dataset[key]}"]`;
+      }
+    }
+
+    const classes = [...element.classList]
+      .filter((name) => !name.startsWith("sdlive-admin-"))
+      .slice(0, 2);
+
+    return `${element.tagName.toLowerCase()}${
+      classes.length ? `.${classes.join(".")}` : ""
+    }`;
+  }
+
+  function inferredSectionForElement(element) {
+    if (!element) return "";
+
+    const section = element.closest?.("section[id]");
+    if (section?.id) return section.id;
+
+    if (element.closest?.("header")) return "header";
+    if (element.closest?.("footer")) return "contact";
+
+    return "";
+  }
+
+  function clearPreviewSelection() {
+    try {
+      iframe.contentDocument
+        ?.querySelectorAll(".sdlive-admin-selected")
+        .forEach((element) => {
+          element.classList.remove("sdlive-admin-selected");
+        });
+    } catch {
+      // Preview may be reloading.
+    }
+
+    state.selectedElement = null;
+
+    if (selectionMeta) {
+      selectionMeta.textContent = "Nothing selected";
+    }
+
+    if (selectionName) {
+      selectionName.textContent = "Nothing selected";
+    }
+
+    if (selectionSelector) {
+      selectionSelector.textContent =
+        "Click an element in the preview.";
+    }
+
+    if (selectionHint) {
+      selectionHint.textContent =
+        "Selection is the base for upcoming drag, resize, visibility and layout controls.";
+    }
+  }
+
+  function selectPreviewElement(element) {
+    if (!element) return;
+
+    clearPreviewSelection();
+
+    element.classList.add("sdlive-admin-selected");
+    state.selectedElement = element;
+
+    const label = selectionLabel(element);
+    const selector = selectionCssPath(element);
+    const section = inferredSectionForElement(element);
+
+    if (selectionMeta) {
+      selectionMeta.textContent = label;
+    }
+
+    if (selectionName) {
+      selectionName.textContent = label;
+    }
+
+    if (selectionSelector) {
+      selectionSelector.textContent = selector || element.tagName.toLowerCase();
+    }
+
+    if (selectionHint) {
+      selectionHint.textContent = section
+        ? `Section: ${section}. Layout controls for this selection will be added on top of this selection layer.`
+        : "This element is selected. Layout controls will be added on top of this selection layer.";
+    }
+
+    // Hero is already editable, so clicking inside it keeps its real editor visible.
+    if (section === "hero" && state.section !== "hero") {
+      state.section = "hero";
+      updatePreview({ reload: false });
+      renderHeroEditor();
+      updateEditorState();
+    }
+  }
+
+  function pickSelectableElement(target) {
+    if (!target?.closest) return null;
+
+    return target.closest(
+      [
+        "a",
+        "button",
+        "h1",
+        "h2",
+        "h3",
+        "p",
+        "img",
+        ".stat-card",
+        ".client-strip-card",
+        ".service-card",
+        ".work-card",
+        ".testimonial-card",
+        "[data-rental-item]",
+        "[data-supported-reveal]",
+        "nav",
+        "header",
+        "section"
+      ].join(",")
+    );
+  }
+
+  function installVisualSelection() {
+    try {
+      const doc = iframe.contentDocument;
+      if (!doc?.documentElement) return;
+
+      injectVisualEditorStyles(doc);
+      doc.documentElement.dataset.sdliveAdminSelect =
+        state.selectMode ? "true" : "false";
+
+      if (doc.documentElement.dataset.sdliveAdminSelectionBound === "true") {
+        return;
+      }
+
+      doc.documentElement.dataset.sdliveAdminSelectionBound = "true";
+
+      doc.addEventListener(
+        "click",
+        (event) => {
+          if (!state.selectMode) return;
+
+          const target = pickSelectableElement(event.target);
+          if (!target) return;
+
+          // Selection mode behaves like a visual editor: clicking selects
+          // instead of navigating or triggering a control.
+          event.preventDefault();
+          event.stopPropagation();
+          event.stopImmediatePropagation();
+
+          selectPreviewElement(target);
+        },
+        true
+      );
+    } catch {
+      // Preview still works if selection cannot be installed.
     }
   }
 
@@ -922,8 +1261,8 @@
 
     editorBody.innerHTML = `
       <div class="editor-empty">
-        <strong>This section is preview-only in V3.</strong><br>
-        Hero is the first section connected to D1. Once Save/Publish is verified here, the same editor pattern will be extended to the rest of the site.
+        <strong>This section is preview-only in V5.</strong><br>
+        Hero is connected to D1. Visual selection is now active across the site; content, layout, drag/resize and visibility controls will be connected section by section.
       </div>
     `;
 
@@ -1317,6 +1656,56 @@
     });
   });
 
+
+  toggleSidebarButton?.addEventListener("click", () => {
+    state.sidebarCollapsed = !state.sidebarCollapsed;
+
+    localStorage.setItem(
+      "sdlive-admin-sidebar-collapsed",
+      String(state.sidebarCollapsed)
+    );
+
+    updateSidebarVisibility();
+  });
+
+  toggleFocusModeButton?.addEventListener("click", () => {
+    state.focusMode = !state.focusMode;
+
+    localStorage.setItem(
+      "sdlive-admin-focus-mode",
+      String(state.focusMode)
+    );
+
+    updateFocusMode();
+  });
+
+  toggleSelectModeButton?.addEventListener("click", () => {
+    state.selectMode = !state.selectMode;
+
+    localStorage.setItem(
+      "sdlive-admin-select-mode",
+      String(state.selectMode)
+    );
+
+    updateSelectModeUI();
+
+    try {
+      const doc = iframe.contentDocument;
+      if (doc?.documentElement) {
+        doc.documentElement.dataset.sdliveAdminSelect =
+          state.selectMode ? "true" : "false";
+      }
+    } catch {
+      // Preview may be reloading.
+    }
+
+    if (!state.selectMode) {
+      clearPreviewSelection();
+    } else {
+      installVisualSelection();
+    }
+  });
+
   toggleInspectorButton?.addEventListener("click", () => {
     state.inspectorCollapsed = !state.inspectorCollapsed;
 
@@ -1353,9 +1742,11 @@
 
   iframe.addEventListener("load", () => {
     applyMarketToPreview();
+    clearPreviewSelection();
 
     window.setTimeout(() => {
       applyMarketToPreview();
+      installVisualSelection();
       applyHeroDraftToPreview();
       try {
         styleBrandMentionsInPreview(iframe.contentDocument?.body);
@@ -1381,7 +1772,10 @@
     event.returnValue = "";
   });
 
+  updateSidebarVisibility();
   updateInspectorVisibility();
+  updateFocusMode();
+  updateSelectModeUI();
   updatePreview();
   loadCms();
 })();

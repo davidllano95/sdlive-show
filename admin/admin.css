@@ -749,3 +749,142 @@ input, textarea { color-scheme: dark; }
   border-color:rgba(var(--accent-rgb),.28);
   background:rgba(var(--accent-rgb),.08);
 }
+
+
+/* =============================================
+   Admin v5 — visual workspace
+============================================= */
+
+.admin-shell {
+  transition:grid-template-columns .24s cubic-bezier(.22,1,.36,1);
+}
+
+.sidebar {
+  transition:
+    opacity .18s ease,
+    transform .24s cubic-bezier(.22,1,.36,1),
+    padding .24s cubic-bezier(.22,1,.36,1);
+}
+
+.admin-shell.is-sidebar-collapsed {
+  grid-template-columns:0 minmax(0,1fr);
+}
+
+.admin-shell.is-sidebar-collapsed .sidebar {
+  opacity:0;
+  transform:translateX(-100%);
+  pointer-events:none;
+  padding-left:0;
+  padding-right:0;
+  border-right:0;
+  overflow:hidden;
+}
+
+.admin-shell.is-focus-mode {
+  grid-template-columns:0 minmax(0,1fr);
+}
+
+.admin-shell.is-focus-mode .sidebar {
+  opacity:0;
+  transform:translateX(-100%);
+  pointer-events:none;
+  padding-left:0;
+  padding-right:0;
+  border-right:0;
+  overflow:hidden;
+}
+
+.admin-shell.is-focus-mode .workspace {
+  grid-template-rows:var(--topbar) minmax(0,1fr) 0;
+}
+
+.admin-shell.is-focus-mode .workspace-footer {
+  display:none;
+}
+
+.admin-shell.is-focus-mode .preview-area .workbench {
+  grid-template-columns:minmax(0,1fr);
+}
+
+.admin-shell.is-focus-mode .preview-area .inspector {
+  display:none;
+}
+
+#toggleSidebar.is-active,
+#toggleFocusMode.is-active,
+#toggleSelectMode.is-active {
+  color:var(--accent);
+  border-color:rgba(var(--accent-rgb),.32);
+  background:rgba(var(--accent-rgb),.09);
+}
+
+.selection-meta {
+  max-width:180px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  color:var(--accent);
+}
+
+.selection-card {
+  margin:11px 11px 0;
+  padding:10px;
+  border:1px solid rgba(var(--accent-rgb),.18);
+  border-radius:10px;
+  background:rgba(var(--accent-rgb),.055);
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+
+.selection-card__head {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+}
+
+.selection-card__mode {
+  color:var(--accent);
+  font-size:8px;
+  font-weight:750;
+  letter-spacing:.04em;
+}
+
+.selection-card strong {
+  color:var(--text);
+  font-size:11px;
+  font-weight:700;
+}
+
+.selection-card code {
+  display:block;
+  max-width:100%;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  color:var(--soft);
+  font-family:"SFMono-Regular",Consolas,"Liberation Mono",monospace;
+  font-size:8px;
+}
+
+.selection-card__hint {
+  color:var(--muted);
+  font-size:8px;
+  line-height:1.45;
+}
+
+.preview-area.is-inspector-collapsed .selection-card {
+  display:none;
+}
+
+@media (max-width: 1420px) {
+  .toolbar {
+    gap:6px;
+  }
+
+  .segment {
+    padding-left:7px;
+    padding-right:7px;
+  }
+}
