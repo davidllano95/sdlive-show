@@ -12,6 +12,11 @@
     ]
   },
 
+  "vars": {
+    "TEAM_DOMAIN": "https://sdlive-show.cloudflareaccess.com",
+    "POLICY_AUD": "510624979f4eb3e43797993696d0a49ecb7812dab18a4c3f48e9569ae8254d02"
+  },
+
   "d1_databases": [
     {
       "binding": "CMS_DB",
