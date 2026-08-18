@@ -8,6 +8,10 @@
   const viewTitle = document.getElementById("viewTitle");
   const openLive = document.getElementById("openLive");
   const refresh = document.getElementById("refreshPreview");
+  const previewArea = document.querySelector(".preview-area");
+  const inspector = document.getElementById("contentInspector");
+  const toggleInspectorButton = document.getElementById("toggleInspector");
+  const toggleInspectorLabel = document.getElementById("toggleInspectorLabel");
 
   const cmsStatusTitle = document.getElementById("cmsStatusTitle");
   const cmsStatusText = document.getElementById("cmsStatusText");
@@ -46,6 +50,7 @@
     market: localStorage.getItem("sdlive-admin-market") || "colombia",
     lang: localStorage.getItem("sdlive-admin-lang") || "root",
     device: localStorage.getItem("sdlive-admin-device") || "desktop",
+    inspectorCollapsed: localStorage.getItem("sdlive-admin-inspector-collapsed") === "true",
     section: "hero",
     userEmail: "",
     heroEntry: null,
@@ -274,6 +279,112 @@
     element.textContent = localized[lang] || "";
   }
 
+  function createBrandWordmarkNode(doc) {
+    const wordmark = doc.createElement("span");
+    wordmark.className = "brand-wordmark-text";
+    wordmark.setAttribute("aria-label", "SD.Live");
+    wordmark.append(doc.createTextNode("SD"));
+
+    const dot = doc.createElement("span");
+    dot.className = "brand-wordmark-text__dot";
+    dot.setAttribute("aria-hidden", "true");
+    dot.textContent = ".";
+
+    wordmark.append(dot, doc.createTextNode("Live"));
+    return wordmark;
+  }
+
+  function styleBrandMentionsInPreview(root) {
+    if (!root) return;
+
+    const doc = root.ownerDocument || iframe.contentDocument;
+    const view = doc?.defaultView;
+    const NodeFilterRef = view?.NodeFilter;
+
+    if (!doc || !NodeFilterRef) return;
+
+    // Prefer the site's own canonical formatter when available.
+    try {
+      if (typeof iframe.contentWindow?.styleBrandMentions === "function") {
+        iframe.contentWindow.styleBrandMentions(root);
+        return;
+      }
+    } catch {
+      // Same-origin fallback below.
+    }
+
+    const matches = [];
+    const walker = doc.createTreeWalker(
+      root,
+      NodeFilterRef.SHOW_TEXT,
+      {
+        acceptNode(node) {
+          if (!node.nodeValue?.includes("SD.Live")) {
+            return NodeFilterRef.FILTER_REJECT;
+          }
+
+          const parent = node.parentElement;
+          if (
+            !parent ||
+            parent.closest(
+              ".brand-wordmark-text, script, style, textarea, noscript, svg"
+            )
+          ) {
+            return NodeFilterRef.FILTER_REJECT;
+          }
+
+          return NodeFilterRef.FILTER_ACCEPT;
+        }
+      }
+    );
+
+    while (walker.nextNode()) matches.push(walker.currentNode);
+
+    matches.forEach((textNode) => {
+      const parts = textNode.nodeValue.split("SD.Live");
+      const fragment = doc.createDocumentFragment();
+
+      parts.forEach((part, index) => {
+        if (part) fragment.append(doc.createTextNode(part));
+        if (index < parts.length - 1) {
+          fragment.append(createBrandWordmarkNode(doc));
+        }
+      });
+
+      textNode.replaceWith(fragment);
+    });
+  }
+
+  function updateInspectorVisibility() {
+    const collapsed = Boolean(state.inspectorCollapsed);
+
+    previewArea?.classList.toggle(
+      "is-inspector-collapsed",
+      collapsed
+    );
+
+    if (inspector) {
+      inspector.setAttribute("aria-hidden", collapsed ? "true" : "false");
+    }
+
+    if (toggleInspectorButton) {
+      toggleInspectorButton.setAttribute(
+        "aria-expanded",
+        collapsed ? "false" : "true"
+      );
+      toggleInspectorButton.title = collapsed
+        ? "Show editor"
+        : "Hide editor";
+      toggleInspectorButton.classList.toggle("is-active", collapsed);
+    }
+
+    if (toggleInspectorLabel) {
+      toggleInspectorLabel.textContent = collapsed
+        ? "Show editor"
+        : "Hide editor";
+    }
+  }
+
   function applyHeroDraftToPreview() {
     if (!state.workingDraft) return false;
 
@@ -357,6 +468,10 @@
           lang
         );
       });
+
+      // CMS stores the literal text "SD.Live". Rendering always restores
+      // the brand wordmark treatment, including the floating midpoint dot.
+      styleBrandMentionsInPreview(hero);
 
       return true;
     } catch {
@@ -1202,6 +1317,17 @@
     });
   });
 
+  toggleInspectorButton?.addEventListener("click", () => {
+    state.inspectorCollapsed = !state.inspectorCollapsed;
+
+    localStorage.setItem(
+      "sdlive-admin-inspector-collapsed",
+      String(state.inspectorCollapsed)
+    );
+
+    updateInspectorVisibility();
+  });
+
   refresh.addEventListener("click", () => {
     try {
       iframe.contentWindow.location.reload();
@@ -1231,6 +1357,11 @@
     window.setTimeout(() => {
       applyMarketToPreview();
       applyHeroDraftToPreview();
+      try {
+        styleBrandMentionsInPreview(iframe.contentDocument?.body);
+      } catch {
+        // Preview remains usable if the iframe is not ready yet.
+      }
       installDesktopBrandHoverBridge();
 
       if (state.section !== "hero") {
@@ -1250,6 +1381,7 @@
     event.returnValue = "";
   });
 
+  updateInspectorVisibility();
   updatePreview();
   loadCms();
 })();
