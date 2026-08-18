@@ -933,18 +933,16 @@ input, textarea { color-scheme: dark; }
   display:grid;
   place-items:center;
   margin-bottom:18px;
-  border:1px solid rgba(var(--accent-rgb),.2);
-  border-radius:11px;
-  color:var(--text);
-  background:rgba(var(--accent-rgb),.06);
+  border:0;
+  background:transparent;
   text-decoration:none;
-  font-size:13px;
-  font-weight:800;
-  letter-spacing:-.03em;
 }
 
-.global-rail__brand span {
-  color:var(--accent);
+.global-rail__brand img {
+  width:34px;
+  height:34px;
+  object-fit:contain;
+  display:block;
 }
 
 .global-rail__nav {

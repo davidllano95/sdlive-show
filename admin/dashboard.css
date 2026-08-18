@@ -22,7 +22,7 @@ a,button{font:inherit}
 .backoffice{min-height:100vh;display:grid;grid-template-columns:var(--sidebar) minmax(0,1fr);transition:grid-template-columns .22s ease}
 .app-sidebar{position:sticky;top:0;height:100vh;display:flex;flex-direction:column;padding:18px 14px 14px;border-right:1px solid var(--border);background:var(--bg2);overflow:hidden}
 .brand{display:flex;align-items:center;gap:10px;min-height:45px;padding:0 7px 15px;border-bottom:1px solid var(--border)}
-.brand img{width:112px;max-height:33px;object-fit:contain;object-position:left center}
+.brand-full{width:112px;max-height:33px;object-fit:contain;object-position:left center}.brand-symbol{display:none;width:32px;height:32px;object-fit:contain}
 .brand span{margin-left:auto;color:var(--accent);font-size:9px;font-weight:800;letter-spacing:.09em;text-transform:uppercase}
 .app-nav{display:flex;flex-direction:column;gap:3px;padding:15px 0;overflow:auto}
 .nav-label{margin:14px 9px 6px;color:var(--muted);font-size:9px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}
@@ -85,15 +85,32 @@ a,button{font:inherit}
 .panel-note{margin:13px 0 0;color:var(--muted);font-size:9px;line-height:1.6}
 .backoffice.is-collapsed{grid-template-columns:68px minmax(0,1fr)}
 .backoffice.is-collapsed .app-sidebar{padding-left:9px;padding-right:9px}
-.backoffice.is-collapsed .brand img,
+.backoffice.is-collapsed .brand-full,
 .backoffice.is-collapsed .brand span,
 .backoffice.is-collapsed .app-nav__item span,
 .backoffice.is-collapsed .app-nav__item small,
 .backoffice.is-collapsed .nav-label,
 .backoffice.is-collapsed .secure{display:none}
 .backoffice.is-collapsed .brand{justify-content:center;padding-left:0;padding-right:0}
-.backoffice.is-collapsed .brand::before{content:"SD";color:var(--text);font-size:12px;font-weight:800}
-.backoffice.is-collapsed .brand::after{content:".";color:var(--accent);font-size:12px;font-weight:800;margin-left:-10px;transform:translate(12px,-2px)}
+.backoffice.is-collapsed .brand-symbol{display:block}
 .backoffice.is-collapsed .app-nav__item{grid-template-columns:1fr;place-items:center;padding:0}
 .backoffice.is-collapsed .sidebar-bottom{justify-content:center}
 @media(max-width:1200px){.workspace-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* Admin v6.1 — branded inline SD.Live wordmark */
+.inline-wordmark {
+  display:inline-flex;
+  align-items:baseline;
+  white-space:nowrap;
+  font:inherit;
+  color:inherit;
+}
+.inline-wordmark i {
+  display:inline-block;
+  margin:0 .015em;
+  color:var(--accent);
+  font-style:normal;
+  font-size:.82em;
+  line-height:1;
+  transform:translateY(-.18em);
+}
