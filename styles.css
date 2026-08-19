@@ -4195,7 +4195,9 @@ body.private-portfolio.owner-access-locked {
 .whatsapp-float:hover {
   transform: scale(1.08);
 }
-
+.mobile-project-cta {
+  display: none !important;
+}
 /* =============================================
    RESPONSIVE
 ============================================= */
@@ -4402,7 +4404,12 @@ body.private-portfolio.owner-access-locked {
   .header-actions .header-project-cta--desktop {
     display: none;
   }
-
+.site-header.nav-open .main-nav .mobile-project-cta {
+  display: inline-flex !important;
+  width: 100%;
+  margin-top: 6px;
+  justify-content: center;
+}
   .nav-toggle {
     display: flex;
   }
