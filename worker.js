@@ -208,6 +208,31 @@ function isValidEmail(value) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 }
 
+const RENTAL_EVENT_TYPES = new Set([
+  "corporate",
+  "theater",
+  "broadcast",
+  "other"
+]);
+
+function isValidIsoDate(value) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return false;
+  }
+
+  const [year, month, day] = value
+    .split("-")
+    .map(Number);
+
+  const date = new Date(
+    Date.UTC(year, month - 1, day)
+  );
+
+  return date.getUTCFullYear() === year &&
+    date.getUTCMonth() === month - 1 &&
+    date.getUTCDate() === day;
+}
+
 // Commercial source of truth for rental requests. The browser mirrors these
 // rates for instant estimates, but the Worker always recalculates before D1
 // persistence and email notification.
@@ -837,7 +862,13 @@ async function createRentalLead(request, env) {
   const notes = cleanString(body?.notes, 5000);
 
   const rentalDays = Number.parseInt(body?.rentalDays, 10);
-  const attendees = Number.parseInt(body?.attendees, 10);
+  const attendeesInput = body?.attendees;
+  const attendees =
+    attendeesInput === undefined ||
+    attendeesInput === null ||
+    attendeesInput === ""
+      ? null
+      : Number(attendeesInput);
 
   const items = normalizeRentalItems(body?.items);
   const services = normalizeRentalServices(body?.services);
@@ -872,6 +903,43 @@ async function createRentalLead(request, env) {
       {
         ok: false,
         error: "Valid email is required"
+      },
+      400
+    );
+  }
+
+  if (!RENTAL_EVENT_TYPES.has(eventType)) {
+    return json(
+      {
+        ok: false,
+        error: "Invalid event type"
+      },
+      400
+    );
+  }
+
+  if (eventDate && !isValidIsoDate(eventDate)) {
+    return json(
+      {
+        ok: false,
+        error: "Event date must use YYYY-MM-DD"
+      },
+      400
+    );
+  }
+
+  if (
+    attendees !== null &&
+    (
+      !Number.isInteger(attendees) ||
+      attendees < 1 ||
+      attendees > 100000
+    )
+  ) {
+    return json(
+      {
+        ok: false,
+        error: "Attendees must be between 1 and 100000"
       },
       400
     );
@@ -978,11 +1046,11 @@ async function createRentalLead(request, env) {
       `)
       .bind(
         leadId,
-        eventType || null,
+        eventType,
         venue || null,
         eventDate || null,
         rentalDays,
-        Number.isInteger(attendees) ? attendees : null,
+        attendees,
         itemsJson,
         servicesJson,
         notes || null,
@@ -1007,10 +1075,7 @@ async function createRentalLead(request, env) {
           venue,
           eventDate,
           rentalDays,
-          attendees:
-            Number.isInteger(attendees)
-              ? attendees
-              : null,
+          attendees,
           items,
           services,
           notes,
