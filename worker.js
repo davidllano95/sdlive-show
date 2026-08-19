@@ -207,6 +207,101 @@ function isValidEmail(value) {
 
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 }
+async function sendResendEmail(
+  env,
+  {
+    from,
+    to,
+    subject,
+    text,
+    replyTo,
+    idempotencyKey
+  }
+) {
+  if (!env.RESEND_API_KEY) {
+    throw new Error("RESEND_API_KEY is missing");
+  }
+
+  const response = await fetch(
+    "https://api.resend.com/emails",
+    {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${env.RESEND_API_KEY}`,
+        "Content-Type": "application/json",
+        ...(idempotencyKey
+          ? { "Idempotency-Key": idempotencyKey }
+          : {})
+      },
+      body: JSON.stringify({
+        from,
+        to: Array.isArray(to) ? to : [to],
+        subject,
+        text,
+        ...(replyTo
+          ? { reply_to: replyTo }
+          : {})
+      })
+    }
+  );
+
+  const data = await response
+    .json()
+    .catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(
+      `Resend ${response.status}: ${JSON.stringify(data)}`
+    );
+  }
+
+  return data;
+}
+
+async function notifyContactLead(
+  env,
+  {
+    leadId,
+    name,
+    email,
+    message,
+    language,
+    market,
+    sourceUrl,
+    referrer,
+    utmSource,
+    utmMedium,
+    utmCampaign
+  }
+) {
+  const lines = [
+    "New SD.Live website inquiry",
+    "",
+    `Lead ID: ${leadId}`,
+    `Name: ${name}`,
+    `Email: ${email}`,
+    `Language: ${language}`,
+    `Market: ${market}`,
+    "",
+    "Message:",
+    message,
+    "",
+    `Source: ${sourceUrl || "—"}`,
+    `Referrer: ${referrer || "—"}`,
+    `UTM source: ${utmSource || "—"}`,
+    `UTM medium: ${utmMedium || "—"}`,
+    `UTM campaign: ${utmCampaign || "—"}`
+  ];
+
+  return sendResendEmail(env, {
+    from: "SD.Live Website <hello@sdlive.show>",
+    to: "hello@sdlive.show",
+    replyTo: email,
+    subject: `New website inquiry — ${name}`,
+    text: lines.join("\n"),
+    idempotencyKey: `contact-lead-${leadId}`
+  });
+}
 
 async function createContactLead(request, env) {
   const body = await readJsonBody(request);
@@ -296,11 +391,42 @@ async function createContactLead(request, env) {
     )
     .run();
 
+    const leadId =
+    result.meta?.last_row_id || null;
+
+  let notificationSent = false;
+
+  if (leadId) {
+    try {
+      await notifyContactLead(env, {
+        leadId,
+        name,
+        email,
+        message,
+        language,
+        market,
+        sourceUrl,
+        referrer,
+        utmSource,
+        utmMedium,
+        utmCampaign
+      });
+
+      notificationSent = true;
+    } catch (error) {
+      console.error(
+        "Contact email notification failed",
+        error
+      );
+    }
+  }
+
   return json(
     {
       ok: true,
       message: "Contact request received",
-      leadId: result.meta?.last_row_id || null
+      leadId,
+      notificationSent
     },
     201
   );
