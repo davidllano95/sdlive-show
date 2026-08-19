@@ -1,6 +1,7 @@
 (() => {
   const STORAGE_KEY = "sdlive-analytics-consent-v1";
   const POLICY_URL = "/privacy";
+  const CONSISTENCY_STYLESHEET = "/site-consistency.css?v=20260819-1";
   const VALID_CHOICES = new Set(["granted", "denied"]);
 
   if (window.SDLIVE_ANALYTICS_CONSENT) return;
@@ -33,6 +34,72 @@
       .startsWith("es")
       ? "es"
       : "en";
+  }
+
+  function ensureConsistencyStylesheet() {
+    if (document.querySelector('link[data-sdlive-consistency]')) return;
+
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = CONSISTENCY_STYLESHEET;
+    link.dataset.sdliveConsistency = "";
+    document.head.appendChild(link);
+  }
+
+  function createBrandWordmarkText() {
+    const wordmark = document.createElement("span");
+    wordmark.className = "brand-wordmark-text";
+    wordmark.setAttribute("aria-label", "SD.Live");
+    wordmark.append(document.createTextNode("SD"));
+
+    const dot = document.createElement("span");
+    dot.className = "brand-wordmark-text__dot";
+    dot.setAttribute("aria-hidden", "true");
+    dot.textContent = ".";
+
+    wordmark.append(dot, document.createTextNode("Live"));
+    return wordmark;
+  }
+
+  function styleBrandMentions(root = document.body) {
+    if (!root) return;
+
+    const matches = [];
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node) {
+        if (!node.nodeValue?.includes("SD.Live")) {
+          return NodeFilter.FILTER_REJECT;
+        }
+
+        const parent = node.parentElement;
+        if (
+          !parent ||
+          parent.closest(
+            ".brand-wordmark-text, script, style, textarea, noscript, svg"
+          )
+        ) {
+          return NodeFilter.FILTER_REJECT;
+        }
+
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+
+    while (walker.nextNode()) matches.push(walker.currentNode);
+
+    matches.forEach((textNode) => {
+      const parts = textNode.nodeValue.split("SD.Live");
+      const fragment = document.createDocumentFragment();
+
+      parts.forEach((part, index) => {
+        if (part) fragment.append(document.createTextNode(part));
+        if (index < parts.length - 1) {
+          fragment.append(createBrandWordmarkText());
+        }
+      });
+
+      textNode.replaceWith(fragment);
+    });
   }
 
   function readChoice() {
@@ -143,7 +210,7 @@
       }
       .analytics-consent-title {
         margin: 0 0 4px;
-        font: 700 13px/1.3 var(--font-display, "Sora", sans-serif);
+        font: 700 13px/1.3 var(--font-display, "Manrope", sans-serif);
       }
       .analytics-consent-text {
         margin: 0;
@@ -189,9 +256,7 @@
         color: inherit;
         cursor: pointer;
         font: inherit;
-        text-decoration: underline;
-        text-decoration-color: currentColor;
-        text-underline-offset: 3px;
+        text-decoration: none;
       }
       @media (max-width: 680px) {
         .analytics-consent-grid { grid-template-columns: 1fr; }
@@ -302,6 +367,7 @@
     ensureStyles();
     buildBanner();
     insertPreferencesLink();
+    styleBrandMentions();
 
     if (currentChoice) {
       updateGoogleConsent(currentChoice);
@@ -311,8 +377,15 @@
     }
 
     const observer = new MutationObserver((mutations) => {
-      if (mutations.some((mutation) => mutation.type === "attributes" && mutation.attributeName === "lang")) {
+      if (
+        mutations.some(
+          (mutation) =>
+            mutation.type === "attributes" &&
+            mutation.attributeName === "lang"
+        )
+      ) {
         renderCopy();
+        styleBrandMentions();
       }
     });
 
@@ -322,6 +395,7 @@
     });
   }
 
+  ensureConsistencyStylesheet();
   setGoogleConsentDefault();
 
   window.SDLIVE_ANALYTICS_CONSENT = {
