@@ -1575,7 +1575,8 @@ function initRentalQuoteBuilder() {
     const { state, configuration, lang } = window.__rentalQuoteState;
 
    const params = new URLSearchParams(window.location.search);
-
+const turnstileWidgetId =
+  window.__turnstileWidgets?.rental;
 const turnstileToken =
   window.turnstile &&
   turnstileWidgetId !== undefined
