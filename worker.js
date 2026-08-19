@@ -197,6 +197,114 @@ function heroEntryFromRow(row) {
     published: JSON.parse(publishedText)
   };
 }
+function cleanString(value, maxLength = 1000) {
+  if (typeof value !== "string") return "";
+  return value.trim().slice(0, maxLength);
+}
+
+function isValidEmail(value) {
+  if (typeof value !== "string") return false;
+
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
+async function createContactLead(request, env) {
+  const body = await readJsonBody(request);
+
+  const name = cleanString(body?.name, 160);
+  const email = cleanString(body?.email, 320).toLowerCase();
+  const message = cleanString(body?.message, 5000);
+
+  const language =
+    body?.language === "es" ? "es" : "en";
+
+  const market =
+    body?.market === "colombia"
+      ? "colombia"
+      : "international";
+
+  const sourceUrl = cleanString(body?.sourceUrl, 1000);
+  const referrer = cleanString(body?.referrer, 1000);
+
+  const utmSource = cleanString(body?.utmSource, 200);
+  const utmMedium = cleanString(body?.utmMedium, 200);
+  const utmCampaign = cleanString(body?.utmCampaign, 200);
+
+  if (!name) {
+    return json(
+      {
+        ok: false,
+        error: "Name is required"
+      },
+      400
+    );
+  }
+
+  if (!isValidEmail(email)) {
+    return json(
+      {
+        ok: false,
+        error: "Valid email is required"
+      },
+      400
+    );
+  }
+
+  if (!message) {
+    return json(
+      {
+        ok: false,
+        error: "Message is required"
+      },
+      400
+    );
+  }
+
+  const result = await env.CMS_DB
+    .prepare(`
+      INSERT INTO leads (
+        type,
+        status,
+        name,
+        email,
+        message,
+        language,
+        market,
+        source_url,
+        referrer,
+        utm_source,
+        utm_medium,
+        utm_campaign
+      )
+      VALUES (
+        'contact',
+        'new',
+        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+      )
+    `)
+    .bind(
+      name,
+      email,
+      message,
+      language,
+      market,
+      sourceUrl || null,
+      referrer || null,
+      utmSource || null,
+      utmMedium || null,
+      utmCampaign || null
+    )
+    .run();
+
+  return json(
+    {
+      ok: true,
+      message: "Contact request received",
+      leadId: result.meta?.last_row_id || null
+    },
+    201
+  );
+}
 
 export default {
   async fetch(request, env) {
@@ -267,6 +375,24 @@ export default {
           {
             ok: false,
             error: "Could not read published Hero"
+          },
+          500
+        );
+      }
+    }
+    if (
+      path === "/api/contact" &&
+      request.method === "POST"
+    ) {
+      try {
+        return await createContactLead(request, env);
+      } catch (error) {
+        console.error("Contact submission failed", error);
+
+        return json(
+          {
+            ok: false,
+            error: "Could not submit contact request"
           },
           500
         );
