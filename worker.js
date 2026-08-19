@@ -644,6 +644,30 @@ async function notifyRentalLead(
 async function createRentalLead(request, env) {
   const body = await readJsonBody(request);
 
+  const turnstileResult =
+    await verifyTurnstileToken(
+      request,
+      env,
+      body?.turnstileToken,
+      "rental"
+    );
+
+  if (!turnstileResult.ok) {
+    console.warn(
+      "Rental Turnstile validation failed",
+      turnstileResult.reason,
+      turnstileResult.errors
+    );
+
+    return json(
+      {
+        ok: false,
+        error: "Security verification failed"
+      },
+      403
+    );
+  }
+
   const name = cleanString(body?.name, 160);
   const email = cleanString(body?.email, 320).toLowerCase();
 
