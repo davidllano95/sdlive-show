@@ -305,6 +305,201 @@ async function createContactLead(request, env) {
     201
   );
 }
+async function createRentalLead(request, env) {
+  const body = await readJsonBody(request);
+
+  const name = cleanString(body?.name, 160);
+  const email = cleanString(body?.email, 320).toLowerCase();
+
+  const eventType = cleanString(body?.eventType, 100);
+  const venue = cleanString(body?.venue, 500);
+  const eventDate = cleanString(body?.eventDate, 40);
+  const notes = cleanString(body?.notes, 5000);
+
+  const rentalDays = Number.parseInt(body?.rentalDays, 10);
+  const attendees = Number.parseInt(body?.attendees, 10);
+
+  const items =
+    isPlainObject(body?.items)
+      ? body.items
+      : {};
+
+  const services =
+    isPlainObject(body?.services)
+      ? body.services
+      : {};
+
+  const estimatedTotalCop = Number.isFinite(
+    Number(body?.estimatedTotalCop)
+  )
+    ? Math.max(0, Math.round(Number(body.estimatedTotalCop)))
+    : null;
+
+  const customQuote = body?.customQuote === true ? 1 : 0;
+
+  const language =
+    body?.language === "es" ? "es" : "en";
+
+  const market =
+    body?.market === "colombia"
+      ? "colombia"
+      : "international";
+
+  const sourceUrl = cleanString(body?.sourceUrl, 1000);
+  const referrer = cleanString(body?.referrer, 1000);
+
+  const utmSource = cleanString(body?.utmSource, 200);
+  const utmMedium = cleanString(body?.utmMedium, 200);
+  const utmCampaign = cleanString(body?.utmCampaign, 200);
+
+  if (!name) {
+    return json(
+      {
+        ok: false,
+        error: "Name is required"
+      },
+      400
+    );
+  }
+
+  if (!isValidEmail(email)) {
+    return json(
+      {
+        ok: false,
+        error: "Valid email is required"
+      },
+      400
+    );
+  }
+
+  if (
+    !Number.isInteger(rentalDays) ||
+    rentalDays < 1 ||
+    rentalDays > 365
+  ) {
+    return json(
+      {
+        ok: false,
+        error: "Rental days must be between 1 and 365"
+      },
+      400
+    );
+  }
+
+  const itemsJson = JSON.stringify(items);
+  const servicesJson = JSON.stringify(services);
+
+  if (
+    itemsJson.length > 20000 ||
+    servicesJson.length > 10000
+  ) {
+    return json(
+      {
+        ok: false,
+        error: "Rental request is too large"
+      },
+      400
+    );
+  }
+
+  const leadResult = await env.CMS_DB
+    .prepare(`
+      INSERT INTO leads (
+        type,
+        status,
+        name,
+        email,
+        message,
+        language,
+        market,
+        source_url,
+        referrer,
+        utm_source,
+        utm_medium,
+        utm_campaign
+      )
+      VALUES (
+        'rental',
+        'new',
+        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+      )
+    `)
+    .bind(
+      name,
+      email,
+      notes || null,
+      language,
+      market,
+      sourceUrl || null,
+      referrer || null,
+      utmSource || null,
+      utmMedium || null,
+      utmCampaign || null
+    )
+    .run();
+
+  const leadId = leadResult.meta?.last_row_id;
+
+  if (!leadId) {
+    throw new Error("Could not create rental lead");
+  }
+
+  try {
+    const rentalResult = await env.CMS_DB
+      .prepare(`
+        INSERT INTO rental_requests (
+          lead_id,
+          event_type,
+          venue,
+          event_date,
+          rental_days,
+          attendees,
+          items_json,
+          services_json,
+          notes,
+          estimated_total_cop,
+          custom_quote
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `)
+      .bind(
+        leadId,
+        eventType || null,
+        venue || null,
+        eventDate || null,
+        rentalDays,
+        Number.isInteger(attendees) ? attendees : null,
+        itemsJson,
+        servicesJson,
+        notes || null,
+        estimatedTotalCop,
+        customQuote
+      )
+      .run();
+
+    return json(
+      {
+        ok: true,
+        message: "Rental request received",
+        leadId,
+        rentalRequestId:
+          rentalResult.meta?.last_row_id || null
+      },
+      201
+    );
+  } catch (error) {
+    await env.CMS_DB
+      .prepare(`
+        DELETE FROM leads
+        WHERE id = ?
+          AND type = 'rental'
+      `)
+      .bind(leadId)
+      .run();
+
+    throw error;
+  }
+}
 
 export default {
   async fetch(request, env) {
@@ -398,7 +593,25 @@ export default {
         );
       }
     }
+    if (
+      path === "/api/rental" &&
+      request.method === "POST"
+    ) {
+      try {
+        return await createRentalLead(request, env);
+      } catch (error) {
+        console.error("Rental submission failed", error);
 
+        return json(
+          {
+            ok: false,
+            error: "Could not submit rental request"
+          },
+          500
+        );
+      }
+    }
+    
     /*
      * ADMIN
      */
