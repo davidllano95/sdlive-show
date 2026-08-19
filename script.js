@@ -1566,9 +1566,20 @@ function initRentalQuoteBuilder() {
 
     const { state, configuration, lang } = window.__rentalQuoteState;
 
-    const params = new URLSearchParams(window.location.search);
+   const params = new URLSearchParams(window.location.search);
 
-    const payload = {
+const turnstileWidgetId =
+  window.__turnstileWidgets?.rental;
+
+const turnstileToken =
+  window.turnstile &&
+  turnstileWidgetId !== undefined
+    ? window.turnstile.getResponse(
+        turnstileWidgetId
+      )
+    : "";
+
+const payload = {
       name: state.name,
       email: state.email,
 
@@ -1613,8 +1624,8 @@ function initRentalQuoteBuilder() {
         "international",
 
       sourceUrl: window.location.href,
-      referrer: document.referrer || "",
-
+referrer: document.referrer || "",
+turnstileToken,
       utmSource: params.get("utm_source") || "",
       utmMedium: params.get("utm_medium") || "",
       utmCampaign: params.get("utm_campaign") || ""
@@ -1677,6 +1688,16 @@ pushAnalyticsEvent("generate_lead", {
           : "The rental request could not be sent. Please try again."
       );
     } finally {
+       if (
+  window.turnstile &&
+  turnstileWidgetId !== undefined
+) {
+  try {
+    window.turnstile.reset(
+      turnstileWidgetId
+    );
+  } catch {}
+}
       requestButton.removeAttribute("aria-disabled");
       requestButton.style.pointerEvents = "";
 
