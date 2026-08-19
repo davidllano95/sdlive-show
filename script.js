@@ -1576,9 +1576,6 @@ function initRentalQuoteBuilder() {
 
    const params = new URLSearchParams(window.location.search);
 
-const turnstileWidgetId =
-  window.__turnstileWidgets?.rental;
-
 const turnstileToken =
   window.turnstile &&
   turnstileWidgetId !== undefined
@@ -1586,6 +1583,23 @@ const turnstileToken =
         turnstileWidgetId
       )
     : "";
+
+const turnstileError =
+  document.getElementById(
+    "rentalTurnstileError"
+  );
+
+if (!turnstileToken) {
+  if (turnstileError) {
+    turnstileError.hidden = false;
+  }
+
+  return;
+}
+
+if (turnstileError) {
+  turnstileError.hidden = true;
+}
 
 const payload = {
       name: state.name,
