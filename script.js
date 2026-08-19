@@ -99,39 +99,61 @@ window.__turnstileWidgets =
   window.__turnstileWidgets || {};
 
 window.onTurnstileLoad = function () {
-  const container =
-    document.getElementById("contactTurnstile");
-
-  if (
-    !container ||
-    !container.dataset.sitekey ||
-    !window.turnstile
-  ) {
+  if (!window.turnstile) {
     return;
   }
 
-  window.__turnstileWidgets.contact =
-    window.turnstile.render(
-      "#contactTurnstile",
-      {
-        sitekey: container.dataset.sitekey,
-        action: "contact",
-        theme: "dark",
-        size: "normal",
-appearance: "interaction-only",
-callback: (token) => {
-  console.log(
-    "Turnstile contact success:",
-    token.slice(0, 20) + "..."
+  const renderWidget = (
+    elementId,
+    widgetName,
+    action
+  ) => {
+    const container =
+      document.getElementById(elementId);
+
+    if (
+      !container ||
+      !container.dataset.sitekey
+    ) {
+      return;
+    }
+
+    window.__turnstileWidgets[widgetName] =
+      window.turnstile.render(
+        `#${elementId}`,
+        {
+          sitekey: container.dataset.sitekey,
+          action,
+          theme: "dark",
+          size: "normal",
+          appearance: "interaction-only",
+          callback: (token) => {
+            console.log(
+              `Turnstile ${widgetName} success:`,
+              token.slice(0, 20) + "..."
+            );
+          },
+          "error-callback": (code) => {
+            console.error(
+              `Turnstile ${widgetName} error:`,
+              code
+            );
+          }
+        }
+      );
+  };
+
+  renderWidget(
+    "contactTurnstile",
+    "contact",
+    "contact"
   );
-},
-"error-callback": (code) => {
-  console.error(
-    "Turnstile contact error:",
-    code
+
+  renderWidget(
+    "rentalTurnstile",
+    "rental",
+    "rental"
   );
-}      }
-    );
 };
 function pushAnalyticsEvent(eventName, parameters = {}) {
   window.dataLayer = window.dataLayer || [];
