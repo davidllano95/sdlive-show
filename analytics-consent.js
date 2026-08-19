@@ -341,6 +341,25 @@
     hideBanner();
   }
 
+  function insertPrivacyLink() {
+    const normalizedPath = location.pathname.replace(/\/+$/, "") || "/";
+    if (normalizedPath === POLICY_URL) return;
+    if (document.querySelector(".privacy-footer-link, footer a[href='/privacy']")) return;
+
+    const link = document.createElement("a");
+    link.className = "privacy-footer-link";
+    link.href = POLICY_URL;
+    link.dataset.analyticsCopy = "policy";
+
+    const mainFooterColumn = document.getElementById("footerEmail")?.closest(".footer-col");
+    if (mainFooterColumn) {
+      mainFooterColumn.appendChild(link);
+      return;
+    }
+
+    document.querySelector(".seo-footer-links")?.appendChild(link);
+  }
+
   function insertPreferencesLink() {
     if (document.querySelector(".analytics-preferences-link")) return;
 
@@ -366,7 +385,9 @@
   function init() {
     ensureStyles();
     buildBanner();
+    insertPrivacyLink();
     insertPreferencesLink();
+    renderCopy();
     styleBrandMentions();
 
     if (currentChoice) {
