@@ -207,6 +207,166 @@ function isValidEmail(value) {
 
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 }
+
+// Commercial source of truth for rental requests. The browser mirrors these
+// rates for instant estimates, but the Worker always recalculates before D1
+// persistence and email notification.
+const RENTAL_SERVER_PRICING = {
+  customQuoteAfterDays: 15,
+  rates: {
+    betaThree: { dayOne: 300000, additionalDayMultiplier: 0.7 },
+    akg: { dayOne: 80000, additionalDayMultiplier: 1 },
+    phenyx: { dayOne: 80000, additionalDayMultiplier: 1 },
+    flow8: { dayOne: 200000, additionalDayMultiplier: 1 },
+    lv1ClassicSolo: { dayOne: 2700000, additionalDayMultiplier: 1, fixedDaily: true },
+    lv1StageGridBundle: { dayOne: 3000000, additionalDayMultiplier: 1, fixedDaily: true },
+    dl32: { dayOne: 250000, additionalDayMultiplier: 0.7 },
+    stageGrid4000: { dayOne: 500000, additionalDayMultiplier: 1, fixedDaily: true },
+    wingWithDl32: { dayOne: 500000, additionalDayMultiplier: 0.7 },
+    wingStandalone: { dayOne: 300000, additionalDayMultiplier: 0.7 },
+    labeler: { dayOne: 50000, additionalDayMultiplier: 1 },
+    videoServer: { dayOne: 400000, additionalDayMultiplier: 0.7 },
+    portableMonitor: { dayOne: 80000, additionalDayMultiplier: 1 },
+    soundEngineer: { dayOne: 350000, additionalDayMultiplier: 1 }
+  }
+};
+
+const RENTAL_ITEM_LIMITS = {
+  wing: 1,
+  flow8: 1,
+  lv1: 2,
+  dl32: 2,
+  stageGrid: 2,
+  handhelds: 2,
+  headsets: 6,
+  pa: 2,
+  labeler: 1,
+  videoServer: 1,
+  monitor: 1
+};
+
+function normalizeRentalQuantity(value, max) {
+  const quantity = Number(value);
+
+  if (!Number.isInteger(quantity)) {
+    return 0;
+  }
+
+  return Math.min(max, Math.max(0, quantity));
+}
+
+function normalizeRentalItems(value) {
+  const source = isPlainObject(value) ? value : {};
+
+  return {
+    wing: normalizeRentalQuantity(source.wing, RENTAL_ITEM_LIMITS.wing),
+    flow8: normalizeRentalQuantity(source.flow8, RENTAL_ITEM_LIMITS.flow8),
+    lv1: normalizeRentalQuantity(source.lv1, RENTAL_ITEM_LIMITS.lv1),
+    dl32: normalizeRentalQuantity(source.dl32, RENTAL_ITEM_LIMITS.dl32),
+    stageGrid: normalizeRentalQuantity(source.stageGrid, RENTAL_ITEM_LIMITS.stageGrid),
+    handhelds: normalizeRentalQuantity(source.handhelds, RENTAL_ITEM_LIMITS.handhelds),
+    headsets: normalizeRentalQuantity(source.headsets, RENTAL_ITEM_LIMITS.headsets),
+    pa: normalizeRentalQuantity(source.pa, RENTAL_ITEM_LIMITS.pa),
+    labeler: normalizeRentalQuantity(source.labeler, RENTAL_ITEM_LIMITS.labeler) ? "1" : "0",
+    videoServer: normalizeRentalQuantity(source.videoServer, RENTAL_ITEM_LIMITS.videoServer) ? "1" : "0",
+    monitor: normalizeRentalQuantity(source.monitor, RENTAL_ITEM_LIMITS.monitor) ? "1" : "0"
+  };
+}
+
+function normalizeRentalServices(value) {
+  const source = isPlainObject(value) ? value : {};
+
+  return {
+    engineering: source.engineering === "yes" ? "yes" : "no",
+    streaming: source.streaming === "yes" ? "yes" : "no",
+    delivery: source.delivery === "yes" ? "yes" : "no"
+  };
+}
+
+function rentalServerLineTotal(rateKey, quantity, rentalDays) {
+  const rate = RENTAL_SERVER_PRICING.rates[rateKey];
+
+  if (!rate || quantity <= 0) {
+    return 0;
+  }
+
+  const additionalDays = Math.max(0, rentalDays - 1);
+
+  return quantity * (
+    rate.dayOne +
+    rate.dayOne * rate.additionalDayMultiplier * additionalDays
+  );
+}
+
+function calculateRentalPricing(items, services, rentalDays) {
+  const pricedLines = [];
+  const addLine = (rateKey, quantity = 1) => {
+    if (quantity > 0) {
+      pricedLines.push({ rateKey, quantity });
+    }
+  };
+
+  if (items.wing > 0) {
+    if (items.dl32 > 0) {
+      addLine("wingWithDl32", 1);
+      addLine("dl32", Math.max(0, items.dl32 - 1));
+    } else {
+      addLine("wingStandalone", 1);
+    }
+  } else {
+    addLine("dl32", items.dl32);
+  }
+
+  addLine("flow8", items.flow8);
+
+  const bundledLv1Count = Math.min(items.lv1, items.stageGrid);
+  const standaloneLv1Count = Math.max(0, items.lv1 - bundledLv1Count);
+  const extraStageGridCount = Math.max(0, items.stageGrid - bundledLv1Count);
+
+  addLine("lv1StageGridBundle", bundledLv1Count);
+  addLine("lv1ClassicSolo", standaloneLv1Count);
+  addLine("stageGrid4000", extraStageGridCount);
+
+  addLine("akg", items.handhelds);
+  addLine("phenyx", items.headsets);
+  addLine("betaThree", items.pa);
+
+  if (items.labeler === "1") addLine("labeler", 1);
+  if (items.videoServer === "1") addLine("videoServer", 1);
+  if (items.monitor === "1") addLine("portableMonitor", 1);
+  if (services.engineering === "yes") addLine("soundEngineer", 1);
+
+  const longTerm =
+    rentalDays > RENTAL_SERVER_PRICING.customQuoteAfterDays;
+
+  const hasNegotiablePricing = pricedLines.some(({ rateKey }) => {
+    const rate = RENTAL_SERVER_PRICING.rates[rateKey];
+    return longTerm && !rate?.fixedDaily;
+  });
+
+  if (hasNegotiablePricing) {
+    return {
+      estimatedTotalCop: null,
+      customQuote: 1
+    };
+  }
+
+  const estimatedTotalCop = pricedLines.reduce(
+    (sum, { rateKey, quantity }) =>
+      sum + rentalServerLineTotal(
+        rateKey,
+        quantity,
+        rentalDays
+      ),
+    0
+  );
+
+  return {
+    estimatedTotalCop: Math.round(estimatedTotalCop),
+    customQuote: 0
+  };
+}
+
 async function verifyTurnstileToken(
   request,
   env,
@@ -679,23 +839,8 @@ async function createRentalLead(request, env) {
   const rentalDays = Number.parseInt(body?.rentalDays, 10);
   const attendees = Number.parseInt(body?.attendees, 10);
 
-  const items =
-    isPlainObject(body?.items)
-      ? body.items
-      : {};
-
-  const services =
-    isPlainObject(body?.services)
-      ? body.services
-      : {};
-
-  const estimatedTotalCop = Number.isFinite(
-    Number(body?.estimatedTotalCop)
-  )
-    ? Math.max(0, Math.round(Number(body.estimatedTotalCop)))
-    : null;
-
-  const customQuote = body?.customQuote === true ? 1 : 0;
+  const items = normalizeRentalItems(body?.items);
+  const services = normalizeRentalServices(body?.services);
 
   const language =
     body?.language === "es" ? "es" : "en";
@@ -745,6 +890,15 @@ async function createRentalLead(request, env) {
       400
     );
   }
+
+  const {
+    estimatedTotalCop,
+    customQuote
+  } = calculateRentalPricing(
+    items,
+    services,
+    rentalDays
+  );
 
   const itemsJson = JSON.stringify(items);
   const servicesJson = JSON.stringify(services);
