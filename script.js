@@ -1654,8 +1654,8 @@ turnstileToken,
       utmCampaign: params.get("utm_campaign") || ""
     };
 
-    requestButton.setAttribute("aria-disabled", "true");
-    requestButton.style.pointerEvents = "none";
+   requestButton.disabled = true;
+requestButton.setAttribute("aria-disabled", "true");
 
     const originalText = requestButton.textContent;
 
@@ -1721,8 +1721,8 @@ pushAnalyticsEvent("generate_lead", {
     );
   } catch {}
 }
-      requestButton.removeAttribute("aria-disabled");
-      requestButton.style.pointerEvents = "";
+requestButton.disabled = false;
+requestButton.removeAttribute("aria-disabled");
 
       requestButton.textContent =
         originalText ||
