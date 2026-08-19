@@ -1,0 +1,225 @@
+/* SD.Live — shared public-page consistency layer
+   Keeps secondary pages aligned with index.html without introducing new fonts. */
+
+/* Brand text treatment mirrors the main site wordmark behavior. */
+.brand-wordmark-text {
+  white-space: nowrap;
+}
+
+.brand-wordmark-text__dot {
+  display: inline-block;
+  width: 0.18em;
+  height: 0.18em;
+  margin: 0 0.065em;
+  border-radius: 50%;
+  vertical-align: middle;
+  background: var(--color-accent, #a089e5);
+  color: transparent;
+  box-shadow: 0 0 0.22em rgba(var(--color-accent-rgb, 160, 137, 229), 0.22);
+  line-height: 1;
+}
+
+/* Keep all navigational footer items visually equivalent.
+   Section headings remain intentionally distinct for hierarchy. */
+.site-footer .footer-col a,
+.site-footer .footer-col .analytics-preferences-link {
+  display: block;
+  margin: 0 0 10px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-text-soft);
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.55;
+  letter-spacing: normal;
+  text-align: left;
+  text-decoration: none;
+  text-transform: none;
+}
+
+.site-footer .footer-col a:hover,
+.site-footer .footer-col .analytics-preferences-link:hover {
+  color: var(--color-accent);
+}
+
+.site-footer .footer-bottom,
+.site-footer .footer-bottom a,
+.site-footer .footer-bottom span,
+.seo-footer,
+.seo-footer a,
+.seo-footer button,
+.seo-footer-row > span {
+  color: var(--color-text-soft);
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.55;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.seo-footer .analytics-preferences-link {
+  display: inline;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-text-soft);
+  font: inherit;
+  text-decoration: none;
+}
+
+.seo-footer a:hover,
+.seo-footer .analytics-preferences-link:hover {
+  color: var(--color-accent);
+}
+
+/* Privacy page: use the same visual language as index + SEO landings. */
+.privacy-page {
+  min-height: 100vh;
+}
+
+.privacy-page .seo-header-row {
+  min-height: var(--header-height);
+}
+
+.privacy-language-toggle {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.privacy-language-toggle button {
+  min-width: 42px;
+  padding: 8px 11px;
+  border-radius: 999px;
+  color: var(--color-text-soft);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.privacy-language-toggle button[aria-pressed="true"] {
+  color: #090a0d;
+  background: var(--color-accent);
+}
+
+.privacy-main {
+  position: relative;
+  z-index: 2;
+}
+
+.privacy-hero {
+  padding-bottom: 54px;
+}
+
+.privacy-hero .seo-lede {
+  max-width: 820px;
+}
+
+.privacy-policy-wrap {
+  padding: 0 0 120px;
+}
+
+.privacy-policy-card {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: clamp(24px, 5vw, 52px);
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.privacy-meta {
+  display: grid;
+  gap: 7px;
+  margin-bottom: 36px;
+  padding: 20px 22px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-medium);
+  background: rgba(var(--color-accent-rgb), 0.045);
+}
+
+.privacy-meta p,
+.privacy-policy-card p,
+.privacy-policy-card li {
+  color: var(--color-text-soft);
+}
+
+.privacy-meta strong,
+.privacy-policy-card strong {
+  color: var(--color-text);
+}
+
+.privacy-policy-card a {
+  color: var(--color-text);
+  text-decoration: underline;
+  text-decoration-color: rgba(var(--color-accent-rgb), 0.65);
+  text-underline-offset: 3px;
+}
+
+.privacy-policy-card section {
+  padding: 30px 0;
+  border-top: 1px solid var(--color-border);
+}
+
+.privacy-policy-card section:first-of-type {
+  border-top: 0;
+}
+
+.privacy-policy-card h2 {
+  margin: 0 0 14px;
+  font-family: var(--font-display);
+  font-size: clamp(22px, 3vw, 28px);
+  font-weight: 700;
+  line-height: 1.18;
+  letter-spacing: -0.01em;
+}
+
+.privacy-policy-card p {
+  margin: 0 0 14px;
+  font-size: 15px;
+  line-height: 1.72;
+}
+
+.privacy-policy-card ul {
+  display: grid;
+  gap: 10px;
+  margin: 14px 0 16px;
+  padding-left: 20px;
+  list-style: disc;
+}
+
+.privacy-policy-card li {
+  font-size: 15px;
+  line-height: 1.65;
+}
+
+.privacy-notice {
+  margin-top: 28px;
+  padding: 18px 20px;
+  border-left: 3px solid var(--color-accent);
+  border-radius: 0 var(--radius-small) var(--radius-small) 0;
+  background: rgba(var(--color-accent-rgb), 0.075);
+  color: var(--color-text-soft);
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.privacy-page .seo-footer-links {
+  align-items: center;
+}
+
+@media (max-width: 680px) {
+  .privacy-policy-card {
+    padding: 24px 20px;
+  }
+
+  .privacy-policy-wrap {
+    padding-bottom: 80px;
+  }
+}
