@@ -118,8 +118,19 @@ window.onTurnstileLoad = function () {
         action: "contact",
         theme: "dark",
         size: "flexible",
-        appearance: "interaction-only"
-      }
+appearance: "always",
+callback: (token) => {
+  console.log(
+    "Turnstile contact success:",
+    token.slice(0, 20) + "..."
+  );
+},
+"error-callback": (code) => {
+  console.error(
+    "Turnstile contact error:",
+    code
+  );
+}      }
     );
 };
 function pushAnalyticsEvent(eventName, parameters = {}) {
