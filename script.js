@@ -1628,13 +1628,80 @@ function applyContactConfig() {
 function initContactForm() {
   const form = document.getElementById("contactForm");
   if (!form) return;
-  form.addEventListener("submit", (e) => {
-    e.preventDefault();
-    // Display-only for now — see README "FORMULARIO DE CONTACTO" for
-    // how to wire this to Formspree, Netlify Forms or a custom backend.
-    const lang = document.documentElement.lang === "es" ? "es" : "en";
-    alert(lang === "es"
-      ? "Este formulario aún no está conectado a un servicio de envío. Por favor escribe por WhatsApp o correo mientras tanto."
-      : "This form isn't connected to a delivery service yet. Please reach out via WhatsApp or email in the meantime.");
+
+  const submitButton = form.querySelector('button[type="submit"]');
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    const lang =
+      document.documentElement.lang === "es"
+        ? "es"
+        : "en";
+
+    const payload = {
+      name: document.getElementById("cfName")?.value.trim() || "",
+      email: document.getElementById("cfEmail")?.value.trim() || "",
+      message: document.getElementById("cfMessage")?.value.trim() || "",
+      language: lang,
+      market: document.documentElement.dataset.market || "international",
+      sourceUrl: window.location.href,
+      referrer: document.referrer || ""
+    };
+
+    const params = new URLSearchParams(window.location.search);
+
+    payload.utmSource = params.get("utm_source") || "";
+    payload.utmMedium = params.get("utm_medium") || "";
+    payload.utmCampaign = params.get("utm_campaign") || "";
+
+    if (submitButton) {
+      submitButton.disabled = true;
+      submitButton.textContent =
+        lang === "es"
+          ? "Enviando..."
+          : "Sending...";
+    }
+
+    try {
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json"
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.ok) {
+        throw new Error(result.error || "Contact request failed");
+      }
+
+      form.reset();
+
+      alert(
+        lang === "es"
+          ? "Mensaje recibido. Gracias por contactar a SD.Live."
+          : "Message received. Thanks for contacting SD.Live."
+      );
+    } catch (error) {
+      console.error("Contact form submission failed", error);
+
+      alert(
+        lang === "es"
+          ? "No fue posible enviar el mensaje. Intenta nuevamente o contáctame por WhatsApp."
+          : "The message could not be sent. Please try again or contact me via WhatsApp."
+      );
+    } finally {
+      if (submitButton) {
+        submitButton.disabled = false;
+        submitButton.textContent =
+          lang === "es"
+            ? "Enviar Mensaje"
+            : "Send Message";
+      }
+    }
   });
 }
