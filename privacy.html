@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Privacy & Data Processing Policy — SD.Live</title>
+  <meta name="description" content="Política de Tratamiento de Datos Personales y Privacy & Data Processing Policy de SD.Live." />
+  <meta name="robots" content="noindex,follow" />
+  <link rel="canonical" href="https://sdlive.show/privacy" />
+  <link rel="icon" href="/assets/icons/favicon-32x32.png" sizes="32x32" type="image/png" />
+  <link rel="shortcut icon" href="/assets/icons/favicon.ico" />
+  <meta name="theme-color" content="#06070b" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #06070b;
+      --surface: rgba(255,255,255,.055);
+      --border: rgba(255,255,255,.12);
+      --text: #f4f5f8;
+      --soft: #b8bdc9;
+      --accent: #A089E5;
+      --max: 980px;
+    }
+    * { box-sizing: border-box; }
+    html { background: var(--bg); scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 15% 0%, rgba(160,137,229,.18), transparent 34rem),
+        var(--bg);
+      font-family: "Manrope", system-ui, sans-serif;
+      line-height: 1.7;
+    }
+    a { color: inherit; }
+    .shell { width: min(calc(100% - 32px), var(--max)); margin: 0 auto; }
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      backdrop-filter: blur(18px);
+      background: rgba(6,7,11,.82);
+      border-bottom: 1px solid var(--border);
+    }
+    .header-inner {
+      min-height: 74px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .logo img { display: block; width: 150px; height: auto; }
+    .actions { display: flex; align-items: center; gap: 10px; }
+    .lang {
+      display: inline-flex;
+      padding: 4px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: rgba(255,255,255,.035);
+    }
+    .lang button {
+      border: 0;
+      color: var(--soft);
+      background: transparent;
+      padding: 7px 10px;
+      border-radius: 999px;
+      cursor: pointer;
+      font: inherit;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .lang button[aria-pressed="true"] { color: #090a0d; background: var(--accent); }
+    .home {
+      text-decoration: none;
+      border: 1px solid var(--border);
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size: 13px;
+    }
+    main { padding: 72px 0 92px; }
+    .eyebrow {
+      display: block;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: .16em;
+      font-size: 12px;
+      font-weight: 800;
+      margin-bottom: 12px;
+    }
+    h1, h2 { font-family: "Sora", system-ui, sans-serif; line-height: 1.15; }
+    h1 { font-size: clamp(34px, 6vw, 60px); margin: 0 0 20px; max-width: 850px; }
+    .intro { color: var(--soft); font-size: 18px; max-width: 800px; }
+    .meta {
+      margin: 32px 0 48px;
+      padding: 22px;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      background: var(--surface);
+    }
+    .meta p { margin: 4px 0; }
+    article section {
+      padding: 28px 0;
+      border-top: 1px solid var(--border);
+    }
+    article h2 { margin: 0 0 14px; font-size: 23px; }
+    article p, article li { color: var(--soft); }
+    article strong { color: var(--text); }
+    article ul { padding-left: 22px; }
+    .notice {
+      margin-top: 36px;
+      padding: 18px 20px;
+      border-left: 3px solid var(--accent);
+      background: rgba(160,137,229,.08);
+      color: var(--soft);
+    }
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 28px 0 42px;
+      color: var(--soft);
+      font-size: 13px;
+    }
+    [hidden] { display: none !important; }
+    @media (max-width: 620px) {
+      .header-inner { align-items: flex-start; padding: 16px 0; }
+      .actions { flex-wrap: wrap; justify-content: flex-end; }
+      .logo img { width: 126px; }
+      main { padding-top: 52px; }
+    }
+  </style>
+</head>
+<body>
+<header>
+  <div class="shell header-inner">
+    <a class="logo" href="/" aria-label="SD.Live — Home">
+      <img src="/assets/logos/sd-live-header-normal.png" alt="SD.Live" width="2172" height="724" />
+    </a>
+    <div class="actions">
+      <div class="lang" role="group" aria-label="Language selector">
+        <button id="policyEs" type="button" aria-pressed="true">ES</button>
+        <button id="policyEn" type="button" aria-pressed="false">EN</button>
+      </div>
+      <a class="home" href="/">SD.Live</a>
+    </div>
+  </div>
+</header>
+
+<main class="shell">
+  <article id="policyEsContent" lang="es">
+    <span class="eyebrow">Privacidad · Versión 2026-08-19</span>
+    <h1>Política de Tratamiento de Datos Personales</h1>
+    <p class="intro">Esta política explica cómo Samuel David Llano, actuando bajo la marca personal SD.Live, recolecta, utiliza, almacena y protege los datos personales relacionados con consultas, proyectos, alquileres y el uso del sitio web sdlive.show.</p>
+
+    <div class="meta">
+      <p><strong>Responsable del Tratamiento:</strong> Samuel David Llano</p>
+      <p><strong>Marca:</strong> SD.Live</p>
+      <p><strong>Domicilio:</strong> Bogotá D.C., Colombia</p>
+      <p><strong>Correo para privacidad, consultas y reclamos:</strong> <a href="mailto:hello@sdlive.show">hello@sdlive.show</a></p>
+      <p><strong>Teléfono:</strong> <a href="tel:+573192473948">+57 319 247 3948</a></p>
+    </div>
+
+    <section>
+      <h2>1. Marco y alcance</h2>
+      <p>El tratamiento de datos personales se realiza conforme a la Ley 1581 de 2012 y sus normas reglamentarias aplicables. Esta política cubre los datos suministrados a través de formularios, comunicaciones comerciales y técnicas, solicitudes de cotización o alquiler y las tecnologías necesarias para operar y proteger este sitio web.</p>
+    </section>
+
+    <section>
+      <h2>2. Datos que pueden ser tratados</h2>
+      <ul>
+        <li>Datos de identificación y contacto, como nombre, correo electrónico y datos que el Titular decida incluir en su mensaje.</li>
+        <li>Información de proyectos, producciones y alquileres: tipo de evento, fecha, ciudad o venue, número estimado de asistentes, equipos, servicios y notas.</li>
+        <li>Información técnica necesaria para seguridad y funcionamiento del sitio, que puede ser procesada por proveedores tecnológicos, como dirección IP, navegador, dispositivo y datos de seguridad.</li>
+        <li>Datos de uso o medición del sitio cuando se empleen herramientas de analítica.</li>
+      </ul>
+      <p>SD.Live no solicita deliberadamente datos sensibles a través de sus formularios públicos. El Titular debe evitar incluir información sensible que no sea necesaria para la solicitud.</p>
+    </section>
+
+    <section>
+      <h2>3. Finalidades</h2>
+      <p>Los datos podrán tratarse para responder consultas; analizar y cotizar proyectos; gestionar solicitudes de alquiler; prestar servicios; coordinar producción, logística y soporte técnico; mantener historial de comunicaciones y relaciones comerciales; atender obligaciones administrativas, contables, contractuales o legales; prevenir fraude y abuso; proteger la seguridad del sitio; y medir o mejorar el desempeño del sitio y de sus canales de contacto.</p>
+      <p>Los datos no serán vendidos a terceros.</p>
+    </section>
+
+    <section>
+      <h2>4. Autorización</h2>
+      <p>Cuando la autorización sea necesaria, será solicitada antes o al momento de la recolección mediante un mecanismo que permita una manifestación expresa e inequívoca. En los formularios públicos de SD.Live, la casilla de autorización no está marcada por defecto y el envío requiere una acción afirmativa del Titular.</p>
+      <p>SD.Live conserva evidencia electrónica de la versión de esta política aceptada y de la fecha de autorización asociada a cada solicitud recibida a través de los formularios protegidos.</p>
+    </section>
+
+    <section>
+      <h2>5. Encargados, proveedores y tratamiento internacional</h2>
+      <p>Para operar el sitio y atender las solicitudes, SD.Live puede utilizar proveedores tecnológicos que actúan como encargados o subencargados, incluyendo servicios de hosting, seguridad, almacenamiento de bases de datos, verificación antiabuso, envío de notificaciones, correo empresarial y medición de audiencia. Actualmente estas funciones pueden involucrar servicios de Cloudflare, Resend y Google.</p>
+      <p>Algunos proveedores pueden procesar información fuera de Colombia. Cuando corresponda, SD.Live procurará que estas transmisiones o transferencias se realicen bajo las condiciones permitidas por la normativa aplicable y únicamente para las finalidades descritas.</p>
+    </section>
+
+    <section>
+      <h2>6. Derechos del Titular</h2>
+      <p>El Titular puede conocer, acceder, actualizar y rectificar sus datos; solicitar prueba de la autorización cuando proceda; ser informado sobre el uso dado a sus datos; presentar quejas ante la Superintendencia de Industria y Comercio una vez agotado el trámite ante el Responsable; solicitar supresión de datos; y revocar la autorización cuando legalmente proceda.</p>
+    </section>
+
+    <section>
+      <h2>7. Consultas, reclamos, supresión y revocatoria</h2>
+      <p>Las solicitudes deben enviarse a <a href="mailto:hello@sdlive.show">hello@sdlive.show</a> con el asunto <strong>“Datos personales”</strong>, indicando nombre, información de contacto, descripción de la solicitud y la información necesaria para acreditar la identidad o representación.</p>
+      <p>Las consultas serán atendidas dentro de un máximo de diez (10) días hábiles desde su recibo. Si no fuera posible responder dentro de ese plazo, se informará la razón y la nueva fecha de respuesta, que no excederá cinco (5) días hábiles adicionales.</p>
+      <p>Los reclamos serán atendidos dentro de un máximo de quince (15) días hábiles desde el día siguiente a su recibo. Si no fuera posible atenderlos dentro de ese plazo, se informará el motivo y la nueva fecha de respuesta, que no excederá ocho (8) días hábiles adicionales.</p>
+    </section>
+
+    <section>
+      <h2>8. Seguridad y conservación</h2>
+      <p>SD.Live adopta medidas razonables de seguridad técnicas y organizativas para reducir riesgos de pérdida, adulteración, consulta, uso o acceso no autorizado. El acceso administrativo al contenido y a los datos de operación se protege mediante controles de autenticación y acceso.</p>
+      <p>Los datos serán conservados únicamente durante el tiempo razonable y necesario para las finalidades informadas y para cumplir obligaciones contractuales, administrativas, contables, fiscales o legales. La base de datos de clientes, prospectos y solicitudes permanecerá vigente mientras Samuel David Llano opere SD.Live y mientras subsistan finalidades u obligaciones legítimas relacionadas.</p>
+    </section>
+
+    <section>
+      <h2>9. Menores de edad</h2>
+      <p>Los formularios públicos de SD.Live están dirigidos a personas con capacidad para solicitar servicios profesionales o actuar en representación de una producción u organización. No se busca recolectar deliberadamente datos personales de niños, niñas o adolescentes mediante estos formularios.</p>
+    </section>
+
+    <section>
+      <h2>10. Cambios a la política</h2>
+      <p>Los cambios sustanciales que afecten la identificación del Responsable o las finalidades del tratamiento serán comunicados de manera oportuna cuando sea exigible. Cuando un cambio de finalidad requiera una nueva autorización, esta será solicitada antes de aplicar la nueva finalidad.</p>
+      <p><strong>Fecha de entrada en vigencia:</strong> 19 de agosto de 2026. <strong>Versión:</strong> 2026-08-19.</p>
+    </section>
+
+    <div class="notice"><strong>Dirección física de correspondencia:</strong> SD.Live todavía no cuenta con una dirección comercial pública. El canal operativo de correspondencia para protección de datos es <a href="mailto:hello@sdlive.show">hello@sdlive.show</a>. Esta política se actualizará cuando se habilite una dirección física de correspondencia.</div>
+  </article>
+
+  <article id="policyEnContent" lang="en" hidden>
+    <span class="eyebrow">Privacy · Version 2026-08-19</span>
+    <h1>Privacy & Data Processing Policy</h1>
+    <p class="intro">This policy explains how Samuel David Llano, operating under the personal brand SD.Live, collects, uses, stores and protects personal data related to inquiries, projects, rentals and use of sdlive.show.</p>
+
+    <div class="meta">
+      <p><strong>Data Controller:</strong> Samuel David Llano</p>
+      <p><strong>Brand:</strong> SD.Live</p>
+      <p><strong>Domicile:</strong> Bogotá D.C., Colombia</p>
+      <p><strong>Privacy, inquiry and complaint email:</strong> <a href="mailto:hello@sdlive.show">hello@sdlive.show</a></p>
+      <p><strong>Phone:</strong> <a href="tel:+573192473948">+57 319 247 3948</a></p>
+    </div>
+
+    <section>
+      <h2>1. Legal framework and scope</h2>
+      <p>Personal data is processed in accordance with Colombia's Law 1581 of 2012 and applicable implementing rules. This policy covers data supplied through forms, commercial and technical communications, project or rental requests, and technologies required to operate and secure this website.</p>
+    </section>
+
+    <section>
+      <h2>2. Data that may be processed</h2>
+      <ul>
+        <li>Identification and contact data such as name, email address and information the Data Subject chooses to include in a message.</li>
+        <li>Project, production and rental information: event type, date, city or venue, estimated attendees, equipment, services and notes.</li>
+        <li>Technical information required for website security and operation that may be processed by technology providers, such as IP address, browser, device and security data.</li>
+        <li>Website usage or measurement data when analytics tools are used.</li>
+      </ul>
+      <p>SD.Live does not intentionally request sensitive personal data through its public forms. Data Subjects should avoid including sensitive information that is not necessary for their request.</p>
+    </section>
+
+    <section>
+      <h2>3. Purposes</h2>
+      <p>Data may be processed to respond to inquiries; review and quote projects; manage rental requests; deliver services; coordinate production, logistics and technical support; maintain communication and commercial relationship history; meet administrative, accounting, contractual or legal obligations; prevent fraud and abuse; protect website security; and measure or improve the website and its contact channels.</p>
+      <p>Personal data is not sold to third parties.</p>
+    </section>
+
+    <section>
+      <h2>4. Authorization</h2>
+      <p>Where authorization is required, it is requested before or at the time of collection through a mechanism that records an express and unambiguous action. On SD.Live public forms, the authorization checkbox is not pre-selected and submission requires an affirmative action by the Data Subject.</p>
+      <p>SD.Live retains electronic evidence of the policy version accepted and the authorization date associated with each request submitted through the protected forms.</p>
+    </section>
+
+    <section>
+      <h2>5. Processors, providers and international processing</h2>
+      <p>To operate the website and handle requests, SD.Live may use technology providers acting as processors or subprocessors, including hosting, security, database storage, anti-abuse verification, notification delivery, business email and audience measurement services. These functions may currently involve Cloudflare, Resend and Google services.</p>
+      <p>Some providers may process information outside Colombia. Where applicable, SD.Live will seek to ensure such transmissions or transfers are performed under conditions permitted by applicable law and only for the purposes described above.</p>
+    </section>
+
+    <section>
+      <h2>6. Data Subject rights</h2>
+      <p>Data Subjects may know, access, update and correct their personal data; request proof of authorization where applicable; obtain information about how their data has been used; submit complaints to Colombia's Superintendence of Industry and Commerce after exhausting the procedure before the Controller; request deletion; and revoke authorization where legally permitted.</p>
+    </section>
+
+    <section>
+      <h2>7. Inquiries, claims, deletion and revocation</h2>
+      <p>Requests should be sent to <a href="mailto:hello@sdlive.show">hello@sdlive.show</a> with the subject <strong>“Personal data”</strong>, including name, contact information, a description of the request and information reasonably necessary to verify identity or representation.</p>
+      <p>Inquiries will be answered within a maximum of ten (10) business days from receipt. If a response cannot be provided within that period, the reason and a new response date will be communicated; the extension will not exceed five (5) additional business days.</p>
+      <p>Claims will be answered within a maximum of fifteen (15) business days from the day after receipt. If a claim cannot be resolved within that period, the reason and a new response date will be communicated; the extension will not exceed eight (8) additional business days.</p>
+    </section>
+
+    <section>
+      <h2>8. Security and retention</h2>
+      <p>SD.Live uses reasonable technical and organizational security measures to reduce the risk of loss, alteration, unauthorized access, consultation or use. Administrative access to operational content and data is protected through authentication and access controls.</p>
+      <p>Data is retained only for as long as reasonably necessary for the stated purposes and to meet contractual, administrative, accounting, tax or legal obligations. The client, prospect and request database will remain in effect while Samuel David Llano operates SD.Live and while related legitimate purposes or obligations remain.</p>
+    </section>
+
+    <section>
+      <h2>9. Minors</h2>
+      <p>SD.Live public forms are intended for persons able to request professional services or act for a production or organization. SD.Live does not seek to intentionally collect personal data from children or adolescents through these forms.</p>
+    </section>
+
+    <section>
+      <h2>10. Policy changes</h2>
+      <p>Substantial changes affecting the Controller's identity or the purposes of processing will be communicated in a timely manner where required. When a new purpose requires renewed authorization, authorization will be requested before applying that purpose.</p>
+      <p><strong>Effective date:</strong> August 19, 2026. <strong>Version:</strong> 2026-08-19.</p>
+    </section>
+
+    <div class="notice"><strong>Physical correspondence address:</strong> SD.Live does not yet maintain a public commercial address. The operational privacy correspondence channel is <a href="mailto:hello@sdlive.show">hello@sdlive.show</a>. This policy will be updated when a physical correspondence address is established.</div>
+  </article>
+</main>
+
+<footer>
+  <div class="shell">© 2026 SD.Live · Creative Audio · <a href="mailto:hello@sdlive.show">hello@sdlive.show</a></div>
+</footer>
+
+<script>
+  (() => {
+    const esButton = document.getElementById('policyEs');
+    const enButton = document.getElementById('policyEn');
+    const esContent = document.getElementById('policyEsContent');
+    const enContent = document.getElementById('policyEnContent');
+
+    const setLanguage = (language) => {
+      const useSpanish = language === 'es';
+      document.documentElement.lang = useSpanish ? 'es' : 'en';
+      esButton.setAttribute('aria-pressed', String(useSpanish));
+      enButton.setAttribute('aria-pressed', String(!useSpanish));
+      esContent.hidden = !useSpanish;
+      enContent.hidden = useSpanish;
+      try { localStorage.setItem('sdlive-language-preference', useSpanish ? 'es' : 'en'); } catch {}
+    };
+
+    let initial = 'es';
+    try {
+      const stored = localStorage.getItem('sdlive-language-preference');
+      if (stored === 'en' || stored === 'es') initial = stored;
+      else if (!(navigator.language || '').toLowerCase().startsWith('es')) initial = 'en';
+    } catch {}
+
+    esButton.addEventListener('click', () => setLanguage('es'));
+    enButton.addEventListener('click', () => setLanguage('en'));
+    setLanguage(initial);
+  })();
+</script>
+</body>
+</html>
