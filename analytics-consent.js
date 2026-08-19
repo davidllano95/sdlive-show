@@ -13,7 +13,9 @@
       allow: "Permitir analítica",
       policy: "Privacidad",
       preferences: "Preferencias de cookies",
-      title: "Privacidad y analítica"
+      title: "Privacidad y analítica",
+      home: "Inicio",
+      homeAria: "Volver a inicio"
     },
     en: {
       text: "We use analytics to understand how SD.Live is used and improve the site. You can allow analytics or continue with necessary functions only.",
@@ -21,7 +23,9 @@
       allow: "Allow analytics",
       policy: "Privacy",
       preferences: "Cookie preferences",
-      title: "Privacy & analytics"
+      title: "Privacy & analytics",
+      home: "Home",
+      homeAria: "Back to home"
     }
   };
 
@@ -322,6 +326,12 @@
     document.querySelectorAll(".analytics-preferences-link").forEach((element) => {
       element.textContent = copy.preferences;
     });
+
+    const backToTop = document.getElementById("backToTop");
+    if (backToTop) {
+      backToTop.setAttribute("aria-label", copy.homeAria);
+      backToTop.setAttribute("title", copy.homeAria);
+    }
   }
 
   function showBanner() {
@@ -382,11 +392,65 @@
     }
   }
 
+  function ensureVisibleHomeLink() {
+    const normalizedPath = location.pathname.replace(/\/+$/, "") || "/";
+    if (normalizedPath === "/") return;
+
+    const headerRow = document.querySelector(".seo-header-row");
+    if (!headerRow) return;
+
+    const existingVisibleHome = headerRow.querySelector(
+      ".seo-home-link, a.btn[href='/'], a.btn[href='https://sdlive.show/']"
+    );
+    if (existingVisibleHome) return;
+
+    const link = document.createElement("a");
+    link.href = "/";
+    link.className = "btn btn-secondary seo-home-link";
+    link.dataset.analyticsCopy = "home";
+
+    let actions = headerRow.querySelector(".seo-language-actions");
+
+    if (!actions) {
+      actions = document.createElement("div");
+      actions.className = "seo-language-actions";
+
+      const moveable = Array.from(headerRow.children).filter(
+        (child) =>
+          !child.classList.contains("seo-header-logo") &&
+          child !== actions
+      );
+
+      headerRow.appendChild(actions);
+      moveable.forEach((child) => actions.appendChild(child));
+    }
+
+    actions.prepend(link);
+  }
+
+  function bindCanonicalHomeArrow() {
+    const button = document.getElementById("backToTop");
+    if (!button || button.dataset.canonicalHomeBound === "true") return;
+
+    button.dataset.canonicalHomeBound = "true";
+    button.addEventListener(
+      "click",
+      (event) => {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        window.location.assign("/");
+      },
+      { capture: true }
+    );
+  }
+
   function init() {
     ensureStyles();
     buildBanner();
     insertPrivacyLink();
     insertPreferencesLink();
+    ensureVisibleHomeLink();
+    bindCanonicalHomeArrow();
     renderCopy();
     styleBrandMentions();
 
