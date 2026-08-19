@@ -431,6 +431,95 @@ async function createContactLead(request, env) {
     201
   );
 }
+async function notifyRentalLead(
+  env,
+  {
+    leadId,
+    rentalRequestId,
+    name,
+    email,
+    eventType,
+    venue,
+    eventDate,
+    rentalDays,
+    attendees,
+    items,
+    services,
+    notes,
+    estimatedTotalCop,
+    customQuote,
+    language,
+    market,
+    sourceUrl,
+    referrer,
+    utmSource,
+    utmMedium,
+    utmCampaign
+  }
+) {
+  const selectedItems = Object.entries(items)
+    .filter(([, value]) => {
+      if (typeof value === "number") return value > 0;
+      return value === "1" || value === "yes";
+    })
+    .map(([key, value]) => `• ${key}: ${value}`);
+
+  const selectedServices = Object.entries(services)
+    .filter(([, value]) => value === "yes" || value === "1")
+    .map(([key, value]) => `• ${key}: ${value}`);
+
+  const totalLabel =
+    customQuote === 1
+      ? "Custom quote"
+      : Number.isFinite(estimatedTotalCop)
+        ? `$${estimatedTotalCop.toLocaleString("es-CO")} COP`
+        : "—";
+
+  const lines = [
+    "New SD.Live rental request",
+    "",
+    `Lead ID: ${leadId}`,
+    `Rental Request ID: ${rentalRequestId}`,
+    "",
+    `Name: ${name}`,
+    `Email: ${email}`,
+    `Language: ${language}`,
+    `Market: ${market}`,
+    "",
+    "Event:",
+    `Type: ${eventType || "—"}`,
+    `Venue: ${venue || "—"}`,
+    `Date: ${eventDate || "—"}`,
+    `Rental days: ${rentalDays}`,
+    `Attendees: ${Number.isInteger(attendees) ? attendees : "—"}`,
+    "",
+    "Equipment:",
+    ...(selectedItems.length ? selectedItems : ["• None selected"]),
+    "",
+    "Services:",
+    ...(selectedServices.length ? selectedServices : ["• None selected"]),
+    "",
+    `Estimated total: ${totalLabel}`,
+    "",
+    "Notes:",
+    notes || "—",
+    "",
+    `Source: ${sourceUrl || "—"}`,
+    `Referrer: ${referrer || "—"}`,
+    `UTM source: ${utmSource || "—"}`,
+    `UTM medium: ${utmMedium || "—"}`,
+    `UTM campaign: ${utmCampaign || "—"}`
+  ];
+
+  return sendResendEmail(env, {
+    from: "SD.Live Rental <rental@sdlive.show>",
+    to: "rental@sdlive.show",
+    replyTo: email,
+    subject: `New rental request — ${name}${eventDate ? ` — ${eventDate}` : ""}`,
+    text: lines.join("\n"),
+    idempotencyKey: `rental-request-${rentalRequestId}`
+  });
+}
 async function createRentalLead(request, env) {
   const body = await readJsonBody(request);
 
@@ -603,13 +692,56 @@ async function createRentalLead(request, env) {
       )
       .run();
 
+       const rentalRequestId =
+      rentalResult.meta?.last_row_id || null;
+
+    let notificationSent = false;
+
+    if (rentalRequestId) {
+      try {
+        await notifyRentalLead(env, {
+          leadId,
+          rentalRequestId,
+          name,
+          email,
+          eventType,
+          venue,
+          eventDate,
+          rentalDays,
+          attendees:
+            Number.isInteger(attendees)
+              ? attendees
+              : null,
+          items,
+          services,
+          notes,
+          estimatedTotalCop,
+          customQuote,
+          language,
+          market,
+          sourceUrl,
+          referrer,
+          utmSource,
+          utmMedium,
+          utmCampaign
+        });
+
+        notificationSent = true;
+      } catch (error) {
+        console.error(
+          "Rental email notification failed",
+          error
+        );
+      }
+    }
+
     return json(
       {
         ok: true,
         message: "Rental request received",
         leadId,
-        rentalRequestId:
-          rentalResult.meta?.last_row_id || null
+        rentalRequestId,
+        notificationSent
       },
       201
     );
