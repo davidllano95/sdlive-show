@@ -4026,7 +4026,29 @@ body.private-portfolio.owner-access-locked {
 .contact-form .btn {
   align-self: center;
 }
+/* Turnstile — shared form alignment */
+.turnstile-container {
+  display: flex;
+  width: 100%;
+  min-height: 0;
+  align-items: center;
+  justify-content: center;
+}
 
+/* Contact verification */
+.contact-form .turnstile-container {
+  margin: 4px auto 0;
+}
+
+/* Rental checkout verification */
+.rental-cart-checkout .turnstile-container {
+  margin: 16px auto 0;
+}
+
+/* Keep the Cloudflare widget contained on small screens */
+.turnstile-container iframe {
+  max-width: 100%;
+}
 /* =============================================
    FOOTER
 ============================================= */
