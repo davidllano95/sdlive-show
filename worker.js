@@ -207,6 +207,103 @@ function isValidEmail(value) {
 
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 }
+async function verifyTurnstileToken(
+  request,
+  env,
+  token,
+  expectedAction
+) {
+  if (!env.TURNSTILE_SECRET_KEY) {
+    throw new Error("TURNSTILE_SECRET_KEY is missing");
+  }
+
+  const responseToken = cleanString(token, 2048);
+
+  if (!responseToken) {
+    return {
+      ok: false,
+      reason: "missing_token",
+      errors: ["missing-input-response"]
+    };
+  }
+
+  const remoteIp = cleanString(
+    request.headers.get("CF-Connecting-IP") || "",
+    64
+  );
+
+  let response;
+
+  try {
+    response = await fetch(
+      "https://challenges.cloudflare.com/turnstile/v0/siteverify",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          secret: env.TURNSTILE_SECRET_KEY,
+          response: responseToken,
+          ...(remoteIp
+            ? { remoteip: remoteIp }
+            : {})
+        })
+      }
+    );
+  } catch (error) {
+    console.error(
+      "Turnstile Siteverify request failed",
+      error
+    );
+
+    return {
+      ok: false,
+      reason: "siteverify_unavailable",
+      errors: ["internal-error"]
+    };
+  }
+
+  const result = await response
+    .json()
+    .catch(() => ({
+      success: false,
+      "error-codes": ["invalid-response"]
+    }));
+
+  if (!response.ok || result.success !== true) {
+    return {
+      ok: false,
+      reason: "turnstile_failed",
+      errors: Array.isArray(result["error-codes"])
+        ? result["error-codes"]
+        : []
+    };
+  }
+
+  if (result.hostname !== "sdlive.show") {
+    return {
+      ok: false,
+      reason: "hostname_mismatch",
+      errors: []
+    };
+  }
+
+  if (
+    expectedAction &&
+    result.action !== expectedAction
+  ) {
+    return {
+      ok: false,
+      reason: "action_mismatch",
+      errors: []
+    };
+  }
+
+  return {
+    ok: true
+  };
+}
 async function sendResendEmail(
   env,
   {
