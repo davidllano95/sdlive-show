@@ -910,6 +910,8 @@ function initRentalQuoteBuilder() {
   if (!form) return;
 
   const fields = {
+         name: document.getElementById("quoteName"),
+    email: document.getElementById("quoteEmail"),
     eventType: document.getElementById("quoteEventType"),
     venue: document.getElementById("quoteVenue"),
     date: document.getElementById("quoteDate"),
@@ -1171,6 +1173,8 @@ function initRentalQuoteBuilder() {
   };
 
   const readState = () => ({
+         name: fields.name?.value.trim() || "",
+    email: fields.email?.value.trim() || "",
     eventType: fields.eventType.value,
     venue: fields.venue.value.trim(),
     date: fields.date.value,
@@ -1458,38 +1462,129 @@ function initRentalQuoteBuilder() {
 
   form.addEventListener("submit", (event) => event.preventDefault());
 
-  requestButton.addEventListener("click", () => {
-    render();
-    const { state, configuration, lang } = window.__rentalQuoteState;
-    const labels = copy[lang];
-    const explanation = buildPricingExplanation(state, configuration, lang);
-    const message = [
-      labels.request,
-      "",
-      `${labels.venue}: ${state.venue || "—"}`,
-      `${labels.date}: ${state.date || "—"}`,
-      `${labels.days}: ${state.days}`,
-      `${labels.attendees}: ${state.attendees}`,
-      "",
-      `${labels.recommendation}:`,
-      ...configuration.items.map((item) => `• ${item.label}: ${item.priceLabel}`),
-      "",
-      `${labels.equipmentTotal}: ${configuration.customQuote ? labels.customQuote : formatCop(configuration.total)}`,
-      "",
-      explanation
-    ];
-    if (state.notes) message.push("", `${labels.notes}: ${state.notes}`);
+   requestButton.addEventListener("click", async (event) => {
+    event.preventDefault();
 
-    const contactMessage = document.getElementById("cfMessage");
-    if (contactMessage) contactMessage.value = message.join("\n");
-    const configuredEmail = SITE_CONFIG.contact.email;
-    if (configuredEmail && !configuredEmail.includes("[")) {
-      requestButton.href = `mailto:${configuredEmail}?subject=${encodeURIComponent(labels.request)}&body=${encodeURIComponent(message.join("\n"))}`;
-    } else {
-      requestButton.href = "#contact";
+    if (!form.reportValidity()) {
+      return;
+    }
+
+    render();
+
+    const { state, configuration, lang } = window.__rentalQuoteState;
+
+    const params = new URLSearchParams(window.location.search);
+
+    const payload = {
+      name: state.name,
+      email: state.email,
+
+      eventType: state.eventType,
+      venue: state.venue,
+      eventDate: state.date,
+      rentalDays: state.days,
+      attendees: state.attendees,
+
+      items: {
+        wing: state.wing,
+        flow8: state.flow8,
+        lv1: state.lv1,
+        dl32: state.dl32,
+        stageGrid: state.stageGrid,
+        handhelds: state.handhelds,
+        headsets: state.headsets,
+        pa: state.pa,
+        labeler: state.labeler,
+        videoServer: state.videoServer,
+        monitor: state.monitor
+      },
+
+      services: {
+        engineering: state.engineering,
+        streaming: state.streaming,
+        delivery: state.delivery
+      },
+
+      notes: state.notes,
+
+      estimatedTotalCop:
+        configuration.total === null
+          ? undefined
+          : configuration.total,
+
+      customQuote: configuration.customQuote,
+
+      language: lang,
+      market:
+        document.documentElement.dataset.market ||
+        "international",
+
+      sourceUrl: window.location.href,
+      referrer: document.referrer || "",
+
+      utmSource: params.get("utm_source") || "",
+      utmMedium: params.get("utm_medium") || "",
+      utmCampaign: params.get("utm_campaign") || ""
+    };
+
+    requestButton.setAttribute("aria-disabled", "true");
+    requestButton.style.pointerEvents = "none";
+
+    const originalText = requestButton.textContent;
+
+    requestButton.textContent =
+      lang === "es"
+        ? "Enviando..."
+        : "Sending...";
+
+    try {
+      const response = await fetch("/api/rental", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json"
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.ok) {
+        throw new Error(
+          result.error || "Rental request failed"
+        );
+      }
+
+      alert(
+        lang === "es"
+          ? "Solicitud de alquiler recibida. Te contactaré con la confirmación y cotización."
+          : "Rental request received. I'll contact you with confirmation and the quote."
+      );
+
+      closeCart();
+    } catch (error) {
+      console.error(
+        "Rental request submission failed",
+        error
+      );
+
+      alert(
+        lang === "es"
+          ? "No fue posible enviar la solicitud. Intenta nuevamente."
+          : "The rental request could not be sent. Please try again."
+      );
+    } finally {
+      requestButton.removeAttribute("aria-disabled");
+      requestButton.style.pointerEvents = "";
+
+      requestButton.textContent =
+        originalText ||
+        (lang === "es"
+          ? "Enviar solicitud de alquiler"
+          : "Send rental request");
     }
   });
-
+   
   window.__renderRentalQuote = render;
   window.__openRentalCart = openCart;
   buildCartControls();
