@@ -128,6 +128,14 @@ window.onTurnstileLoad = function () {
           size: "normal",
           appearance: "interaction-only",
           callback: (token) => {
+             const validationMessage =
+  document.getElementById(
+    `${widgetName}TurnstileError`
+  );
+
+if (validationMessage) {
+  validationMessage.hidden = true;
+}
             console.log(
               `Turnstile ${widgetName} success:`,
               token.slice(0, 20) + "..."
@@ -1867,6 +1875,23 @@ const turnstileToken =
         turnstileWidgetId
       )
     : "";
+
+const turnstileError =
+  document.getElementById(
+    "contactTurnstileError"
+  );
+
+if (!turnstileToken) {
+  if (turnstileError) {
+    turnstileError.hidden = false;
+  }
+
+  return;
+}
+
+if (turnstileError) {
+  turnstileError.hidden = true;
+}
 
 const payload = {
   name: document.getElementById("cfName")?.value.trim() || "",
