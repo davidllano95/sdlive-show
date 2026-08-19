@@ -2,7 +2,7 @@ import { jwtVerify, createRemoteJWKSet } from "jose";
 
 const ADMIN_EMAIL = "sam@sdlive.show";
 const PRIVACY_POLICY_VERSION = "2026-08-19";
-const PRIVACY_AUTHORIZATION_METHOD = "website_checkbox";
+const PRIVACY_AUTHORIZATION_METHOD = "website_confirmation_modal";
 const HERO_KEY = {
   section: "hero",
   market: "all",
@@ -293,9 +293,6 @@ function isValidIsoDate(value) {
     date.getUTCDate() === day;
 }
 
-// Commercial source of truth for rental requests. The browser mirrors these
-// rates for instant estimates, but the Worker always recalculates before D1
-// persistence and email notification.
 const RENTAL_SERVER_PRICING = {
   customQuoteAfterDays: 15,
   rates: {
@@ -1236,10 +1233,6 @@ export default {
         ? url.pathname.replace(/\/+$/, "")
         : url.pathname;
 
-    /*
-     * PUBLIC
-     */
-
     if (
       path === "/api/health" &&
       request.method === "GET"
@@ -1264,10 +1257,6 @@ export default {
       }
     }
 
-    /*
-     * Public published Hero endpoint.
-     * The public website will consume this in the next step.
-     */
     if (
       path === "/api/content/hero" &&
       request.method === "GET"
@@ -1338,10 +1327,6 @@ export default {
       }
     }
     
-    /*
-     * ADMIN
-     */
-
     if (path.startsWith("/api/admin/")) {
       let user;
 
@@ -1368,9 +1353,6 @@ export default {
         });
       }
 
-      /*
-       * Read Draft + Published.
-       */
       if (
         path === "/api/admin/content/hero" &&
         request.method === "GET"
@@ -1405,10 +1387,6 @@ export default {
         }
       }
 
-      /*
-       * Save Draft.
-       * Does NOT alter published_json.
-       */
       if (
         path === "/api/admin/content/hero" &&
         request.method === "PUT"
@@ -1482,9 +1460,6 @@ export default {
         }
       }
 
-      /*
-       * Publish current Draft.
-       */
       if (
         path === "/api/admin/content/hero/publish" &&
         request.method === "POST"
@@ -1503,8 +1478,6 @@ export default {
           }
 
           const draftText = decodeBlobText(current.draft_blob);
-
-          // Validate again immediately before publishing.
           validateHeroDraft(JSON.parse(draftText));
 
           await env.CMS_DB.batch([
@@ -1561,9 +1534,6 @@ export default {
         }
       }
 
-      /*
-       * Revision history for the Hero.
-       */
       if (
         path === "/api/admin/content/hero/revisions" &&
         request.method === "GET"
