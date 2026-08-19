@@ -159,7 +159,11 @@ section {
   scroll-margin-top: calc(var(--header-height) + 24px);
 }
 
-html[data-market="international"] .local-market-only,
+html[data-market="international"]:not([data-rental-intent="true"]) .local-market-only,
+
+html[data-market="international"][data-rental-intent="true"]
+.local-market-only:not(#rental):not(#rentalCartToggle):not(#rentalCartModal):not([href="#rental"]),
+
 html[data-market="colombia"] .international-market-only {
   display: none !important;
 }
