@@ -1226,6 +1226,12 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 <label data-en="Message" data-es="Mensaje" for="cfMessage">Message</label>
 <textarea id="cfMessage" name="message" required=""></textarea>
 </div>
+  <div
+  id="contactTurnstile"
+  class="turnstile-container"
+  data-sitekey="0x4AAAAAAEU9TKTfkxczBI-p"
+  aria-label="Security verification">
+</div>
 <button class="btn btn-primary" data-en="Send Message" data-es="Enviar Mensaje" type="submit">Send Message</button>
 <p class="contact-form-note"
    data-en="Tell me about the project, timeline and what you need."
@@ -1288,6 +1294,10 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 </a>
 <script src="rental-image-settings.js?v=20260817-1"></script>
 <script src="script.js?v=20260817-3"></script>
-
+  
+<script
+  src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&onload=onTurnstileLoad"
+  defer>
+</script>
 </body>
 </html>
