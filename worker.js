@@ -403,6 +403,30 @@ async function notifyContactLead(
 async function createContactLead(request, env) {
   const body = await readJsonBody(request);
 
+  const turnstileResult =
+    await verifyTurnstileToken(
+      request,
+      env,
+      body?.turnstileToken,
+      "contact"
+    );
+
+  if (!turnstileResult.ok) {
+    console.warn(
+      "Contact Turnstile validation failed",
+      turnstileResult.reason,
+      turnstileResult.errors
+    );
+
+    return json(
+      {
+        ok: false,
+        error: "Security verification failed"
+      },
+      403
+    );
+  }
+
   const name = cleanString(body?.name, 160);
   const email = cleanString(body?.email, 320).toLowerCase();
   const message = cleanString(body?.message, 5000);
