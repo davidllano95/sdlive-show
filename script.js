@@ -95,7 +95,14 @@ const UI_CONFIG = {
 const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const marqueePauseBoundTracks = new WeakSet();
 const LANGUAGE_STORAGE_KEY = "sdlive-language-preference";
+function pushAnalyticsEvent(eventName, parameters = {}) {
+  window.dataLayer = window.dataLayer || [];
 
+  window.dataLayer.push({
+    event: eventName,
+    ...parameters
+  });
+}
 document.addEventListener("DOMContentLoaded", () => {
   initMarket();
   initLanguage();
@@ -1580,7 +1587,17 @@ function initRentalQuoteBuilder() {
           result.error || "Rental request failed"
         );
       }
-
+pushAnalyticsEvent("generate_lead", {
+  lead_type: "rental",
+  market: payload.market,
+  language: lang,
+  page_path: window.location.pathname,
+  rental_days: state.days,
+  custom_quote:
+    configuration.customQuote
+      ? "yes"
+      : "no"
+});
       alert(
         lang === "es"
           ? "Solicitud de alquiler recibida. Te contactaré con la confirmación y cotización."
@@ -1799,7 +1816,13 @@ function initContactForm() {
       if (!response.ok || !result.ok) {
         throw new Error(result.error || "Contact request failed");
       }
-
+       
+pushAnalyticsEvent("generate_lead", {
+  lead_type: "contact",
+  market: payload.market,
+  language: lang,
+  page_path: window.location.pathname
+});
       form.reset();
 
       alert(
