@@ -117,8 +117,8 @@ window.onTurnstileLoad = function () {
         sitekey: container.dataset.sitekey,
         action: "contact",
         theme: "dark",
-        size: "flexible",
-appearance: "always",
+        size: "normal",
+appearance: "interaction-only",
 callback: (token) => {
   console.log(
     "Turnstile contact success:",
