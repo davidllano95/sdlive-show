@@ -29,9 +29,7 @@
     body {
       margin: 0;
       color: var(--text);
-      background:
-        radial-gradient(circle at 15% 0%, rgba(160,137,229,.18), transparent 34rem),
-        var(--bg);
+      background: radial-gradient(circle at 15% 0%, rgba(160,137,229,.18), transparent 34rem), var(--bg);
       font-family: "Manrope", system-ui, sans-serif;
       line-height: 1.7;
     }
@@ -45,83 +43,27 @@
       background: rgba(6,7,11,.82);
       border-bottom: 1px solid var(--border);
     }
-    .header-inner {
-      min-height: 74px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 24px;
-    }
+    .header-inner { min-height: 74px; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
     .logo img { display: block; width: 150px; height: auto; }
     .actions { display: flex; align-items: center; gap: 10px; }
-    .lang {
-      display: inline-flex;
-      padding: 4px;
-      border: 1px solid var(--border);
-      border-radius: 999px;
-      background: rgba(255,255,255,.035);
-    }
-    .lang button {
-      border: 0;
-      color: var(--soft);
-      background: transparent;
-      padding: 7px 10px;
-      border-radius: 999px;
-      cursor: pointer;
-      font: inherit;
-      font-size: 12px;
-      font-weight: 700;
-    }
+    .lang { display: inline-flex; padding: 4px; border: 1px solid var(--border); border-radius: 999px; background: rgba(255,255,255,.035); }
+    .lang button { border: 0; color: var(--soft); background: transparent; padding: 7px 10px; border-radius: 999px; cursor: pointer; font: inherit; font-size: 12px; font-weight: 700; }
     .lang button[aria-pressed="true"] { color: #090a0d; background: var(--accent); }
-    .home {
-      text-decoration: none;
-      border: 1px solid var(--border);
-      padding: 8px 12px;
-      border-radius: 999px;
-      font-size: 13px;
-    }
+    .home { text-decoration: none; border: 1px solid var(--border); padding: 8px 12px; border-radius: 999px; font-size: 13px; }
     main { padding: 72px 0 92px; }
-    .eyebrow {
-      display: block;
-      color: var(--accent);
-      text-transform: uppercase;
-      letter-spacing: .16em;
-      font-size: 12px;
-      font-weight: 800;
-      margin-bottom: 12px;
-    }
+    .eyebrow { display: block; color: var(--accent); text-transform: uppercase; letter-spacing: .16em; font-size: 12px; font-weight: 800; margin-bottom: 12px; }
     h1, h2 { font-family: "Sora", system-ui, sans-serif; line-height: 1.15; }
     h1 { font-size: clamp(34px, 6vw, 60px); margin: 0 0 20px; max-width: 850px; }
     .intro { color: var(--soft); font-size: 18px; max-width: 800px; }
-    .meta {
-      margin: 32px 0 48px;
-      padding: 22px;
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      background: var(--surface);
-    }
+    .meta { margin: 32px 0 48px; padding: 22px; border: 1px solid var(--border); border-radius: 20px; background: var(--surface); }
     .meta p { margin: 4px 0; }
-    article section {
-      padding: 28px 0;
-      border-top: 1px solid var(--border);
-    }
+    article section { padding: 28px 0; border-top: 1px solid var(--border); }
     article h2 { margin: 0 0 14px; font-size: 23px; }
     article p, article li { color: var(--soft); }
     article strong { color: var(--text); }
     article ul { padding-left: 22px; }
-    .notice {
-      margin-top: 36px;
-      padding: 18px 20px;
-      border-left: 3px solid var(--accent);
-      background: rgba(160,137,229,.08);
-      color: var(--soft);
-    }
-    footer {
-      border-top: 1px solid var(--border);
-      padding: 28px 0 42px;
-      color: var(--soft);
-      font-size: 13px;
-    }
+    .notice { margin-top: 36px; padding: 18px 20px; border-left: 3px solid var(--accent); background: rgba(160,137,229,.08); color: var(--soft); }
+    footer { border-top: 1px solid var(--border); padding: 28px 0 42px; color: var(--soft); font-size: 13px; }
     [hidden] { display: none !important; }
     @media (max-width: 620px) {
       .header-inner { align-items: flex-start; padding: 16px 0; }
@@ -185,8 +127,8 @@
 
     <section>
       <h2>4. Autorización</h2>
-      <p>Cuando la autorización sea necesaria, será solicitada antes o al momento de la recolección mediante un mecanismo que permita una manifestación expresa e inequívoca. En los formularios públicos de SD.Live, la casilla de autorización no está marcada por defecto y el envío requiere una acción afirmativa del Titular.</p>
-      <p>SD.Live conserva evidencia electrónica de la versión de esta política aceptada y de la fecha de autorización asociada a cada solicitud recibida a través de los formularios protegidos.</p>
+      <p>Cuando la autorización sea necesaria, será solicitada antes o al momento de la recolección mediante un mecanismo que permita una manifestación expresa o una conducta inequívoca del Titular. En los formularios públicos de SD.Live, antes de transmitir la solicitud se muestra una confirmación específica de tratamiento de datos y el envío solo continúa cuando el Titular selecciona de forma afirmativa <strong>“Autorizar y enviar”</strong>.</p>
+      <p>La acción de cerrar o cancelar la confirmación no constituye autorización y la solicitud no se transmite a SD.Live. SD.Live conserva evidencia electrónica de la versión de esta política y de la fecha de autorización asociada a las solicitudes recibidas a través de los formularios protegidos.</p>
     </section>
 
     <section>
@@ -242,103 +184,95 @@
 
     <section>
       <h2>1. Legal framework and scope</h2>
-      <p>Personal data is processed in accordance with Colombia's Law 1581 of 2012 and applicable implementing rules. This policy covers data supplied through forms, commercial and technical communications, project or rental requests, and technologies required to operate and secure this website.</p>
+      <p>Personal data is processed under Colombia’s Law 1581 of 2012 and applicable implementing rules. This policy covers information supplied through forms, commercial and technical communications, project or rental requests, and technologies required to operate and protect this website.</p>
     </section>
 
     <section>
       <h2>2. Data that may be processed</h2>
       <ul>
-        <li>Identification and contact data such as name, email address and information the Data Subject chooses to include in a message.</li>
-        <li>Project, production and rental information: event type, date, city or venue, estimated attendees, equipment, services and notes.</li>
-        <li>Technical information required for website security and operation that may be processed by technology providers, such as IP address, browser, device and security data.</li>
+        <li>Identity and contact information such as name, email address and information the Data Subject chooses to include in a message.</li>
+        <li>Project, production and rental information such as event type, date, city or venue, expected attendance, equipment, services and notes.</li>
+        <li>Technical information required for website operation and security that may be processed by technology providers, such as IP address, browser, device and security data.</li>
         <li>Website usage or measurement data when analytics tools are used.</li>
       </ul>
-      <p>SD.Live does not intentionally request sensitive personal data through its public forms. Data Subjects should avoid including sensitive information that is not necessary for their request.</p>
+      <p>SD.Live does not deliberately request sensitive personal data through its public forms. Users should avoid providing sensitive information that is not necessary for their request.</p>
     </section>
 
     <section>
       <h2>3. Purposes</h2>
-      <p>Data may be processed to respond to inquiries; review and quote projects; manage rental requests; deliver services; coordinate production, logistics and technical support; maintain communication and commercial relationship history; meet administrative, accounting, contractual or legal obligations; prevent fraud and abuse; protect website security; and measure or improve the website and its contact channels.</p>
+      <p>Data may be processed to answer inquiries; evaluate and quote projects; manage rental requests; provide services; coordinate production, logistics and technical support; maintain relevant communication and commercial history; meet administrative, accounting, contractual or legal obligations; prevent fraud or abuse; protect website security; and measure or improve the website and its contact channels.</p>
       <p>Personal data is not sold to third parties.</p>
     </section>
 
     <section>
       <h2>4. Authorization</h2>
-      <p>Where authorization is required, it is requested before or at the time of collection through a mechanism that records an express and unambiguous action. On SD.Live public forms, the authorization checkbox is not pre-selected and submission requires an affirmative action by the Data Subject.</p>
-      <p>SD.Live retains electronic evidence of the policy version accepted and the authorization date associated with each request submitted through the protected forms.</p>
+      <p>Where authorization is required, it is requested before or at the time of collection through a mechanism that records an express manifestation or an unequivocal affirmative action by the Data Subject. On SD.Live public forms, a specific data-processing confirmation is shown before the request is transmitted, and submission continues only when the user affirmatively selects <strong>“Authorize &amp; send”</strong>.</p>
+      <p>Closing or cancelling the confirmation does not constitute authorization and the request is not transmitted to SD.Live. SD.Live retains electronic evidence of the applicable policy version and the authorization date associated with requests received through the protected forms.</p>
     </section>
 
     <section>
-      <h2>5. Processors, providers and international processing</h2>
-      <p>To operate the website and handle requests, SD.Live may use technology providers acting as processors or subprocessors, including hosting, security, database storage, anti-abuse verification, notification delivery, business email and audience measurement services. These functions may currently involve Cloudflare, Resend and Google services.</p>
-      <p>Some providers may process information outside Colombia. Where applicable, SD.Live will seek to ensure such transmissions or transfers are performed under conditions permitted by applicable law and only for the purposes described above.</p>
+      <h2>5. Service providers and international processing</h2>
+      <p>To operate the site and handle requests, SD.Live may use technology providers acting as processors or subprocessors, including hosting, security, database storage, anti-abuse verification, notification delivery, business email and audience measurement services. These functions may currently involve Cloudflare, Resend and Google services.</p>
+      <p>Some providers may process information outside Colombia. Where applicable, SD.Live will seek to ensure that international transmissions or transfers occur under conditions permitted by applicable law and only for the purposes described in this policy.</p>
     </section>
 
     <section>
       <h2>6. Data Subject rights</h2>
-      <p>Data Subjects may know, access, update and correct their personal data; request proof of authorization where applicable; obtain information about how their data has been used; submit complaints to Colombia's Superintendence of Industry and Commerce after exhausting the procedure before the Controller; request deletion; and revoke authorization where legally permitted.</p>
+      <p>Data Subjects may access, know, update and correct their data; request evidence of authorization where applicable; obtain information regarding the use of their data; submit complaints to Colombia’s Superintendence of Industry and Commerce after completing the process before the Controller; request deletion; and revoke authorization where legally permitted.</p>
     </section>
 
     <section>
-      <h2>7. Inquiries, claims, deletion and revocation</h2>
-      <p>Requests should be sent to <a href="mailto:hello@sdlive.show">hello@sdlive.show</a> with the subject <strong>“Personal data”</strong>, including name, contact information, a description of the request and information reasonably necessary to verify identity or representation.</p>
-      <p>Inquiries will be answered within a maximum of ten (10) business days from receipt. If a response cannot be provided within that period, the reason and a new response date will be communicated; the extension will not exceed five (5) additional business days.</p>
-      <p>Claims will be answered within a maximum of fifteen (15) business days from the day after receipt. If a claim cannot be resolved within that period, the reason and a new response date will be communicated; the extension will not exceed eight (8) additional business days.</p>
+      <h2>7. Inquiries, complaints, deletion and revocation</h2>
+      <p>Requests should be sent to <a href="mailto:hello@sdlive.show">hello@sdlive.show</a> with the subject <strong>“Personal data”</strong>, including the requester’s name, contact details, a description of the request and information necessary to verify identity or representation.</p>
+      <p>Inquiries will be answered within a maximum of ten (10) business days after receipt. If a response cannot be provided within that period, the reason and a new response date will be communicated; the extension will not exceed five (5) additional business days.</p>
+      <p>Complaints will be handled within a maximum of fifteen (15) business days from the day following receipt. If the complaint cannot be resolved within that period, the reason and a new response date will be communicated; the extension will not exceed eight (8) additional business days.</p>
     </section>
 
     <section>
       <h2>8. Security and retention</h2>
-      <p>SD.Live uses reasonable technical and organizational security measures to reduce the risk of loss, alteration, unauthorized access, consultation or use. Administrative access to operational content and data is protected through authentication and access controls.</p>
-      <p>Data is retained only for as long as reasonably necessary for the stated purposes and to meet contractual, administrative, accounting, tax or legal obligations. The client, prospect and request database will remain in effect while Samuel David Llano operates SD.Live and while related legitimate purposes or obligations remain.</p>
+      <p>SD.Live applies reasonable technical and organizational safeguards intended to reduce the risks of loss, alteration, unauthorized consultation, use or access. Administrative access to content and operational data is protected through authentication and access controls.</p>
+      <p>Data is retained only for a reasonable period necessary for the stated purposes and to meet contractual, administrative, accounting, tax or legal obligations. Client, prospect and request records may remain active while Samuel David Llano operates SD.Live and while legitimate related purposes or obligations continue.</p>
     </section>
 
     <section>
       <h2>9. Minors</h2>
-      <p>SD.Live public forms are intended for persons able to request professional services or act for a production or organization. SD.Live does not seek to intentionally collect personal data from children or adolescents through these forms.</p>
+      <p>SD.Live public forms are intended for people able to request professional services or act on behalf of a production or organization. SD.Live does not seek to deliberately collect personal data from children or adolescents through these forms.</p>
     </section>
 
     <section>
       <h2>10. Policy changes</h2>
-      <p>Substantial changes affecting the Controller's identity or the purposes of processing will be communicated in a timely manner where required. When a new purpose requires renewed authorization, authorization will be requested before applying that purpose.</p>
+      <p>Material changes affecting the Controller’s identity or the purposes of processing will be communicated when legally required. Where a change of purpose requires new authorization, that authorization will be requested before the new purpose is applied.</p>
       <p><strong>Effective date:</strong> August 19, 2026. <strong>Version:</strong> 2026-08-19.</p>
     </section>
 
-    <div class="notice"><strong>Physical correspondence address:</strong> SD.Live does not yet maintain a public commercial address. The operational privacy correspondence channel is <a href="mailto:hello@sdlive.show">hello@sdlive.show</a>. This policy will be updated when a physical correspondence address is established.</div>
+    <div class="notice"><strong>Physical correspondence address:</strong> SD.Live does not currently maintain a public commercial address. The operational correspondence channel for data-protection matters is <a href="mailto:hello@sdlive.show">hello@sdlive.show</a>. This policy will be updated when a physical correspondence address becomes available.</div>
   </article>
 </main>
 
 <footer>
-  <div class="shell">© 2026 SD.Live · Creative Audio · <a href="mailto:hello@sdlive.show">hello@sdlive.show</a></div>
+  <div class="shell">© 2026 SD.Live · Creative Audio</div>
 </footer>
 
 <script>
-  (() => {
-    const esButton = document.getElementById('policyEs');
-    const enButton = document.getElementById('policyEn');
-    const esContent = document.getElementById('policyEsContent');
-    const enContent = document.getElementById('policyEnContent');
+  const esButton = document.getElementById("policyEs");
+  const enButton = document.getElementById("policyEn");
+  const esContent = document.getElementById("policyEsContent");
+  const enContent = document.getElementById("policyEnContent");
 
-    const setLanguage = (language) => {
-      const useSpanish = language === 'es';
-      document.documentElement.lang = useSpanish ? 'es' : 'en';
-      esButton.setAttribute('aria-pressed', String(useSpanish));
-      enButton.setAttribute('aria-pressed', String(!useSpanish));
-      esContent.hidden = !useSpanish;
-      enContent.hidden = useSpanish;
-      try { localStorage.setItem('sdlive-language-preference', useSpanish ? 'es' : 'en'); } catch {}
-    };
+  function setPolicyLanguage(lang) {
+    const isEs = lang === "es";
+    document.documentElement.lang = isEs ? "es" : "en";
+    esContent.hidden = !isEs;
+    enContent.hidden = isEs;
+    esButton.setAttribute("aria-pressed", String(isEs));
+    enButton.setAttribute("aria-pressed", String(!isEs));
+  }
 
-    let initial = 'es';
-    try {
-      const stored = localStorage.getItem('sdlive-language-preference');
-      if (stored === 'en' || stored === 'es') initial = stored;
-      else if (!(navigator.language || '').toLowerCase().startsWith('es')) initial = 'en';
-    } catch {}
+  esButton.addEventListener("click", () => setPolicyLanguage("es"));
+  enButton.addEventListener("click", () => setPolicyLanguage("en"));
 
-    esButton.addEventListener('click', () => setLanguage('es'));
-    enButton.addEventListener('click', () => setLanguage('en'));
-    setLanguage(initial);
-  })();
+  const preferred = (navigator.languages?.[0] || navigator.language || "es").toLowerCase();
+  setPolicyLanguage(preferred.startsWith("es") ? "es" : "en");
 </script>
 </body>
 </html>
