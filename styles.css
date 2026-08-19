@@ -4049,6 +4049,20 @@ body.private-portfolio.owner-access-locked {
 .turnstile-container iframe {
   max-width: 100%;
 }
+
+.form-validation-message {
+  width: 100%;
+  margin: -4px auto 0;
+  color: var(--color-accent);
+  font-size: 12px;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.form-validation-message[hidden] {
+  display: none;
+}
+
 /* =============================================
    FOOTER
 ============================================= */
