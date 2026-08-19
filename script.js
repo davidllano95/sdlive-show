@@ -131,7 +131,33 @@ function detectMarket() {
 }
 
 function initMarket() {
-  document.documentElement.dataset.market = detectMarket();
+  const root = document.documentElement;
+
+  root.dataset.market = detectMarket();
+
+  const activateRentalIntent = () => {
+    if (window.location.hash.toLowerCase() !== "#rental") {
+      return;
+    }
+
+    root.dataset.rentalIntent = "true";
+
+    requestAnimationFrame(() => {
+      document
+        .getElementById("rental")
+        ?.scrollIntoView({
+          block: "start",
+          behavior: "auto"
+        });
+    });
+  };
+
+  activateRentalIntent();
+
+  window.addEventListener(
+    "hashchange",
+    activateRentalIntent
+  );
 }
 
 function initTrustedMarquees() {
