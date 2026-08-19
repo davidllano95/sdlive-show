@@ -95,6 +95,33 @@ const UI_CONFIG = {
 const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const marqueePauseBoundTracks = new WeakSet();
 const LANGUAGE_STORAGE_KEY = "sdlive-language-preference";
+window.__turnstileWidgets =
+  window.__turnstileWidgets || {};
+
+window.onTurnstileLoad = function () {
+  const container =
+    document.getElementById("contactTurnstile");
+
+  if (
+    !container ||
+    !container.dataset.sitekey ||
+    !window.turnstile
+  ) {
+    return;
+  }
+
+  window.__turnstileWidgets.contact =
+    window.turnstile.render(
+      "#contactTurnstile",
+      {
+        sitekey: container.dataset.sitekey,
+        action: "contact",
+        theme: "dark",
+        size: "flexible",
+        appearance: "interaction-only"
+      }
+    );
+};
 function pushAnalyticsEvent(eventName, parameters = {}) {
   window.dataLayer = window.dataLayer || [];
 
@@ -1776,16 +1803,27 @@ function initContactForm() {
       document.documentElement.lang === "es"
         ? "es"
         : "en";
+const turnstileWidgetId =
+  window.__turnstileWidgets?.contact;
 
-    const payload = {
-      name: document.getElementById("cfName")?.value.trim() || "",
-      email: document.getElementById("cfEmail")?.value.trim() || "",
-      message: document.getElementById("cfMessage")?.value.trim() || "",
-      language: lang,
-      market: document.documentElement.dataset.market || "international",
-      sourceUrl: window.location.href,
-      referrer: document.referrer || ""
-    };
+const turnstileToken =
+  window.turnstile &&
+  turnstileWidgetId !== undefined
+    ? window.turnstile.getResponse(
+        turnstileWidgetId
+      )
+    : "";
+
+const payload = {
+  name: document.getElementById("cfName")?.value.trim() || "",
+  email: document.getElementById("cfEmail")?.value.trim() || "",
+  message: document.getElementById("cfMessage")?.value.trim() || "",
+  language: lang,
+  market: document.documentElement.dataset.market || "international",
+  sourceUrl: window.location.href,
+  referrer: document.referrer || "",
+  turnstileToken
+};
 
     const params = new URLSearchParams(window.location.search);
 
@@ -1839,6 +1877,16 @@ pushAnalyticsEvent("generate_lead", {
           : "The message could not be sent. Please try again or contact me via WhatsApp."
       );
     } finally {
+       if (
+  window.turnstile &&
+  turnstileWidgetId !== undefined
+) {
+  try {
+    window.turnstile.reset(
+      turnstileWidgetId
+    );
+  } catch {}
+}
       if (submitButton) {
         submitButton.disabled = false;
         submitButton.textContent =
