@@ -1,6 +1,8 @@
 import { jwtVerify, createRemoteJWKSet } from "jose";
 
 const ADMIN_EMAIL = "sam@sdlive.show";
+const PRIVACY_POLICY_VERSION = "2026-08-19";
+const PRIVACY_AUTHORIZATION_METHOD = "website_checkbox";
 const HERO_KEY = {
   section: "hero",
   market: "all",
@@ -206,6 +208,64 @@ function isValidEmail(value) {
   if (typeof value !== "string") return false;
 
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
+function hasValidPrivacyConsent(body) {
+  return body?.privacyConsent === true &&
+    cleanString(body?.privacyPolicyVersion, 80) === PRIVACY_POLICY_VERSION;
+}
+
+let privacyConsentSchemaPromise = null;
+
+async function ensurePrivacyConsentSchema(env) {
+  if (!privacyConsentSchemaPromise) {
+    privacyConsentSchemaPromise = env.CMS_DB
+      .batch([
+        env.CMS_DB.prepare(`
+          CREATE TABLE IF NOT EXISTS privacy_consents (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            lead_id INTEGER NOT NULL,
+            source TEXT NOT NULL CHECK (source IN ('contact', 'rental')),
+            privacy_consent_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            privacy_policy_version TEXT NOT NULL,
+            authorization_method TEXT NOT NULL,
+            FOREIGN KEY (lead_id) REFERENCES leads(id) ON DELETE CASCADE
+          )
+        `),
+        env.CMS_DB.prepare(`
+          CREATE UNIQUE INDEX IF NOT EXISTS idx_privacy_consents_lead_source
+          ON privacy_consents (lead_id, source)
+        `)
+      ])
+      .catch((error) => {
+        privacyConsentSchemaPromise = null;
+        throw error;
+      });
+  }
+
+  return privacyConsentSchemaPromise;
+}
+
+async function recordPrivacyConsent(env, { leadId, source }) {
+  await ensurePrivacyConsentSchema(env);
+
+  await env.CMS_DB
+    .prepare(`
+      INSERT INTO privacy_consents (
+        lead_id,
+        source,
+        privacy_policy_version,
+        authorization_method
+      )
+      VALUES (?, ?, ?, ?)
+    `)
+    .bind(
+      leadId,
+      source,
+      PRIVACY_POLICY_VERSION,
+      PRIVACY_AUTHORIZATION_METHOD
+    )
+    .run();
 }
 
 const RENTAL_EVENT_TYPES = new Set([
@@ -612,6 +672,16 @@ async function createContactLead(request, env) {
     );
   }
 
+  if (!hasValidPrivacyConsent(body)) {
+    return json(
+      {
+        ok: false,
+        error: "Privacy consent is required"
+      },
+      400
+    );
+  }
+
   const name = cleanString(body?.name, 160);
   const email = cleanString(body?.email, 320).toLowerCase();
   const message = cleanString(body?.message, 5000);
@@ -697,34 +767,53 @@ async function createContactLead(request, env) {
     )
     .run();
 
-    const leadId =
-    result.meta?.last_row_id || null;
+  const leadId = result.meta?.last_row_id || null;
+
+  if (!leadId) {
+    throw new Error("Could not create contact lead");
+  }
+
+  try {
+    await recordPrivacyConsent(env, {
+      leadId,
+      source: "contact"
+    });
+  } catch (error) {
+    await env.CMS_DB
+      .prepare(`
+        DELETE FROM leads
+        WHERE id = ?
+          AND type = 'contact'
+      `)
+      .bind(leadId)
+      .run();
+
+    throw error;
+  }
 
   let notificationSent = false;
 
-  if (leadId) {
-    try {
-      await notifyContactLead(env, {
-        leadId,
-        name,
-        email,
-        message,
-        language,
-        market,
-        sourceUrl,
-        referrer,
-        utmSource,
-        utmMedium,
-        utmCampaign
-      });
+  try {
+    await notifyContactLead(env, {
+      leadId,
+      name,
+      email,
+      message,
+      language,
+      market,
+      sourceUrl,
+      referrer,
+      utmSource,
+      utmMedium,
+      utmCampaign
+    });
 
-      notificationSent = true;
-    } catch (error) {
-      console.error(
-        "Contact email notification failed",
-        error
-      );
-    }
+    notificationSent = true;
+  } catch (error) {
+    console.error(
+      "Contact email notification failed",
+      error
+    );
   }
 
   return json(
@@ -850,6 +939,16 @@ async function createRentalLead(request, env) {
         error: "Security verification failed"
       },
       403
+    );
+  }
+
+  if (!hasValidPrivacyConsent(body)) {
+    return json(
+      {
+        ok: false,
+        error: "Privacy consent is required"
+      },
+      400
     );
   }
 
@@ -1027,6 +1126,11 @@ async function createRentalLead(request, env) {
   }
 
   try {
+    await recordPrivacyConsent(env, {
+      leadId,
+      source: "rental"
+    });
+
     const rentalResult = await env.CMS_DB
       .prepare(`
         INSERT INTO rental_requests (
@@ -1059,7 +1163,7 @@ async function createRentalLead(request, env) {
       )
       .run();
 
-       const rentalRequestId =
+    const rentalRequestId =
       rentalResult.meta?.last_row_id || null;
 
     let notificationSent = false;
