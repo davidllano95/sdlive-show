@@ -10,10 +10,20 @@
     const spanish = language === "es";
 
     document.documentElement.lang = spanish ? "es-CO" : "en";
+    document.title = spanish
+      ? "Política de Tratamiento de Datos — SD.Live"
+      : "Privacy & Data Processing Policy — SD.Live";
+
     esButton.setAttribute("aria-pressed", String(spanish));
     enButton.setAttribute("aria-pressed", String(!spanish));
     esContent.hidden = !spanish;
     enContent.hidden = spanish;
+
+    document.querySelectorAll("[data-policy-es][data-policy-en]").forEach((element) => {
+      element.textContent = spanish
+        ? element.dataset.policyEs
+        : element.dataset.policyEn;
+    });
 
     try {
       localStorage.setItem(
