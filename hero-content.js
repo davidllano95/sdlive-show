@@ -143,6 +143,9 @@
 
   async function loadPublishedHero() {
     try {
+            const hero = document.getElementById("hero");
+      window.SDLIVE_CMS_HYDRATION?.begin(hero);
+      
       const response = await fetch(HERO_ENDPOINT, {
         credentials: "same-origin",
         cache: "no-store",
@@ -173,9 +176,15 @@
       if (!renderPublishedHero()) {
         throw new Error("Home Hero markup is not compatible with CMS content");
       }
-
+      
+window.SDLIVE_CMS_HYDRATION?.complete(hero);
+      
       observeLanguageChanges();
     } catch (error) {
+            window.SDLIVE_CMS_HYDRATION?.fail(
+        document.getElementById("hero")
+      );
+      
       // The static HTML is the deliberate fallback and remains fully usable.
       console.warn(
         "[SD.Live] Published Hero unavailable; using static fallback.",
