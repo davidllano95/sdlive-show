@@ -10,7 +10,7 @@
 | Producción | [https://sdlive.show](https://sdlive.show) |
 | Milestone actual | P0 — base pública estable |
 | Estado del milestone | **ABIERTO** |
-| Siguiente gate | Corregir bloqueos P0 y pasar smoke test final |
+| Siguiente gate | Corregir wordmark dinámico y pasar smoke test final |
 | Auditoría de backlog | **RECUPERADA** contra `main` + handoff/backlog histórico |
 
 ## Cómo retomar el proyecto en una conversación nueva
@@ -56,10 +56,11 @@ P0 no se cierra hasta completar todos los bloqueos y la verificación manual. El
 - [x] **Copy canónico.** Home usa exactamente “Creative Audio. Technical systems. Built for the show.”
 - [x] **Convenciones históricas retiradas.** No quedan `SD.live`, `SDLive`, `SD Live`, el correo iCloud antiguo ni la implementación display-only en el alcance auditado.
 - [x] **WLive es contenido vigente.** El logo/card, el reveal “Brands supported through WLive” y el testimonial asociado deben mantenerse visibles. La nota previa que sugería retirarlo fue una inferencia incorrecta y no estaba respaldada por los handoffs fuente.
+- [x] **Redirect `www` → root validado (Externo).** La regla wildcard de Cloudflare quedó configurada para preservar correctamente la ruta usando `${2}`; el usuario verificó en Safari/iPhone que `https://www.sdlive.show/` abre y funciona correctamente. No existe evidencia de que el supuesto destino `/s` haya ocurrido en producción; esa afirmación previa fue una inferencia incorrecta y queda descartada.
 
 ### Bloqueos antes de cerrar P0
 
-- [ ] **P0.1 — corregir redirect de `www` (Externo).** La auditoría previa detectó que `https://www.sdlive.show/` redirigía a `https://sdlive.show/s` y terminaba en 404. Corregir la regla de Cloudflare para preservar la ruta y revalidar desde navegador/HTTP real antes de marcarlo hecho.
+- [x] **P0.1 — validar redirect de `www` (Externo).** Regla corregida y verificada manualmente en navegador real: `www.sdlive.show` resuelve correctamente hacia el sitio canónico.
 - [ ] **P0.2 — garantizar el wordmark visual en contenido dinámico.** Verificado en `main`: `privacy-consent.js` y `analytics-consent.js` contienen copias visibles de `SD.Live` escritas mediante `textContent`; el alert nativo de éxito de Contact también usa `SD.Live` plano. Aplicar renderer seguro o retirar la marca de superficies que no admitan el wordmark.
 - [x] **P0.3 — confirmar alcance WLive.** Confirmado: WLive se mantiene visible y no constituye un bug ni un bloqueo.
 - [ ] **P0.4 — smoke test final en navegador real.** Verificar Home, flecha Desktop/Mobile con URL limpia, Theatre, `/en/`, `/es-co/`, `/privacy`, 404, preferencias de cookies, autorización de contacto y autorización de alquiler.
@@ -300,6 +301,10 @@ No son compromisos inmediatos. Se conservan para que el handoff no pierda decisi
 
 **Resultado:** WLive se mantiene. La nota que lo había convertido en posible bloqueo P0 provenía de una síntesis anterior y no tenía respaldo en los dos handoffs fuente revisados; ambos no contienen ninguna instrucción de retirar WLive. El código actual que muestra WLive se considera comportamiento correcto.
 
+### 2026-08-20 — P0.1 redirect `www` validado
+
+**Resultado:** P0.1 cerrado. Se corrigió la referencia wildcard del Target URL de Cloudflare para preservar la ruta y el usuario verificó inmediatamente en Safari/iPhone que `https://www.sdlive.show/` abre y funciona correctamente. La mención previa de una redirección observada a `/s` se elimina como hecho: nunca fue reportada ni observada; había sido una inferencia técnica a partir de la configuración anterior.
+
 ## Protocolo de actualización por milestone
 
 Actualizar este archivo cuando ocurra uno de estos eventos:
@@ -321,9 +326,8 @@ No actualizar por cambios cosméticos aislados, microcopy o commits intermedios 
 
 ## Orden recomendado inmediato
 
-1. Corregir la regla externa de `www` en Cloudflare y revalidarla.
-2. Corregir el renderer del wordmark y el alert de Contact en el repositorio.
-3. Ejecutar smoke test y validación GA4 en producción.
-4. Marcar P0 cerrado y actualizar este archivo con el SHA desplegado.
-5. Empezar P1.1: binding del Hero CMS hacia Home con fallback estático.
-6. Solo después, ampliar CMS/editor siguiendo el backlog recuperado y los gates de las 8 fases.
+1. Corregir el renderer del wordmark y el alert de Contact en el repositorio.
+2. Ejecutar smoke test y validación GA4 en producción.
+3. Marcar P0 cerrado y actualizar este archivo con el SHA desplegado.
+4. Empezar P1.1: binding del Hero CMS hacia Home con fallback estático.
+5. Solo después, ampliar CMS/editor siguiendo el backlog recuperado y los gates de las 8 fases.
