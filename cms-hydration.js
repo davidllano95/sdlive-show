@@ -1,26 +1,14 @@
-(() => {
-  if (window.SDLIVE_CMS_HYDRATION) return;
+export function begin(element) {
+  if (!element) return;
+  element.dataset.cmsState = "loading";
+}
 
-  window.SDLIVE_CMS_HYDRATION = true;
+export function complete(element) {
+  if (!element) return;
+  element.dataset.cmsState = "ready";
+}
 
-  function begin(element) {
-    if (!element) return;
-    element.dataset.cmsState = "loading";
-  }
-
-  function complete(element) {
-    if (!element) return;
-    element.dataset.cmsState = "ready";
-  }
-
-  function fail(element) {
-    if (!element) return;
-    element.dataset.cmsState = "ready";
-  }
-
-  window.SDLIVE_CMS_HYDRATION = {
-    begin,
-    complete,
-    fail
-  };
-})();
+export function fail(element) {
+  if (!element) return;
+  element.dataset.cmsState = "ready";
+}
