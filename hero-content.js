@@ -185,7 +185,7 @@
   }
 
   function init() {
-    if (isAdminPreview()) return;
+    if (isAdminPreview() || !document.getElementById("hero")) return;
     void loadPublishedHero();
   }
 
