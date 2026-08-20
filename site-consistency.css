@@ -19,6 +19,18 @@
   line-height: 1;
 }
 
+/* Keep the floating Home control centered over WhatsApp.
+   WhatsApp is 56px wide at right:24px, so its center sits 52px from the edge. */
+.back-to-top {
+  right: 29px;
+}
+
+@media (max-width: 720px) {
+  .back-to-top {
+    right: 31px;
+  }
+}
+
 /* Keep all navigational footer items visually equivalent.
    Section headings remain intentionally distinct for hierarchy. */
 .site-footer .footer-col a,
