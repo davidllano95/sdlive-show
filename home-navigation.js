@@ -7,7 +7,13 @@
   ).matches;
 
   function loadHeroContentBinding() {
-    import("/hero-content.js?v=20260820-1").catch((error) => {
+    import("/hero-content.js?v=20260820-3").catch((error) => {
+      const hero = document.getElementById("hero");
+
+      if (hero) {
+        hero.dataset.cmsState = "ready";
+      }
+
       // Static Hero content remains the intentional fallback.
       console.warn(
         "[SD.Live] Hero CMS binding could not be loaded; using static fallback.",
@@ -51,14 +57,11 @@
     const button = document.getElementById("backToTop");
     if (!button) return;
 
-    // Prevent the analytics-consent compatibility layer from binding navigation.
     button.dataset.canonicalHomeBound = "true";
     button.setAttribute("data-site-navigation", "home-top");
 
-    // Document capture wins over legacy target listeners on desktop and mobile Safari.
     document.addEventListener("click", handleActivation, true);
 
-    // Pointer activation cleans the address bar before Safari synthesizes the click.
     document.addEventListener(
       "pointerup",
       (event) => {
