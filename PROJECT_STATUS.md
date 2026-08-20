@@ -55,12 +55,13 @@ P0 no se cierra hasta completar todos los bloqueos y la verificación manual. El
 - [x] **Limpieza de implementaciones descartadas.** Se retiraron el mockup de Owner Access, `site-runtime.js/css`, la navegación en GTM y la frase antigua.
 - [x] **Copy canónico.** Home usa exactamente “Creative Audio. Technical systems. Built for the show.”
 - [x] **Convenciones históricas retiradas.** No quedan `SD.live`, `SDLive`, `SD Live`, el correo iCloud antiguo ni la implementación display-only en el alcance auditado.
+- [x] **WLive es contenido vigente.** El logo/card, el reveal “Brands supported through WLive” y el testimonial asociado deben mantenerse visibles. La nota previa que sugería retirarlo fue una inferencia incorrecta y no estaba respaldada por los handoffs fuente.
 
 ### Bloqueos antes de cerrar P0
 
 - [ ] **P0.1 — corregir redirect de `www` (Externo).** La auditoría previa detectó que `https://www.sdlive.show/` redirigía a `https://sdlive.show/s` y terminaba en 404. Corregir la regla de Cloudflare para preservar la ruta y revalidar desde navegador/HTTP real antes de marcarlo hecho.
 - [ ] **P0.2 — garantizar el wordmark visual en contenido dinámico.** Verificado en `main`: `privacy-consent.js` y `analytics-consent.js` contienen copias visibles de `SD.Live` escritas mediante `textContent`; el alert nativo de éxito de Contact también usa `SD.Live` plano. Aplicar renderer seguro o retirar la marca de superficies que no admitan el wordmark.
-- [ ] **P0.3 — resolver la presencia visible de WLive.** Verificado en `main`: Home incluye card/logotipo WLive, reveal “Brands supported through WLive” y testimonial con logo WLive. Confirmar si la regla vigente sigue siendo retirarlo de la experiencia visible; si sí, retirar la referencia sin borrar evidencia histórica necesaria.
+- [x] **P0.3 — confirmar alcance WLive.** Confirmado: WLive se mantiene visible y no constituye un bug ni un bloqueo.
 - [ ] **P0.4 — smoke test final en navegador real.** Verificar Home, flecha Desktop/Mobile con URL limpia, Theatre, `/en/`, `/es-co/`, `/privacy`, 404, preferencias de cookies, autorización de contacto y autorización de alquiler.
 - [ ] **P0.5 — validación analítica en producción.** Confirmar en GA4 Realtime `contact_whatsapp_click`, `contact_email_click` y que exactamente un envío real produzca un solo `generate_lead`; validar `lead_type`, `market` y parámetros de página. Separar tráfico interno cuando termine el debugging activo.
 
@@ -149,7 +150,7 @@ Este backlog incorpora el detalle que estaba disperso en handoffs y listas hist�
 - [ ] **Futuro/opcional Portfolio:** filtros por disciplina, case studies extensos, Before/After y ejemplos QLab/audio/video.
 - [~] **Raw vs Mixed:** UI/lógica existe oculta; faltan audios reales y administración de pares desde Admin.
 - [ ] **Futuro/opcional Raw vs Mixed:** waveform real, cambio sample-accurate y múltiples ejemplos.
-- [~] **Testimonials:** un testimonio real y placeholders ocultos; falta administración y decisión WLive.
+- [~] **Testimonials:** un testimonio real y placeholders ocultos; falta administración. El testimonial/logotipo de WLive es contenido vigente y debe mantenerse.
 - [~] **Show Day:** cambio manual en Home implementado; falta automatización, reglas y propagación coherente a landings.
 - [x] El viejo Owner Access fue retirado; el acceso real se hace por `/admin/` detrás de Cloudflare Access. No se necesita un login público por defecto.
 - [ ] **Portfolio/CV privado:** páginas no indexadas/no navegables, con versiones Sound Design, Live Audio, Theatre, AV/Systems, Production y General CV.
@@ -247,6 +248,7 @@ No son compromisos inmediatos. Se conservan para que el handoff no pierda decisi
 - Tagline canónica exacta: **Creative Audio. Technical systems. Built for the show.**
 - SD.Live no se presenta como agencia genérica de eventos, rental house ni sociedad incorporada.
 - Rental es Colombia-first. INT lo oculta por defecto; una intención directa `#rental` puede exponerlo.
+- **WLive debe mantenerse visible** como cliente/partner y como respaldo del testimonial y de las marcas atendidas a través de WLive.
 - Los formularios de rental se envían únicamente a `rental@sdlive.show`, nunca a `hello@sdlive.show`.
 - Cloudflare Access es la barrera real del Admin; no reemplazarla con un login visual falso.
 - El pricing de rental vive en backend; no moverlo al cliente ni rediseñarlo sin un bug o requisito nuevo.
@@ -270,7 +272,7 @@ No son compromisos inmediatos. Se conservan para que el handoff no pierda decisi
 - En la auditoría de código actual se confirmó `POST /api/contact` → `hello@sdlive.show` y `POST /api/rental` → `rental@sdlive.show`.
 - En la auditoría de código actual se confirmó que `/api/content/hero` existe en `worker.js`, pero Home aún no lo consume.
 - Se confirmó por código que P0.2 es real: consentimientos y alert de Contact todavía pueden mostrar `SD.Live` como texto plano.
-- Se confirmó por código que P0.3 es real: WLive sigue visible en Home, reveal de marcas y testimonial.
+- WLive está visible en Home, reveal de marcas y testimonial; el usuario confirmó que esto es intencional y debe mantenerse. La inferencia previa de retirarlo se descarta.
 - `deploy-test.txt` sigue en `main` como residuo de una prueba de deploy y se añadió a cleanup futuro, sin convertirlo en blocker P0.
 
 **Cambios históricos relevantes ya incorporados:**
@@ -293,6 +295,10 @@ No son compromisos inmediatos. Se conservan para que el handoff no pierda decisi
 - Settings/System/observabilidad/seguridad y auditoría de código;
 - adquisición, RRSS/traffic channels, blog/Insights, formación y Technical Audio Training;
 - ideas premium/futuras, claramente separadas de los gates actuales.
+
+### 2026-08-20 — corrección de alcance WLive
+
+**Resultado:** WLive se mantiene. La nota que lo había convertido en posible bloqueo P0 provenía de una síntesis anterior y no tenía respaldo en los dos handoffs fuente revisados; ambos no contienen ninguna instrucción de retirar WLive. El código actual que muestra WLive se considera comportamiento correcto.
 
 ## Protocolo de actualización por milestone
 
@@ -317,8 +323,7 @@ No actualizar por cambios cosméticos aislados, microcopy o commits intermedios 
 
 1. Corregir la regla externa de `www` en Cloudflare y revalidarla.
 2. Corregir el renderer del wordmark y el alert de Contact en el repositorio.
-3. Resolver la decisión WLive y aplicar el resultado.
-4. Ejecutar smoke test y validación GA4 en producción.
-5. Marcar P0 cerrado y actualizar este archivo con el SHA desplegado.
-6. Empezar P1.1: binding del Hero CMS hacia Home con fallback estático.
-7. Solo después, ampliar CMS/editor siguiendo el backlog recuperado y los gates de las 8 fases.
+3. Ejecutar smoke test y validación GA4 en producción.
+4. Marcar P0 cerrado y actualizar este archivo con el SHA desplegado.
+5. Empezar P1.1: binding del Hero CMS hacia Home con fallback estático.
+6. Solo después, ampliar CMS/editor siguiendo el backlog recuperado y los gates de las 8 fases.
