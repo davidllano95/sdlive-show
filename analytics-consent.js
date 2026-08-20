@@ -1,7 +1,6 @@
 (() => {
   const STORAGE_KEY = "sdlive-analytics-consent-v1";
   const POLICY_URL = "/privacy";
-  const CONSISTENCY_STYLESHEET = "/site-consistency.css?v=20260819-2";
   const VALID_CHOICES = new Set(["granted", "denied"]);
 
   if (window.SDLIVE_ANALYTICS_CONSENT) return;
@@ -13,9 +12,7 @@
       allow: "Permitir analítica",
       policy: "Privacidad",
       preferences: "Preferencias de cookies",
-      title: "Privacidad y analítica",
-      home: "Inicio",
-      homeAria: "Volver a inicio"
+      title: "Privacidad y analítica"
     },
     en: {
       text: "We use analytics to understand how SD.Live is used and improve the site. You can allow analytics or continue with necessary functions only.",
@@ -23,9 +20,7 @@
       allow: "Allow analytics",
       policy: "Privacy",
       preferences: "Cookie preferences",
-      title: "Privacy & analytics",
-      home: "Home",
-      homeAria: "Back to home"
+      title: "Privacy & analytics"
     }
   };
 
@@ -38,115 +33,6 @@
       .startsWith("es")
       ? "es"
       : "en";
-  }
-
-  function ensureConsistencyStylesheet() {
-    if (document.querySelector('link[data-sdlive-consistency]')) return;
-
-    const link = document.createElement("link");
-    link.rel = "stylesheet";
-    link.href = CONSISTENCY_STYLESHEET;
-    link.dataset.sdliveConsistency = "";
-    document.head.appendChild(link);
-  }
-
-  function createBrandWordmarkText() {
-    const wordmark = document.createElement("span");
-    wordmark.className = "brand-wordmark-text";
-    wordmark.setAttribute("aria-label", "SD.Live");
-    wordmark.append(document.createTextNode("SD"));
-
-    const dot = document.createElement("span");
-    dot.className = "brand-wordmark-text__dot";
-    dot.setAttribute("aria-hidden", "true");
-    dot.textContent = ".";
-
-    wordmark.append(dot, document.createTextNode("Live"));
-    return wordmark;
-  }
-
-  function styleBrandMentions(root = document.body) {
-    if (!root) return;
-
-    const matches = [];
-    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
-      acceptNode(node) {
-        if (!node.nodeValue?.includes("SD.Live")) {
-          return NodeFilter.FILTER_REJECT;
-        }
-
-        const parent = node.parentElement;
-        if (
-          !parent ||
-          parent.closest(
-            ".brand-wordmark-text, script, style, textarea, noscript, svg"
-          )
-        ) {
-          return NodeFilter.FILTER_REJECT;
-        }
-
-        return NodeFilter.FILTER_ACCEPT;
-      }
-    });
-
-    while (walker.nextNode()) matches.push(walker.currentNode);
-
-    matches.forEach((textNode) => {
-      const parts = textNode.nodeValue.split("SD.Live");
-      const fragment = document.createDocumentFragment();
-
-      parts.forEach((part, index) => {
-        if (part) fragment.append(document.createTextNode(part));
-        if (index < parts.length - 1) {
-          fragment.append(createBrandWordmarkText());
-        }
-      });
-
-      textNode.replaceWith(fragment);
-    });
-  }
-
-  function styleSeoFooterBrand() {
-    document.querySelectorAll(".seo-footer-row > span").forEach((element) => {
-      if (element.querySelector(".brand-wordmark-text")) return;
-
-      const text = element.textContent || "";
-      const marker = "SD.Live";
-      const index = text.indexOf(marker);
-      if (index === -1) return;
-
-      element.replaceChildren(
-        document.createTextNode(text.slice(0, index)),
-        createBrandWordmarkText(),
-        document.createTextNode(text.slice(index + marker.length))
-      );
-    });
-  }
-
-  function polishEditorialCopy() {
-    const normalizedPath = location.pathname.replace(/\/+$/, "") || "/";
-
-    if (normalizedPath === "/en") {
-      const lede = document.querySelector(".seo-language-hero .seo-lede");
-      if (lede) {
-        lede.textContent =
-          "SD.Live is an independent audio design and production studio led by Samuel David Llano, connecting storytelling, playback, show control, system design and final mixing for theatre, cruise, broadcast and live productions.";
-      }
-    }
-
-    if (normalizedPath === "/theatre-sound-design-audio-post") {
-      const productionHeading = Array.from(
-        document.querySelectorAll(".seo-content-card h2")
-      ).find((heading) =>
-        heading.textContent.trim() === "Theater sound for live productions"
-      );
-
-      const paragraph = productionHeading?.nextElementSibling;
-      if (paragraph?.tagName === "P") {
-        paragraph.textContent =
-          "Integrated theatre sound for live productions combines creative choices with dependable system design, playback, RF and show control. The goal is a reliable signal path that supports the story from rehearsal through performance.";
-      }
-    }
   }
 
   function readChoice() {
@@ -356,6 +242,7 @@
 
   function renderCopy() {
     const copy = COPY[language()];
+
     document.querySelectorAll("[data-analytics-copy]").forEach((element) => {
       const key = element.dataset.analyticsCopy;
       if (copy[key]) element.textContent = copy[key];
@@ -369,17 +256,10 @@
     document.querySelectorAll(".analytics-preferences-link").forEach((element) => {
       element.textContent = copy.preferences;
     });
-
-    const backToTop = document.getElementById("backToTop");
-    if (backToTop) {
-      backToTop.setAttribute("aria-label", copy.homeAria);
-      backToTop.setAttribute("title", copy.homeAria);
-    }
   }
 
   function showBanner() {
-    const element = buildBanner();
-    element.hidden = false;
+    buildBanner().hidden = false;
   }
 
   function hideBanner() {
@@ -435,111 +315,12 @@
     }
   }
 
-  function ensureVisibleHomeLink() {
-    const normalizedPath = location.pathname.replace(/\/+$/, "") || "/";
-    if (normalizedPath === "/") return;
-
-    const headerRow = document.querySelector(".seo-header-row");
-    if (!headerRow) return;
-
-    const existingVisibleHome = headerRow.querySelector(
-      ".seo-home-link, a.btn[href='/'], a.btn[href='https://sdlive.show/']"
-    );
-    if (existingVisibleHome) return;
-
-    const link = document.createElement("a");
-    link.href = "/";
-    link.className = "btn btn-secondary seo-home-link";
-    link.dataset.analyticsCopy = "home";
-
-    let actions = headerRow.querySelector(".seo-language-actions");
-
-    if (!actions) {
-      actions = document.createElement("div");
-      actions.className = "seo-language-actions";
-
-      const moveable = Array.from(headerRow.children).filter(
-        (child) =>
-          !child.classList.contains("seo-header-logo") &&
-          child !== actions
-      );
-
-      headerRow.appendChild(actions);
-      moveable.forEach((child) => actions.appendChild(child));
-    }
-
-    actions.prepend(link);
-  }
-
-  function bindCanonicalHomeArrow() {
-    const button = document.getElementById("backToTop");
-    if (!button || button.dataset.canonicalHomeBound === "true") return;
-
-    const reducedMotion = window.matchMedia(
-      "(prefers-reduced-motion: reduce)"
-    ).matches;
-
-    const cleanCanonicalUrl = () => {
-      if (
-        location.pathname !== "/" ||
-        location.search ||
-        location.hash
-      ) {
-        history.replaceState(history.state, "", "/");
-      }
-    };
-
-    button.dataset.canonicalHomeBound = "true";
-    button.addEventListener(
-      "click",
-      (event) => {
-        event.preventDefault();
-        event.stopImmediatePropagation();
-
-        if (reducedMotion || window.scrollY <= 1) {
-          window.scrollTo({ top: 0, behavior: "auto" });
-          cleanCanonicalUrl();
-          return;
-        }
-
-        let finished = false;
-        const startedAt = performance.now();
-
-        const finish = () => {
-          if (finished) return;
-          finished = true;
-          window.removeEventListener("scrollend", finish);
-          cleanCanonicalUrl();
-        };
-
-        const checkPosition = () => {
-          if (finished) return;
-          if (window.scrollY <= 1 || performance.now() - startedAt > 1600) {
-            finish();
-            return;
-          }
-          requestAnimationFrame(checkPosition);
-        };
-
-        window.addEventListener("scrollend", finish, { once: true });
-        window.scrollTo({ top: 0, behavior: "smooth" });
-        requestAnimationFrame(checkPosition);
-      },
-      { capture: true }
-    );
-  }
-
   function init() {
     ensureStyles();
     buildBanner();
     insertPrivacyLink();
     insertPreferencesLink();
-    ensureVisibleHomeLink();
-    bindCanonicalHomeArrow();
     renderCopy();
-    polishEditorialCopy();
-    styleBrandMentions();
-    styleSeoFooterBrand();
 
     if (currentChoice) {
       updateGoogleConsent(currentChoice);
@@ -557,8 +338,6 @@
         )
       ) {
         renderCopy();
-        styleBrandMentions();
-        styleSeoFooterBrand();
       }
     });
 
@@ -568,7 +347,6 @@
     });
   }
 
-  ensureConsistencyStylesheet();
   setGoogleConsentDefault();
 
   window.SDLIVE_ANALYTICS_CONSENT = {
