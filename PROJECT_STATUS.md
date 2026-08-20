@@ -6,11 +6,11 @@
 |---|---|
 | Última revisión integral | 2026-08-20 |
 | Rama verificada | `main` |
-| Commit verificado | `e81b9155c40950bde128218a6196c598f0457a86` |
+| Commit verificado | `1775c60ef055cb8b310bd189e61845e5f43d7076` |
 | Producción | [https://sdlive.show](https://sdlive.show) |
 | Milestone actual | P0 — base pública estable |
 | Estado del milestone | **ABIERTO** |
-| Siguiente gate | Corregir wordmark dinámico y pasar smoke test final |
+| Siguiente gate | Completar smoke test final y validación GA4 |
 | Auditoría de backlog | **RECUPERADA** contra `main` + handoff/backlog histórico |
 
 ## Cómo retomar el proyecto en una conversación nueva
@@ -38,7 +38,7 @@ P0 no se cierra hasta completar todos los bloqueos y la verificación manual. El
 ### Completado
 
 - [x] **Hosting Cloudflare operativo.** El Worker `fragrant-brook-7554` sirve el sitio y ejecuta `/api/*` antes de los assets estáticos.
-- [x] **Producción sincronizada con GitHub.** Los archivos críticos de producción coinciden con `main` en `e81b915`.
+- [x] **Producción sincronizada con GitHub.** El corte actual de producción fue desplegado desde `main` en `1775c60`; Cloudflare mostró deploy exitoso y el usuario verificó el comportamiento nuevo en Safari/iPhone.
 - [x] **Rutas públicas base.** Home, EN, ES-CO, Privacy, Theatre, landings SEO y 404 responden desde Cloudflare.
 - [x] **URLs limpias.** HTTP redirige a HTTPS y las URLs `.html` se normalizan.
 - [x] **D1 conectado.** `CMS_DB` apunta a `sdlive-cms-production`; `/api/health` confirma la conexión.
@@ -47,7 +47,7 @@ P0 no se cierra hasta completar todos los bloqueos y la verificación manual. El
 - [x] **Alquiler funcional.** `POST /api/rental` valida datos, calcula precios en servidor, guarda en D1 y notifica exclusivamente a `rental@sdlive.show`.
 - [x] **Bundles y selección de alquiler.** LV1 + StageGrid y WING + DL32 se resuelven en backend; se permiten múltiples consolas y stage racks.
 - [x] **Privacidad y consentimiento.** Banner/preferencias y modal de autorización están separados; GTM/GA4 se condicionan al consentimiento.
-- [x] **Analítica base.** GTM `GTM-W4LDB4T7`, GA4 `G-F6MR3GJ716` y eventos de email, WhatsApp y generación de lead están configurados.
+- [x] **Analítica base.** GTM `GTM-W4LDB4T7`, GA4 `G-F6MR3GJ716` y eventos de email, WhatsApp y generación de lead están configurados. `analytics-consent.js` se carga antes de GTM desde `1775c60` para establecer el consentimiento por defecto antes de iniciar Google Tag Manager.
 - [x] **Navegación Home en first-party JS.** La flecha usa `home-navigation.js`; GTM no controla la navegación.
 - [x] **Theatre estabilizado.** Landing estática con una tarjeta grande y dos tarjetas iguales, sin transformación JS.
 - [x] **SEO técnico P0.** Canonicals, `hreflang`, JSON-LD, Open Graph, titles/descriptions, `robots.txt`, sitemap y landings especializadas están publicados.
@@ -57,13 +57,14 @@ P0 no se cierra hasta completar todos los bloqueos y la verificación manual. El
 - [x] **Convenciones históricas retiradas.** No quedan `SD.live`, `SDLive`, `SD Live`, el correo iCloud antiguo ni la implementación display-only en el alcance auditado.
 - [x] **WLive es contenido vigente.** El logo/card, el reveal “Brands supported through WLive” y el testimonial asociado deben mantenerse visibles. La nota previa que sugería retirarlo fue una inferencia incorrecta y no estaba respaldada por los handoffs fuente.
 - [x] **Redirect `www` → root validado (Externo).** La regla wildcard de Cloudflare quedó configurada para preservar correctamente la ruta usando `${2}`; el usuario verificó en Safari/iPhone que `https://www.sdlive.show/` abre y funciona correctamente. No existe evidencia de que el supuesto destino `/s` haya ocurrido en producción; esa afirmación previa fue una inferencia incorrecta y queda descartada.
+- [x] **Wordmark dinámico validado.** `privacy-consent.js` y `analytics-consent.js` renderizan las menciones visuales mediante el wordmark con punto flotante; el alert nativo de éxito de Contact ya no intenta mostrar la marca sin estilo. En producción el usuario confirmó tanto Preferencias de cookies como el modal de autorización de Contact con `SD.Live` estilizado correctamente.
 
 ### Bloqueos antes de cerrar P0
 
 - [x] **P0.1 — validar redirect de `www` (Externo).** Regla corregida y verificada manualmente en navegador real: `www.sdlive.show` resuelve correctamente hacia el sitio canónico.
-- [ ] **P0.2 — garantizar el wordmark visual en contenido dinámico.** Verificado en `main`: `privacy-consent.js` y `analytics-consent.js` contienen copias visibles de `SD.Live` escritas mediante `textContent`; el alert nativo de éxito de Contact también usa `SD.Live` plano. Aplicar renderer seguro o retirar la marca de superficies que no admitan el wordmark.
+- [x] **P0.2 — garantizar el wordmark visual en contenido dinámico.** Cerrado en producción. Los scripts de privacidad/analítica usan renderer seguro para `SD.Live`; el alert nativo de Contact evita la marca en una superficie no estilizable. Se detectó además que `analytics-consent.js` no estaba cargado en Home y se corrigió en `1775c60` cargándolo antes de GTM. El usuario verificó visualmente Preferencias de cookies y el modal de autorización de Contact en Safari/iPhone.
 - [x] **P0.3 — confirmar alcance WLive.** Confirmado: WLive se mantiene visible y no constituye un bug ni un bloqueo.
-- [ ] **P0.4 — smoke test final en navegador real.** Verificar Home, flecha Desktop/Mobile con URL limpia, Theatre, `/en/`, `/es-co/`, `/privacy`, 404, preferencias de cookies, autorización de contacto y autorización de alquiler.
+- [ ] **P0.4 — smoke test final en navegador real.** Verificar Home, flecha Desktop/Mobile con URL limpia, Theatre, `/en/`, `/es-co/`, `/privacy`, 404, preferencias de cookies, autorización de contacto y autorización de alquiler. **Parcial 2026-08-20:** PASS en Home móvil, EN→ES→EN, Back to Top con URL limpia, Trusted By/WLive móvil, Rental móvil + carrito + bundles visuales y autorización de Contact.
 - [ ] **P0.5 — validación analítica en producción.** Confirmar en GA4 Realtime `contact_whatsapp_click`, `contact_email_click` y que exactamente un envío real produzca un solo `generate_lead`; validar `lead_type`, `market` y parámetros de página. Separar tráfico interno cuando termine el debugging activo.
 
 ### Definición de P0 cerrado
@@ -272,7 +273,7 @@ No son compromisos inmediatos. Se conservan para que el handoff no pierda decisi
 - `/api/admin/whoami` fue interceptado por Cloudflare Access en la validación previa.
 - En la auditoría de código actual se confirmó `POST /api/contact` → `hello@sdlive.show` y `POST /api/rental` → `rental@sdlive.show`.
 - En la auditoría de código actual se confirmó que `/api/content/hero` existe en `worker.js`, pero Home aún no lo consume.
-- Se confirmó por código que P0.2 es real: consentimientos y alert de Contact todavía pueden mostrar `SD.Live` como texto plano.
+- Se confirmó por código que P0.2 era real: consentimientos y alert de Contact todavía podían mostrar `SD.Live` como texto plano.
 - WLive está visible en Home, reveal de marcas y testimonial; el usuario confirmó que esto es intencional y debe mantenerse. La inferencia previa de retirarlo se descarta.
 - `deploy-test.txt` sigue en `main` como residuo de una prueba de deploy y se añadió a cleanup futuro, sin convertirlo en blocker P0.
 
@@ -305,6 +306,12 @@ No son compromisos inmediatos. Se conservan para que el handoff no pierda decisi
 
 **Resultado:** P0.1 cerrado. Se corrigió la referencia wildcard del Target URL de Cloudflare para preservar la ruta y el usuario verificó inmediatamente en Safari/iPhone que `https://www.sdlive.show/` abre y funciona correctamente. La mención previa de una redirección observada a `/s` se elimina como hecho: nunca fue reportada ni observada; había sido una inferencia técnica a partir de la configuración anterior.
 
+### 2026-08-20 — P0.2 wordmark dinámico validado
+
+**Resultado:** P0.2 cerrado. Se añadió un renderer seguro de `SD.Live` a las superficies dinámicas de privacidad y analítica y se retiró la marca del `alert()` nativo de éxito de Contact. Durante la validación se detectó que `analytics-consent.js` existía pero no estaba incluido en Home; `1775c60` lo carga antes de GTM. Cloudflare desplegó ese commit y el usuario verificó en Safari/iPhone que Preferencias de cookies y el modal de autorización de Contact muestran `SD.Live` con el punto flotante correcto.
+
+**Smoke test parcial asociado:** Home móvil, EN→ES→EN, Back to Top con URL limpia, Trusted By/WLive, Rental + carrito/bundles y autorización de Contact: PASS.
+
 ## Protocolo de actualización por milestone
 
 Actualizar este archivo cuando ocurra uno de estos eventos:
@@ -326,8 +333,8 @@ No actualizar por cambios cosméticos aislados, microcopy o commits intermedios 
 
 ## Orden recomendado inmediato
 
-1. Corregir el renderer del wordmark y el alert de Contact en el repositorio.
-2. Ejecutar smoke test y validación GA4 en producción.
+1. Completar P0.4: smoke test en navegador real, incluyendo autorización de Rental y rutas públicas restantes.
+2. Completar P0.5: validar eventos y parámetros en GA4 Realtime con un único envío real.
 3. Marcar P0 cerrado y actualizar este archivo con el SHA desplegado.
 4. Empezar P1.1: binding del Hero CMS hacia Home con fallback estático.
 5. Solo después, ampliar CMS/editor siguiendo el backlog recuperado y los gates de las 8 fases.
