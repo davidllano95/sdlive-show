@@ -7,6 +7,16 @@
   let publishedAt = "";
   let languageObserver = null;
 
+  function isAdminPreview() {
+    try {
+      return window.self !== window.top &&
+        window.frameElement?.id === "sitePreview" &&
+        String(window.parent.location.pathname || "").startsWith("/admin/");
+    } catch {
+      return false;
+    }
+  }
+
   function isLocalizedText(value) {
     return Boolean(value) &&
       typeof value === "object" &&
@@ -175,6 +185,7 @@
   }
 
   function init() {
+    if (isAdminPreview()) return;
     void loadPublishedHero();
   }
 
