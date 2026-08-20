@@ -8,9 +8,9 @@
 | Rama verificada | `main` |
 | Commit verificado | `1775c60ef055cb8b310bd189e61845e5f43d7076` |
 | Producción | [https://sdlive.show](https://sdlive.show) |
-| Milestone actual | P0 — base pública estable |
+| Milestone actual | P1 — conectar el CMS con producción |
 | Estado del milestone | **ABIERTO** |
-| Siguiente gate | Completar P0.5 — validación GA4 en producción |
+| Siguiente gate | P1.1 — binding Hero CMS → Home con fallback estático |
 | Auditoría de backlog | **RECUPERADA** contra `main` + handoff/backlog histórico |
 
 ## Cómo retomar el proyecto en una conversación nueva
@@ -31,9 +31,9 @@
 - **Externo**: se resuelve en Cloudflare, Google, correo u otro servicio fuera del repositorio.
 - **Futuro/opcional**: idea preservada para no perderla; requiere priorización antes de implementar.
 
-## Milestone actual — P0: base pública estable
+## Milestone cerrado — P0: base pública estable
 
-P0 no se cierra hasta completar todos los bloqueos y la verificación manual. El hecho de que la mayor parte del sitio esté en producción no sustituye este gate.
+**P0 CERRADO el 2026-08-20.** Los gates P0.1–P0.5 quedaron completados y el corte de producción validado corresponde a `main` en `1775c60`.
 
 ### Completado
 
@@ -57,21 +57,21 @@ P0 no se cierra hasta completar todos los bloqueos y la verificación manual. El
 - [x] **Convenciones históricas retiradas.** No quedan `SD.live`, `SDLive`, `SD Live`, el correo iCloud antiguo ni la implementación display-only en el alcance auditado.
 - [x] **WLive es contenido vigente.** El logo/card, el reveal “Brands supported through WLive” y el testimonial asociado deben mantenerse visibles. La nota previa que sugería retirarlo fue una inferencia incorrecta y no estaba respaldada por los handoffs fuente.
 - [x] **Redirect `www` → root validado (Externo).** La regla wildcard de Cloudflare quedó configurada para preservar correctamente la ruta usando `${2}`; el usuario verificó en Safari/iPhone que `https://www.sdlive.show/` abre y funciona correctamente. No existe evidencia de que el supuesto destino `/s` haya ocurrido en producción; esa afirmación previa fue una inferencia incorrecta y queda descartada.
-- [x] **Wordmark dinámico validado.** `privacy-consent.js` y `analytics-consent.js` renderizan las menciones visuales mediante el wordmark con punto flotante; el alert nativo de éxito de Contact ya no intenta mostrar la marca sin estilo. En producción el usuario confirmó tanto Preferencias de cookies como el modal de autorización de Contact con `SD.Live` estilizado correctamente.
+- [x] **Wordmark dinámico validado.** `privacy-consent.js` y `analytics-consent.js` renderizan las menciones visuales mediante el wordmark con punto flotante; el alert nativo de éxito de Contact ya no intenta mostrar la marca sin estilo. En producción el usuario confirmó tanto Preferencias de cookies como los modales de autorización con `SD.Live` estilizado correctamente.
 
-### Bloqueos antes de cerrar P0
+### Gates P0
 
 - [x] **P0.1 — validar redirect de `www` (Externo).** Regla corregida y verificada manualmente en navegador real: `www.sdlive.show` resuelve correctamente hacia el sitio canónico.
-- [x] **P0.2 — garantizar el wordmark visual en contenido dinámico.** Cerrado en producción. Los scripts de privacidad/analítica usan renderer seguro para `SD.Live`; el alert nativo de Contact evita la marca en una superficie no estilizable. Se detectó además que `analytics-consent.js` no estaba cargado en Home y se corrigió en `1775c60` cargándolo antes de GTM. El usuario verificó visualmente Preferencias de cookies y el modal de autorización de Contact en Safari/iPhone.
+- [x] **P0.2 — garantizar el wordmark visual en contenido dinámico.** Cerrado en producción. Los scripts de privacidad/analítica usan renderer seguro para `SD.Live`; el alert nativo de Contact evita la marca en una superficie no estilizable. Se detectó además que `analytics-consent.js` no estaba cargado en Home y se corrigió en `1775c60` cargándolo antes de GTM. El usuario verificó visualmente Preferencias de cookies y los modales de autorización en Safari/iPhone.
 - [x] **P0.3 — confirmar alcance WLive.** Confirmado: WLive se mantiene visible y no constituye un bug ni un bloqueo.
 - [x] **P0.4 — smoke test final en navegador real.** PASS el 2026-08-20: Home móvil, EN→ES→EN, Back to Top con URL limpia, Trusted By/WLive, Rental móvil + carrito + bundles visuales, preferencias de cookies, autorización de Contact, autorización de Rental, Theatre, `/en/`, `/es-co/`, `/privacy` y 404 personalizada.
-- [ ] **P0.5 — validación analítica en producción.** Confirmar en GA4 Realtime `contact_whatsapp_click`, `contact_email_click` y que exactamente un envío real produzca un solo `generate_lead`; validar `lead_type`, `market` y parámetros de página. Separar tráfico interno cuando termine el debugging activo.
+- [x] **P0.5 — validación analítica en producción.** PASS el 2026-08-20 en GA4 Realtime: `contact_email_click = 1`, `contact_whatsapp_click = 1`; un único envío real produjo exactamente `generate_lead = 1`. El evento incluyó `lead_type`, `market`, `page_location`, `page_path`, `page_referrer` y `page_title`; los valores validados fueron `lead_type = contact` y `market = colombia`. La separación de tráfico interno/testing queda como optimización posterior y no como blocker retroactivo de P0.
 
 ### Definición de P0 cerrado
 
-P0 puede marcarse `CERRADO` únicamente cuando P0.1–P0.5 estén completados, no haya regresiones visuales o funcionales en el smoke test y el commit desplegado haya sido verificado contra `main`. En ese corte se debe registrar la evidencia en el log de milestones.
+Cumplida. P0.1–P0.5 están completos, no se observaron regresiones visuales o funcionales en el smoke test y el commit desplegado fue verificado contra `main`.
 
-## Siguiente milestone — P1: conectar el CMS con producción
+## Milestone actual — P1: conectar el CMS con producción
 
 - [ ] **P1.1 — binding Hero CMS → Home.** Consumir `GET /api/content/hero` desde el sitio público con fallback seguro al contenido estático.
 - [ ] **P1.2 — preservar SEO y resiliencia.** El contenido crítico debe seguir disponible si la API falla y no provocar layout shift evitable.
@@ -96,9 +96,9 @@ No se avanza de fase por cantidad de pantallas o commits, sino al cumplir el gat
 
 | Fase | Objetivo | Estado | Gate de salida |
 |---|---|---|---|
-| 1. Base estable | Sitio público, hosting, rutas, marca y formularios | En cierre (P0) | P0.1–P0.5 completos |
+| 1. Base estable | Sitio público, hosting, rutas, marca y formularios | **Cerrado (P0)** | Cumplido 2026-08-20 |
 | 2. Seguridad y control | Access, permisos, validación, observabilidad y recuperación | Parcial | Controles probados y operación documentada |
-| 3. Sistema de contenido | Modelo, media, versiones y publicación confiable | Iniciado | Hero real + contenido estructurado estable |
+| 3. Sistema de contenido | Modelo, media, versiones y publicación confiable | Iniciado — P1 activo | Hero real + contenido estructurado estable |
 | 4. Editor real | Edición visual responsive y reutilizable | Pendiente | Edición/publish sin tocar código |
 | 5. Automatización operativa | CRM, calendario, inventario, cotizaciones e inbox | Pendiente | Flujo lead → operación trazable |
 | 6. Inteligencia y optimización | Analítica, SEO, rendimiento y reporting | Parcial | Métricas confiables y ciclo de mejora activo |
@@ -204,12 +204,12 @@ Este backlog incorpora el detalle que estaba disperso en handoffs y listas hist�
 
 ### Analítica, SEO y crecimiento
 
-- [~] Consent Mode, GTM, GA4 y eventos base implementados; `generate_lead` fue validado previamente en Preview/DebugView, pero falta validación final de producción.
-- [ ] Validar en **GA4 Realtime** `contact_whatsapp_click` y `contact_email_click` desde la web live sin Tag Assistant.
-- [ ] Hacer un único envío real y confirmar **1 submission = 1 `generate_lead`**.
-- [ ] Confirmar parámetros de lead: `lead_type`, `market`, `page_location`, `page_path`, `page_referrer`, `page_title` y consistencia de valores.
+- [x] Consent Mode, GTM, GA4 y eventos base implementados y validados en producción para el flujo P0.
+- [x] Validado en **GA4 Realtime** `contact_whatsapp_click` y `contact_email_click` desde la web live sin Tag Assistant: 1 evento de cada uno en la prueba P0.5.
+- [x] Un único envío real confirmó **1 submission = 1 `generate_lead`**.
+- [x] Confirmados parámetros de lead: `lead_type`, `market`, `page_location`, `page_path`, `page_referrer`, `page_title`; valores observados `lead_type = contact` y `market = colombia`.
 - [ ] Separar tráfico interno/testing cuando deje de ser necesario verlo para debugging.
-- [ ] Revisar Key Events: solo outcomes de negocio; no tratar `page_view` o `scroll` como conversiones.
+- [ ] Revisar Key Events: solo outcomes de negocio; no tratar `page_view` o `scroll` como conversiones. En el corte P0 aparecen `contact_email_click`, `contact_whatsapp_click` y `generate_lead` como Key events; revisar si los clicks deben seguir siendo Key events o solo microconversiones.
 - [ ] Completar funnel medible: usuarios/sesiones → source/channel → país/ciudad/device → form starts/contactos → lead type/market → qualified → closed.
 - [ ] Validar atribución antes de interpretar “Unassigned” u otros canales como problema real.
 - [~] SEO técnico y landings P0 publicados; falta monitorizar indexación real, queries, impressions, CTR, países, páginas de entrada, Core Web Vitals y conversión.
@@ -259,21 +259,21 @@ No son compromisos inmediatos. Se conservan para que el handoff no pierda decisi
 - No restaurar Netlify, Owner Access mockup, `site-runtime`, navegación mediante GTM, tagline anterior, cards duplicadas Theatre/Theater ni dirección residencial.
 - No reconstruir CMS/D1, Access, privacidad, Turnstile, analítica o SEO desde cero si el componente actual puede extenderse.
 - No guardar secretos ni datos sensibles en GitHub.
-- No usar todavía las métricas actuales de GA4 como verdad de marketing hasta cerrar la validación de producción y tráfico interno.
+- La instrumentación base de GA4 ya está validada; no interpretar todavía adquisición/ROI como verdad definitiva hasta separar tráfico interno/testing y acumular suficiente tráfico real.
 
 ## Registro de milestones
 
 ### 2026-08-20 — baseline y ruleout P0
 
-**Resultado:** P0 permanece abierto. Se verificó que la mayoría de la base está implementada y que quedan bloqueos concretos; no se debe reiniciar la migración ni reconstruir sistemas ya operativos.
+**Resultado:** P0 permanecía abierto en este corte. Se verificó que la mayoría de la base estaba implementada y que quedaban bloqueos concretos; no se debía reiniciar la migración ni reconstruir sistemas ya operativos.
 
 **Evidencia principal:**
 
 - `main` y producción habían sido verificados en `e81b9155c40950bde128218a6196c598f0457a86` durante el corte previo.
 - `/api/health` identificó `sdlive-cms-production` en la validación previa.
 - `/api/admin/whoami` fue interceptado por Cloudflare Access en la validación previa.
-- En la auditoría de código actual se confirmó `POST /api/contact` → `hello@sdlive.show` y `POST /api/rental` → `rental@sdlive.show`.
-- En la auditoría de código actual se confirmó que `/api/content/hero` existe en `worker.js`, pero Home aún no lo consume.
+- En la auditoría de código se confirmó `POST /api/contact` → `hello@sdlive.show` y `POST /api/rental` → `rental@sdlive.show`.
+- En la auditoría de código se confirmó que `/api/content/hero` existe en `worker.js`, pero Home aún no lo consume.
 - Se confirmó por código que P0.2 era real: consentimientos y alert de Contact todavía podían mostrar `SD.Live` como texto plano.
 - WLive está visible en Home, reveal de marcas y testimonial; el usuario confirmó que esto es intencional y debe mantenerse. La inferencia previa de retirarlo se descarta.
 - `deploy-test.txt` sigue en `main` como residuo de una prueba de deploy y se añadió a cleanup futuro, sin convertirlo en blocker P0.
@@ -309,15 +309,19 @@ No son compromisos inmediatos. Se conservan para que el handoff no pierda decisi
 
 ### 2026-08-20 — P0.2 wordmark dinámico validado
 
-**Resultado:** P0.2 cerrado. Se añadió un renderer seguro de `SD.Live` a las superficies dinámicas de privacidad y analítica y se retiró la marca del `alert()` nativo de éxito de Contact. Durante la validación se detectó que `analytics-consent.js` existía pero no estaba incluido en Home; `1775c60` lo carga antes de GTM. Cloudflare desplegó ese commit y el usuario verificó en Safari/iPhone que Preferencias de cookies y el modal de autorización de Contact muestran `SD.Live` con el punto flotante correcto.
-
-**Smoke test parcial asociado:** Home móvil, EN→ES→EN, Back to Top con URL limpia, Trusted By/WLive, Rental + carrito/bundles y autorización de Contact: PASS.
+**Resultado:** P0.2 cerrado. Se añadió un renderer seguro de `SD.Live` a las superficies dinámicas de privacidad y analítica y se retiró la marca del `alert()` nativo de éxito de Contact. Durante la validación se detectó que `analytics-consent.js` existía pero no estaba incluido en Home; `1775c60` lo carga antes de GTM. Cloudflare desplegó ese commit y el usuario verificó en Safari/iPhone que Preferencias de cookies y los modales de autorización muestran `SD.Live` con el punto flotante correcto.
 
 ### 2026-08-20 — P0.4 smoke test final validado
 
 **Resultado:** P0.4 cerrado. El usuario completó el smoke test en navegador real con PASS en Home móvil, idioma EN/ES, Back to Top con URL limpia, Trusted By/WLive, carrito Rental y bundles, preferencias de cookies, modales de autorización de Contact y Rental, Theatre, `/en/`, `/es-co/`, `/privacy` y la 404 personalizada. No se observaron regresiones funcionales o visuales en ese recorrido.
 
 **Nuevo backlog detectado durante el smoke:** añadir el botón flotante de WhatsApp a todas las landings públicas con el mismo destino, tracking y comportamiento responsive del Home. Se registra como mejora de consistencia pública y no reabre P0.4.
+
+### 2026-08-20 — P0.5 GA4 validado y P0 cerrado
+
+**Resultado:** P0.5 cerrado y, con ello, **P0 completo**. En GA4 Realtime, desde producción y sin Tag Assistant, se observaron `contact_email_click = 1` y `contact_whatsapp_click = 1`. Un único envío real de Contact produjo exactamente `generate_lead = 1`, descartando duplicación en la prueba. El evento expuso los parámetros `lead_type`, `market`, `page_location`, `page_path`, `page_referrer` y `page_title`; los valores inspeccionados fueron `contact` y `colombia` para `lead_type` y `market` respectivamente.
+
+**Siguiente milestone:** P1 — conectar el Hero publicado del CMS con el Home mediante `GET /api/content/hero`, preservando fallback estático, SEO y resiliencia.
 
 ## Protocolo de actualización por milestone
 
@@ -340,8 +344,7 @@ No actualizar por cambios cosméticos aislados, microcopy o commits intermedios 
 
 ## Orden recomendado inmediato
 
-1. Completar P0.5: validar eventos y parámetros en GA4 Realtime con un único envío real.
-2. Marcar P0 cerrado y actualizar este archivo con el SHA desplegado.
-3. Empezar P1.1: binding del Hero CMS hacia Home con fallback estático.
-4. Implementar el botón flotante de WhatsApp en todas las landings públicas dentro del bloque de consistencia/navegación, sin convertirlo en blocker retroactivo de P0.
-5. Solo después, ampliar CMS/editor siguiendo el backlog recuperado y los gates de las 8 fases.
+1. Empezar P1.1: binding del Hero CMS hacia Home con fallback estático.
+2. Validar P1.2: fallback, SEO y resiliencia si la API falla.
+3. Implementar el botón flotante de WhatsApp en todas las landings públicas dentro del bloque de consistencia/navegación, sin convertirlo en blocker retroactivo de P0.
+4. Continuar P1.3/P1.4 y después ampliar CMS/editor siguiendo el backlog recuperado y los gates de las 8 fases.
