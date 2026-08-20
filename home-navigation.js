@@ -7,7 +7,7 @@
   ).matches;
 
   function loadHeroContentBinding() {
-    import("/hero-content.js?v=20260820-3").catch((error) => {
+    import("/hero-content.js?v=20260820-4").catch((error) => {
       const hero = document.getElementById("hero");
 
       if (hero) {
