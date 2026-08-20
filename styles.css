@@ -686,6 +686,14 @@ html.is-language-switching *::after {
   gap: 48px;
 }
 
+.hero[data-cms-state="loading"] {
+  visibility: hidden;
+}
+
+.hero[data-cms-state="ready"] {
+  visibility: visible;
+}
+
 .hero h1 {
   font-family: var(--font-display);
   font-size: clamp(44px, 7vw, 88px);
