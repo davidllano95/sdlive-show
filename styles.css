@@ -580,74 +580,6 @@ html.showday-active .brand-location {
   flex: 0 0 auto;
 }
 
-.owner-login-trigger {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex: 0 0 36px;
-  width: 36px;
-  height: 36px;
-  min-height: 36px;
-  padding: 0;
-  border: 1px solid var(--color-border);
-  border-radius: 9px;
-  color: var(--color-text-soft);
-  font-size: 0;
-  line-height: 0;
-  transition: color var(--transition-fast), border-color var(--transition-fast), background var(--transition-fast);
-}
-
-.owner-login-trigger::before {
-  content: "";
-  position: absolute;
-  top: 16px;
-  left: 50%;
-  width: 13px;
-  height: 10px;
-  border: 1.5px solid currentColor;
-  border-radius: 2.5px;
-  background: transparent;
-  box-shadow: none;
-  transform: translateX(-50%);
-}
-
-.owner-login-trigger::after {
-  content: "";
-  position: absolute;
-  top: 7px;
-  left: 50%;
-  width: 8px;
-  height: 10px;
-  border: 1.5px solid currentColor;
-  border-bottom: 0;
-  border-radius: 6px 6px 0 0;
-  transform: translateX(-50%);
-  transform-origin: left bottom;
-  transition: top var(--transition-fast), transform var(--transition-fast);
-}
-
-.owner-login-trigger:hover,
-.owner-login-trigger.is-authenticated {
-  border-color: rgba(var(--color-accent-rgb), 0.48);
-  color: var(--color-accent);
-  background: rgba(var(--color-accent-rgb), 0.08);
-}
-
-.owner-login-trigger.is-authenticated::after {
-  top: 6px;
-  transform: translateX(-10%) rotate(24deg);
-}
-
-.owner-login-trigger--mobile {
-  display: none;
-}
-
-.owner-login-trigger--desktop {
-  flex: 0 0 36px;
-  width: 36px;
-}
-
 .header-project-cta {
   justify-content: center;
   flex: 0 0 148px;
@@ -740,305 +672,6 @@ html.is-language-switching *::after {
     border-bottom: 1px solid var(--color-border);
     gap: 20px;
   }
-
-  .site-header.nav-open .owner-login-trigger--mobile {
-    display: inline-flex;
-    align-self: center;
-  }
-}
-
-/* =============================================
-   OWNER ACCESS MOCKUP
-============================================= */
-
-body.owner-modal-open {
-  overflow: hidden;
-}
-
-.owner-access-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 1000;
-  display: grid;
-  place-items: center;
-  padding: 24px;
-  opacity: 0;
-  transition: opacity 180ms ease;
-}
-
-.owner-access-overlay[hidden] {
-  display: none;
-}
-
-.owner-access-overlay.is-open {
-  opacity: 1;
-}
-
-.owner-access-backdrop {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(3, 4, 7, 0.82);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-}
-
-.owner-access-dialog {
-  position: relative;
-  z-index: 1;
-  width: min(720px, 100%);
-  max-height: min(780px, calc(100vh - 48px));
-  overflow-y: auto;
-  padding: clamp(28px, 5vw, 48px);
-  background:
-    radial-gradient(circle at 92% 8%, rgba(var(--color-accent-rgb), 0.16), transparent 34%),
-    rgba(9, 10, 16, 0.96);
-  border-color: rgba(var(--color-accent-rgb), 0.26);
-  box-shadow: 0 34px 120px rgba(0, 0, 0, 0.68);
-  transform: translateY(14px) scale(0.985);
-  transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.owner-access-overlay.is-open .owner-access-dialog {
-  transform: translateY(0) scale(1);
-}
-
-.owner-access-close {
-  position: absolute;
-  top: 17px;
-  right: 17px;
-  display: grid;
-  place-items: center;
-  width: 38px;
-  height: 38px;
-  border: 1px solid var(--color-border);
-  border-radius: 50%;
-  color: var(--color-muted);
-  font-size: 22px;
-  line-height: 1;
-}
-
-.owner-access-kicker {
-  display: block;
-  color: var(--color-accent);
-  font-family: var(--font-mono);
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.11em;
-  text-transform: uppercase;
-}
-
-.owner-access-login h2,
-.owner-access-panel-heading h2 {
-  margin-top: 14px;
-  font-family: var(--font-display);
-  font-size: clamp(34px, 6vw, 58px);
-  line-height: 0.98;
-  letter-spacing: -0.045em;
-}
-
-.owner-access-login > p,
-.owner-access-panel-heading p {
-  max-width: 580px;
-  margin-top: 18px;
-  color: var(--color-text-soft);
-  line-height: 1.7;
-}
-
-.owner-google-mock-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  width: 100%;
-  min-height: 54px;
-  margin-top: 30px;
-  padding: 12px 18px;
-  border: 1px solid rgba(244, 245, 247, 0.2);
-  border-radius: 10px;
-  background: #f7f7f8;
-  color: #17181c;
-  font-family: var(--font-mono);
-  font-size: 13px;
-  font-weight: 600;
-  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
-}
-
-.owner-google-mock-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.28);
-}
-
-.owner-google-mock-mark {
-  display: grid;
-  place-items: center;
-  width: 26px;
-  height: 26px;
-  border: 1px solid rgba(0, 0, 0, 0.13);
-  border-radius: 50%;
-  color: #4285f4;
-  font-family: Arial, sans-serif;
-  font-size: 15px;
-  font-weight: 700;
-}
-
-.owner-access-login .owner-access-note {
-  margin-top: 13px;
-  color: var(--color-muted);
-  font-family: var(--font-mono);
-  font-size: 10px;
-  line-height: 1.5;
-  text-align: center;
-}
-
-.owner-access-account {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding-bottom: 24px;
-  border-bottom: 1px solid var(--color-border);
-}
-
-.owner-access-account strong {
-  display: block;
-  margin-top: 4px;
-  font-family: var(--font-display);
-  font-size: 17px;
-}
-
-.owner-access-avatar {
-  display: grid;
-  place-items: center;
-  width: 46px;
-  height: 46px;
-  border-radius: 50%;
-  background: var(--color-accent);
-  color: #06070b;
-  font-family: var(--font-mono);
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.owner-access-panel-heading {
-  margin-top: 28px;
-}
-
-.owner-private-links {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-  margin-top: 28px;
-}
-
-.owner-private-links a {
-  display: grid;
-  grid-template-columns: 28px minmax(0, 1fr);
-  column-gap: 12px;
-  padding: 18px;
-  border: 1px solid var(--color-border);
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.025);
-  transition: transform var(--transition-fast), border-color var(--transition-fast), background var(--transition-fast);
-}
-
-.owner-private-links a:hover,
-.owner-private-links a:focus-visible {
-  transform: translateY(-3px);
-  border-color: rgba(var(--color-accent-rgb), 0.5);
-  background: rgba(var(--color-accent-rgb), 0.08);
-}
-
-.owner-private-links a > span {
-  grid-row: 1 / span 2;
-  color: var(--color-accent);
-  font-family: var(--font-mono);
-  font-size: 10px;
-}
-
-.owner-private-links strong {
-  font-family: var(--font-display);
-  font-size: 14px;
-}
-
-.owner-private-links small {
-  margin-top: 4px;
-  color: var(--color-muted);
-  font-family: var(--font-mono);
-  font-size: 9px;
-}
-
-.owner-access-signout {
-  margin-top: 24px;
-  color: var(--color-muted);
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.06em;
-  text-decoration: underline;
-  text-underline-offset: 4px;
-}
-
-html[data-owner-session="false"] body.private-portfolio .portfolio-header,
-html[data-owner-session="false"] body.private-portfolio main,
-html[data-owner-session="false"] body.private-portfolio .portfolio-footer {
-  visibility: hidden;
-}
-
-body.private-portfolio.owner-access-locked {
-  height: 100vh;
-  overflow: hidden;
-}
-
-.owner-private-gate {
-  position: fixed;
-  inset: 0;
-  z-index: 1000;
-  display: grid;
-  place-items: center;
-  padding: 24px;
-  background: rgba(4, 5, 9, 0.58);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-}
-
-.owner-private-gate-card {
-  width: min(560px, 100%);
-  padding: clamp(30px, 6vw, 50px);
-  text-align: center;
-  background:
-    radial-gradient(circle at 50% 0, rgba(var(--color-accent-rgb), 0.17), transparent 38%),
-    rgba(9, 10, 16, 0.96);
-  border: 1px solid rgba(var(--color-accent-rgb), 0.28);
-  border-radius: var(--radius-large);
-  box-shadow: var(--shadow-large);
-}
-
-.owner-private-gate-card h1 {
-  margin-top: 14px;
-  font-family: var(--font-display);
-  font-size: clamp(36px, 7vw, 58px);
-  line-height: 0.98;
-  letter-spacing: -0.045em;
-}
-
-.owner-private-gate-card p {
-  margin-top: 18px;
-  color: var(--color-text-soft);
-  line-height: 1.7;
-}
-
-.owner-private-gate-actions {
-  display: grid;
-  gap: 10px;
-  margin-top: 28px;
-}
-
-.owner-private-gate-actions .btn {
-  justify-content: center;
-}
-
-.owner-private-signout {
-  white-space: nowrap;
 }
 
 /* =============================================
@@ -1225,7 +858,6 @@ body.private-portfolio.owner-access-locked {
 .client-strip-card.is-reveal-active {
   border-color: rgba(var(--color-accent-rgb), 0.34);
 }
-
 
 .client-strip-card--primary {
   width: 350px;
@@ -3150,7 +2782,6 @@ body.private-portfolio.owner-access-locked {
   height: 280px;
 }
 
-
 /* Product art is normalized to transparent, tightly cropped assets. These limits
    keep perceived product size consistent rather than scaling the source canvas. */
 .equipment-card-visual--lv1 > img { max-width: 98%; max-height: 90%; }
@@ -4411,10 +4042,6 @@ body.private-portfolio.owner-access-locked {
     display: none;
   }
 
-  .header-actions .owner-login-trigger--desktop {
-    display: none;
-  }
-
   .header-actions .header-project-cta--desktop {
     display: none;
   }
@@ -4443,15 +4070,6 @@ body.private-portfolio.owner-access-locked {
 
   .site-header.nav-open .header-actions .lang-toggle {
     display: flex;
-  }
-
-  .site-header.nav-open .owner-login-trigger--mobile {
-    display: inline-flex;
-    align-self: center;
-  }
-
-  .owner-private-links {
-    grid-template-columns: 1fr;
   }
 
   .hero-stats {
@@ -5170,7 +4788,6 @@ body.rental-cart-open {
   }
 }
 
-
 /* Rental UX refinements */
 .rental .section-head + .rental-subhead {
   margin-top: 36px;
@@ -5362,7 +4979,6 @@ body.rental-cart-open {
   }
 }
 
-
 /* =========================================================
    Rental UX polish — standardized presets + product framing
 ========================================================= */
@@ -5496,7 +5112,6 @@ body.rental-cart-open {
   }
 }
 
-
 /* =========================================================
    Rental refinement v5 — better object framing + golden preset highlight
 ========================================================= */
@@ -5574,7 +5189,6 @@ body.rental-cart-open {
     transform: translateY(-14px);
   }
 }
-
 
 /* =========================================================
    Rental refinement v6 — final framing corrections for PA / labeler / video server
