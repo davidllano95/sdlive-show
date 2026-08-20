@@ -14,37 +14,45 @@
     document.head.appendChild(link);
   }
 
-  function bindCanonicalHomeArrow() {
-    const button = document.getElementById("backToTop");
-    if (!button || button.dataset.siteRuntimeBound === "true") return;
+  function takeOwnershipOfHomeArrow() {
+    const existing = document.getElementById("backToTop");
+    if (!existing) return null;
 
-    button.dataset.siteRuntimeBound = "true";
+    if (existing.dataset.siteRuntimeOwned === "true") return existing;
 
-    button.addEventListener(
-      "click",
-      (event) => {
-        event.preventDefault();
-        event.stopImmediatePropagation();
+    const button = existing.cloneNode(true);
+    button.dataset.siteRuntimeOwned = "true";
+    existing.replaceWith(button);
 
-        if (location.pathname !== "/" || location.search || location.hash) {
-          history.replaceState(history.state, "", "/");
-        }
+    const updateVisibility = () => {
+      button.classList.toggle("is-visible", window.scrollY > 520);
+    };
 
-        const reducedMotion = window.matchMedia(
-          "(prefers-reduced-motion: reduce)"
-        ).matches;
+    button.addEventListener("click", (event) => {
+      event.preventDefault();
 
-        window.scrollTo({
-          top: 0,
-          behavior: reducedMotion ? "auto" : "smooth"
-        });
-      },
-      { capture: true }
-    );
+      /* Clean the address bar without navigating, then keep the physical scroll. */
+      if (location.pathname !== "/" || location.search || location.hash) {
+        history.replaceState(history.state, "", "/");
+      }
+
+      const reducedMotion = window.matchMedia(
+        "(prefers-reduced-motion: reduce)"
+      ).matches;
+
+      window.scrollTo({
+        top: 0,
+        behavior: reducedMotion ? "auto" : "smooth"
+      });
+    });
+
+    window.addEventListener("scroll", updateVisibility, { passive: true });
+    updateVisibility();
+
+    return button;
   }
 
-  function alignFloatingActions() {
-    const button = document.getElementById("backToTop");
+  function alignFloatingActions(button) {
     const whatsapp = document.getElementById("whatsappFloat");
     if (!button || !whatsapp) return;
 
@@ -54,6 +62,7 @@
 
       if (!whatsappRect.width || !buttonRect.width) return;
 
+      /* Use the rendered positions so mobile safe areas / CSS overrides cannot drift. */
       const whatsappCenterX = whatsappRect.left + whatsappRect.width / 2;
       const right = Math.max(
         0,
@@ -81,8 +90,8 @@
 
   function init() {
     ensureRuntimeStylesheet();
-    bindCanonicalHomeArrow();
-    alignFloatingActions();
+    const homeArrow = takeOwnershipOfHomeArrow();
+    alignFloatingActions(homeArrow);
     polishTheatreLayout();
   }
 
