@@ -1,4 +1,14 @@
 (() => {
+  if (!document.querySelector('script[data-sdlive-home-navigation]')) {
+    const navigationScript = document.createElement("script");
+    navigationScript.src = "/home-navigation.js?v=20260819-1";
+    navigationScript.defer = true;
+    navigationScript.dataset.sdliveHomeNavigation = "";
+    document.head.appendChild(navigationScript);
+  }
+})();
+
+(() => {
   const POLICY_VERSION = "2026-08-19";
   const POLICY_URL = "/privacy";
   const AUTHORIZATION_TTL_MS = 10 * 60 * 1000;
