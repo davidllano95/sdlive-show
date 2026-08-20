@@ -1,3 +1,5 @@
+import { begin, complete, fail } from "/cms-hydration.js?v=20260820-3";
+
 (() => {
   if (window.SDLIVE_HERO_CONTENT_BINDING) return;
   window.SDLIVE_HERO_CONTENT_BINDING = true;
@@ -117,6 +119,8 @@
     hero.dataset.contentSource = "cms";
     if (publishedAt) {
       hero.dataset.cmsPublishedAt = publishedAt;
+    } else {
+      delete hero.dataset.cmsPublishedAt;
     }
 
     if (typeof window.styleBrandMentions === "function") {
@@ -141,11 +145,10 @@
     });
   }
 
-  async function loadPublishedHero() {
+  async function loadPublishedHero(hero) {
     try {
-            const hero = document.getElementById("hero");
-      window.SDLIVE_CMS_HYDRATION?.begin(hero);
-      
+      begin(hero);
+
       const response = await fetch(HERO_ENDPOINT, {
         credentials: "same-origin",
         cache: "no-store",
@@ -176,16 +179,12 @@
       if (!renderPublishedHero()) {
         throw new Error("Home Hero markup is not compatible with CMS content");
       }
-      
-window.SDLIVE_CMS_HYDRATION?.complete(hero);
-      
+
       observeLanguageChanges();
+      complete(hero);
     } catch (error) {
-            window.SDLIVE_CMS_HYDRATION?.fail(
-        document.getElementById("hero")
-      );
-      
       // The static HTML is the deliberate fallback and remains fully usable.
+      fail(hero);
       console.warn(
         "[SD.Live] Published Hero unavailable; using static fallback.",
         error
@@ -194,8 +193,17 @@ window.SDLIVE_CMS_HYDRATION?.complete(hero);
   }
 
   function init() {
-    if (isAdminPreview() || !document.getElementById("hero")) return;
-    void loadPublishedHero();
+    const hero = document.getElementById("hero");
+    if (!hero) return;
+
+    // Admin owns its iframe preview state. Do not let public Published content
+    // replace Draft content, and never leave the preview hidden by hydration CSS.
+    if (isAdminPreview()) {
+      fail(hero);
+      return;
+    }
+
+    void loadPublishedHero(hero);
   }
 
   if (document.readyState === "loading") {
