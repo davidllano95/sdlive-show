@@ -1,7 +1,7 @@
 (() => {
   const STORAGE_KEY = "sdlive-analytics-consent-v1";
   const POLICY_URL = "/privacy";
-  const CONSISTENCY_STYLESHEET = "/site-consistency.css?v=20260819-1";
+  const CONSISTENCY_STYLESHEET = "/site-consistency.css?v=20260819-2";
   const VALID_CHOICES = new Set(["granted", "denied"]);
 
   if (window.SDLIVE_ANALYTICS_CONSENT) return;
@@ -104,6 +104,49 @@
 
       textNode.replaceWith(fragment);
     });
+  }
+
+  function styleSeoFooterBrand() {
+    document.querySelectorAll(".seo-footer-row > span").forEach((element) => {
+      if (element.querySelector(".brand-wordmark-text")) return;
+
+      const text = element.textContent || "";
+      const marker = "SD.Live";
+      const index = text.indexOf(marker);
+      if (index === -1) return;
+
+      element.replaceChildren(
+        document.createTextNode(text.slice(0, index)),
+        createBrandWordmarkText(),
+        document.createTextNode(text.slice(index + marker.length))
+      );
+    });
+  }
+
+  function polishEditorialCopy() {
+    const normalizedPath = location.pathname.replace(/\/+$/, "") || "/";
+
+    if (normalizedPath === "/en") {
+      const lede = document.querySelector(".seo-language-hero .seo-lede");
+      if (lede) {
+        lede.textContent =
+          "SD.Live is an independent audio design and production studio led by Samuel David Llano, connecting storytelling, playback, show control, system design and final mixing for theatre, cruise, broadcast and live productions.";
+      }
+    }
+
+    if (normalizedPath === "/theatre-sound-design-audio-post") {
+      const productionHeading = Array.from(
+        document.querySelectorAll(".seo-content-card h2")
+      ).find((heading) =>
+        heading.textContent.trim() === "Theater sound for live productions"
+      );
+
+      const paragraph = productionHeading?.nextElementSibling;
+      if (paragraph?.tagName === "P") {
+        paragraph.textContent =
+          "Integrated theatre sound for live productions combines creative choices with dependable system design, playback, RF and show control. The goal is a reliable signal path that supports the story from rehearsal through performance.";
+      }
+    }
   }
 
   function readChoice() {
@@ -432,13 +475,55 @@
     const button = document.getElementById("backToTop");
     if (!button || button.dataset.canonicalHomeBound === "true") return;
 
+    const reducedMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)"
+    ).matches;
+
+    const cleanCanonicalUrl = () => {
+      if (
+        location.pathname !== "/" ||
+        location.search ||
+        location.hash
+      ) {
+        history.replaceState(history.state, "", "/");
+      }
+    };
+
     button.dataset.canonicalHomeBound = "true";
     button.addEventListener(
       "click",
       (event) => {
         event.preventDefault();
         event.stopImmediatePropagation();
-        window.location.assign("/");
+
+        if (reducedMotion || window.scrollY <= 1) {
+          window.scrollTo({ top: 0, behavior: "auto" });
+          cleanCanonicalUrl();
+          return;
+        }
+
+        let finished = false;
+        const startedAt = performance.now();
+
+        const finish = () => {
+          if (finished) return;
+          finished = true;
+          window.removeEventListener("scrollend", finish);
+          cleanCanonicalUrl();
+        };
+
+        const checkPosition = () => {
+          if (finished) return;
+          if (window.scrollY <= 1 || performance.now() - startedAt > 1600) {
+            finish();
+            return;
+          }
+          requestAnimationFrame(checkPosition);
+        };
+
+        window.addEventListener("scrollend", finish, { once: true });
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        requestAnimationFrame(checkPosition);
       },
       { capture: true }
     );
@@ -452,7 +537,9 @@
     ensureVisibleHomeLink();
     bindCanonicalHomeArrow();
     renderCopy();
+    polishEditorialCopy();
     styleBrandMentions();
+    styleSeoFooterBrand();
 
     if (currentChoice) {
       updateGoogleConsent(currentChoice);
@@ -471,6 +558,7 @@
       ) {
         renderCopy();
         styleBrandMentions();
+        styleSeoFooterBrand();
       }
     });
 
