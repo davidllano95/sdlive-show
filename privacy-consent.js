@@ -17,7 +17,7 @@
     },
     en: {
       title: "Data authorization",
-      body: "To send this request, I authorize Samuel David Llano / SD.Live to collect, store and use the data I provided to respond my request, prepare quotes and manage the related commercial or contractual relationship.",
+      body: "To send this request, I authorize Samuel David Llano / SD.Live to collect, store and use the data I provided to respond to my request, prepare quotes and manage the related commercial or contractual relationship.",
       rights: "I may access, update, correct or delete my data, or revoke this authorization, by writing to hello@sdlive.show.",
       policy: "View Privacy & Data Processing Policy",
       authorize: "Authorize & send",
