@@ -66,8 +66,8 @@ import { begin, complete, fail } from "/cms-hydration.js?v=20260820-3";
   function setCmsText(element, localized, lang) {
     if (!element || !isLocalizedText(localized)) return false;
 
-    // Once the CMS is active, keep these nodes out of the site's generic
-    // data-en/data-es innerHTML renderer. CMS copy is always treated as text.
+    // Once the client fallback is active, keep these nodes out of the site's
+    // generic data-en/data-es renderer. CMS copy is always treated as text.
     element.removeAttribute("data-en");
     element.removeAttribute("data-es");
     element.textContent = localized[lang];
@@ -203,6 +203,16 @@ import { begin, complete, fail } from "/cms-hydration.js?v=20260820-3";
       return;
     }
 
+    // The edge-rendered Home already contains the published Hero (or the
+    // deliberate static fallback). Do not hide it again or make a second CMS
+    // request; that would reintroduce the visual blank we are removing.
+    if (hero.dataset.serverRendered === "true") {
+      complete(hero);
+      return;
+    }
+
+    // Client-side hydration remains as a resilience path for environments where
+    // the Home shell is served without the edge renderer.
     void loadPublishedHero(hero);
   }
 
