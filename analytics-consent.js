@@ -35,6 +35,43 @@
       : "en";
   }
 
+  function createBrandWordmarkText() {
+    const wordmark = document.createElement("span");
+    wordmark.className = "brand-wordmark-text";
+    wordmark.setAttribute("aria-label", "SD.Live");
+    wordmark.append(document.createTextNode("SD"));
+
+    const dot = document.createElement("span");
+    dot.className = "brand-wordmark-text__dot";
+    dot.setAttribute("aria-hidden", "true");
+    dot.textContent = ".";
+
+    wordmark.append(dot, document.createTextNode("Live"));
+    return wordmark;
+  }
+
+  function renderBrandSafeText(element, value) {
+    if (!element) return;
+
+    const text = String(value ?? "");
+    if (!text.includes("SD.Live")) {
+      element.textContent = text;
+      return;
+    }
+
+    const fragment = document.createDocumentFragment();
+    const parts = text.split("SD.Live");
+
+    parts.forEach((part, index) => {
+      if (part) fragment.append(document.createTextNode(part));
+      if (index < parts.length - 1) {
+        fragment.append(createBrandWordmarkText());
+      }
+    });
+
+    element.replaceChildren(fragment);
+  }
+
   function readChoice() {
     try {
       const value = localStorage.getItem(STORAGE_KEY);
@@ -245,7 +282,7 @@
 
     document.querySelectorAll("[data-analytics-copy]").forEach((element) => {
       const key = element.dataset.analyticsCopy;
-      if (copy[key]) element.textContent = copy[key];
+      if (copy[key]) renderBrandSafeText(element, copy[key]);
     });
 
     const denied = document.querySelector('[data-analytics-choice="denied"]');
