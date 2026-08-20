@@ -1,3 +1,99 @@
 # SD.Live
 
-Public website hosted on Cloudflare Workers.
+Sitio público, formularios operativos y CMS inicial de **SD.Live**, una práctica de audio creativo y sistemas técnicos para shows. La frase canónica de marca es:
+
+> Creative Audio. Technical systems. Built for the show.
+
+- Producción: [https://sdlive.show](https://sdlive.show)
+- Repositorio: [davidllano95/sdlive-show](https://github.com/davidllano95/sdlive-show)
+- Estado, pendientes y handoff: [`PROJECT_STATUS.md`](./PROJECT_STATUS.md)
+
+## Estado actual
+
+El sitio público está en producción sobre Cloudflare Workers. La migración base, formularios, privacidad, analítica, SEO técnico inicial y la primera versión del Admin/CMS están implementados. El milestone **P0 sigue abierto** con cinco gates: redirect de `www`, wordmark dinámico, decisión WLive, smoke test en navegador y validación de eventos en GA4.
+
+`PROJECT_STATUS.md` es la fuente de verdad para saber qué está hecho, cómo está hecho, qué falta y cuál es el siguiente paso. Se actualiza al cerrar un milestone o cuando cambia materialmente su alcance; no por cada parche pequeño.
+
+## Arquitectura
+
+| Capa | Implementación actual |
+|---|---|
+| Hosting y API | Cloudflare Worker `fragrant-brook-7554` |
+| Sitio | HTML, CSS y JavaScript estáticos, sin build frontend |
+| Datos | Cloudflare D1, binding `CMS_DB`, base `sdlive-cms-production` |
+| Admin | Cloudflare Access + validación JWT en el Worker con `jose` |
+| Formularios | Turnstile, validación server-side, D1 y notificaciones con Resend |
+| Analítica | GTM `GTM-W4LDB4T7`, Consent Mode y GA4 `G-F6MR3GJ716` |
+| SEO | Canonicals, `hreflang`, JSON-LD, Open Graph, `robots.txt` y sitemap |
+
+El Worker sirve los assets estáticos y procesa `/api/*` antes del fallback de archivos. No hay R2 ni pipeline de build en esta versión.
+
+## Rutas públicas principales
+
+| Ruta | Uso |
+|---|---|
+| `/` | Home bilingüe e interacción principal |
+| `/en/` | Landing general en inglés |
+| `/es-co/` | Landing general en español para Colombia |
+| `/theatre-sound-design-audio-post` | Teatro, diseño sonoro y audio post |
+| `/audio-eventos-streaming-teatro-bogota` | Servicios de audio en Bogotá |
+| `/alquiler-sonido-wing-midas-dl32-bogota` | Alquiler de equipos en Colombia |
+| `/en/audio-equipment-rental-bogota` | Versión en inglés de alquiler |
+| `/privacy` | Política de privacidad |
+| `/admin/` | Dashboard protegido por Cloudflare Access |
+| `/admin/editor/` | Editor de contenido protegido |
+
+Cloudflare aplica el manejo automático de URLs HTML con trailing slash. Los redirects de dominio se administran fuera de este repositorio; revisar el bloqueo activo de `www` en `PROJECT_STATUS.md`.
+
+## API actual
+
+### Pública
+
+- `GET /api/health`: salud del Worker y conexión D1.
+- `GET /api/content/hero`: Hero publicado en el CMS.
+- `POST /api/contact`: captura de contacto, consentimiento, Turnstile, D1 y correo a `hello@sdlive.show`.
+- `POST /api/rental`: cotización de alquiler, precios calculados en servidor, Turnstile, D1 y correo exclusivo a `rental@sdlive.show`.
+
+### Protegida
+
+- `GET /api/admin/whoami`
+- `GET` y `PUT /api/admin/content/hero`
+- `POST /api/admin/content/hero/publish`
+- `GET /api/admin/content/hero/revisions`
+
+Las rutas `/api/admin/*` requieren Cloudflare Access. El Worker vuelve a verificar el JWT, su audiencia y el correo autorizado; la interfaz Admin no es una barrera de seguridad por sí sola.
+
+## CMS y Admin
+
+La versión actual del Admin es **V6.4**. Incluye Dashboard, Editor, previews COL/INT, EN/ES y Desktop/Mobile, selección de elementos, Focus Mode, borrador de Hero, publicación y revisiones guardadas en D1.
+
+Solo el Hero tiene persistencia editorial completa. El endpoint público ya existe, pero el Home todavía no consume `/api/content/hero`; por eso el binding CMS → sitio público es el primer trabajo de P1, una vez cerrado P0. El resto de las secciones siguen siendo preview-only.
+
+## Formularios y correo
+
+- Contacto: destino y remitente `hello@sdlive.show`.
+- Alquiler: destino y remitente `rental@sdlive.show`; no debe enviarse a `hello@`.
+- Consentimiento aceptado actualmente: versión `2026-08-19`.
+- Secretos requeridos por el Worker: `TURNSTILE_SECRET_KEY` y `RESEND_API_KEY`.
+
+No se deben guardar secretos, tokens ni datos personales en el repositorio.
+
+## Desarrollo
+
+Requisitos: Node.js, npm, una cuenta Cloudflare con acceso al Worker/D1 y Wrangler autenticado.
+
+```bash
+npm install
+npx wrangler dev
+```
+
+La configuración productiva vive en `wrangler.jsonc`. Los secretos se configuran en Cloudflare, no en ese archivo. Antes de desplegar, validar localmente el JavaScript, las rutas públicas, los flujos de contacto/alquiler y las rutas protegidas del Admin.
+
+## Protocolo de mantenimiento
+
+- Actualizar `PROJECT_STATUS.md` cuando se cierre un milestone, aparezca o se resuelva un bloqueo material, o cambie el alcance acordado.
+- Actualizar este README cuando cambien la arquitectura, las rutas, las dependencias operativas o el proceso de incorporación.
+- Cada corte de estado debe registrar fecha, commit verificado, evidencia y siguiente gate.
+- No duplicar el backlog en Issues, README y documentos externos sin definir una única fuente de verdad.
+
+Para retomar el proyecto en una conversación nueva, empezar por [`PROJECT_STATUS.md`](./PROJECT_STATUS.md), verificar el SHA de `main` y trabajar sobre el primer ítem pendiente del milestone actual.
