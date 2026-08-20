@@ -10,7 +10,7 @@ Sitio público, formularios operativos y CMS inicial de **SD.Live**, una prácti
 
 ## Estado actual
 
-El sitio público está en producción sobre Cloudflare Workers. La migración base, formularios, privacidad, analítica, SEO técnico inicial y la primera versión del Admin/CMS están implementados. El milestone **P0 sigue abierto** con cuatro gates pendientes: redirect de `www`, wordmark dinámico, smoke test en navegador y validación de eventos en GA4. **WLive se mantiene visible**; no es un bloqueo ni un elemento a retirar.
+El sitio público está en producción sobre Cloudflare Workers. La migración base, formularios, privacidad, analítica, SEO técnico inicial y la primera versión del Admin/CMS están implementados. El milestone **P0 sigue abierto** con tres gates pendientes: wordmark dinámico, smoke test en navegador y validación de eventos en GA4. El redirect `www → root` ya fue corregido y validado manualmente. **WLive se mantiene visible**; no es un bloqueo ni un elemento a retirar.
 
 `PROJECT_STATUS.md` es la fuente de verdad para saber qué está hecho, cómo está hecho, qué falta y cuál es el siguiente paso. Se actualiza al cerrar un milestone o cuando cambia materialmente su alcance; no por cada parche pequeño.
 
@@ -43,7 +43,7 @@ El Worker sirve los assets estáticos y procesa `/api/*` antes del fallback de a
 | `/admin/` | Dashboard protegido por Cloudflare Access |
 | `/admin/editor/` | Editor de contenido protegido |
 
-Cloudflare aplica el manejo automático de URLs HTML con trailing slash. Los redirects de dominio se administran fuera de este repositorio; revisar el bloqueo activo de `www` en `PROJECT_STATUS.md`.
+Cloudflare aplica el manejo automático de URLs HTML con trailing slash. Los redirects de dominio se administran fuera de este repositorio; su estado se documenta en `PROJECT_STATUS.md`.
 
 ## API actual
 
