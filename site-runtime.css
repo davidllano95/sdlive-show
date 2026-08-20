@@ -1,0 +1,95 @@
+/* SD.Live — runtime UI refinements.
+   Uses the existing design tokens and font stack only. */
+
+/* Theatre landing: break the repeated four-card rhythm without changing SEO copy. */
+.theatre-page-polish .seo-service-section .seo-content-grid {
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  align-items: stretch;
+}
+
+.theatre-page-polish .seo-service-section .seo-content-card:nth-child(1) {
+  grid-column: span 7;
+  background:
+    radial-gradient(circle at 90% 8%, rgba(var(--color-accent-rgb), 0.11), transparent 34%),
+    var(--color-panel);
+}
+
+.theatre-page-polish .seo-service-section .seo-content-card:nth-child(2) {
+  grid-column: span 5;
+}
+
+.theatre-page-polish .seo-service-section .seo-content-card:nth-child(3) {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: minmax(0, 0.78fr) minmax(0, 1.22fr);
+  grid-template-rows: auto 1fr;
+  column-gap: clamp(32px, 6vw, 78px);
+  row-gap: 14px;
+  border-color: rgba(var(--color-accent-rgb), 0.3);
+  background:
+    linear-gradient(120deg, rgba(var(--color-accent-rgb), 0.075), transparent 48%),
+    var(--color-panel);
+}
+
+.theatre-page-polish .seo-service-section .seo-content-card:nth-child(3) .service-index,
+.theatre-page-polish .seo-service-section .seo-content-card:nth-child(3) h2 {
+  grid-column: 1;
+}
+
+.theatre-page-polish .seo-service-section .seo-content-card:nth-child(3) p,
+.theatre-page-polish .seo-service-section .seo-content-card:nth-child(3) ul {
+  grid-column: 2;
+}
+
+.theatre-page-polish .seo-service-section .seo-content-card:nth-child(3) p {
+  grid-row: 1;
+  align-self: end;
+}
+
+.theatre-page-polish .seo-service-section .seo-content-card:nth-child(3) ul {
+  grid-row: 2;
+}
+
+.theatre-page-polish .seo-service-section .seo-content-card:nth-child(4) {
+  grid-column: 2 / 12;
+  display: grid;
+  grid-template-columns: minmax(220px, 0.72fr) minmax(0, 1.28fr);
+  column-gap: clamp(28px, 5vw, 64px);
+  background: transparent;
+  border-style: dashed;
+}
+
+.theatre-page-polish .seo-service-section .seo-content-card:nth-child(4) .service-index,
+.theatre-page-polish .seo-service-section .seo-content-card:nth-child(4) h2 {
+  grid-column: 1;
+}
+
+.theatre-page-polish .seo-service-section .seo-content-card:nth-child(4) p,
+.theatre-page-polish .seo-service-section .seo-content-card:nth-child(4) ul {
+  grid-column: 2;
+}
+
+@media (max-width: 860px) {
+  .theatre-page-polish .seo-service-section .seo-content-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .theatre-page-polish .seo-service-section .seo-content-card:nth-child(1),
+  .theatre-page-polish .seo-service-section .seo-content-card:nth-child(2),
+  .theatre-page-polish .seo-service-section .seo-content-card:nth-child(3),
+  .theatre-page-polish .seo-service-section .seo-content-card:nth-child(4) {
+    grid-column: 1;
+  }
+
+  .theatre-page-polish .seo-service-section .seo-content-card:nth-child(3),
+  .theatre-page-polish .seo-service-section .seo-content-card:nth-child(4) {
+    display: block;
+  }
+
+  .theatre-page-polish .seo-service-section .seo-content-card:nth-child(3) p,
+  .theatre-page-polish .seo-service-section .seo-content-card:nth-child(3) ul,
+  .theatre-page-polish .seo-service-section .seo-content-card:nth-child(4) p,
+  .theatre-page-polish .seo-service-section .seo-content-card:nth-child(4) ul {
+    margin-top: 14px;
+  }
+}
