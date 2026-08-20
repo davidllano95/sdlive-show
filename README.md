@@ -10,7 +10,7 @@ Sitio público, formularios operativos y CMS inicial de **SD.Live**, una prácti
 
 ## Estado actual
 
-El sitio público está en producción sobre Cloudflare Workers. La migración base, formularios, privacidad, analítica, SEO técnico inicial y la primera versión del Admin/CMS están implementados. El milestone **P0 sigue abierto** con dos gates pendientes: smoke test final en navegador y validación de eventos en GA4. El redirect `www → root` y el wordmark dinámico ya fueron corregidos y validados manualmente en producción. **WLive se mantiene visible**; no es un bloqueo ni un elemento a retirar.
+El sitio público está en producción sobre Cloudflare Workers. La migración base, formularios, privacidad, analítica, SEO técnico inicial y la primera versión del Admin/CMS están implementados. El milestone **P0 sigue abierto con un único gate pendiente: validación de eventos en GA4 en producción**. El redirect `www → root`, el wordmark dinámico y el smoke test final en navegador ya fueron corregidos o validados manualmente en producción. **WLive se mantiene visible**; no es un bloqueo ni un elemento a retirar.
 
 `PROJECT_STATUS.md` es la fuente de verdad para saber qué está hecho, cómo está hecho, qué falta y cuál es el siguiente paso. Se actualiza al cerrar un milestone o cuando cambia materialmente su alcance; no por cada parche pequeño.
 
