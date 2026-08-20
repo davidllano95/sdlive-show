@@ -7,9 +7,7 @@
   ).matches;
 
   function loadHeroContentBinding() {
-  import("/cms-hydration.js?v=20260820-2")
-    .then(() => import("/hero-content.js?v=20260820-2"))
-    .catch((error) => {
+    import("/hero-content.js?v=20260820-3").catch((error) => {
       const hero = document.getElementById("hero");
 
       if (hero) {
@@ -18,12 +16,12 @@
 
       // Static Hero content remains the intentional fallback.
       console.warn(
-        "[SD.Live] CMS hydration or Hero binding could not be loaded; using static fallback.",
+        "[SD.Live] Hero CMS binding could not be loaded; using static fallback.",
         error
       );
     });
-}
-  
+  }
+
   function isHomeArrowTarget(target) {
     return Boolean(target?.closest?.("#backToTop"));
   }
