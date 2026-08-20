@@ -6,6 +6,13 @@ const HERO_KEY = {
   route: "root"
 };
 
+const LANGUAGE_COOKIE = "sdlive-language-preference";
+const LANGUAGE_BOOTSTRAP_VERSION = "20260820-1";
+const BRAND_WORDMARK_HTML =
+  '<span class="brand-wordmark-text" aria-label="SD.Live">SD' +
+  '<span class="brand-wordmark-text__dot" aria-hidden="true">.</span>' +
+  'Live</span>';
+
 function decodeBlobText(blob) {
   if (!Array.isArray(blob)) {
     throw new Error("Expected D1 BLOB byte array");
@@ -52,6 +59,82 @@ function isValidHeroContent(content) {
   );
 }
 
+function normalizeLanguage(value) {
+  return value === "es" || value === "en" ? value : null;
+}
+
+function cookieLanguage(request) {
+  const cookieHeader = request.headers.get("Cookie") || "";
+
+  for (const part of cookieHeader.split(";")) {
+    const [rawName, ...rawValueParts] = part.trim().split("=");
+    if (rawName !== LANGUAGE_COOKIE) continue;
+
+    const rawValue = rawValueParts.join("=");
+
+    try {
+      return normalizeLanguage(decodeURIComponent(rawValue));
+    } catch {
+      return normalizeLanguage(rawValue);
+    }
+  }
+
+  return null;
+}
+
+function preferredRequestLanguage(request) {
+  const stored = cookieLanguage(request);
+  if (stored) return stored;
+
+  const acceptLanguage = request.headers.get("Accept-Language") || "";
+
+  for (const entry of acceptLanguage.split(",")) {
+    const language = entry.split(";")[0].trim().toLowerCase();
+    if (!language) continue;
+    if (language.startsWith("es")) return "es";
+    if (language.startsWith("en")) return "en";
+  }
+
+  return "en";
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
+}
+
+function brandHtml(value) {
+  return escapeHtml(value)
+    .split("SD.Live")
+    .join(BRAND_WORDMARK_HTML);
+}
+
+function addVary(headers, value) {
+  const current = headers.get("Vary") || "";
+  const values = current
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+  value.split(",").forEach((item) => {
+    const normalized = item.trim();
+    if (
+      normalized &&
+      !values.some((existing) =>
+        existing.toLowerCase() === normalized.toLowerCase()
+      )
+    ) {
+      values.push(normalized);
+    }
+  });
+
+  if (values.length) {
+    headers.set("Vary", values.join(", "));
+  }
+}
+
 async function readPublishedHero(env) {
   const row = await env.CMS_DB
     .prepare(`
@@ -89,13 +172,39 @@ async function readPublishedHero(env) {
   };
 }
 
-function setLocalizedText(element, localized) {
+function setLocalizedAttributes(element, localized) {
   element.setAttribute("data-en", localized.en);
   element.setAttribute("data-es", localized.es);
-  element.setInnerContent(localized.en);
 }
 
-function transformHeroResponse(assetResponse, publishedHero) {
+function setLocalizedText(element, localized, lang) {
+  setLocalizedAttributes(element, localized);
+  element.setInnerContent(localized[lang]);
+}
+
+function localizeStaticElement(element, lang) {
+  const value = element.getAttribute(
+    lang === "es" ? "data-es" : "data-en"
+  );
+
+  if (value !== null) {
+    element.setInnerContent(value, { html: true });
+  }
+}
+
+function localizeAttribute(element, lang, sourceSuffix, targetAttribute) {
+  const value = element.getAttribute(
+    lang === "es"
+      ? `data-es-${sourceSuffix}`
+      : `data-en-${sourceSuffix}`
+  );
+
+  if (value !== null) {
+    element.setAttribute(targetAttribute, value);
+  }
+}
+
+function transformHomeResponse(assetResponse, publishedHero, lang) {
   const content = publishedHero?.content || null;
   const isCms = Boolean(content);
   let headlineIndex = 0;
@@ -103,6 +212,50 @@ function transformHeroResponse(assetResponse, publishedHero) {
   let statLabelIndex = 0;
 
   const rewriter = new HTMLRewriter()
+    .on("html", {
+      element(element) {
+        element.setAttribute("lang", lang);
+        element.setAttribute("data-server-language", lang);
+      }
+    })
+    .on("head", {
+      element(element) {
+        element.prepend(
+          `<script src="/language-bootstrap.js?v=${LANGUAGE_BOOTSTRAP_VERSION}"></script>`,
+          { html: true }
+        );
+      }
+    })
+    .on("[data-en]", {
+      element(element) {
+        localizeStaticElement(element, lang);
+      }
+    })
+    .on("[data-en-placeholder]", {
+      element(element) {
+        localizeAttribute(element, lang, "placeholder", "placeholder");
+      }
+    })
+    .on("[data-en-aria]", {
+      element(element) {
+        localizeAttribute(element, lang, "aria", "aria-label");
+      }
+    })
+    .on("[data-en-href]", {
+      element(element) {
+        localizeAttribute(element, lang, "href", "href");
+      }
+    })
+    .on("#langEn", {
+      element(element) {
+        element.setAttribute("aria-pressed", String(lang === "en"));
+      }
+    })
+    .on("#langEs", {
+      element(element) {
+        element.setAttribute("aria-pressed", String(lang === "es"));
+      }
+    })
     .on("#hero", {
       element(element) {
         element.setAttribute("data-cms-state", "ready");
@@ -132,41 +285,45 @@ function transformHeroResponse(assetResponse, publishedHero) {
             content.headline.line2
           ];
           const localized = fields[headlineIndex++];
-          if (localized) setLocalizedText(element, localized);
+          if (localized) setLocalizedText(element, localized, lang);
         }
       })
       .on("#hero h1 > em", {
         element(element) {
-          setLocalizedText(element, content.headline.accent);
+          setLocalizedText(element, content.headline.accent, lang);
         }
       })
       .on("#hero .hero-lede", {
         element(element) {
-          setLocalizedText(element, content.lede);
+          setLocalizedAttributes(element, content.lede);
+          element.setInnerContent(
+            brandHtml(content.lede[lang]),
+            { html: true }
+          );
         }
       })
       .on("#hero .hero-actions .btn-primary", {
         element(element) {
-          setLocalizedText(element, content.actions.primary.label);
+          setLocalizedText(element, content.actions.primary.label, lang);
           element.setAttribute("href", content.actions.primary.href);
         }
       })
       .on("#hero .hero-actions .btn-ghost", {
         element(element) {
-          setLocalizedText(element, content.actions.secondary.label);
+          setLocalizedText(element, content.actions.secondary.label, lang);
           element.setAttribute("href", content.actions.secondary.href);
         }
       })
       .on("#hero .hero-stats .stat-value", {
         element(element) {
           const stat = content.stats[statValueIndex++];
-          if (stat) setLocalizedText(element, stat.value);
+          if (stat) setLocalizedText(element, stat.value, lang);
         }
       })
       .on("#hero .hero-stats .stat-label", {
         element(element) {
           const stat = content.stats[statLabelIndex++];
-          if (stat) setLocalizedText(element, stat.label);
+          if (stat) setLocalizedText(element, stat.label, lang);
         }
       });
   }
@@ -174,13 +331,16 @@ function transformHeroResponse(assetResponse, publishedHero) {
   const transformed = rewriter.transform(assetResponse);
   const headers = new Headers(transformed.headers);
 
-  // The root HTML now contains live CMS data and must not be browser-cached
-  // as a long-lived static asset. Static CSS/JS/images still bypass this Worker.
+  // The root HTML contains live CMS data and request-specific language content,
+  // so it must not be stored as a long-lived browser/shared-cache response.
   headers.set("Cache-Control", "no-store");
+  headers.set("Content-Language", lang === "es" ? "es-CO" : "en");
+  addVary(headers, "Accept-Language, Cookie");
   headers.set(
     "X-SDLive-Hero-Render",
     isCms ? "cms-ssr" : "static-fallback"
   );
+  headers.set("X-SDLive-Language", lang);
 
   return new Response(transformed.body, {
     status: transformed.status,
@@ -217,6 +377,8 @@ async function serveHome(request, env) {
     return assetPromise;
   }
 
+  const lang = preferredRequestLanguage(request);
+
   const heroPromise = readPublishedHero(env)
     .catch((error) => {
       console.error(
@@ -237,7 +399,7 @@ async function serveHome(request, env) {
     return assetResponse;
   }
 
-  return transformHeroResponse(assetResponse, publishedHero);
+  return transformHomeResponse(assetResponse, publishedHero, lang);
 }
 
 export default {
