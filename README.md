@@ -10,7 +10,7 @@ Sitio público, formularios operativos y CMS inicial de **SD.Live**, una prácti
 
 ## Estado actual
 
-El sitio público está en producción sobre Cloudflare Workers. La migración base, formularios, privacidad, analítica, SEO técnico inicial y la primera versión del Admin/CMS están implementados. El milestone **P0 sigue abierto** con tres gates pendientes: wordmark dinámico, smoke test en navegador y validación de eventos en GA4. El redirect `www → root` ya fue corregido y validado manualmente. **WLive se mantiene visible**; no es un bloqueo ni un elemento a retirar.
+El sitio público está en producción sobre Cloudflare Workers. La migración base, formularios, privacidad, analítica, SEO técnico inicial y la primera versión del Admin/CMS están implementados. El milestone **P0 sigue abierto** con dos gates pendientes: smoke test final en navegador y validación de eventos en GA4. El redirect `www → root` y el wordmark dinámico ya fueron corregidos y validados manualmente en producción. **WLive se mantiene visible**; no es un bloqueo ni un elemento a retirar.
 
 `PROJECT_STATUS.md` es la fuente de verdad para saber qué está hecho, cómo está hecho, qué falta y cuál es el siguiente paso. Se actualiza al cerrar un milestone o cuando cambia materialmente su alcance; no por cada parche pequeño.
 
@@ -23,7 +23,7 @@ El sitio público está en producción sobre Cloudflare Workers. La migración b
 | Datos | Cloudflare D1, binding `CMS_DB`, base `sdlive-cms-production` |
 | Admin | Cloudflare Access + validación JWT en el Worker con `jose` |
 | Formularios | Turnstile, validación server-side, D1 y notificaciones con Resend |
-| Analítica | GTM `GTM-W4LDB4T7`, Consent Mode y GA4 `G-F6MR3GJ716` |
+| Analítica | GTM `GTM-W4LDB4T7`, Consent Mode y GA4 `G-F6MR3GJ716`; `analytics-consent.js` carga antes de GTM |
 | SEO | Canonicals, `hreflang`, JSON-LD, Open Graph, `robots.txt` y sitemap |
 
 El Worker sirve los assets estáticos y procesa `/api/*` antes del fallback de archivos. No hay R2 ni pipeline de build en esta versión.
