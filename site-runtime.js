@@ -2,7 +2,7 @@
   if (window.SDLIVE_SITE_RUNTIME) return;
   window.SDLIVE_SITE_RUNTIME = true;
 
-  const RUNTIME_STYLESHEET = "/site-runtime.css?v=20260819-2";
+  const RUNTIME_STYLESHEET = "/site-runtime.css?v=20260819-3";
 
   function ensureRuntimeStylesheet() {
     if (document.querySelector('link[data-sdlive-site-runtime]')) return;
@@ -95,14 +95,14 @@
 
     audioPost.classList.add("theatre-support-panel", "theatre-support-panel--post");
     const postIndex = audioPost.querySelector(".service-index");
-    if (postIndex) postIndex.textContent = "SUPPORT / AUDIO POST";
+    if (postIndex) postIndex.textContent = "02 / AUDIO POST";
 
     international.classList.add(
       "theatre-support-panel",
       "theatre-support-panel--international"
     );
     const internationalIndex = international.querySelector(".service-index");
-    if (internationalIndex) internationalIndex.textContent = "COLLABORATION / INTERNATIONAL";
+    if (internationalIndex) internationalIndex.textContent = "03 / INTERNATIONAL";
   }
 
   function init() {
