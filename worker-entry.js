@@ -35,7 +35,7 @@ function isInternalAnchor(value) {
     /^#[A-Za-z][\w:-]*$/.test(value);
 }
 
-function isValidHeroContent(content) {
+export function isValidHeroContent(content) {
   if (!content || typeof content !== "object") return false;
 
   if (
@@ -59,11 +59,11 @@ function isValidHeroContent(content) {
   );
 }
 
-function normalizeLanguage(value) {
+export function normalizeLanguage(value) {
   return value === "es" || value === "en" ? value : null;
 }
 
-function cookieLanguage(request) {
+export function cookieLanguage(request) {
   const cookieHeader = request.headers.get("Cookie") || "";
 
   for (const part of cookieHeader.split(";")) {
@@ -82,7 +82,7 @@ function cookieLanguage(request) {
   return null;
 }
 
-function preferredRequestLanguage(request) {
+export function preferredRequestLanguage(request) {
   const stored = cookieLanguage(request);
   if (stored) return stored;
 
@@ -98,14 +98,14 @@ function preferredRequestLanguage(request) {
   return "en";
 }
 
-function escapeHtml(value) {
+export function escapeHtml(value) {
   return String(value)
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;");
 }
 
-function brandHtml(value) {
+export function brandHtml(value) {
   return escapeHtml(value)
     .split("SD.Live")
     .join(BRAND_WORDMARK_HTML);
@@ -135,7 +135,7 @@ function addVary(headers, value) {
   }
 }
 
-async function readPublishedHero(env) {
+export async function readPublishedHero(env) {
   const row = await env.CMS_DB
     .prepare(`
       SELECT
@@ -349,7 +349,7 @@ function transformHomeResponse(assetResponse, publishedHero, lang) {
   });
 }
 
-function isAdminPreviewRequest(request) {
+export function isAdminPreviewRequest(request) {
   if (request.headers.get("Sec-Fetch-Dest") !== "iframe") {
     return false;
   }

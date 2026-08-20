@@ -1,5 +1,8 @@
 {
   "private": true,
+  "scripts": {
+    "test": "node --experimental-default-type=module --test tests/*.test.mjs"
+  },
   "dependencies": {
     "jose": "6.2.9"
   }
