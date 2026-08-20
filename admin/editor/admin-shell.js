@@ -22,17 +22,28 @@
     collapse.textContent = next ? "Expand" : "Collapse";
   });
 
+  function loadEditorScript(src, datasetKey) {
+    if (document.querySelector(`script[data-${datasetKey}]`)) {
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = src;
+    script.setAttribute(`data-${datasetKey}`, "true");
+    document.body.appendChild(script);
+  }
+
   document.addEventListener(
     "DOMContentLoaded",
     () => {
-      if (document.querySelector('script[data-sdlive-trusted-editor]')) {
-        return;
-      }
-
-      const script = document.createElement("script");
-      script.src = "./trusted-editor.js?v=20260820-1";
-      script.dataset.sdliveTrustedEditor = "true";
-      document.body.appendChild(script);
+      loadEditorScript(
+        "./trusted-editor.js?v=20260820-1",
+        "sdlive-trusted-editor"
+      );
+      loadEditorScript(
+        "./trusted-preview-controls.js?v=20260820-1",
+        "sdlive-trusted-preview-controls"
+      );
     },
     { once: true }
   );
