@@ -21,4 +21,19 @@
 
     collapse.textContent = next ? "Expand" : "Collapse";
   });
+
+  document.addEventListener(
+    "DOMContentLoaded",
+    () => {
+      if (document.querySelector('script[data-sdlive-trusted-editor]')) {
+        return;
+      }
+
+      const script = document.createElement("script");
+      script.src = "./trusted-editor.js?v=20260820-1";
+      script.dataset.sdliveTrustedEditor = "true";
+      document.body.appendChild(script);
+    },
+    { once: true }
+  );
 })();
