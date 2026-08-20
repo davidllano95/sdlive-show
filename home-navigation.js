@@ -7,17 +7,23 @@
   ).matches;
 
   function loadHeroContentBinding() {
-    import("/cms-hydration.js?v=20260820-1")
-      .then(() => import("/hero-content.js?v=20260820-1"))
-      .catch((error) => {
-        // Static Hero content remains the intentional fallback.
-        console.warn(
-          "[SD.Live] CMS hydration or Hero binding could not be loaded; using static fallback.",
-          error
-        );
-      });
-  }
+  import("/cms-hydration.js?v=20260820-2")
+    .then(() => import("/hero-content.js?v=20260820-2"))
+    .catch((error) => {
+      const hero = document.getElementById("hero");
 
+      if (hero) {
+        hero.dataset.cmsState = "ready";
+      }
+
+      // Static Hero content remains the intentional fallback.
+      console.warn(
+        "[SD.Live] CMS hydration or Hero binding could not be loaded; using static fallback.",
+        error
+      );
+    });
+}
+  
   function isHomeArrowTarget(target) {
     return Boolean(target?.closest?.("#backToTop"));
   }
