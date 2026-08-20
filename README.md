@@ -10,7 +10,9 @@ Sitio público, formularios operativos y CMS inicial de **SD.Live**, una prácti
 
 ## Estado actual
 
-El sitio público está en producción sobre Cloudflare Workers. La migración base, formularios, privacidad, analítica, SEO técnico inicial y la primera versión del Admin/CMS están implementados. El milestone **P0 sigue abierto con un único gate pendiente: validación de eventos en GA4 en producción**. El redirect `www → root`, el wordmark dinámico y el smoke test final en navegador ya fueron corregidos o validados manualmente en producción. **WLive se mantiene visible**; no es un bloqueo ni un elemento a retirar.
+El sitio público está en producción sobre Cloudflare Workers. La migración base, formularios, privacidad, analítica, SEO técnico inicial y la primera versión del Admin/CMS están implementados. **P0 — base pública estable está cerrado** desde el 2026-08-20: redirect `www`, wordmark dinámico, smoke test y validación GA4 en producción quedaron completados. El milestone actual es **P1 — conectar el CMS con producción**, empezando por el binding del Hero publicado hacia el Home con fallback estático. **WLive se mantiene visible**; no es un bloqueo ni un elemento a retirar.
+
+En GA4 Realtime se validaron `contact_email_click`, `contact_whatsapp_click` y `generate_lead`; un único envío real produjo un único `generate_lead`, con `lead_type = contact` y `market = colombia`. La separación de tráfico interno/testing y la revisión de qué eventos deben seguir como Key Events quedan como optimización posterior.
 
 `PROJECT_STATUS.md` es la fuente de verdad para saber qué está hecho, cómo está hecho, qué falta y cuál es el siguiente paso. Se actualiza al cerrar un milestone o cuando cambia materialmente su alcance; no por cada parche pequeño.
 
@@ -67,7 +69,7 @@ Las rutas `/api/admin/*` requieren Cloudflare Access. El Worker vuelve a verific
 
 La versión actual del Admin es **V6.4**. Incluye Dashboard, Editor, previews COL/INT, EN/ES y Desktop/Mobile, selección de elementos, Focus Mode, borrador de Hero, publicación y revisiones guardadas en D1.
 
-Solo el Hero tiene persistencia editorial completa. El endpoint público ya existe, pero el Home todavía no consume `/api/content/hero`; por eso el binding CMS → sitio público es el primer trabajo de P1, una vez cerrado P0. El resto de las secciones siguen siendo preview-only.
+Solo el Hero tiene persistencia editorial completa. El endpoint público ya existe, pero el Home todavía no consume `/api/content/hero`; por eso el binding CMS → sitio público es el primer trabajo de P1. El resto de las secciones siguen siendo preview-only.
 
 ## Formularios y correo
 
