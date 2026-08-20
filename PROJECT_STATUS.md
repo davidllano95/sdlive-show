@@ -11,6 +11,7 @@
 | Milestone actual | P0 — base pública estable |
 | Estado del milestone | **ABIERTO** |
 | Siguiente gate | Corregir bloqueos P0 y pasar smoke test final |
+| Auditoría de backlog | **RECUPERADA** contra `main` + handoff/backlog histórico |
 
 ## Cómo retomar el proyecto en una conversación nueva
 
@@ -20,6 +21,7 @@
 4. No rehacer trabajo marcado como completado sin evidencia concreta de una regresión.
 5. Continuar por el primer ítem sin completar de **Milestone actual**.
 6. Al cerrar el milestone, actualizar la tabla superior, el roadmap, el backlog afectado y el registro de milestones en un solo commit de documentación.
+7. Los ítems marcados como **Futuro/opcional** preservan ideas aprobadas o útiles, pero no autorizan construirlas antes de que su fase corresponda.
 
 ### Leyenda
 
@@ -27,6 +29,7 @@
 - `[~]` Parcial: existe una base útil, pero no cumple todavía toda la definición de terminado.
 - `[ ]` Pendiente.
 - **Externo**: se resuelve en Cloudflare, Google, correo u otro servicio fuera del repositorio.
+- **Futuro/opcional**: idea preservada para no perderla; requiere priorización antes de implementar.
 
 ## Milestone actual — P0: base pública estable
 
@@ -51,15 +54,15 @@ P0 no se cierra hasta completar todos los bloqueos y la verificación manual. El
 - [x] **Search Console inicial.** Google quedó configurado y Bing iniciado; el seguimiento continuo pertenece a optimización.
 - [x] **Limpieza de implementaciones descartadas.** Se retiraron el mockup de Owner Access, `site-runtime.js/css`, la navegación en GTM y la frase antigua.
 - [x] **Copy canónico.** Home usa exactamente “Creative Audio. Technical systems. Built for the show.”
-- [x] **Convenciones históricas retiradas.** No quedan `SD.live`, `SDLive`, `SD Live`, el correo iCloud antiguo ni la implementación display-only.
+- [x] **Convenciones históricas retiradas.** No quedan `SD.live`, `SDLive`, `SD Live`, el correo iCloud antiguo ni la implementación display-only en el alcance auditado.
 
 ### Bloqueos antes de cerrar P0
 
-- [ ] **P0.1 — corregir redirect de `www` (Externo).** `https://www.sdlive.show/` redirige actualmente a `https://sdlive.show/s` y termina en 404. Corregir la regla de Cloudflare para que preserve la ruta y, en `/`, llegue a `https://sdlive.show/`.
-- [ ] **P0.2 — garantizar el wordmark visual en contenido dinámico.** `privacy-consent.js` y `analytics-consent.js` vuelven a escribir copias con `textContent`, lo que puede perder el punto flotante de `SD.Live`. El alert nativo de éxito de contacto también muestra el nombre plano. Aplicar un renderer seguro o retirar la marca de mensajes que no admiten el wordmark.
-- [ ] **P0.3 — resolver la presencia visible de WLive.** El logo y un testimonio vuelven a mostrar WLive aunque el alcance anterior pedía retirarlo de la experiencia visible. Confirmar la decisión y retirar la referencia visible si la regla sigue vigente.
+- [ ] **P0.1 — corregir redirect de `www` (Externo).** La auditoría previa detectó que `https://www.sdlive.show/` redirigía a `https://sdlive.show/s` y terminaba en 404. Corregir la regla de Cloudflare para preservar la ruta y revalidar desde navegador/HTTP real antes de marcarlo hecho.
+- [ ] **P0.2 — garantizar el wordmark visual en contenido dinámico.** Verificado en `main`: `privacy-consent.js` y `analytics-consent.js` contienen copias visibles de `SD.Live` escritas mediante `textContent`; el alert nativo de éxito de Contact también usa `SD.Live` plano. Aplicar renderer seguro o retirar la marca de superficies que no admitan el wordmark.
+- [ ] **P0.3 — resolver la presencia visible de WLive.** Verificado en `main`: Home incluye card/logotipo WLive, reveal “Brands supported through WLive” y testimonial con logo WLive. Confirmar si la regla vigente sigue siendo retirarlo de la experiencia visible; si sí, retirar la referencia sin borrar evidencia histórica necesaria.
 - [ ] **P0.4 — smoke test final en navegador real.** Verificar Home, flecha Desktop/Mobile con URL limpia, Theatre, `/en/`, `/es-co/`, `/privacy`, 404, preferencias de cookies, autorización de contacto y autorización de alquiler.
-- [ ] **P0.5 — validación analítica en producción.** Confirmar en GA4 Realtime los clics de email/WhatsApp y que un lead no se duplique; separar tráfico interno para la prueba.
+- [ ] **P0.5 — validación analítica en producción.** Confirmar en GA4 Realtime `contact_whatsapp_click`, `contact_email_click` y que exactamente un envío real produzca un solo `generate_lead`; validar `lead_type`, `market` y parámetros de página. Separar tráfico interno cuando termine el debugging activo.
 
 ### Definición de P0 cerrado
 
@@ -81,7 +84,8 @@ P0 puede marcarse `CERRADO` únicamente cuando P0.1–P0.5 estén completados, n
 - [x] Draft, Published y revisiones del Hero guardados en D1.
 - [x] Endpoints Admin del Hero y endpoint público `GET /api/content/hero`.
 - [x] El Hero publicado en D1 coincide con el contenido estático al corte del 2026-08-20.
-- [ ] El Home todavía no consulta el endpoint público; el Editor lo declara explícitamente como el siguiente paso.
+- [x] El endpoint público existe en `worker.js`.
+- [ ] El Home todavía no consulta el endpoint público; no hay referencia a `/api/content/hero` en `index.html` ni `script.js` al corte auditado.
 
 ## Roadmap por fases y gates
 
@@ -98,68 +102,143 @@ No se avanza de fase por cantidad de pantallas o commits, sino al cumplir el gat
 | 7. Escala comercial | Contenido, casos, automatización y conversión | Pendiente | Adquisición y seguimiento repetibles |
 | 8. Ecosistema de plataforma | Extensiones premium e integraciones | Futuro | Solo después de validar las fases anteriores |
 
-## Backlog maestro por área
+## Backlog maestro recuperado por área
+
+Este backlog incorpora el detalle que estaba disperso en handoffs y listas históricas. Los ítems ya resueltos no se reabren; los futuros se conservan para que no desaparezcan al resumir el roadmap.
 
 ### Admin, CMS y editor
 
 - [~] **Base Admin V6.4.** Dashboard, Editor, estados de Hero y previews implementados.
-- [ ] Hacer editables las secciones distintas del Hero.
-- [ ] Drag/drop, resize, snap, spacing y visibilidad por dispositivo/mercado.
-- [ ] Undo/redo, rollback, drafts por página, plantillas y duplicación.
-- [ ] Librería de medios en R2; actualmente no existe binding R2.
-- [ ] Gestión dinámica de Trusted By, Brands y Testimonials.
-- [ ] Verificar y retirar `admin/admin.js` y `admin/admin.css` si se confirma que son duplicados sin uso.
-- [ ] Convertir el staging oculto actual en una Template Library explícita.
-- [ ] Settings centralizados, permisos editoriales y controles por ambiente.
+- [ ] Conectar Published del CMS al sitio público y luego extender Draft / Published / revisions del Hero a las demás secciones.
+- [ ] Selección visual real de todos los elementos editables.
+- [ ] Drag/drop y reordenamiento de cards/bloques.
+- [ ] Snap-to-grid, resize, gap, padding, alignment y spacing visual.
+- [ ] Configuración independiente Desktop/Mobile y show/hide por dispositivo.
+- [ ] Show/hide por mercado COL/INT.
+- [ ] Undo/redo, rollback de revisiones y draft completo por página.
+- [ ] Duplicar bloques/cards y crear bloques nuevos desde templates.
+- [ ] Convertir staging oculto en **Template Library** explícita; no mantener mockups ocultos indefinidamente en HTML.
+- [ ] **Media Library + R2:** crear binding/bucket, subir y reutilizar imágenes, logos, portfolio, equipment, testimonials y OG images; permitir reemplazo/eliminación segura.
+- [ ] **Futuro/opcional Media:** folders/tags, búsqueda, alt text, crop/focal point, WebP/AVIF automático y detección de assets sin usar.
+- [ ] Gestión dinámica de **Trusted By:** alta/baja, logo, reordenar, duplicar, resize, idioma y visibilidad por mercado.
+- [ ] Gestión dinámica de **Brands Supported Through:** alta/baja, asociaciones empresa→marca, reorder, hover Desktop y tap Mobile.
+- [ ] Gestión dinámica de **Testimonials:** logo/foto, nombre, cargo, empresa, quote, orden, featured y placeholders.
+- [ ] Verificar y retirar `admin/admin.js` y `admin/admin.css` si se confirma que son duplicados sin uso respecto a `admin/editor/*`.
+
+#### Header, navegación y controles flotantes
+
+- [ ] Reordenar elementos del header y ajustar spacing entre logo, navegación, idiomas, Live/Show Day y CTAs.
+- [ ] Mostrar/ocultar botones, Live/Show Day y WhatsApp desde Admin.
+- [ ] Configurar comportamiento independiente Desktop/Mobile.
+- [ ] Configurar destino de cada link y **scroll offset** por anchor.
+- [ ] Agregar/quitar items del menú desde Admin.
+- [ ] Mover WhatsApp, Rental/cart, Live/Show Day y Back to Top; posición independiente Mobile, distancia a bordes y orden entre controles.
+- [ ] Show/hide de controles por página.
+- [ ] **Futuro/opcional:** presets de Header (Normal / Show Day / Minimal) y preview de safe areas de iPhone.
+
+#### Settings y operación del Admin
+
+- [ ] Settings centralizados: marca, contacto, aliases Workspace, WhatsApp, redes, default COL/INT, Show Day, Rental, SEO defaults y notificaciones.
+- [ ] Permisos editoriales y controles por ambiente.
+- [ ] **Futuro/opcional:** Global Search/Command Palette, Activity Center, Automation Center, shortcuts, autosave Draft, comparación antes de Publish, Scheduled Publish, Scheduled Visibility, notificaciones globales y role-based access.
 
 ### Contenido y experiencia pública
 
 - [x] Hero, navegación Home, cards de Theatre y UI frontend de marcas están implementados.
-- [~] Portfolio: tres piezas públicas y tres slots ocultos; faltan CMS, media y case studies.
-- [~] Raw vs Mixed: existe lógica UI oculta; faltan audio real, waveform y control Admin.
-- [~] Testimonials: uno real y placeholders ocultos; falta administración y resolver WLive.
-- [~] Show Day: cambio manual en Home implementado; falta automatización y propagación a landings.
+- [~] **Portfolio / Highlight Projects:** tres piezas públicas y tres slots ocultos; faltan CMS/media, imágenes/video, credits, rol, cliente/productora, año, descripción, tags y featured/hidden.
+- [ ] **Futuro/opcional Portfolio:** filtros por disciplina, case studies extensos, Before/After y ejemplos QLab/audio/video.
+- [~] **Raw vs Mixed:** UI/lógica existe oculta; faltan audios reales y administración de pares desde Admin.
+- [ ] **Futuro/opcional Raw vs Mixed:** waveform real, cambio sample-accurate y múltiples ejemplos.
+- [~] **Testimonials:** un testimonio real y placeholders ocultos; falta administración y decisión WLive.
+- [~] **Show Day:** cambio manual en Home implementado; falta automatización, reglas y propagación coherente a landings.
 - [x] El viejo Owner Access fue retirado; el acceso real se hace por `/admin/` detrás de Cloudflare Access. No se necesita un login público por defecto.
-- [ ] Header controls y floating controls administrables.
-- [ ] Portfolio/CV privado con autorización real.
-- [ ] Chatbot basado en conocimiento aprobado, manteniendo costo gratuito o casi gratuito.
+- [ ] **Portfolio/CV privado:** páginas no indexadas/no navegables, con versiones Sound Design, Live Audio, Theatre, AV/Systems, Production y General CV.
+- [ ] **Futuro/opcional Portfolio privado:** links revocables, expiración, límite/registro de accesos, “prepared for [Company]”, PDF y snapshot por candidatura.
+- [ ] Chatbot basado en knowledge base aprobada, manteniendo costo gratuito o casi gratuito y sin inventar precios/disponibilidad.
+- [ ] Recuperar/activar contenido editorial útil: blog/Insights, Field Notes, Behind the Console y otros bloques ocultos cuando haya contenido real.
+- [ ] Evaluar **Technical Audio Training** como servicio explícito antes de publicarlo.
+- [ ] Preservar ideas de contenido: audio profesional, briefs AV para equipos de marketing, IA/Suno aplicada a producción de audio, formación y tutoriales.
 
 ### Contacto, alquiler y operación
 
 - [x] Ingesta de contacto y alquiler en D1 con Turnstile, consentimiento y Resend.
+- [x] Contacto notifica a `hello@sdlive.show`; Rental notifica exclusivamente a `rental@sdlive.show`.
 - [x] Precios y bundles de alquiler calculados en servidor.
 - [x] Rental se oculta para INT y puede revelarse con intención directa `#rental`.
 - [~] La card de Equipment Rental respeta la visibilidad INT, pero todavía debe llevar directamente a `#rental` cuando corresponda.
 - [ ] Autoresponder, rate limiting explícito y UI para seguimiento de leads.
+- [ ] Mejorar claridad del carrito: dejar inequívoco que es **solicitud de cotización**, no compra/pago; resolver empty state, service-only total 0 y reset incompleto.
+- [ ] Afinar logística/delivery y decidir si hacen falta presets/paquetes adicionales sin reabrir el pricing backend estable.
 - [ ] PDF de cotización, disponibilidad, vigencia y flujo de aprobación.
-- [ ] Mejorar claridad del carrito: cotización, sin compra ni pago en línea, empty state y reset.
 - [ ] Calendario de inventario y prevención de double booking.
-- [ ] CRM: pipeline, clientes, historial, proyectos y relaciones; hoy solo existe ingestión D1.
-- [ ] Calendario operativo, proyectos, automatización de cotizaciones y AppSheet.
-- [ ] Conectar Show Day al calendario; el estado actual es manual y el endpoint/calendario automático no entrega eventos.
+
+#### CRM, AppSheet y Projects
+
+- [ ] CRM básico con pipeline **New → Contacted → Quoted → Confirmed → Lost**.
+- [ ] Clientes, contactos, empresas, notas, historial y source (Web / Email / Referral / LinkedIn / etc.).
+- [ ] Relación trazable **Lead → Quote → Project → Invoice**.
+- [ ] Integración AppSheet: trabajos, clientes, eventos y pagos cuando aporte valor; definir primero la **source of truth** de cada dato y evitar duplicación.
+- [ ] Módulo Projects: cliente, show, rol, fechas, venue, contactos, notas, archivos, Rental, Quote y Calendar asociados.
+- [ ] **Futuro/opcional Projects:** checklist pre-show / show day / wrap.
+
+#### Calendario, Show Day y cotizaciones
+
+- [ ] Vista Calendar en Admin integrando Google Calendar, AppSheet events, Projects, Rental y disponibilidad.
+- [ ] Conectar Show Day al calendario real; detectar show/evento, activar/desactivar automáticamente y conservar override manual.
+- [ ] **Futuro/opcional Show Day:** ventana configurable antes/después del evento.
+- [ ] Automatización de cotizaciones desde Rental/Lead: equipo, servicios, transporte, IVA, días, descuentos/reglas, PDF, numeración y envío.
+- [ ] Estados de Quote: **Draft / Sent / Viewed / Accepted / Rejected**.
+- [ ] **Futuro/opcional:** aceptación online y convertir Quote aceptada en Project.
+
+#### Inbox y correo
+
 - [x] Acceso directo a Gmail para la operación de correo.
-- [ ] Inbox nativo dentro del Admin.
+- [ ] Inbox nativo dentro del Admin con General, Rental, Projects y Billing; responder desde el alias correcto.
+- [ ] Email → Lead / Rental Request / Project cuando el modelo de datos esté listo.
+- [ ] Verificar configuración/uso de aliases operativos acordados (`hello@`, `info@`, `rental@`, `projects@`, `billing@`, `facturas@`) antes de automatizarlos.
+- [ ] Evaluar `noreply@` y completar revisión de DMARC cuando Workspace/email esté estable.
 
 ### Analítica, SEO y crecimiento
 
-- [~] Consent Mode, GTM, GA4 y eventos base implementados; falta validar Realtime y reporting confiable.
-- [ ] Completar el funnel medible: form starts, leads calificados, atribución, mercado y resultados de negocio sin duplicados.
-- [~] SEO técnico y landings P0 publicados; falta monitorizar indexación, queries, Core Web Vitals y conversión.
+- [~] Consent Mode, GTM, GA4 y eventos base implementados; `generate_lead` fue validado previamente en Preview/DebugView, pero falta validación final de producción.
+- [ ] Validar en **GA4 Realtime** `contact_whatsapp_click` y `contact_email_click` desde la web live sin Tag Assistant.
+- [ ] Hacer un único envío real y confirmar **1 submission = 1 `generate_lead`**.
+- [ ] Confirmar parámetros de lead: `lead_type`, `market`, `page_location`, `page_path`, `page_referrer`, `page_title` y consistencia de valores.
+- [ ] Separar tráfico interno/testing cuando deje de ser necesario verlo para debugging.
+- [ ] Revisar Key Events: solo outcomes de negocio; no tratar `page_view` o `scroll` como conversiones.
+- [ ] Completar funnel medible: usuarios/sesiones → source/channel → país/ciudad/device → form starts/contactos → lead type/market → qualified → closed.
+- [ ] Validar atribución antes de interpretar “Unassigned” u otros canales como problema real.
+- [~] SEO técnico y landings P0 publicados; falta monitorizar indexación real, queries, impressions, CTR, países, páginas de entrada, Core Web Vitals y conversión.
 - [ ] Medir rendimiento real de “alquiler sonido Bogotá”, “sonido eventos corporativos Bogotá”, “alquiler consolas Bogotá” y “Behringer WING Bogotá” antes de crear más páginas.
-- [ ] Dashboard/Data Studio y controles de analítica desde Admin.
-- [ ] Estrategia de contenido, casos, insights, podcast, formación y tutoriales.
+- [ ] Revisar internal linking, alt text y consistencia visual/Show Day de landings cuando toque optimización, sin rehacer la auditoría SEO P0 desde cero.
+- [ ] Dashboard/Data Studio: evaluar dashboard propio, Looker Studio o híbrido con Website, Leads, CRM, Rental, Projects, AppSheet/NextPay, Revenue, Quotes y conversiones.
+- [ ] Analizar canales óptimos de adquisición/traffic (orgánico, LinkedIn/RRSS, referral, outreach, QR/UTM y otros) con métricas de conversión y revenue, no solo visitas.
+- [ ] Estrategia de contenido, casos, Insights/blog, podcast, formación y tutoriales basada en objetivos comerciales.
 - [ ] Ciclo de experimentación de conversión y ROI por canal.
+- [ ] **Futuro/opcional:** UTM/link builder integrado, QR generator y reporting de revenue por cliente/servicio, utilización de equipos, mercados y forecast.
 
 ### Plataforma, seguridad y calidad
 
 - [~] Access, JWT, Turnstile, D1 y consentimiento dan una base de seguridad útil.
-- [ ] Rate limiting verificable, pruebas de autorización y estudio explícito free-vs-paid de controles.
+- [ ] Rate limiting verificable, pruebas de autorización y estudio explícito de qué ofrece Cloudflare **Free vs Paid** para seguridad/controles.
 - [ ] Evaluar CSP, Referrer-Policy y Permissions-Policy sin romper GTM, Turnstile ni assets.
 - [ ] Tests automatizados, lint, CI y migraciones/versionado de esquema D1.
-- [ ] Observabilidad de deploys, errores, D1, R2 futuro y backups desde Dashboard.
-- [ ] Refactor posterior a pruebas: `index.html`, `script.js`, `styles.css` y `worker.js` son actualmente monolíticos.
+- [ ] Observabilidad de Worker, D1, futuro R2, último publish/deploy, errores y backups/export desde Dashboard.
+- [ ] Auditoría de código orientada a limpieza, orden, rendimiento y fluidez **sin romper comportamiento validado**; refactor posterior a pruebas porque `index.html`, `script.js`, `styles.css` y `worker.js` son monolíticos.
 - [ ] Diagnóstico visible y validación real de detección COL/INT por locale/timezone.
-- [ ] Revisar noreply, aliases y DMARC como configuración externa de correo.
+- [ ] Revisar artefactos de desarrollo antes de cierre/cleanup futuro; `deploy-test.txt` sigue presente en `main` y parece ser únicamente una prueba de deploy del 2026-08-17.
+- [ ] **Futuro/opcional:** audit log administrativo, backups exportables y rollback desde UI.
+
+### Ecosistema / ideas futuras preservadas
+
+No son compromisos inmediatos. Se conservan para que el handoff no pierda decisiones/ideas de producto anteriores.
+
+- [ ] **Futuro/opcional:** Client Portal para cotizaciones, archivos, datos de proyecto y confirmaciones mediante link privado.
+- [ ] **Futuro/opcional:** Share Links genéricos para Portfolio, CV, quotes, documentos o previews.
+- [ ] **Futuro/opcional:** preview links de Draft y versiones de la web por campaña sin duplicar todo el sitio.
+- [ ] **Futuro/opcional:** PWA del Admin.
+- [ ] **Futuro/opcional:** disponibilidad compartible, conflictos de agenda/equipo y automatizaciones de follow-up.
+- [ ] Cualquier evolución multi-user, multi-tenant o SaaS debe validarse comercialmente antes de construirse; no se asume como destino automático de SD.Live.
 
 ## Decisiones e invariantes — no reabrir sin evidencia
 
@@ -171,9 +250,11 @@ No se avanza de fase por cantidad de pantallas o commits, sino al cumplir el gat
 - Los formularios de rental se envían únicamente a `rental@sdlive.show`, nunca a `hello@sdlive.show`.
 - Cloudflare Access es la barrera real del Admin; no reemplazarla con un login visual falso.
 - El pricing de rental vive en backend; no moverlo al cliente ni rediseñarlo sin un bug o requisito nuevo.
+- GTM controla consentimiento/analytics/eventos; no navegación, layout, branding, Theatre ni UI general.
 - No restaurar Netlify, Owner Access mockup, `site-runtime`, navegación mediante GTM, tagline anterior, cards duplicadas Theatre/Theater ni dirección residencial.
 - No reconstruir CMS/D1, Access, privacidad, Turnstile, analítica o SEO desde cero si el componente actual puede extenderse.
 - No guardar secretos ni datos sensibles en GitHub.
+- No usar todavía las métricas actuales de GA4 como verdad de marketing hasta cerrar la validación de producción y tráfico interno.
 
 ## Registro de milestones
 
@@ -183,18 +264,35 @@ No se avanza de fase por cantidad de pantallas o commits, sino al cumplir el gat
 
 **Evidencia principal:**
 
-- `main` y producción verificados en `e81b9155c40950bde128218a6196c598f0457a86`.
-- `/api/health` identificó `sdlive-cms-production`.
-- `/api/admin/whoami` fue interceptado por Cloudflare Access.
-- Los archivos críticos de producción coincidieron con GitHub.
-- Se localizaron los tres riesgos visibles: redirect `www`, wordmark dinámico y regreso de WLive.
-- Se confirmó que el endpoint público del Hero existe, pero el Home aún no lo consume.
+- `main` y producción habían sido verificados en `e81b9155c40950bde128218a6196c598f0457a86` durante el corte previo.
+- `/api/health` identificó `sdlive-cms-production` en la validación previa.
+- `/api/admin/whoami` fue interceptado por Cloudflare Access en la validación previa.
+- En la auditoría de código actual se confirmó `POST /api/contact` → `hello@sdlive.show` y `POST /api/rental` → `rental@sdlive.show`.
+- En la auditoría de código actual se confirmó que `/api/content/hero` existe en `worker.js`, pero Home aún no lo consume.
+- Se confirmó por código que P0.2 es real: consentimientos y alert de Contact todavía pueden mostrar `SD.Live` como texto plano.
+- Se confirmó por código que P0.3 es real: WLive sigue visible en Home, reveal de marcas y testimonial.
+- `deploy-test.txt` sigue en `main` como residuo de una prueba de deploy y se añadió a cleanup futuro, sin convertirlo en blocker P0.
 
 **Cambios históricos relevantes ya incorporados:**
 
 - `4c57746`: retiro del mockup Owner Access.
 - `9a5a0ce` y `c3c5723`: retiro de `site-runtime`.
 - `e81b915`: actualización de `lastmod` del sitemap después de la limpieza P0.
+
+### 2026-08-20 — recuperación del backlog histórico
+
+**Resultado:** el primer `PROJECT_STATUS.md` era un resumen válido pero demasiado comprimido para funcionar como handoff maestro a largo plazo. Se contrastó contra los handoffs/listas históricas y se recuperaron requisitos que no estaban preservados explícitamente.
+
+**Recuperado sin reabrir trabajo ya cerrado:**
+
+- detalle del Site Editor: header, anchors, floating controls, Desktop/Mobile y COL/INT;
+- Media Library/R2 y gestión de Trusted By / Brands / Testimonials;
+- Portfolio/Raw vs Mixed/Template Library y Portfolio/CV privado;
+- CRM, AppSheet, Projects, Calendar, Show Day, Quote flow e Inbox;
+- definición de integridad GA4/GTM y funnel de negocio;
+- Settings/System/observabilidad/seguridad y auditoría de código;
+- adquisición, RRSS/traffic channels, blog/Insights, formación y Technical Audio Training;
+- ideas premium/futuras, claramente separadas de los gates actuales.
 
 ## Protocolo de actualización por milestone
 
@@ -217,9 +315,10 @@ No actualizar por cambios cosméticos aislados, microcopy o commits intermedios 
 
 ## Orden recomendado inmediato
 
-1. Corregir la regla externa de `www` en Cloudflare.
-2. Corregir el renderer del wordmark y el alert de contacto en el repositorio.
+1. Corregir la regla externa de `www` en Cloudflare y revalidarla.
+2. Corregir el renderer del wordmark y el alert de Contact en el repositorio.
 3. Resolver la decisión WLive y aplicar el resultado.
 4. Ejecutar smoke test y validación GA4 en producción.
 5. Marcar P0 cerrado y actualizar este archivo con el SHA desplegado.
 6. Empezar P1.1: binding del Hero CMS hacia Home con fallback estático.
+7. Solo después, ampliar CMS/editor siguiendo el backlog recuperado y los gates de las 8 fases.
