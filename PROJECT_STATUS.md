@@ -10,7 +10,7 @@
 | Producción | [https://sdlive.show](https://sdlive.show) |
 | Milestone actual | P0 — base pública estable |
 | Estado del milestone | **ABIERTO** |
-| Siguiente gate | Completar smoke test final y validación GA4 |
+| Siguiente gate | Completar P0.5 — validación GA4 en producción |
 | Auditoría de backlog | **RECUPERADA** contra `main` + handoff/backlog histórico |
 
 ## Cómo retomar el proyecto en una conversación nueva
@@ -64,7 +64,7 @@ P0 no se cierra hasta completar todos los bloqueos y la verificación manual. El
 - [x] **P0.1 — validar redirect de `www` (Externo).** Regla corregida y verificada manualmente en navegador real: `www.sdlive.show` resuelve correctamente hacia el sitio canónico.
 - [x] **P0.2 — garantizar el wordmark visual en contenido dinámico.** Cerrado en producción. Los scripts de privacidad/analítica usan renderer seguro para `SD.Live`; el alert nativo de Contact evita la marca en una superficie no estilizable. Se detectó además que `analytics-consent.js` no estaba cargado en Home y se corrigió en `1775c60` cargándolo antes de GTM. El usuario verificó visualmente Preferencias de cookies y el modal de autorización de Contact en Safari/iPhone.
 - [x] **P0.3 — confirmar alcance WLive.** Confirmado: WLive se mantiene visible y no constituye un bug ni un bloqueo.
-- [ ] **P0.4 — smoke test final en navegador real.** Verificar Home, flecha Desktop/Mobile con URL limpia, Theatre, `/en/`, `/es-co/`, `/privacy`, 404, preferencias de cookies, autorización de contacto y autorización de alquiler. **Parcial 2026-08-20:** PASS en Home móvil, EN→ES→EN, Back to Top con URL limpia, Trusted By/WLive móvil, Rental móvil + carrito + bundles visuales y autorización de Contact.
+- [x] **P0.4 — smoke test final en navegador real.** PASS el 2026-08-20: Home móvil, EN→ES→EN, Back to Top con URL limpia, Trusted By/WLive, Rental móvil + carrito + bundles visuales, preferencias de cookies, autorización de Contact, autorización de Rental, Theatre, `/en/`, `/es-co/`, `/privacy` y 404 personalizada.
 - [ ] **P0.5 — validación analítica en producción.** Confirmar en GA4 Realtime `contact_whatsapp_click`, `contact_email_click` y que exactamente un envío real produzca un solo `generate_lead`; validar `lead_type`, `market` y parámetros de página. Separar tráfico interno cuando termine el debugging activo.
 
 ### Definición de P0 cerrado
@@ -130,6 +130,7 @@ Este backlog incorpora el detalle que estaba disperso en handoffs y listas hist�
 
 #### Header, navegación y controles flotantes
 
+- [ ] **WhatsApp en todas las landings públicas.** Reutilizar el botón flotante del Home en Theatre, `/en/`, `/es-co/`, servicios Bogotá, landings de Rental y demás landings públicas; mantener el mismo destino, tracking, safe-area y comportamiento coherente en Desktop/Mobile.
 - [ ] Reordenar elementos del header y ajustar spacing entre logo, navegación, idiomas, Live/Show Day y CTAs.
 - [ ] Mostrar/ocultar botones, Live/Show Day y WhatsApp desde Admin.
 - [ ] Configurar comportamiento independiente Desktop/Mobile.
@@ -312,6 +313,12 @@ No son compromisos inmediatos. Se conservan para que el handoff no pierda decisi
 
 **Smoke test parcial asociado:** Home móvil, EN→ES→EN, Back to Top con URL limpia, Trusted By/WLive, Rental + carrito/bundles y autorización de Contact: PASS.
 
+### 2026-08-20 — P0.4 smoke test final validado
+
+**Resultado:** P0.4 cerrado. El usuario completó el smoke test en navegador real con PASS en Home móvil, idioma EN/ES, Back to Top con URL limpia, Trusted By/WLive, carrito Rental y bundles, preferencias de cookies, modales de autorización de Contact y Rental, Theatre, `/en/`, `/es-co/`, `/privacy` y la 404 personalizada. No se observaron regresiones funcionales o visuales en ese recorrido.
+
+**Nuevo backlog detectado durante el smoke:** añadir el botón flotante de WhatsApp a todas las landings públicas con el mismo destino, tracking y comportamiento responsive del Home. Se registra como mejora de consistencia pública y no reabre P0.4.
+
 ## Protocolo de actualización por milestone
 
 Actualizar este archivo cuando ocurra uno de estos eventos:
@@ -333,8 +340,8 @@ No actualizar por cambios cosméticos aislados, microcopy o commits intermedios 
 
 ## Orden recomendado inmediato
 
-1. Completar P0.4: smoke test en navegador real, incluyendo autorización de Rental y rutas públicas restantes.
-2. Completar P0.5: validar eventos y parámetros en GA4 Realtime con un único envío real.
-3. Marcar P0 cerrado y actualizar este archivo con el SHA desplegado.
-4. Empezar P1.1: binding del Hero CMS hacia Home con fallback estático.
+1. Completar P0.5: validar eventos y parámetros en GA4 Realtime con un único envío real.
+2. Marcar P0 cerrado y actualizar este archivo con el SHA desplegado.
+3. Empezar P1.1: binding del Hero CMS hacia Home con fallback estático.
+4. Implementar el botón flotante de WhatsApp en todas las landings públicas dentro del bloque de consistencia/navegación, sin convertirlo en blocker retroactivo de P0.
 5. Solo después, ampliar CMS/editor siguiendo el backlog recuperado y los gates de las 8 fases.
