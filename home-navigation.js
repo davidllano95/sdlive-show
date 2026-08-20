@@ -6,6 +6,16 @@
     "(prefers-reduced-motion: reduce)"
   ).matches;
 
+  function loadHeroContentBinding() {
+    import("/hero-content.js?v=20260820-1").catch((error) => {
+      // Static Hero content remains the intentional fallback.
+      console.warn(
+        "[SD.Live] Hero CMS binding could not be loaded; using static fallback.",
+        error
+      );
+    });
+  }
+
   function isHomeArrowTarget(target) {
     return Boolean(target?.closest?.("#backToTop"));
   }
@@ -58,6 +68,8 @@
       true
     );
   }
+
+  loadHeroContentBinding();
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", init, { once: true });
