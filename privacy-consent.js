@@ -1,14 +1,4 @@
 (() => {
-  if (!document.querySelector('script[data-sdlive-home-navigation]')) {
-    const navigationScript = document.createElement("script");
-    navigationScript.src = "/home-navigation.js?v=20260819-1";
-    navigationScript.defer = true;
-    navigationScript.dataset.sdliveHomeNavigation = "";
-    document.head.appendChild(navigationScript);
-  }
-})();
-
-(() => {
   const POLICY_VERSION = "2026-08-19";
   const POLICY_URL = "/privacy";
   const AUTHORIZATION_TTL_MS = 10 * 60 * 1000;
@@ -27,7 +17,7 @@
     },
     en: {
       title: "Data authorization",
-      body: "To send this request, I authorize Samuel David Llano / SD.Live to collect, store and use the data I provided to respond to my request, prepare quotes and manage the related commercial or contractual relationship.",
+      body: "To send this request, I authorize Samuel David Llano / SD.Live to collect, store and use the data I provided to respond my request, prepare quotes and manage the related commercial or contractual relationship.",
       rights: "I may access, update, correct or delete my data, or revoke this authorization, by writing to hello@sdlive.show.",
       policy: "View Privacy & Data Processing Policy",
       authorize: "Authorize & send",
