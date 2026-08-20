@@ -33,6 +33,62 @@
   const language = () =>
     document.documentElement.lang === "es" ? "es" : "en";
 
+  function createBrandWordmarkText() {
+    const wordmark = document.createElement("span");
+    wordmark.className = "brand-wordmark-text";
+    wordmark.setAttribute("aria-label", "SD.Live");
+    wordmark.append(document.createTextNode("SD"));
+
+    const dot = document.createElement("span");
+    dot.className = "brand-wordmark-text__dot";
+    dot.setAttribute("aria-hidden", "true");
+    dot.textContent = ".";
+
+    wordmark.append(dot, document.createTextNode("Live"));
+    return wordmark;
+  }
+
+  function renderBrandSafeText(element, value) {
+    if (!element) return;
+
+    const text = String(value ?? "");
+    if (!text.includes("SD.Live")) {
+      element.textContent = text;
+      return;
+    }
+
+    const fragment = document.createDocumentFragment();
+    const parts = text.split("SD.Live");
+
+    parts.forEach((part, index) => {
+      if (part) fragment.append(document.createTextNode(part));
+      if (index < parts.length - 1) {
+        fragment.append(createBrandWordmarkText());
+      }
+    });
+
+    element.replaceChildren(fragment);
+  }
+
+  function installBrandSafeAlert() {
+    if (window.__sdliveBrandSafeAlertInstalled) return;
+    window.__sdliveBrandSafeAlertInstalled = true;
+
+    const nativeAlert = window.alert.bind(window);
+
+    window.alert = (message) => {
+      if (message === "Mensaje recibido. Gracias por contactar a SD.Live.") {
+        return nativeAlert("Mensaje recibido. Gracias por escribirnos.");
+      }
+
+      if (message === "Message received. Thanks for contacting SD.Live.") {
+        return nativeAlert("Message received. Thanks for reaching out.");
+      }
+
+      return nativeAlert(message);
+    };
+  }
+
   function hasFreshAuthorization(source) {
     const timestamp = authorizedAt.get(source);
     return Number.isFinite(timestamp) &&
@@ -192,7 +248,7 @@
 
     const kicker = document.createElement("p");
     kicker.className = "privacy-consent-kicker";
-    kicker.textContent = "SD.Live · Privacy";
+    renderBrandSafeText(kicker, "SD.Live · Privacy");
 
     const title = document.createElement("h2");
     title.id = "privacyConsentTitle";
@@ -249,7 +305,7 @@
     document.querySelectorAll("[data-privacy-text]").forEach((element) => {
       const key = element.dataset.privacyText;
       if (COPY[lang]?.[key]) {
-        element.textContent = COPY[lang][key];
+        renderBrandSafeText(element, COPY[lang][key]);
       }
     });
 
@@ -464,6 +520,7 @@
   }
 
   installFetchGuard();
+  installBrandSafeAlert();
 
   window.SDLIVE_PRIVACY_CONSENT = {
     POLICY_VERSION,
