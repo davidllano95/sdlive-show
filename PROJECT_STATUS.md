@@ -1,6 +1,8 @@
 # SD.Live — estado maestro, roadmap y handoff
 
 > **Fuente de verdad operativa del proyecto.** Este archivo registra qué está hecho, cómo está resuelto, qué falta y cuál es el siguiente gate. Se actualiza al cerrar milestones o ante cambios materiales de arquitectura/alcance, no con cada parche pequeño.
+>
+> **Backlog detallado preservado:** `ROADMAP_MASTER_CHECKLIST.md` contiene la reconciliación completa del checklist histórico/futuro. Ese archivo **no reemplaza** este Current State/Active Gate ni autoriza trabajo por sí solo.
 
 | Campo | Valor |
 |---|---|
@@ -23,7 +25,8 @@ En caso de conflicto, prevalece este orden:
 2. **Schema, migrations y configuración desplegada actual.**
 3. **Este documento.**
 4. **README.**
-5. Prompts, ideas, benchmarks y referencias externas.
+5. **`ROADMAP_MASTER_CHECKLIST.md`** para preservar detalle de backlog/futuro.
+6. Prompts, ideas, benchmarks y referencias externas.
 
 Un prompt nunca puede invalidar silenciosamente una funcionalidad existente, una invariante o una fuente de verdad. Si hay conflicto, **investigar y obtener una decisión explícita** antes de reemplazar arquitectura o comportamiento.
 
@@ -35,18 +38,18 @@ Un prompt nunca puede invalidar silenciosamente una funcionalidad existente, una
 - **FUTURE INTEGRATION** = posibilidad compatible y documentada, **no autorizada** por existir aquí.
 - **VISION** = dirección estratégica, no compromiso ni orden de implementación.
 
-Ningún agente debe convertir `FUTURE INTEGRATION` o `VISION` en trabajo activo sin repriorización explícita.
+Ningún agente debe convertir `BACKLOG`, `FUTURE INTEGRATION` o `VISION` en trabajo activo sin repriorización explícita.
 
 ## Cómo retomar el proyecto en una conversación nueva
 
-1. Leer `README.md` y este archivo.
+1. Leer `README.md`, este archivo y luego `ROADMAP_MASTER_CHECKLIST.md` si la tarea toca backlog/futuro.
 2. Consultar el `HEAD` actual de `main` y compararlo con el commit de producción verificado arriba.
 3. Si cambió, revisar solamente los diffs posteriores y actualizar los estados afectados.
 4. Aplicar la **Regla de precedencia** y el **Change Safety Gate** antes de modificar arquitectura existente.
 5. No rehacer trabajo marcado `[x]` salvo evidencia concreta de regresión.
 6. Continuar por el primer gate **F — Active Gate** abierto.
-7. Las secciones **Future Integrations / Vision** preservan dirección futura; **no autorizan implementación inmediata**.
-8. Al cerrar un milestone material, actualizar este archivo y `README.md` con evidencia real de producción.
+7. Las secciones **Backlog / Future Integrations / Vision** preservan dirección futura; **no autorizan implementación inmediata**.
+8. Al cerrar un milestone material, actualizar este archivo y `README.md` con evidencia real de producción; si cambió el backlog, actualizar también `ROADMAP_MASTER_CHECKLIST.md`.
 
 ### Leyenda
 
@@ -145,7 +148,7 @@ Para CMS/editor, el smoke debe incluir cuando aplique: EN/ES, COL/INT, Desktop/M
 
 Cuando se defina una mejora futura para SD.Live:
 
-1. registrarla en **este roadmap y README** antes de cerrar el checkpoint documental actual;
+1. registrarla en **README + este roadmap**; el detalle extenso puede vivir en `ROADMAP_MASTER_CHECKLIST.md`, que forma parte del roadmap documental;
 2. clasificarla A–F y distinguir Backlog/Future Integration/Active Gate;
 3. registrar dependencias/source-of-truth cuando aplique;
 4. **no implementarla automáticamente** salvo priorización explícita.
@@ -383,6 +386,7 @@ Objetivo: reforzar el Select existente y convertir autoridad/evidencia/change-sa
 - [~] Rental debe recuperar INT→COL cuando la sección está deshabilitada por mercado.
 - [~] Tests de regresión del contrato Global Select.
 - [~] README/roadmap reforzados con precedencia, Evidence, Source of Truth, F Active Gate y Change Safety.
+- [x] Checklist histórico/futuro reconciliado en `ROADMAP_MASTER_CHECKLIST.md` sin convertir backlog en Active Gate.
 - [ ] Production smoke posterior al merge: exact item desde misma/otra sección; Rental desde INT; Interact mode intacto.
 
 **Después de P2.7:** hacer **Home CMS closeout inventory** antes de decidir el siguiente gate. Cleanup de migradores solo tras verificar refs R2/fallbacks.
@@ -390,6 +394,8 @@ Objetivo: reforzar el Select existente y convertir autoridad/evidencia/change-sa
 ---
 
 # Backlog maestro por área
+
+> El inventario histórico/futuro detallado vive en `ROADMAP_MASTER_CHECKLIST.md`. Este bloque mantiene los temas operativos de alto nivel para no duplicar cientos de subtareas en el Current State.
 
 ## Admin / CMS / Editor
 
@@ -406,12 +412,15 @@ Objetivo: reforzar el Select existente y convertir autoridad/evidencia/change-sa
 - [x] Media Library reusable sobre R2.
 - [~] **Global Select cross-section/page-aware contract — P2.7 activo.**
 - [ ] Cleanup de migradores temporales solo tras verificar refs R2/fallbacks de producción.
+- [ ] Drag/drop, snap-to-grid, resize y layout visual genérico.
 - [ ] Reorder genérico de otras cards/bloques.
 - [ ] Show/hide por mercado y dispositivo desde Admin.
 - [ ] Configuración de gap/padding/alignment/spacing.
 - [ ] Undo/redo y rollback accesible desde UI.
+- [ ] Full-page Draft transaction/state.
 - [ ] Duplicar bloques/cards desde templates.
-- [ ] Template Library explícita.
+- [ ] Template Library explícita + acceso controlado a staging/mockups útiles.
+- [ ] Autosave Draft, diff before Publish, scheduled Publish/visibility y shortcuts cuando se prioricen.
 - [ ] Revisar y retirar `admin/admin.js` / `admin/admin.css` si se confirma duplicación frente a `admin/editor/*`.
 - [ ] Fix menor: alineación del salto `Trusted By` en navegación izquierda.
 
@@ -422,24 +431,26 @@ Objetivo: reforzar el Select existente y convertir autoridad/evidencia/change-sa
 - [ ] Show/hide de CTAs, Show Day, WhatsApp y controles por página/mercado/dispositivo.
 - [ ] Configurar anchors y scroll offset.
 - [ ] Agregar/quitar items del menú.
-- [ ] Posición independiente Mobile de WhatsApp, cart y Back to Top.
+- [ ] Posición independiente Mobile de WhatsApp, cart, Show Day/Live controls y Back to Top.
+- [ ] Presets contextuales de header y preview de safe areas Mobile si se aprueba.
 
 ## Contenido público
 
 - [x] Hero CMS real en producción.
 - [x] Trusted By CMS real en producción.
-- [x] Testimonials CMS real en producción.
+- [x] Testimonials CMS real en producción; no recrear placeholders solo por balance visual.
 - [x] About/Services/International/Selected Work con CMS core.
 - [x] Rental/Contact presentation CMS.
 - [x] Theatre estabilizado.
 - [x] WLive visible y vigente.
 - [~] Portfolio/Selected Work: CMS base existe; faltan case-study/credits/tags/featured más profundos si se aprueban.
 - [~] Raw vs Mixed: UI existe; faltan audios reales + Admin.
-- [~] Show Day: manual existe; falta integración con calendario.
-- [ ] Portfolio/CV privado no indexado con variantes profesionales.
-- [ ] Recuperar Insights/Journal cuando exista contenido real.
-- [ ] Evaluar Technical Audio Training como servicio antes de publicarlo.
+- [~] Show Day: manual existe; falta integración con calendario y cobertura deliberada de páginas públicas.
+- [ ] Portfolio/CV privado no indexado con variantes profesionales/share controls.
+- [ ] Recuperar Insights/Journal cuando exista contenido real y capacidad editorial.
+- [ ] Technical Audio Training: backlog aprobado; definir oferta/curriculum/audiencia/capacidad/precio/evidencia antes de publicar.
 - [ ] Sound for Picture: no promover placeholder; requiere contenido real y scope aprobado.
+- [ ] Auditar staging restante como Future Projects / Behind the Console / Field Notes antes de Template Library.
 
 ## Contacto / Rental
 
@@ -450,48 +461,60 @@ Objetivo: reforzar el Select existente y convertir autoridad/evidencia/change-sa
 - [x] Rental oculto en INT salvo intención directa `#rental`/contexto permitido.
 - [x] Rental/Contact presentation CMS Draft/Published.
 - [x] Rental cart smoke posterior a P2.6.
-- [ ] **Compatibilidad guiada para cliente no técnico:** al añadir **Behringer WING**, recomendar **Midas DL32** como stagebox apropiado; al añadir **LV1 Classic**, recomendar **StageGrid 4000**. Definir visual/UX con aprobación antes de implementar; no autoagregar silenciosamente.
-- [ ] **Rental Admin — alta de nuevos items + pricing rules validadas:** soportar precio fijo, precio por día, reglas multi-day, cantidades, pair/bundle con otro equipo y pricing condicional. El Admin puede editar una estructura validada; **backend sigue siendo source-of-truth del cálculo**.
-- [ ] Card Equipment Rental debe llevar a `#rental` cuando corresponda.
-- [ ] Hacer inequívoco que el carrito es solicitud de cotización, no checkout.
+- [ ] **Compatibilidad guiada para cliente no técnico:** al añadir **Behringer WING**, recomendar **Midas DL32**; al añadir **LV1 Classic**, recomendar **StageGrid 4000**. Definir visual/UX con aprobación antes de implementar; no autoagregar silenciosamente.
+- [ ] **Rental Admin — alta de nuevos items + pricing rules validadas:** precio fijo, por día, multi-day, cantidades, pair/bundle y pricing condicional. El Admin edita estructura validada; **backend sigue siendo source-of-truth del cálculo**.
+- [ ] Card Equipment Rental debe llevar a `#rental` y tener comportamiento INT deliberado.
+- [ ] Hacer inequívoco que el carrito es **solicitud de cotización, no checkout**, para proteger conversión/lead.
 - [ ] Resolver empty state, service-only total 0 y reset incompleto.
 - [ ] Afinar delivery/logística.
 - [ ] PDF de quote, vigencia, disponibilidad y aprobación.
 - [ ] Inventario/calendario y prevención de double booking.
+- [ ] Contact: rate limiting explícito; confirmation email al visitante solo si se diseña/aprueba.
 
 ## CRM / Projects / Calendar
 
 **Estado real del repo:** el dashboard muestra Leads/CRM, Rental Admin, Projects y Calendar como módulos **Planned/Soon**; no tratarlos como módulos ya implementados. Existen datos/forms y piezas públicas que podrán alimentarlos posteriormente.
 
 - [ ] Pipeline Lead: New → Contacted → Quoted → Confirmed → Lost.
-- [ ] Clientes, empresas, notas, historial y source.
+- [ ] Clientes/contactos/empresas, notas, historial y source.
 - [ ] Relación Lead → Quote → Project → Invoice.
 - [ ] Integración AppSheet solo con source-of-truth definida.
 - [ ] Projects con cliente, show, rol, fechas, venue, contactos, archivos y Rental/Quote/Calendar.
-- [ ] Calendar Admin integrando eventos relevantes.
-- [ ] Show Day automático desde calendario con override manual.
+- [ ] Calendar Admin integrando Google Calendar/AppSheet/Projects/Rental/disponibilidad.
+- [ ] Show Day automático desde calendario con ventana configurable y override manual.
+- [ ] Quote automation/PDF/acceptance solo sobre pricing/source-of-truth existentes.
 
 ## Inbox / Workspace
 
 - [x] Operación de correo vía Gmail/Workspace.
+- [x] Main public config usa `hello@sdlive.show`; Rental usa `rental@sdlive.show`.
 - [ ] Inbox nativo en Admin por categorías.
 - [ ] Responder desde alias correcto.
 - [ ] Email → Lead / Rental / Project.
-- [ ] Verificar aliases operativos antes de automatizar (`hello@`, `info@`, `rental@`, `projects@`, `billing@`, `facturas@`).
+- [ ] Audit final de referencias a email personal/legacy.
+- [ ] Verificar aliases operativos antes de automatizar (`hello@`, `info@`, `rental@`, `projects@`, `billing@`, `facturas@`); `noreply@`/`quotes@` solo si aportan valor real.
 - [ ] Revisar DMARC cuando Workspace esté estable.
 
 ## Analytics / SEO / growth
 
 - [x] GTM + Consent Mode + GA4 base.
-- [x] `generate_lead`, email y WhatsApp validados.
+- [x] `generate_lead`, email y WhatsApp validados/observados en GA4 Realtime; no reiniciar ese troubleshooting sin evidencia de regresión.
 - [x] SEO técnico P0 base: canonical, hreflang, JSON-LD, OG, robots, sitemap y redirects relevantes.
+- [ ] Si no hay evidencia explícita aún: confirmar un submit controlado → un solo `generate_lead` para cerrar duplicate-firing integrity.
 - [ ] Separar tráfico interno/testing.
 - [ ] Revisar Key Events vs microconversiones.
-- [ ] Funnel sesión → source → lead → qualified → closed.
-- [ ] Monitorizar indexación, queries, impressions, CTR, países, entradas y Core Web Vitals.
+- [ ] Funnel sesión/source → lead → qualified → closed cuando exista downstream source-of-truth.
+- [ ] Monitorizar Google/Bing indexación, queries, impressions, CTR, países, entradas y Core Web Vitals.
+- [ ] Search Console/Bing Webmaster coverage y discoverability post-arquitectura.
 - [ ] Medir landings antes de crear más SEO pages.
+- [ ] Candidate query research: `alquiler sonido bogota`, `sonido eventos corporativos bogota`, `alquiler consolas bogota`, `behringer wing bogota` — **no crear páginas automáticamente**.
 - [ ] Dashboard SEO/comercial cuando haya volumen y source-of-truth suficiente.
-- [ ] Estrategia de adquisición basada en conversiones/revenue.
+- [ ] Estrategia de adquisición basada en conversiones/revenue; evaluar LinkedIn/RRSS, referrals/partners, outreach, formación/tutoriales y podcast solo con audiencia/ROI definidos.
+- [ ] Journal/Insights con contenido real: profesionales de audio, briefs AV para marketing, formación/técnica y análisis responsable de Suno/IA/audio production.
+
+### Regla Analytics permanente
+
+**observar → probar → confirmar → corregir → volver a probar.** No modificar GTM sin evidencia; DebugView es para sesiones debug/Preview y Realtime para validar tráfico live normal.
 
 ### Regla SEO/IA permanente
 
@@ -511,14 +534,16 @@ Antes de crear una página SEO, determinar qué servicio real representa, quién
 - [x] Tests + CI base.
 - [x] Visual regression contracts para sistemas protegidos por Safeguards.
 - [x] Automatic publish verification base.
+- [x] `/api/health` existe; ampliar observabilidad sin duplicar sistemas.
 - [ ] Rate limiting explícito y verificable.
 - [ ] CSP, Referrer-Policy y Permissions-Policy sin romper GTM/Turnstile/media.
 - [ ] Migraciones/versionado de esquema D1.
-- [ ] Observabilidad Worker/D1/R2, publish/deploy y errores.
-- [ ] Alertar antes de acercarse a límites relevantes de R2/Workers.
+- [ ] Observabilidad Admin de Worker/D1/R2, publish/deploy y errores.
+- [ ] Alertar antes de límites relevantes de R2/Workers.
 - [ ] Backups/export y rollback operacional.
-- [ ] Limpieza segura de objetos R2 huérfanos después de replacements/migraciones.
-- [ ] Refactor de monolitos (`index.html`, `script.js`, `styles.css`, `worker.js`) solo con tests verdes y justificación concreta.
+- [ ] Limpieza segura/reference-aware de R2 huérfano después de replacements/migraciones.
+- [ ] Refactor/optimización de monolitos (`index.html`, `script.js`, `styles.css`, `worker.js`) solo incrementalmente, con tests verdes, smoke, rollback y beneficio concreto. **Optimizar sin romper nada > refactor por estética.**
+- [ ] Auditoría/pruebas de ciberseguridad sobre stack real + evaluación documentada de Cloudflare free vs paid; no activar productos pagos sin riesgo/ROI/approval.
 - [ ] Retirar `deploy-test.txt` en cleanup futuro si se confirma que ya no sirve.
 
 ---
@@ -545,11 +570,13 @@ Antes de crear una página SEO, determinar qué servicio real representa, quién
 
 La visión recibida el 2026-08-21 se interpreta como una dirección estratégica: evolucionar el sistema actual hacia una plataforma digital que conecte descubrimiento → confianza → cotización/rental → lead → proyecto, **aprovechando la arquitectura existente**. No es una orden de reconstrucción ni de copiar Mediacoustix, Aeris, Adlib, Cohesion, World Tour Audio, Wonderlust o WLive. Las referencias externas son principios de aprendizaje, no templates visuales.
 
+`ROADMAP_MASTER_CHECKLIST.md` preserva el inventario histórico/futuro completo (32 bloques + requisitos cross-cutting + GA4 checkpoint) con cada bloque marcado Done / Partial / Future. **Ese detalle no cambia el Active Gate.**
+
 ## Current State contrastado con el repo
 
 - **A — Ya existe:** frontend vanilla HTML/CSS/JS; Cloudflare Workers/Static Assets; D1; R2; Cloudflare Access; CMS Draft/Published/revisions; Hero/Trusted/Testimonials/About/Services/International/Work/Rental/Contact CMS según scope; reusable Media Library; Rental público con pricing backend; Contact/Rental forms; GTM/GA4/Consent; EN/ES; COL/INT; landings SEO actuales; canonical/hreflang/robots/sitemap/JSON-LD base; Visual Safeguards; automatic publish failsafe.
-- **B — Parcial:** Portfolio/Work sin case-study model profundo, Rental sin catálogo/admin completo, SEO sin sistema CMS-first para metadata de páginas futuras, analytics sin dashboard comercial, Insights/Journal sin sistema editorial real.
-- **D — Future Integration:** Services profundos, Projects/case studies, Rental product SEO, Rental Admin pricing rules, compatibility guidance, Article/Journal CMS, CRM pipeline/atribución, SEO CMS, internal linking graph, dashboards, Press/authority y expansión audiovisual.
+- **B — Parcial:** Portfolio/Work sin case-study model profundo, Raw vs Mixed sin media real/Admin, Show Day sin calendario, Rental sin catálogo/admin completo, SEO sin sistema CMS-first para metadata de páginas futuras, analytics sin dashboard comercial/tráfico interno limpio, Insights/Journal sin sistema editorial real.
+- **D — Future Integration:** layout visual avanzado, header/floating controls, Projects/case studies, Rental product SEO/Admin pricing rules/compatibility guidance, Article/Journal CMS, CRM pipeline/atribución, AppSheet, Calendar, quote automation, private portfolios, analytics dashboards, SEO CMS, internal linking graph, security/observability, Training y expansión audiovisual.
 - **F — Active Gate:** Global Select cross-section/page-aware contract + permanent Change Safety policy.
 - **Importante:** aunque una visión futura describa CRM, Projects, Rental Admin u otros módulos, el repo manda. No documentarlos ni tratarlos como implementados hasta que exista código/flujo real.
 
@@ -558,32 +585,38 @@ La visión recibida el 2026-08-21 se interpreta como una dirección estratégica
 | Funcionalidad | Estado actual | Propuesta futura | Clasificación | Priority | Effort | Impact | Risk | Dependencias / evidencia |
 |---|---|---|---|---|---|---|---|---|
 | Global Select | Select existe por capas; cross-section incompleto | routing global owner→item + future page contract | **F** | P0 | M | alto | bajo/medio | `editor-resilience.js`, section editors; P2.7 activo |
+| Visual layout Editor | CMS content editing exists; no freeform layout engine | drag/drop, grid, resize, spacing, device/market controls | D | P2 | XL | alto | alto | define data model + rollback; preserve safeguards |
 | Services CMS | implementado en P2.4 | profundizar modelo solo cuando haya necesidad real | A/B | P1 | M | alto | medio | `core-sections-*`, PR #27 |
 | Arquitectura de páginas de servicio | landings puntuales, no sistema completo | páginas profundas por servicio/intención real | D | P1 | L | alto | medio | Services model + keyword research + IA aprobada |
+| Technical Audio Training | no publicado | evaluar servicio real + content/page | D | P2 | M | medio/alto | bajo | curriculum/audience/capacity/pricing/evidence |
 | SEO CMS fields | metadata mayormente code/static | title, description, canonical, OG, noindex, sitemap, social preview, schema config | D | P1 | M | alto | medio | modelo de página; no duplicar metadata existente |
 | Rental SEO | Rental público + algunas landings; no catálogo indexable completo | categorías/product pages conectadas al configurador | D | P1 | L | alto | medio | Rental model estable + canonical strategy |
 | Rental compatibility guidance | no recomendaciones automáticas | WING→DL32; LV1→StageGrid guidance | D | P2 | M | medio/alto | bajo | UX por aprobar; conservar cart/backend |
 | Rental Admin pricing model | pricing backend code-owned | alta de items + reglas validadas desde Admin | D | P1 | L/XL | alto | alto | source-of-truth backend + schema/migration/rollback |
-| Rental packages indexables | bundles/pricing backend existen | páginas útiles de configuraciones reales | D | P2 | M | medio/alto | bajo | no crear packages artificiales ni contradecir pricing backend |
-| Projects / case studies | portfolio parcial; Admin Projects planned | Project model + `/projects/[slug]` + casos reales | D | P1 | XL | estratégico | medio | source-of-truth + Media Library + privacy |
+| Rental packages/indexability | bundles/pricing backend existen | páginas/configuraciones útiles y reales | D | P2 | M | medio/alto | bajo | no packages artificiales |
+| Projects / case studies | Work CMS base; Admin Projects planned | Project model + casos reales | D | P1 | XL | estratégico | medio | source-of-truth + Media Library + privacy |
 | Portfolio CMS profundo | Work CMS base existe | credits/tags/featured/case-study model | B/D | P1 | L | alto | medio | core Work + Media Library |
-| Media Library | reusable library implementada | reference safety/soft-delete/cleanup más profundo | A/B | P1 | M | alto | medio | R2 + D1 refs; PR #33 |
-| Journal / Articles CMS | Insights no operativo como sistema real | artículos técnicos basados en experiencia real | D | P2 | L | alto | bajo/medio | Article model + SEO fields + Media Library |
+| Raw vs Mixed | UI/runtime existe | real media + Admin pairs/waveform | B/D | P2 | M | medio | medio | real rights-cleared audio |
+| Media Library | reusable library implementada | ref safety/soft-delete/cleanup/crop/alt/OG | A/B | P1 | M/L | alto | medio | R2 + D1 refs; PR #33 |
+| Journal / Articles CMS | Insights no operativo como sistema real | artículos técnicos reales | D | P2 | L | alto | bajo/medio | Article model + SEO fields + Media Library |
 | Internal linking | links manuales | relaciones Services ↔ Products ↔ Projects ↔ Articles | D | P1 | M | alto | bajo | modelos reales; evitar páginas huérfanas |
 | Structured data avanzado | JSON-LD base existe | Service/Product/Article/Breadcrumb schema donde corresponda | B/D | P1 | M | alto | medio | contenido visible real; guías vigentes |
 | Multidioma SEO | EN/ES + hreflang base existen | URLs/metadata equivalentes por contenido nuevo | B/D | P1 | M | alto | medio | arquitectura de páginas; no mezclar idiomas |
-| Local SEO | Bogotá/Colombia ya tiene landings | ampliar solo para servicios/mercados reales | D | P2 | M | medio/alto | bajo | keyword research + service reality; no doorway pages |
-| CRM pipeline | forms/D1 existen; Admin Leads planned | New→Contacted→Quoted→Confirmed/Lost + cliente/empresa/historial | D | P1 | XL | estratégico | source-of-truth, permisos, datos existentes, quote flow |
+| Local SEO | Bogotá/Colombia ya tiene landings | ampliar solo para ofertas/queries reales | D | P2 | M | medio/alto | bajo | intent research; no doorway pages |
+| CRM pipeline | forms/D1 existen; Admin Leads planned | New→Contacted→Quoted→Confirmed/Lost + cliente/empresa/historial | D | P1 | XL | estratégico | source-of-truth, permisos, quote flow |
+| AppSheet/Calendar | external systems exist; no integration | selective sync + Show Day + availability | D | P2 | XL | alto | alto | source-of-truth first |
 | Lead attribution | GA4 + forms base | landing, UTM, campaign, service/product y revenue attribution | D | P1 | L | estratégico | CRM + analytics identifiers + privacy/consent |
-| Analytics dashboard | GA4 existe; Admin Analytics planned | SEO/commercial dashboard con GSC/GA4/CRM | D | P2 | L | alto | datos/volumen real + APIs/credentials + CRM |
-| Conversion/forms | Contact/Rental ya funcionan | reducir fricción/contextual CTA y capturar solo datos necesarios | B/D | P1 | M | alto | medir antes/después; preservar email invariants |
-| About / professional authority | About CMS existe | perfil más profundo con datos verificables y proyectos reales | B/D | P2 | M | medio/alto | material real y autorizaciones |
-| Video/motion | identidad audiovisual ya existe | video contextual y optimizado | D | P2 | L | alto | Media Library/video strategy + CWV budget |
-| Press / mentions | no módulo dedicado | `/press` si existe material verificable suficiente | D | P3 | M | medio | bajo | contenido/links reales; no fabricar autoridad |
-| Accessibility audit | base semántica/controls variable | contraste, keyboard, focus, headings, reduced motion, touch targets | D / quality stream | P1 | M | alto | bajo | ejecutar incrementalmente |
-| Performance/CWV | Cloudflare/CDN base | responsive media, caching, font/video optimization, JS discipline | D / quality stream | P1 | M/L | alto | medio | medir antes; no sacrificar identidad sin evidencia |
-| Security hardening | Access/JWT/Turnstile/validation base | rate limiting, headers, logs, backups, migration discipline | B/D | P1 | L | estratégico | medio | no romper GTM/Turnstile/media; pruebas obligatorias |
-| Backlinks/authority outreach | fuera del repo | conseguir menciones legítimas de partners/venues/media | D externo | P2 | ongoing | alto | bajo | solo relaciones reales; no comprar links spam |
+| Analytics integrity | base events validated; testing traffic contaminated | internal filtering, duplicate proof, Key Events hygiene | B/D | P1 | M | alto | bajo | do not restart confirmed GA4 tests |
+| Analytics dashboard | GA4 existe; Admin Analytics planned | SEO/commercial dashboard con GSC/GA4/CRM | D | P2 | L | alto | datos/volumen real + APIs/CRM |
+| Conversion/forms | Contact/Rental funcionan | reduce friction + quote clarity | B/D | P1 | M | alto | bajo | measure before/after |
+| Email/Workspace | main routing fixed | alias audit, DMARC, native Inbox | B/D | P2 | L | alto | medio | Workspace external state |
+| About / professional authority | About CMS existe | perfil más profundo con datos verificables | B/D | P2 | M | medio/alto | material real/autorizaciones |
+| Video/motion | identidad audiovisual existe | video contextual y optimizado | D | P2 | L | alto | Media Library/video strategy + CWV |
+| Press / mentions | no módulo | `/press` if enough real corpus | D | P3 | M | medio | bajo | no fabricar autoridad |
+| Accessibility audit | variable | contrast/keyboard/focus/headings/reduced motion/touch | D | P1 | M | alto | bajo | incremental |
+| Performance/CWV + code quality | Cloudflare/CDN + monoliths | measure, optimize/refactor incrementally | D | P1 | M/L | alto | medio | Change Safety + tests/smoke |
+| Security hardening | Access/JWT/Turnstile base | rate limit, headers, tests, logs, backups + Cloudflare plan eval | B/D | P1 | L | estratégico | medio | no paid feature without approval |
+| Backlinks/authority outreach | fuera del repo | real partnerships/mentions | D externo | P2 | ongoing | alto | bajo | no paid spam links |
 
 ## Future Integrations — arquitectura sugerida
 
@@ -596,20 +629,25 @@ La visión recibida el 2026-08-21 se interpreta como una dirección estratégica
 5. **SEO-first CMS.** Metadata por página/idioma, canonical/hreflang, sitemap, OG y schema compatible con contenido visible.
 6. **Internal linking model.** Relaciones explícitas entre Services, Products, Projects y Articles.
 7. **CRM + attribution.** Forms actuales alimentarán pipeline real cuando source-of-truth esté definido.
+8. **Analytics integrity before marketing decisions.** Internal traffic, Key Events and downstream funnel evidence before trusting acquisition/revenue reporting.
 
 ### P2 — crecimiento/autoridad después de modelos sólidos
 
-- Journal técnico con pocos artículos excelentes y verificables.
+- Journal técnico con pocos artículos excelentes/verificables.
+- Technical Audio Training only after real offer definition.
 - Dashboard SEO/comercial con GSC/GA4/CRM cuando exista volumen suficiente.
 - About/professional profile más profundo.
 - Video contextual optimizado con poster/lazy/CDN/performance budget.
 - Local SEO adicional solo para servicios y ciudades reales.
 - Packages Rental útiles/indexables cuando representen configuraciones comerciales reales.
+- Evaluate traffic channels/educational formats by ROI rather than fashion.
 
 ### P3 — opcional / condicionado
 
 - Press/mentions page si existe corpus real suficiente.
 - Programas de backlinks/partnerships como operación comercial externa, no automatización.
+- Chatbot/AI only if free/practically free or with demonstrated ROI; owned FAQ first, no invented price/availability.
+- Premium Admin capabilities from `ROADMAP_MASTER_CHECKLIST.md` only when individually promoted.
 
 ## Deferred / no autorizado por ahora
 
@@ -619,6 +657,7 @@ La visión recibida el 2026-08-21 se interpreta como una dirección estratégica
 - Migrar/borrar todo media de GitHub a R2 de una sola vez sin verificación.
 - Cambiar framework, lenguaje, base de datos, hosting, CMS, auth o infraestructura por moda tecnológica.
 - Hacer un rediseño global mientras el sistema actual funciona.
+- Comprar/activar Cloudflare/media/security products sin evidencia de necesidad/ROI y aprobación.
 
 ## Not Applicable / no recomendado
 
@@ -644,6 +683,7 @@ La visión recibida el 2026-08-21 se interpreta como una dirección estratégica
 10. Validar EN/ES, COL/INT, Desktop/Mobile, accessibility básica, performance y Draft/Published.
 11. Validar **Global Select misma sección + otra sección/page + exact item** para todo nuevo CMS.
 12. Si una funcionalidad no puede verificarse, marcar **UNKNOWN** en vez de inventar.
+13. Revisar `ROADMAP_MASTER_CHECKLIST.md` para requisitos históricos relacionados y evitar pérdida/duplicación.
 
 ---
 
@@ -669,6 +709,7 @@ La visión recibida el 2026-08-21 se interpreta como una dirección estratégica
 - Established aesthetics son contratos: no degradar branding/UX por trabajo CMS. Safeguards + tests deben acompañar reconstrucciones vulnerables.
 - No reconstruir desde cero CMS/D1/Access/privacidad/analytics si la base actual puede extenderse.
 - **Global Select es un contrato del Editor y parte del smoke de cada nuevo CMS/page.**
+- **Mejoras futuras se documentan, pero no se implementan automáticamente.**
 - **Estabilidad > novedad.** Si no hay evidencia suficiente para modificar una implementación funcional, conservarla.
 
 ---
@@ -713,7 +754,7 @@ Rental/Contact presentation CMS + migration paths; smoke completo correcto despu
 
 ## 2026-08-21 — P2.7 Global Select + permanent Change Safety
 
-**ACTIVE hasta merge + production smoke.** Extiende el Select existente y convierte precedencia/evidencia/source-of-truth/change-safety en política permanente del repo.
+**ACTIVE hasta merge + production smoke.** Extiende el Select existente y convierte precedencia/evidencia/source-of-truth/change-safety en política permanente del repo. El backlog histórico/futuro quedó reconciliado y preservado en `ROADMAP_MASTER_CHECKLIST.md`.
 
 ---
 
@@ -727,6 +768,7 @@ Ejecutar **Home CMS closeout inventory** antes de elegir siguiente feature:
 4. qué fallbacks siguen siendo críticos;
 5. qué contenido real queda fuera del CMS;
 6. qué bugs/polish son regresión vs backlog;
-7. qué siguiente gate ofrece más valor sin abrir arquitectura paralela.
+7. qué siguiente gate ofrece más valor sin abrir arquitectura paralela;
+8. revisar `ROADMAP_MASTER_CHECKLIST.md` y promover **solo** el siguiente trabajo aprobado a F.
 
 **Sound for Picture permanece inert staging hasta contenido/scope real aprobado.**
