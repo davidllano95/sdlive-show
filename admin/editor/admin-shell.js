@@ -95,11 +95,11 @@
         "sdlive-core-sections-editor"
       );
       loadEditorScript(
-        "./visual-safeguards-editor.js?v=20260821-2",
+        "./visual-safeguards-editor.js?v=20260821-3",
         "sdlive-visual-safeguards-editor"
       );
       loadEditorScript(
-        "./editor-resilience.js?v=20260821-1",
+        "./editor-resilience.js?v=20260821-2",
         "sdlive-editor-resilience"
       );
     },

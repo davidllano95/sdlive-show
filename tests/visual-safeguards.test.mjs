@@ -102,9 +102,11 @@ test("Editor exposes diagnostics and one-click restore without saving visual sta
   assert.match(panel, /Visual safeguards/);
   assert.match(panel, /Restore all defaults/);
   assert.match(panel, /Run check/);
-  assert.match(panel, /previewRuntime\(\)\?\.repair/);
+  assert.match(panel, /runtime\?\.repair\?\.\(\)/);
   assert.match(panel, /not content settings/);
   assert.match(panel, /visual-safeguards\.css\?v=20260821-2/);
   assert.match(panel, /visual-safeguards\.js\?v=20260821-2/);
-  assert.match(shell, /visual-safeguards-editor\.js\?v=20260821-2/);
+  assert.match(panel, /function directStatus\(\)/);
+  assert.match(panel, /checked now · run/);
+  assert.match(shell, /visual-safeguards-editor\.js\?v=20260821-3/);
 });
