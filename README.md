@@ -86,7 +86,7 @@ The rollout gate is the same one already proven on Trusted: visual EN/ES + Deskt
 
 Established production aesthetics are a **site contract**, not incidental CSS. CMS/editor work must preserve them unless a visual change is explicitly approved.
 
-The public Home loads `visual-safeguards.css` + `visual-safeguards.js` after the main styling path. This small guard layer intentionally reasserts only critical stable behaviors that are especially vulnerable to DOM rebuilds, stacking-context changes or section CMS work:
+The public Home loads `visual-safeguards.css` + `visual-safeguards.js` after the main styling path. This small guard layer intentionally reasserts critical stable behaviors that are especially vulnerable to DOM rebuilds, stacking-context changes or section CMS work:
 
 - glass surfaces;
 - aurora ambience;
@@ -95,6 +95,8 @@ The public Home loads `visual-safeguards.css` + `visual-safeguards.js` after the
 - Trusted carousel motion;
 - Supported Brand reveal motion;
 - established primary/ghost CTA hover treatments.
+
+The guard registry is deliberately extensible: when another established visual behavior becomes CMS-managed or otherwise vulnerable to reconstruction, it should be added to this registry and its regression tests rather than relying on implicit CSS inheritance alone.
 
 The previous live-carousel stability workaround had explicitly suppressed the Trusted hover sheen to avoid a Safari compositor hitch. That suppression is removed. The protected sheen now sweeps by animating `background-position` rather than translating a child layer, preserving the established highlight while avoiding the transformed-child interaction that could disturb the moving marquee.
 
