@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
-test("Trusted select bridge jumps client cards to the principal client header", async () => {
+test("Trusted select bridge routes clients and supported brands to exact editor items", async () => {
   const source = await readFile(
     new URL("../admin/editor/trusted-select-bridge.js", import.meta.url),
     "utf8"
@@ -11,8 +11,14 @@ test("Trusted select bridge jumps client cards to the principal client header", 
   assert.doesNotThrow(() => new Function(source));
   assert.match(source, /sdliveAdminSelect/);
   assert.match(source, /client-strip-card\[data-client\]/);
+  assert.match(source, /supported-brand-tile/);
+  assert.match(source, /collaboration-credit/);
+  assert.match(source, /trusted-subitem/);
+  assert.match(source, /data-trusted-path\$=\"\.src\"/);
+  assert.match(source, /cmsMediaSource/);
   assert.match(source, /trustedSectionButton\.click\(\)/);
   assert.match(source, /trusted-collection-item/);
+  assert.match(source, /trusted-reveal-editor/);
   assert.match(source, /:scope > \.trusted-item-head/);
   assert.match(source, /block:\s*"start"/);
 });
@@ -28,6 +34,10 @@ test("Editor plugin loader keeps Trusted helpers in deterministic order", async 
   assert.ok(
     source.indexOf("trusted-editor.js") <
       source.indexOf("trusted-select-bridge.js")
+  );
+  assert.ok(
+    source.indexOf("trusted-select-bridge.js") <
+      source.indexOf("trusted-media-controls.js")
   );
 });
 
