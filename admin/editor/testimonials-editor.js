@@ -231,9 +231,11 @@
 
       const grid = doc.createElement("div");
       grid.className = "testimonial-grid";
-      (draft.items || []).forEach((item) => {
-        grid.appendChild(makePreviewCard(doc, item, lang));
-      });
+      (draft.items || [])
+        .filter((item) => item.visible !== false)
+        .forEach((item) => {
+          grid.appendChild(makePreviewCard(doc, item, lang));
+        });
 
       container.append(head, grid);
       section.replaceChildren(container);
@@ -358,6 +360,7 @@
         en: "Add the English testimonial here.",
         es: "Agrega aquí el testimonio en español."
       },
+      visible: true,
       featured: false,
       logo: null
     });
@@ -496,6 +499,24 @@
     return block;
   }
 
+  function toggleRow({ title, detail, checked, disabled = false, onChange }) {
+    const row = document.createElement("label");
+    row.className = "testimonials-toggle-row";
+    const input = document.createElement("input");
+    input.type = "checkbox";
+    input.checked = checked;
+    input.disabled = disabled;
+    input.addEventListener("change", () => onChange(input.checked));
+    const copy = document.createElement("span");
+    const strong = document.createElement("strong");
+    strong.textContent = title;
+    const small = document.createElement("small");
+    small.textContent = detail;
+    copy.append(strong, small);
+    row.append(input, copy);
+    return row;
+  }
+
   function renderTestimonialEditor(item, index) {
     const wrapper = document.createElement("div");
     wrapper.className = "testimonials-collection-item";
@@ -539,19 +560,29 @@
       localizedField({ label: "Quote", path: `items.${index}.quote`, multiline: true })
     );
 
-    const featured = document.createElement("label");
-    featured.className = "testimonials-toggle-row";
-    const featuredInput = document.createElement("input");
-    featuredInput.type = "checkbox";
-    featuredInput.checked = Boolean(item.featured);
-    featuredInput.addEventListener("change", () => {
-      state.workingDraft.items[index].featured = featuredInput.checked;
-      markDirty();
-    });
-    const featuredCopy = document.createElement("span");
-    featuredCopy.innerHTML = "<strong>Featured card</strong><small>Uses the current wider / highlighted testimonial treatment.</small>";
-    featured.append(featuredInput, featuredCopy);
-    wrapper.append(featured, renderLogoEditor(item, index));
+    const visibleCount = state.workingDraft.items.filter((entry) => entry.visible !== false).length;
+    wrapper.append(
+      toggleRow({
+        title: "Visible on public Home",
+        detail: "Hide this testimonial without deleting it.",
+        checked: item.visible !== false,
+        disabled: item.visible !== false && visibleCount <= 1,
+        onChange: (checked) => {
+          state.workingDraft.items[index].visible = checked;
+          markDirty();
+        }
+      }),
+      toggleRow({
+        title: "Featured card",
+        detail: "Uses the current wider / highlighted testimonial treatment.",
+        checked: Boolean(item.featured),
+        onChange: (checked) => {
+          state.workingDraft.items[index].featured = checked;
+          markDirty();
+        }
+      }),
+      renderLogoEditor(item, index)
+    );
     return wrapper;
   }
 
