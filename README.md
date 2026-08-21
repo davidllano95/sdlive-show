@@ -19,7 +19,8 @@ For current progress, roadmap, invariants and the next gate, read **`PROJECT_STA
 - **Worker router:** `worker-router.js`.
 - **Hero edge renderer / base Worker:** `worker-entry.js`.
 - **Trusted By edge renderer:** `trusted-edge.js`, applied by `worker-router.js`.
-- **API Worker:** `worker.js`.
+- **Testimonials edge renderer:** `testimonials-edge.js`, applied by `worker-router.js`.
+- **API Worker:** `worker.js` plus section APIs such as `trusted-api.js` and `testimonials-api.js`.
 - **Admin:** `/admin/` behind Cloudflare Access.
 - **Analytics:** GTM + GA4 with consent gating.
 - **Forms:** Turnstile + D1 + Resend.
@@ -51,7 +52,7 @@ Hero Draft/Published is fully connected to production. Published content is rend
 
 **Production milestone completed.** Trusted By now has:
 
-- Draft and Published state in D1.
+- Draft and Published state in D1;
 - client/reveal editing, ordering and WLive protection;
 - Upload/Replace of Trusted and Supported Brand media through authenticated R2 upload;
 - visual logo scaling and Supported Brand placement metadata;
@@ -62,7 +63,23 @@ Hero Draft/Published is fully connected to production. Published content is rend
 - carousel pause/play, arrows, mobile swipe and stable hover behavior;
 - production-validated `Save Draft ≠ live` and `Publish = live` semantics.
 
-The Admin iframe remains isolated from Published SSR so it can render the working Draft locally.
+### Testimonials
+
+**Implemented in P2.3; production smoke remains the rollout gate until the PR is deployed.** The Testimonials block follows the same established CMS contract:
+
+- schema/default seed based on the current Manuel Matamoros / WLive testimonial;
+- Draft, Published and revision history in D1;
+- EN/ES heading, name, role/company and quote editing;
+- add, delete and reorder testimonials;
+- per-testimonial public visibility and featured-card controls;
+- exact Select-from-preview routing in the Admin;
+- optional company/partner logo Upload/Replace/Remove through authenticated R2 upload;
+- visual logo scaling stored as metadata rather than derivative images;
+- Published → public Home edge SSR using only `published_json`;
+- static public markup as fallback when Published content is missing or invalid;
+- Admin iframe isolated from Published SSR so the working Draft stays local.
+
+The rollout gate is the same one already proven on Trusted: visual EN/ES + Desktop/Mobile smoke, then verify `Save Draft ≠ live` and `Publish = live` in production.
 
 ## R2 media rules
 
@@ -76,23 +93,24 @@ The Admin iframe remains isolated from Published SSR so it can render the workin
 - Visual resize/position belongs in D1/CSS metadata; moving a slider does not create a new R2 object.
 - Do not enable paid media products or extra R2 features unless explicitly approved.
 
-The next media migrations should happen section-by-section: Testimonials where applicable, Portfolio / Selected Work, Rental imagery, Insights/blog and other content that becomes CMS-managed. GitHub originals should only be removed after production validation and only when they are not required as critical fallbacks.
+Trusted media is already migrated. Testimonials now has its own R2 upload folder for editable logos. Later media migrations should happen section-by-section: Portfolio / Selected Work, Rental imagery, Insights/blog and other content that becomes CMS-managed. GitHub originals should only be removed after production validation and only when they are not required as critical fallbacks.
 
 ## Important files
 
 - `index.html` — main public Home shell and static fallback content.
 - `styles.css` — main public styles.
 - `script.js` — primary public UI/runtime behavior.
-- `worker-router.js` — top-level Worker router; Trusted SSR plus Trusted/media API routing.
+- `worker-router.js` — top-level Worker router; section SSR plus Trusted/Testimonials/media API routing.
 - `worker-entry.js` — Hero edge rendering and base routing.
-- `worker.js` — CMS/admin APIs, Contact, Rental, D1 and email logic.
+- `worker.js` — base CMS/admin APIs, Contact, Rental, D1 and email logic.
 - `trusted-edge.js` — validates and renders Published Trusted By at the edge.
 - `trusted-published-runtime.js` — small public runtime for CMS Trusted placement/language stability.
-- `trusted-api.js` — Trusted By Draft/Published API.
-- `trusted-content.js` — Trusted By schema/default content.
+- `trusted-api.js` / `trusted-content.js` — Trusted Draft/Published API and schema/default content.
+- `testimonials-edge.js` — validates and renders Published Testimonials at the edge.
+- `testimonials-api.js` / `testimonials-content.js` — Testimonials Draft/Published API and schema/default content.
 - `media-api.js` — authenticated R2 media status/upload API.
 - `trusted-marquee-interactions.js` — Trusted carousel controls/mobile interactions.
-- `admin/editor/` — protected visual editor.
+- `admin/editor/` — protected visual editor, including `testimonials-editor.js`.
 - `PROJECT_STATUS.md` — master roadmap and handoff.
 
 ## Critical routes / endpoints
@@ -111,6 +129,7 @@ API:
 - `GET /api/health`
 - `GET /api/content/hero`
 - `GET /api/content/trusted`
+- `GET /api/content/testimonials`
 - Admin content endpoints under `/api/admin/...`
 - Admin media endpoints under `/api/admin/media/...`
 - `POST /api/contact`
@@ -162,8 +181,8 @@ After a material milestone is completed, update `PROJECT_STATUS.md` and this REA
 
 ## Current next gate
 
-**P2.3 — Testimonials CMS.**
+**P2.3 production validation.**
 
-Use the same proven pattern as Hero/Trusted: explicit schema, Draft/Published isolation, R2 only for editable media, fallback-safe public rendering, tests and production validation before moving to Services.
+Deploy the completed Testimonials CMS block, validate visual parity in EN/ES and Desktop/Mobile, then confirm `Save Draft ≠ live` and `Publish = live`. After that, move to Services in the next larger implementation block.
 
 Non-blocking Editor polish remains in backlog, including the small left-navigation alignment offset when jumping to Trusted By.
