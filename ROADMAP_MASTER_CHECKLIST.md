@@ -7,7 +7,7 @@
 > **Rule:** a checked item here means evidence exists elsewhere in the repo/production. A pending item remains backlog/future work unless `PROJECT_STATUS.md` explicitly promotes it to **F — Active Gate / Approved Work**.
 
 Last reconciliation: **2026-08-21**  
-Production baseline checked against: `main` at `c0a7cf5eae070d9acbb1b5401f6fd18f4dbee7be` plus PR #36 branch work.
+Production baseline checked against: `main` at `7d54b83b37e6e30f889eff9a41b25a18b268b8a9`; active cleanup branch: `chore/home-cms-closeout-cleanup`.
 
 ## Legend
 
@@ -42,13 +42,13 @@ Do not rebuild this base from scratch.
 
 ## 2. Finish the visual CMS / Site Editor
 
-**Status: 🟡 B + 🚧 F for Global Select only.**
+**Status: 🟡 B overall; Global Select is now ✅ A.**
 
 Already implemented:
 
 - ✅ Published CMS is connected to the public Home for Hero, Trusted, Testimonials, About, Services, International, Selected Work, Rental presentation and Contact presentation according to each section's scope.
 - ✅ Draft / Published / revisions extend beyond Hero to the current CMS-owned Home sections.
-- 🚧 Global Select cross-section/page-aware routing is PR #36 active work; production smoke remains required after merge.
+- ✅ Global Select cross-section/page-aware routing is merged in PR #36 and production-smoked for same-section exact item, cross-section routing, non-card control routing and Interact mode. Rental INT manual click is N/A because Rental is hidden by design; regression coverage retains INT→COL recovery for a selectable target.
 - ✅ Reorder exists in several collection editors (Trusted, Testimonials, Services/Work where implemented), but not yet as one generic layout system.
 - ✅ Media scale controls exist for applicable images/logos; this is not generic card/block resize.
 
@@ -103,9 +103,9 @@ Still pending / future:
 
 ## 5. Media Library + Cloudflare R2
 
-**Status: ✅/🟡 A/B — core library exists; advanced DAM features remain.**
+**Status: ✅/🟡 A/B — core library exists; Home migration is verified; advanced DAM remains. P2.8 is the narrow cleanup of retired migration tooling.**
 
-Already implemented:
+Already implemented / verified:
 
 - ✅ R2 bucket `sdlive-media-production`.
 - ✅ `media.sdlive.show` custom domain.
@@ -118,10 +118,14 @@ Already implemented:
 - ✅ Trusted/Supported Brand logos.
 - ✅ Testimonials logo media.
 - ✅ About and Selected Work bridges.
-- ✅ Rental equipment imagery and migration path.
+- ✅ Rental equipment imagery.
 - ✅ PNG/JPEG/WebP upload; no automatic transcoding pipeline yet.
+- ✅ Saved Draft checks confirmed R2 media for About, Selected Work, Testimonials, Rental and Trusted.
+- ✅ Public production checks confirmed managed media for those same Home areas resolves via `media.sdlive.show`.
+- ✅ Selected Work's saved unpublished Draft was visually compared with live, published deliberately and passed the automatic Failsafe.
+- 🚧 **P2.8 Active Gate:** remove only the four temporary Home legacy-media migrator scripts/loaders and migration-only tests; preserve Media Library, section bridges/controls and all critical GitHub/static fallbacks.
 
-Pending:
+Pending after this closeout:
 
 - ⏳ OG/social images as first-class CMS media.
 - ⏳ Rich tags beyond current folder model.
@@ -130,7 +134,7 @@ Pending:
 - ⏳ Automatic WebP/AVIF optimization only if cost/performance evidence justifies it.
 - ⏳ Detect unused/orphaned media safely.
 - ⏳ Reference-aware delete / soft delete / rollback.
-- ⏳ Finish closeout of legacy GitHub refs and remove temporary migrators only after production verification.
+- ⏳ Optional later cleanup of duplicate/original GitHub assets only after a separate consumer/reference audit proves each asset safe to remove. **Migrator retirement does not authorize this.**
 
 ## 6. Trusted By
 
@@ -146,6 +150,7 @@ Already implemented:
 - ✅ Scale control for media.
 - ✅ WLive protection.
 - ✅ Published edge rendering + fallback.
+- ✅ Legacy migration completed and production R2 reference verified.
 
 Still pending if desired as generic layout capabilities:
 
@@ -165,6 +170,7 @@ Already implemented:
 - ✅ Desktop hover behavior.
 - ✅ Mobile tap behavior.
 - ✅ Placement controls and production parity/safeguards.
+- ✅ Production R2 media reference verified during Home closeout.
 
 Still pending only if promoted later:
 
@@ -181,6 +187,7 @@ Already exists:
 - ✅ Selected Work public section.
 - ✅ Core Work CMS Draft/Published/revisions.
 - ✅ Work media bridge to reusable Media Library.
+- ✅ Managed Work media verified on R2 in Saved Draft and production during Home closeout.
 
 Future deeper Portfolio/Projects scope:
 
@@ -217,7 +224,7 @@ Future deeper Portfolio/Projects scope:
 - ✅ Current schema/default contains real testimonial content rather than the old two mockup placeholders.
 - ✅ Full Admin management: logo, name, role/company, quote, order, visibility, featured.
 - ✅ Add/delete/reorder.
-- ✅ R2 media + legacy migration path.
+- ✅ R2 media; legacy migration completed and production reference verified.
 - ✅ Draft/Published/revisions + public edge rendering.
 
 Future editorial work may add more real testimonials; do not recreate placeholders merely for visual balance.
@@ -254,6 +261,7 @@ Resolved:
 - ✅ Server-side pricing/quote calculation exists.
 - ✅ Cart/items/quantities/totals/form smoke passed after P2.6.
 - ✅ Rental presentation CMS deliberately does not own transactional IDs/pricing.
+- ✅ Rental managed media migration completed and public R2 reference verified.
 
 Pending:
 
@@ -662,5 +670,7 @@ Nothing in this checklist is an instruction to implement all items. Its purpose 
 Current work order remains controlled by `PROJECT_STATUS.md`. At this checkpoint:
 
 1. P2.6 is closed and production-smoked.
-2. P2.7 Global Select + permanent change-safety policy is the active gate until merge + production smoke.
-3. After P2.7, run the Home CMS closeout inventory before promoting the next item to **F — Active Gate**.
+2. P2.7 Global Select + permanent change-safety policy is closed, merged and production-smoked.
+3. Home CMS R2 closeout inventory is complete: current managed media for Trusted/About/Selected Work/Testimonials/Rental was verified in Saved Draft and public production.
+4. P2.8 is the only **F — Active Gate**: retire the now-redundant migration tooling while preserving Media Library and GitHub/static fallbacks, then require CI + merge + production smoke.
+5. After P2.8 closes, no backlog item becomes active automatically; review this checklist and explicitly promote only the next approved item to F.
