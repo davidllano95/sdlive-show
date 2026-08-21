@@ -71,7 +71,7 @@
         "sdlive-trusted-media-controls"
       );
       loadEditorScript(
-        "./trusted-media-migration.js?v=20260820-1",
+        "./trusted-media-migration.js?v=20260820-2",
         "sdlive-trusted-media-migration"
       );
       loadEditorScript(
