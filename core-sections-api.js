@@ -1,9 +1,9 @@
 import {
   CORE_SECTION_DEFAULTS,
   CORE_SECTION_KEYS,
-  cloneCoreSectionDefault,
-  validateCoreSectionDraft
+  cloneCoreSectionDefault
 } from "./core-sections-content.js";
+import { validateCoreSectionPayload } from "./core-sections-security.js";
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -51,6 +51,12 @@ async function getRow(env, section) {
     .first();
 }
 
+function validatedContent(section, text) {
+  const content = JSON.parse(text);
+  validateCoreSectionPayload(section, content);
+  return content;
+}
+
 function entryFromRow(section, row) {
   const key = CORE_SECTION_KEYS[section];
   if (!row) {
@@ -79,8 +85,8 @@ function entryFromRow(section, row) {
     publishedAt: row.published_at,
     hasUnpublishedChanges: draftText !== publishedText,
     source: "cms",
-    draft: JSON.parse(draftText),
-    published: JSON.parse(publishedText)
+    draft: validatedContent(section, draftText),
+    published: validatedContent(section, publishedText)
   };
 }
 
@@ -119,7 +125,7 @@ async function publish(env, section, userEmail) {
   if (!current) throw new Error(`Save a ${section} draft before publishing`);
 
   const draftText = decodeBlobText(current.draft_blob);
-  validateCoreSectionDraft(section, JSON.parse(draftText));
+  validateCoreSectionPayload(section, JSON.parse(draftText));
 
   await env.CMS_DB.batch([
     env.CMS_DB.prepare(`
@@ -161,12 +167,14 @@ function publicPayload(section, row) {
       content: cloneCoreSectionDefault(section)
     };
   }
+
+  const publishedText = decodeBlobText(row.published_blob);
   return {
     ok: true,
     section,
     source: "cms",
     publishedAt: row.published_at,
-    content: JSON.parse(decodeBlobText(row.published_blob))
+    content: validatedContent(section, publishedText)
   };
 }
 
@@ -204,7 +212,7 @@ export async function handleCoreSectionsApi(request, env, { verifyAdmin = null }
   if (path === adminPath && request.method === "PUT") {
     try {
       const body = await readJsonBody(request);
-      const serializedDraft = validateCoreSectionDraft(section, body?.draft);
+      const serializedDraft = validateCoreSectionPayload(section, body?.draft);
       const entry = await saveDraft(env, section, serializedDraft, user.email);
       return json({ ok: true, message: `${section} draft saved`, entry });
     } catch (error) {
