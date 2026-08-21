@@ -18,6 +18,7 @@ test("visual safeguard runtime is valid and self-healing", async () => {
   assert.match(runtime, /Card highlights \/ sheen/);
   assert.match(runtime, /Trusted carousel motion/);
   assert.match(runtime, /Supported-brand reveal motion/);
+  assert.match(runtime, /visual-safeguards\.css\?v=20260821-2/);
 });
 
 test("guard stylesheet preserves core established aesthetics", async () => {
@@ -35,6 +36,17 @@ test("guard stylesheet preserves core established aesthetics", async () => {
   assert.match(css, /background-position/);
   assert.match(css, /sdlive-guard-trusted-scroll/);
   assert.match(css, /prefers-reduced-motion: reduce/);
+});
+
+test("guarded sheen keeps original pacing and cannot paint outside cards", async () => {
+  const css = await source("visual-safeguards.css");
+
+  assert.match(css, /overflow:\s*hidden/);
+  assert.match(css, /border-radius:\s*inherit/);
+  assert.match(css, /inset:\s*0/);
+  assert.match(css, /background-position:\s*90% 0/);
+  assert.match(css, /background-position:\s*10% 0/);
+  assert.doesNotMatch(css, /inset:\s*-45% -12%/);
 });
 
 test("stable Trusted sheen no longer depends on transformed pseudo-element animation", async () => {
@@ -56,7 +68,7 @@ test("stable Trusted sheen no longer depends on transformed pseudo-element anima
 test("public Home always receives safeguards independently of CMS fallback state", async () => {
   const router = await source("worker-router.js");
 
-  assert.match(router, /VISUAL_SAFEGUARDS_VERSION/);
+  assert.match(router, /VISUAL_SAFEGUARDS_VERSION = "20260821-2"/);
   assert.match(router, /visual-safeguards\.css/);
   assert.match(router, /visual-safeguards\.js/);
   assert.match(router, /data-sdlive-visual-safeguards/);
@@ -86,5 +98,7 @@ test("Editor exposes diagnostics and one-click restore without saving visual sta
   assert.match(panel, /Run check/);
   assert.match(panel, /previewRuntime\(\)\?\.repair/);
   assert.match(panel, /not content settings/);
-  assert.match(shell, /visual-safeguards-editor\.js\?v=20260821-1/);
+  assert.match(panel, /visual-safeguards\.css\?v=20260821-2/);
+  assert.match(panel, /visual-safeguards\.js\?v=20260821-2/);
+  assert.match(shell, /visual-safeguards-editor\.js\?v=20260821-2/);
 });
