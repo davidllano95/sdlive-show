@@ -36,6 +36,17 @@ test("placement persists through the Trusted draft binding and survives replacem
   assert.match(placementSource, /setDraftPathThroughBoundInput/);
 });
 
+test("placement draft bridge emits only one synthetic input per change", () => {
+  const bridge = placementSource.match(
+    /function setDraftPathThroughBoundInput[\s\S]*?\n  }\n\n  function refreshButtons/
+  );
+
+  assert.ok(bridge, "placement draft bridge should exist");
+  const dispatches = bridge[0].match(/dispatchEvent\(new Event\("input"\)\)/g) || [];
+  assert.equal(dispatches.length, 1);
+  assert.match(bridge[0], /carousel continuity guard/);
+});
+
 test("placement is recalculated when the preview layout changes", () => {
   assert.match(placementSource, /ResizeObserver/);
   assert.match(placementSource, /countGridColumns/);
@@ -48,4 +59,5 @@ test("admin shell loads placement after Trusted media controls", () => {
 
   assert.ok(mediaIndex >= 0);
   assert.ok(placementIndex > mediaIndex);
+  assert.match(shellSource, /trusted-brand-placement\.js\?v=20260820-2/);
 });
