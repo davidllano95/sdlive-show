@@ -10,6 +10,9 @@
 
   if (!iframe || !trustedSectionButton || !previewMeta) return;
 
+  let manualPaused = false;
+  let previewObserver = null;
+
   const style = document.createElement("style");
   style.textContent = `
     .trusted-preview-transport {
@@ -188,26 +191,57 @@
     }
   }
 
-  function isPaused(target) {
+  function setPauseOnTarget(target, shouldPause) {
+    if (!target) return false;
+
     const api = getApi();
-    if (api?.isPaused) return Boolean(api.isPaused(target));
-    return target?.dataset?.manualPaused === "true";
+    if (api?.setPaused) {
+      return api.setPaused(target, shouldPause);
+    }
+
+    return fallbackPause(target, shouldPause);
   }
 
   function syncPauseLabel() {
-    const target = marquee();
-    const paused = isPaused(target);
-
-    pause.textContent = paused ? "▶ Play" : "⏸ Pause";
-    pause.title = paused
+    pause.textContent = manualPaused ? "▶ Play" : "⏸ Pause";
+    pause.title = manualPaused
       ? "Resume company movement"
       : "Pause company movement";
     pause.setAttribute(
       "aria-label",
-      paused ? "Resume company movement" : "Pause company movement"
+      manualPaused ? "Resume company movement" : "Pause company movement"
     );
-    pause.setAttribute("aria-pressed", String(paused));
-    toolbar.classList.toggle("is-paused", paused);
+    pause.setAttribute("aria-pressed", String(manualPaused));
+    toolbar.classList.toggle("is-paused", manualPaused);
+  }
+
+  function restorePauseAfterPreviewChange() {
+    const target = marquee();
+    if (!target) return;
+
+    setPauseOnTarget(target, manualPaused);
+    syncPauseLabel();
+  }
+
+  function bindPreviewObserver() {
+    previewObserver?.disconnect();
+    previewObserver = null;
+
+    try {
+      const section = iframe.contentDocument?.querySelector(".trusted-wrap");
+      if (!section) return;
+
+      previewObserver = new MutationObserver(() => {
+        window.queueMicrotask(restorePauseAfterPreviewChange);
+      });
+      previewObserver.observe(section, {
+        childList: true
+      });
+
+      restorePauseAfterPreviewChange();
+    } catch {
+      // Preview can be between navigations.
+    }
   }
 
   function shift(direction) {
@@ -223,18 +257,8 @@
   }
 
   function togglePause() {
-    const target = marquee();
-    if (!target) return;
-
-    const nextPaused = !isPaused(target);
-    const api = getApi();
-
-    if (api?.setPaused) {
-      api.setPaused(target, nextPaused);
-    } else {
-      fallbackPause(target, nextPaused);
-    }
-
+    manualPaused = !manualPaused;
+    setPauseOnTarget(marquee(), manualPaused);
     syncPauseLabel();
   }
 
@@ -244,7 +268,10 @@
     toolbar.setAttribute("aria-hidden", String(!active));
 
     if (active) {
-      window.setTimeout(syncPauseLabel, 100);
+      window.setTimeout(() => {
+        restorePauseAfterPreviewChange();
+        syncPauseLabel();
+      }, 100);
     }
   }
 
@@ -265,6 +292,7 @@
 
   iframe.addEventListener("load", () => {
     window.setTimeout(() => {
+      bindPreviewObserver();
       syncVisibility();
       syncPauseLabel();
     }, 160);
@@ -276,5 +304,6 @@
     attributeFilter: ["class"]
   });
 
+  bindPreviewObserver();
   syncVisibility();
 })();
