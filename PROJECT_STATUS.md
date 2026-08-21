@@ -1,31 +1,31 @@
 # SD.Live — estado maestro, roadmap y handoff
 
-> **Fuente de verdad operativa del proyecto.** Este archivo registra qué está hecho, cómo está resuelto, qué falta y cuál es el siguiente gate. Debe actualizarse al cerrar un milestone o ante un cambio material de alcance; no con cada parche pequeño.
+> **Fuente de verdad operativa del proyecto.** Este archivo registra qué está hecho, cómo está resuelto, qué falta y cuál es el siguiente gate. Se actualiza al cerrar milestones o ante cambios materiales de arquitectura/alcance, no con cada parche pequeño.
 
 | Campo | Valor |
 |---|---|
 | Última revisión integral | 2026-08-20 |
 | Rama verificada | `main` |
-| Commit verificado | `1fefb0868790c0f0f51c2861f40397f60261bad3` |
+| Commit de milestone verificado | `cec8ea695a4f9115835117201a5fad4265f141c0` |
 | Producción | `https://sdlive.show` |
 | Media pública | `https://media.sdlive.show` |
 | Milestone actual | P2 — ampliar el Editor/CMS de forma incremental |
-| Estado del milestone | **ABIERTO — Trusted By editable; base R2 creada; binding público aún no terminado** |
-| Siguiente gate | **P2.1.2 — Upload/Replace + resize visual de logos en Trusted By y migración controlada de Trusted By/Supported Brands a R2** |
+| Estado | **Trusted By + R2 + Published→Home CERRADO y validado en producción** |
+| Siguiente gate | **P2.3 — Testimonials CMS** |
 
 ## Cómo retomar el proyecto en una conversación nueva
 
 1. Leer `README.md` y este archivo.
-2. Consultar el `HEAD` actual de `main` y compararlo con el commit verificado arriba.
-3. Si cambió, revisar únicamente los diffs posteriores y actualizar los estados afectados.
-4. No rehacer trabajo marcado `[x]` salvo que exista evidencia de regresión.
+2. Consultar el `HEAD` actual de `main` y compararlo con el commit de milestone verificado arriba.
+3. Si cambió, revisar solamente los diffs posteriores y actualizar los estados afectados.
+4. No rehacer trabajo marcado `[x]` salvo evidencia concreta de regresión.
 5. Continuar por el primer gate abierto del milestone actual.
-6. Al cerrar un milestone o gate material, actualizar este archivo y `README.md` si cambió arquitectura u operación.
+6. Al cerrar un milestone material, actualizar este archivo y `README.md` si cambió arquitectura u operación.
 
 ### Leyenda
 
 - `[x]` Implementado y validado.
-- `[~]` Parcial; existe base útil pero falta validación o alcance.
+- `[~]` Parcial; existe base útil pero falta alcance o validación.
 - `[ ]` Pendiente.
 - **Externo**: Cloudflare, Google, Workspace u otro servicio fuera del repositorio.
 - **Futuro/opcional**: idea preservada; no autoriza construirla antes de priorizarla.
@@ -55,215 +55,158 @@
 
 ---
 
-# P1 — conectar el CMS con producción
+# P1 — Hero CMS + first paint
 
 **Estado: CERRADO.**
 
-## P1.1 — Published Hero → Home
-
-- [x] Admin mantiene Draft, Published y revisiones del Hero en D1.
-- [x] Endpoint público `GET /api/content/hero` disponible.
-- [x] Home conectado al contenido Published.
-- [x] Fallback estático deliberado.
-- [x] Draft del Admin no contamina producción.
-- [x] EN/ES desde la misma estructura de contenido.
-
-### Implementación
-
-1. Primera integración client-side del Hero.
-2. Se detectó flash HTML estático → CMS.
-3. Se añadió hydration para eliminar el swap visible.
-4. Se detectó un vacío breve durante fetch.
-5. Solución final: Published Hero se renderiza en Cloudflare edge antes del primer paint.
-
-Archivos clave:
-
-- `worker-entry.js`: sirve `/`, lee Published de D1 e inyecta Hero con `HTMLRewriter`.
-- `worker.js`: APIs base de CMS, Contact y Rental.
-- `hero-content.js`: resiliencia client-side y aislamiento del Admin preview.
-- `cms-hydration.js`: utility de hydration/fallback.
-- `home-navigation.js`: navegación Home y carga de bindings.
-
-PRs principales:
-
-- #1 — P1.1 Connect published Hero CMS binding.
-- #2 — P1.1.1 Stabilize Hero CMS hydration.
-- #3 — P1.1.2 Server-render Published Hero at the edge.
-- #4 — P1.1.3 Stabilize first-paint language and Hero lede.
-
-## P1.2 — SEO, resiliencia y first paint
-
-- [x] HTML inicial contiene Published Hero antes de llegar al navegador.
-- [x] Si D1 falla, el Worker entrega Hero estático.
-- [x] Root usa `Cache-Control: no-store` porque contiene contenido CMS vivo.
-- [x] CSS/JS/assets siguen estáticos.
+- [x] Hero Draft/Published/revisions en D1.
+- [x] Published Hero conectado al Home.
+- [x] SSR en Cloudflare edge antes del first paint.
+- [x] Fallback estático si D1 falla o contenido es inválido.
+- [x] Draft del Admin aislado de producción.
+- [x] EN/ES desde la misma estructura.
+- [x] Cookie de idioma disponible al Worker; fallback a `Accept-Language` y luego EN.
 - [x] Sin flash de copy ni vacío de hydration.
-- [x] Cookie de idioma disponible al Worker antes del first paint.
-- [x] `localStorage` se migra/sincroniza a cookie.
-- [x] Sin preferencia guardada, se usa `Accept-Language`.
-- [x] Wordmark visual `SD.Live` del lede se renderiza antes del line-wrap.
-- [x] Validación manual final EN/ES limpia.
+- [x] Wordmark visual SD.Live correcto antes del line-wrap.
+- [x] `node:test` + GitHub Actions CI.
+- [x] Tests de schema, D1, fallback, idioma, SSR y aislamiento Admin.
 
-## P1.3 — Preview / Draft / Published coherentes
+Archivos clave: `worker-entry.js`, `worker.js`, `hero-content.js`, `cms-hydration.js`, `home-navigation.js`.
 
-- [x] Draft puede diferir de Published sin cambiar Home.
-- [x] Publish actualiza producción.
-- [x] EN y ES se mantienen separados correctamente.
-- [x] Admin iframe aislado de Published SSR.
-- [x] Hero visible y editable en Admin.
-
-## P1.4 — tests mínimos + CI
-
-**Estado: COMPLETADO.**
-
-- [x] Runner ligero con `node:test`.
-- [x] Tests de schema/Published Hero.
-- [x] Tests de fallback y D1 inválido.
-- [x] Tests de idioma cookie → `Accept-Language` → default.
-- [x] Tests de SSR y fast path del cliente.
-- [x] Tests de aislamiento Admin.
-- [x] CI GitHub Actions en PRs/main.
-- [x] Tests extendidos a Trusted By/editor durante P2.
-
-**Resultado:** P1 quedó cerrado antes de ampliar el CMS.
+PRs principales: #1, #2, #3, #4.
 
 ---
 
 # P2 — ampliar el Editor/CMS de forma incremental
 
-## P2.1 — Trusted By / Brands Supported Through
+## P2.1 — Trusted By / Brands Supported Through — Editor
 
-**Estado: EN PROGRESO.**
-
-### Editor y Draft/Publish
+**Estado: CERRADO.**
 
 - [x] Modelo CMS propio para Trusted By.
 - [x] Draft y Published en D1.
-- [x] Public API `GET /api/content/trusted`.
+- [x] API pública `GET /api/content/trusted`.
 - [x] Editor de clientes, nombres, roles, logos, orden y reveals.
 - [x] Agregar/eliminar/reordenar clientes.
 - [x] WLive protegido contra borrado desde UI.
-- [x] Save Draft no cambia Home público.
-- [x] Publish queda en Published de D1 sin cambiar Home público todavía.
 - [x] Flechas rápidas y Pause/Play del carrusel en preview.
-- [x] Pause persiste tras hover y tras editar/reconstruir el preview.
-- [x] Select sobre una card de cliente lleva al cliente principal en el inspector.
-- [x] Toasts de Save/Discard/Publish no tapan los botones del inspector.
-- [x] Swipe táctil del carrusel en móvil; desktop conserva comportamiento existente.
+- [x] Pause persiste tras hover y reconstrucciones del Draft.
+- [x] Select lleva al cliente/reveal/item correspondiente en el inspector.
+- [x] Supported Brand placement Auto/Left/Center/Right.
+- [x] Wonderlust preview Desktop normalizado para coincidir con el sitio público.
+- [x] Swipe táctil en móvil; desktop conserva comportamiento propio.
+- [x] Toasts no bloquean controles del inspector.
+- [x] Carrusel conserva fase al editar placement y otros cambios del Draft.
 
-### Pendiente inmediato
+### Polish pendiente no bloqueante
 
-- [ ] Upload/Replace de logos desde el Editor usando R2.
-- [ ] Control visual de escala/tamaño del logo con preview inmediato.
-- [ ] Guardar escala/posición como metadata/configuración; no generar un archivo nuevo por cada resize visual.
-- [ ] Migrar primero **Trusted By + Supported Brands** desde `assets/` de GitHub a R2.
-- [ ] Conectar Published Trusted By al Home público mediante SSR/fallback siguiendo el patrón del Hero.
-- [ ] Smoke final EN/ES + Desktop/Mobile + Draft/Publish.
+- [ ] Corregir pequeño offset de la navegación izquierda al saltar a **Trusted By**; debe alinear contra el contenedor completo de la sección, no quedar unos píxeles abajo.
 
-## P2.1.2 — base de Media/R2
+## P2.1.2 — Media / R2 para Trusted
 
-**Estado: BASE IMPLEMENTADA; validación de deploy en curso al registrar este documento.**
+**Estado: CERRADO para Trusted By / Supported Brands.**
 
-- [x] Bucket R2: `sdlive-media-production`.
-- [x] Storage class: **Standard**.
-- [x] Custom Domain: `media.sdlive.show` activo.
-- [x] Public Development URL / `r2.dev`: desactivado.
-- [x] Binding Worker: `MEDIA_BUCKET`.
-- [x] Variable pública: `MEDIA_PUBLIC_BASE=https://media.sdlive.show`.
-- [x] Endpoint autenticado de estado de Media.
-- [x] Endpoint autenticado de upload para PNG/JPEG/WebP.
-- [x] Límite inicial de upload: 5 MB por archivo.
+- [x] Bucket R2 `sdlive-media-production`.
+- [x] Storage class **Standard**.
+- [x] Custom Domain `media.sdlive.show` activo.
+- [x] Public Development URL / `r2.dev` desactivado.
+- [x] Binding Worker `MEDIA_BUCKET`.
+- [x] `MEDIA_PUBLIC_BASE=https://media.sdlive.show`.
+- [x] Endpoint autenticado de status/upload.
+- [x] PNG/JPEG/WebP, máximo 5 MB.
 - [x] Keys versionadas bajo `cms/<folder>/...`.
-- [x] Cache metadata larga/immutable para URLs versionadas.
-- [x] Carpetas CMS permitidas explícitamente.
-- [x] Tests de auth, allowlists, URL pública y escritura R2.
+- [x] Cache metadata larga/immutable.
+- [x] Upload/Replace desde Trusted Editor.
+- [x] Slider de escala visual 50%–180% sin generar derivados binarios.
+- [x] Escala y placement persistidos como metadata en D1.
+- [x] Migrador one-click de assets legacy de Trusted/Supported Brands a R2.
+- [x] Migración ejecutada y validada; Editor recargado correctamente después de `Save Draft`.
+- [x] GitHub conserva por ahora originales/fallbacks; no eliminar hasta una limpieza deliberada posterior.
 
 ### Arquitectura de media acordada
 
-**GitHub conserva assets de código/branding crítico:**
+**GitHub:** código, CSS/JS, branding crítico, favicon/app icons y fallbacks esenciales.  
+**D1:** texto, orden, asociaciones, alt, escala, placement, visibilidad y referencias lógicas.  
+**R2:** media administrable/reemplazable desde el Editor.
 
-- logo principal SD.Live y variantes necesarias para la shell,
-- favicon/app icons,
-- iconos UI,
-- assets estructurales/fallback imprescindibles para que el sitio siga arrancando aunque R2 falle.
+### Próximas migraciones de media
 
-**R2 almacena media administrable desde el Editor:**
+1. [x] Trusted By + Supported Brands.
+2. [ ] Testimonials — avatar/foto si aplica al modelo final.
+3. [ ] Portfolio / Selected Work.
+4. [ ] Rental imagery.
+5. [ ] Insights/blog thumbnails/hero cuando exista contenido real.
+6. [ ] Otras imágenes administrables al entrar cada sección al CMS.
+7. [ ] Retirar duplicados de GitHub solamente después de validar producción y conservar fallbacks críticos.
 
-- logos de clientes,
-- logos de Supported Brands,
-- Portfolio / Selected Work,
-- Rental,
-- imágenes de Insights,
-- fotos de Testimonials si aplica,
-- otras imágenes de contenido que deban poder cambiarse sin commit/deploy.
+### Guardrails R2
 
-**D1 guarda metadata/referencias, no binarios:**
+- Standard storage; no Infrequent Access.
+- Media pública por `media.sdlive.show`, no por Worker GET por archivo.
+- CDN/cache delante de R2.
+- URLs versionadas + cache immutable.
+- Resize visual mediante CSS/D1, no derivados por cada movimiento de slider.
+- No activar Cloudflare Images, Stream, Data Catalog ni productos pagos sin aprobación explícita.
+- Limpieza de objetos huérfanos solo con proceso controlado.
 
-- key/URL lógica,
-- alt,
-- escala,
-- posición,
-- orden,
-- visibilidad,
-- asociaciones.
+## P2.2 — Published Trusted By → Home
 
-### Migración futura de imágenes — NO OLVIDAR
+**Estado: CERRADO y VALIDADO EN PRODUCCIÓN.**
 
-La migración será **progresiva**, no masiva en un solo cambio.
+- [x] `trusted-edge.js` lee únicamente `published_json` de D1.
+- [x] Validación de schema antes de renderizar.
+- [x] Public Home `/` recibe Trusted Published por `HTMLRewriter`/SSR.
+- [x] Static Trusted permanece como fallback deliberado.
+- [x] Admin iframe recibe documento estático y mantiene Draft local aislado de Published SSR.
+- [x] R2 logical refs `assets/media/...` se resuelven a `https://media.sdlive.show/...`.
+- [x] EN/ES renderizado correctamente.
+- [x] WLive preservado.
+- [x] Wonderlust mantiene wrappers/layout correcto.
+- [x] Scale y placement se respetan en producción.
+- [x] Runtime público recalcula placement responsivo.
+- [x] Cambio de idioma no reconstruye sets del carrusel ni pierde listeners de Supported Brands.
+- [x] Supported Brands permanecen visibles/interactivas al cambiar EN↔ES sin recargar.
+- [x] Fix de estabilidad de hover del carrusel live; regresión que podía retroceder cerca de Mediacoustix no se pudo reproducir tras deploy.
+- [x] Prueba final de publishing validada: **Save Draft no cambia producción; Publish sí cambia producción.**
+- [x] Cambio de prueba revertido y Published restaurado.
 
-1. [ ] **Trusted By + Supported Brands** — primer lote y patrón de referencia.
-2. [ ] **Portfolio / Selected Work** — migrar cuando el Media Library base esté estable.
-3. [ ] **Rental** — imágenes de equipos y paquetes administrables desde Admin.
-4. [ ] **Testimonials** — fotos/avatar si existen o se agregan.
-5. [ ] **Insights / blog** — thumbnails/hero media cuando se reactive contenido real.
-6. [ ] Revisar otras imágenes públicas administrables y moverlas a R2 cuando su sección entre al CMS.
-7. [ ] Al terminar cada migración, retirar duplicados de GitHub **solo después** de validar producción y mantener los fallbacks críticos que sí deban seguir versionados.
-
-**No migrar por sistema a R2:** branding esencial, favicon/app icons y assets estrictamente ligados al código/fallback.
-
-### Guardrails para mantener R2 dentro del free tier
-
-- Usar **Standard storage**; no Infrequent Access para este proyecto.
-- Servir media pública por `media.sdlive.show`, no por un endpoint Worker por cada descarga.
-- Mantener CDN/cache delante de R2.
-- Usar URLs/keys versionadas para replacements y cache immutable.
-- Evitar duplicados innecesarios y limpiar objetos huérfanos solo con un proceso controlado.
-- Comprimir/optimizar uploads; no guardar originales enormes sin necesidad.
-- Resize visual mediante CSS/D1; no crear múltiples derivados por mover un slider.
-- No activar R2 Data Catalog, Cloudflare Images, Stream u otros productos de pago salvo decisión explícita futura.
-- Añadir observabilidad de storage/operaciones antes de que el volumen crezca.
+PRs principales del cierre Trusted/R2/SSR: #12–#22.
 
 ---
 
-# Orden recomendado después del gate actual
+# P2.3 — Testimonials CMS
 
-1. Terminar Upload/Replace + resize visual para Trusted By.
-2. Migrar Trusted By + Supported Brands a R2.
-3. Conectar Published Trusted By al Home público con SSR/fallback.
-4. Testimonials.
-5. Services.
-6. Media Library reusable.
-7. Portfolio / Selected Work.
+**Estado: SIGUIENTE GATE — pendiente de implementar.**
 
-No empezar drag/drop libre de layout tipo Wix antes de que el patrón de contenido/media esté estable y probado.
+Objetivo: convertir Testimonials al mismo patrón probado sin ampliar todavía a drag/drop libre.
+
+- [ ] Inventariar testimonios reales vs placeholders/mockups actuales.
+- [ ] Definir schema estable: persona, cargo/empresa, quote EN/ES, imagen/avatar opcional, orden, visibilidad y featured/style solo si es realmente necesario.
+- [ ] Preservar el estilo minimal/luxury actual y animación de reflejo ya aprobada.
+- [ ] Draft/Published en D1.
+- [ ] Editor visual con agregar/eliminar/reordenar.
+- [ ] Upload/Replace de avatar/foto mediante R2 solo si hay media editable.
+- [ ] Public binding con fallback seguro; escoger SSR/edge si evita flash y encaja con el patrón actual.
+- [ ] Tests de schema, Draft leak, fallback y media.
+- [ ] Smoke EN/ES + Desktop/Mobile + Draft/Publish en producción.
+
+Después de Testimonials: Services → Media Library reusable → Portfolio / Selected Work.
 
 ---
 
 # Backlog maestro por área
 
-## Admin / CMS / editor
+## Admin / CMS / Editor
 
 - [x] Dashboard + Editor V6.4.
 - [x] Preview COL/INT, EN/ES, Desktop/Mobile.
 - [x] Select/Interact, Focus, paneles colapsables y selección visual base.
-- [x] Hero Draft/Published/revisions en D1.
-- [x] Hero Published conectado a Home con SSR.
-- [~] Trusted By / Brands Supported Through: editor y D1 listos; falta media R2 + binding público SSR.
-- [~] Media/R2: infraestructura base creada; falta UI de upload, biblioteca y migración progresiva.
+- [x] Hero CMS completo y Published→Home SSR.
+- [x] Trusted By CMS completo, R2 y Published→Home SSR.
+- [~] Media/R2: infraestructura y Trusted completos; falta Media Library reusable y migración por secciones.
 - [ ] Testimonials CMS.
 - [ ] Services CMS.
 - [ ] Selected Work / Portfolio CMS cuando Media Library sea estable.
-- [x] Reorder de clientes Trusted By.
 - [ ] Reorder genérico de otras cards/bloques.
 - [ ] Show/hide por mercado y dispositivo desde Admin.
 - [ ] Configuración de gap/padding/alignment/spacing.
@@ -272,10 +215,11 @@ No empezar drag/drop libre de layout tipo Wix antes de que el patrón de conteni
 - [ ] Template Library explícita.
 - [ ] Media Library reusable sobre R2: listar, buscar, reemplazar, reutilizar y borrar con seguridad.
 - [ ] Revisar y retirar `admin/admin.js` / `admin/admin.css` si se confirma duplicación frente a `admin/editor/*`.
+- [ ] Fix menor: alineación del salto `Trusted By` en navegación izquierda.
 
 ## Header, navegación y controles flotantes
 
-- [ ] **WhatsApp en todas las landings públicas.** Reutilizar el botón Home en Theatre, `/en/`, `/es-co/`, servicios Bogotá, Rental y demás páginas públicas; mismo destino, tracking, safe-area y comportamiento responsive.
+- [ ] **WhatsApp en todas las landings públicas.** Reutilizar el botón Home en Theatre, `/en/`, `/es-co/`, servicios Bogotá, Rental y demás páginas públicas; mismo destino, tracking, safe-area y responsive.
 - [ ] Reordenar/espaciar elementos del header desde Admin.
 - [ ] Show/hide de CTAs, Show Day, WhatsApp y controles por página/mercado/dispositivo.
 - [ ] Configurar anchors y scroll offset.
@@ -285,9 +229,9 @@ No empezar drag/drop libre de layout tipo Wix antes de que el patrón de conteni
 ## Contenido público
 
 - [x] Hero CMS real en producción.
+- [x] Trusted By CMS real en producción.
 - [x] Theatre estabilizado.
 - [x] WLive visible y vigente.
-- [~] Trusted By: contenido editable y Published en D1; binding público pendiente.
 - [~] Portfolio: piezas públicas existen; falta modelo CMS/media/credits/tags/featured.
 - [~] Raw vs Mixed: UI existe; faltan audios reales + Admin.
 - [~] Testimonials: contenido real + placeholders; falta gestión CMS.
@@ -334,9 +278,9 @@ No empezar drag/drop libre de layout tipo Wix antes de que el patrón de conteni
 - [x] GTM + Consent Mode + GA4 base.
 - [x] `generate_lead`, email y WhatsApp validados.
 - [ ] Separar tráfico interno/testing.
-- [ ] Revisar qué eventos deben ser Key Events vs microconversiones.
-- [ ] Funnel completo: sesión → source → lead → qualified → closed.
-- [ ] Monitorizar indexación, queries, impressions, CTR, países, páginas de entrada y Core Web Vitals.
+- [ ] Revisar Key Events vs microconversiones.
+- [ ] Funnel sesión → source → lead → qualified → closed.
+- [ ] Monitorizar indexación, queries, impressions, CTR, países, entradas y Core Web Vitals.
 - [ ] Medir landings antes de crear más SEO pages.
 - [ ] Dashboard/Data Studio o equivalente cuando haya volumen real.
 - [ ] Estrategia de adquisición basada en conversiones/revenue.
@@ -351,7 +295,7 @@ No empezar drag/drop libre de layout tipo Wix antes de que el patrón de conteni
 - [ ] Observabilidad Worker/D1/R2, publish/deploy y errores.
 - [ ] Alertar antes de acercarse a límites relevantes de R2/Workers.
 - [ ] Backups/export y rollback operacional.
-- [ ] Limpieza segura de objetos R2 huérfanos después de reemplazos/migraciones.
+- [ ] Limpieza segura de objetos R2 huérfanos después de replacements/migraciones.
 - [ ] Refactor de monolitos (`index.html`, `script.js`, `styles.css`, `worker.js`) solo con tests verdes.
 - [ ] Retirar `deploy-test.txt` en cleanup futuro si se confirma que ya no sirve.
 
@@ -362,17 +306,17 @@ No empezar drag/drop libre de layout tipo Wix antes de que el patrón de conteni
 - Marca exacta: **SD.Live**.
 - Descriptor: **Creative Audio**.
 - Tagline exacta: **Creative Audio. Technical systems. Built for the show.**
-- En UI visible, `SD.Live` debe usar el wordmark con punto flotante cuando aplique; en metadata/código/string machine-readable se usa texto literal.
+- En UI visible, `SD.Live` usa el wordmark con punto flotante cuando aplique; metadata/código/string machine-readable usa texto literal.
 - SD.Live no debe parecer agencia genérica de eventos, rental house, CV personal ni sociedad incorporada.
 - WLive se mantiene visible.
 - Rental es Colombia-first; INT lo oculta por defecto.
-- Rental nunca envía a `hello@` ni a correo personal: **solo `rental@sdlive.show`**.
+- Rental nunca envía a `hello@` ni correo personal: **solo `rental@sdlive.show`**.
 - Pricing Rental vive en backend.
 - Cloudflare Access es la barrera real del Admin; no usar login visual falso.
 - GTM no controla navegación, branding, copy, Theatre ni layout.
 - No restaurar Netlify, Owner Access mockup, `site-runtime` ni navegación por GTM.
 - No guardar secretos ni datos sensibles en GitHub.
-- GitHub es source-of-truth de código; D1 de contenido estructurado; R2 de media administrable.
+- GitHub = source-of-truth de código; D1 = contenido estructurado; R2 = media administrable.
 - `media.sdlive.show` es el dominio público canónico para media R2.
 - Public Development URL de R2 permanece desactivado salvo necesidad explícita de desarrollo.
 - No reconstruir desde cero CMS/D1/Access/privacidad/analytics si la base actual puede extenderse.
@@ -387,22 +331,22 @@ P0.1–P0.5 validados: redirect `www`, wordmark dinámico, alcance WLive, smoke 
 
 ## 2026-08-20 — P1 Hero CMS + first paint
 
-Published Hero quedó servido desde D1 con SSR en el edge, fallback estático, idioma resuelto antes del first paint y Draft aislado del sitio público.
+Published Hero servido desde D1 con SSR en edge, fallback estático, idioma resuelto antes del first paint y Draft aislado del sitio público.
 
 ## 2026-08-20 — P1.4 tests + CI
 
-Se añadió `node:test` y GitHub Actions. El gate quedó verde y permitió ampliar el CMS con una red mínima de regresión.
+Se añadió `node:test` y GitHub Actions.
 
 ## 2026-08-20 — P2.1 Trusted By editor
 
-Se creó modelo CMS para Trusted By/Supported Brands con Draft/Published, edición de clientes, reorder y protección de WLive. Publish todavía no controla el Home público.
+Modelo CMS Trusted/Supported Brands, Draft/Published, reorder, WLive protegido, controles de carrusel, Select y parity de Wonderlust.
 
-## 2026-08-20 — P2.1.1 UX del carrusel/editor
+## 2026-08-20 — P2.1.2 R2 media foundation + Trusted migration
 
-Se añadieron flechas, Pause/Play persistente, swipe móvil, Select→cliente y corrección de toasts. Validación final del usuario: comportamiento correcto.
+R2 productivo, custom domain, upload autenticado, scale/placement metadata, migrador legacy y Trusted/Supported Brands migrados y validados.
 
-## 2026-08-20 — P2.1.2 R2 media foundation
+## 2026-08-20 — P2.2 Trusted Published → Home
 
-Se creó `sdlive-media-production`, `media.sdlive.show`, binding `MEDIA_BUCKET` y endpoints autenticados de upload/status con tests. La estrategia acordada es migrar progresivamente toda la media administrable al bucket, empezando por Trusted By/Supported Brands y dejando branding crítico/fallback en GitHub.
+Trusted Published quedó servido desde D1/R2 con SSR/fallback en producción. Se estabilizó cambio EN/ES y hover del carrusel. Prueba final confirmada: **Save Draft no cambia producción; Publish sí cambia producción.**
 
-**Siguiente gate:** Upload/Replace + resize visual de logos en el Editor, migración de Trusted By/Supported Brands a R2 y después binding Published → Home.
+**Siguiente gate: P2.3 — Testimonials CMS.**
