@@ -1,7 +1,15 @@
 import baseWorker, { isAdminPreviewRequest } from "./worker-entry.js";
+import { handleCoreSectionsApi } from "./core-sections-api.js";
 import { handleMediaApi } from "./media-api.js";
 import { handleTestimonialsApi } from "./testimonials-api.js";
 import { handleTrustedApi } from "./trusted-api.js";
+import {
+  readPublishedCoreSection,
+  renderAboutInnerHtml,
+  renderInternationalInnerHtml,
+  renderServicesInnerHtml,
+  renderWorkInnerHtml
+} from "./core-sections-edge.js";
 import {
   readPublishedTestimonials,
   renderTestimonialsInnerHtml
@@ -16,7 +24,6 @@ const VISUAL_SAFEGUARDS_VERSION = "20260821-2";
 
 function normalizedPath(request) {
   const url = new URL(request.url);
-
   return url.pathname.length > 1
     ? url.pathname.replace(/\/+$/, "")
     : url.pathname;
@@ -32,22 +39,12 @@ async function verifyAdminViaExistingApi(request, env) {
     headers: request.headers
   });
 
-  const response = await baseWorker.fetch(
-    verificationRequest,
-    env
-  );
-
+  const response = await baseWorker.fetch(verificationRequest, env);
   if (!response.ok) return null;
 
   const data = await response.json().catch(() => null);
-
-  if (!data?.authenticated || !data?.email) {
-    return null;
-  }
-
-  return {
-    email: String(data.email).toLowerCase()
-  };
+  if (!data?.authenticated || !data?.email) return null;
+  return { email: String(data.email).toLowerCase() };
 }
 
 function responseLanguage(response) {
@@ -58,14 +55,34 @@ function responseLanguage(response) {
     : "en";
 }
 
+function applySectionRenderMetadata(element, published) {
+  const isCms = Boolean(published?.content);
+  element.setAttribute("data-cms-state", "ready");
+  element.setAttribute(
+    "data-content-source",
+    isCms ? "cms-ssr" : "static-fallback"
+  );
+  element.setAttribute("data-server-rendered", "true");
+
+  if (isCms && published.publishedAt) {
+    element.setAttribute("data-cms-published-at", published.publishedAt);
+  } else {
+    element.removeAttribute("data-cms-published-at");
+  }
+
+  return isCms;
+}
+
 function transformCmsHomeResponse(
   response,
   publishedTrusted,
-  publishedTestimonials
+  publishedTestimonials,
+  publishedCore
 ) {
   const trustedIsCms = Boolean(publishedTrusted?.content);
   const testimonialsIsCms = Boolean(publishedTestimonials?.content);
   const lang = responseLanguage(response);
+  const core = publishedCore || {};
 
   const rewriter = new HTMLRewriter()
     .on("head", {
@@ -76,32 +93,17 @@ function transformCmsHomeResponse(
           { html: true }
         );
 
-        if (!trustedIsCms) return;
-
-        element.append(
-          `<script defer src="/trusted-published-runtime.js?v=${TRUSTED_RUNTIME_VERSION}"></script>`,
-          { html: true }
-        );
+        if (trustedIsCms) {
+          element.append(
+            `<script defer src="/trusted-published-runtime.js?v=${TRUSTED_RUNTIME_VERSION}"></script>`,
+            { html: true }
+          );
+        }
       }
     })
     .on(".trusted-wrap", {
       element(element) {
-        element.setAttribute("data-cms-state", "ready");
-        element.setAttribute(
-          "data-content-source",
-          trustedIsCms ? "cms-ssr" : "static-fallback"
-        );
-        element.setAttribute("data-server-rendered", "true");
-
-        if (trustedIsCms && publishedTrusted.publishedAt) {
-          element.setAttribute(
-            "data-cms-published-at",
-            publishedTrusted.publishedAt
-          );
-        } else {
-          element.removeAttribute("data-cms-published-at");
-        }
-
+        applySectionRenderMetadata(element, publishedTrusted);
         if (trustedIsCms) {
           element.setInnerContent(
             renderTrustedInnerHtml(publishedTrusted.content, lang),
@@ -110,31 +112,41 @@ function transformCmsHomeResponse(
         }
       }
     })
+    .on("#about", {
+      element(element) {
+        if (applySectionRenderMetadata(element, core.about)) {
+          element.setInnerContent(renderAboutInnerHtml(core.about.content, lang), { html: true });
+        }
+      }
+    })
+    .on("#services", {
+      element(element) {
+        if (applySectionRenderMetadata(element, core.services)) {
+          element.setInnerContent(renderServicesInnerHtml(core.services.content, lang), { html: true });
+        }
+      }
+    })
+    .on("#work", {
+      element(element) {
+        if (applySectionRenderMetadata(element, core.work)) {
+          element.setInnerContent(renderWorkInnerHtml(core.work.content, lang), { html: true });
+        }
+      }
+    })
+    .on("#international", {
+      element(element) {
+        if (applySectionRenderMetadata(element, core.international)) {
+          element.setInnerContent(renderInternationalInnerHtml(core.international.content, lang), { html: true });
+        }
+      }
+    })
     .on(".testimonials--public#testimonials", {
       element(element) {
-        element.setAttribute("data-cms-state", "ready");
-        element.setAttribute(
-          "data-content-source",
-          testimonialsIsCms ? "cms-ssr" : "static-fallback"
-        );
-        element.setAttribute("data-server-rendered", "true");
-
-        if (testimonialsIsCms && publishedTestimonials.publishedAt) {
-          element.setAttribute(
-            "data-cms-published-at",
-            publishedTestimonials.publishedAt
-          );
-        } else {
-          element.removeAttribute("data-cms-published-at");
-        }
-
+        applySectionRenderMetadata(element, publishedTestimonials);
         if (testimonialsIsCms) {
           element.setAttribute("aria-labelledby", "testimonialsTitle");
           element.setInnerContent(
-            renderTestimonialsInnerHtml(
-              publishedTestimonials.content,
-              lang
-            ),
+            renderTestimonialsInnerHtml(publishedTestimonials.content, lang),
             { html: true }
           );
         }
@@ -143,14 +155,14 @@ function transformCmsHomeResponse(
 
   const transformed = rewriter.transform(response);
   const headers = new Headers(transformed.headers);
-  headers.set(
-    "X-SDLive-Trusted-Render",
-    trustedIsCms ? "cms-ssr" : "static-fallback"
-  );
-  headers.set(
-    "X-SDLive-Testimonials-Render",
-    testimonialsIsCms ? "cms-ssr" : "static-fallback"
-  );
+  headers.set("X-SDLive-Trusted-Render", trustedIsCms ? "cms-ssr" : "static-fallback");
+  headers.set("X-SDLive-Testimonials-Render", testimonialsIsCms ? "cms-ssr" : "static-fallback");
+  for (const section of ["about", "services", "work", "international"]) {
+    headers.set(
+      `X-SDLive-${section[0].toUpperCase()}${section.slice(1)}-Render`,
+      core[section]?.content ? "cms-ssr" : "static-fallback"
+    );
+  }
 
   return new Response(transformed.body, {
     status: transformed.status,
@@ -159,44 +171,50 @@ function transformCmsHomeResponse(
   });
 }
 
+function safePublishedCoreRead(env, section) {
+  return readPublishedCoreSection(env, section).catch((error) => {
+    console.error(`[SD.Live] Edge ${section} render failed; serving static fallback.`, error);
+    return null;
+  });
+}
+
 async function servePublicHome(request, env) {
   if (isAdminPreviewRequest(request)) {
     return baseWorker.fetch(request, env);
   }
 
-  const basePromise = baseWorker.fetch(request, env);
-  const trustedPromise = readPublishedTrusted(env)
-    .catch((error) => {
-      console.error(
-        "[SD.Live] Edge Trusted By render failed; serving static fallback.",
-        error
-      );
+  const [
+    response,
+    publishedTrusted,
+    publishedTestimonials,
+    about,
+    services,
+    work,
+    international
+  ] = await Promise.all([
+    baseWorker.fetch(request, env),
+    readPublishedTrusted(env).catch((error) => {
+      console.error("[SD.Live] Edge Trusted By render failed; serving static fallback.", error);
       return null;
-    });
-  const testimonialsPromise = readPublishedTestimonials(env)
-    .catch((error) => {
-      console.error(
-        "[SD.Live] Edge Testimonials render failed; serving static fallback.",
-        error
-      );
+    }),
+    readPublishedTestimonials(env).catch((error) => {
+      console.error("[SD.Live] Edge Testimonials render failed; serving static fallback.", error);
       return null;
-    });
-
-  const [response, publishedTrusted, publishedTestimonials] = await Promise.all([
-    basePromise,
-    trustedPromise,
-    testimonialsPromise
+    }),
+    safePublishedCoreRead(env, "about"),
+    safePublishedCoreRead(env, "services"),
+    safePublishedCoreRead(env, "work"),
+    safePublishedCoreRead(env, "international")
   ]);
 
   const contentType = response.headers.get("Content-Type") || "";
-  if (!response.ok || !contentType.includes("text/html")) {
-    return response;
-  }
+  if (!response.ok || !contentType.includes("text/html")) return response;
 
   return transformCmsHomeResponse(
     response,
     publishedTrusted,
-    publishedTestimonials
+    publishedTestimonials,
+    { about, services, work, international }
   );
 }
 
@@ -205,14 +223,19 @@ export default {
     const path = normalizedPath(request);
 
     if (path.startsWith("/api/admin/media")) {
-      const response = await handleMediaApi(
-        request,
-        env,
-        {
-          verifyAdmin: verifyAdminViaExistingApi
-        }
-      );
+      const response = await handleMediaApi(request, env, {
+        verifyAdmin: verifyAdminViaExistingApi
+      });
+      if (response) return response;
+    }
 
+    if (
+      /^\/api\/content\/(?:about|services|work|international)$/.test(path) ||
+      /^\/api\/admin\/content\/(?:about|services|work|international)(?:\/.*)?$/.test(path)
+    ) {
+      const response = await handleCoreSectionsApi(request, env, {
+        verifyAdmin: verifyAdminViaExistingApi
+      });
       if (response) return response;
     }
 
@@ -220,14 +243,9 @@ export default {
       path === "/api/content/trusted" ||
       path.startsWith("/api/admin/content/trusted")
     ) {
-      const response = await handleTrustedApi(
-        request,
-        env,
-        {
-          verifyAdmin: verifyAdminViaExistingApi
-        }
-      );
-
+      const response = await handleTrustedApi(request, env, {
+        verifyAdmin: verifyAdminViaExistingApi
+      });
       if (response) return response;
     }
 
@@ -235,21 +253,13 @@ export default {
       path === "/api/content/testimonials" ||
       path.startsWith("/api/admin/content/testimonials")
     ) {
-      const response = await handleTestimonialsApi(
-        request,
-        env,
-        {
-          verifyAdmin: verifyAdminViaExistingApi
-        }
-      );
-
+      const response = await handleTestimonialsApi(request, env, {
+        verifyAdmin: verifyAdminViaExistingApi
+      });
       if (response) return response;
     }
 
-    if (
-      path === "/" &&
-      request.method === "GET"
-    ) {
+    if (path === "/" && request.method === "GET") {
       return servePublicHome(request, env);
     }
 
