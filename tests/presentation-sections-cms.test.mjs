@@ -70,37 +70,19 @@ test("Draft save and Publish remain separate operations", async () => {
   assert.doesNotMatch(coreApi, /SET draft_json = \?,\s*published_json/);
 });
 
-test("Rental and Testimonials migrators verify Published references stay unchanged", async () => {
-  const rental = await read("admin/editor/rental-media-migration.js");
-  const testimonials = await read("admin/editor/testimonials-media-migration.js");
-  for (const source of [rental, testimonials]) {
-    assert.match(source, /Draft isolation check failed/);
-    assert.match(source, /Published unchanged/);
-    assert.match(source, /method: "PUT"/);
-    assert.doesNotMatch(source, /\/publish"/);
-  }
-  assert.match(rental, /form\.set\("folder", "rental"\)/);
-  assert.match(testimonials, /form\.set\("folder", "testimonials"\)/);
-});
-
-test("Editor loads presentation CMS and all current media migration helpers", async () => {
+test("Editor keeps the permanent presentation CMS loaded after migration closeout", async () => {
   const shell = await read("admin/editor/admin-shell.js");
   assert.match(shell, /presentation-sections-editor\.js/);
-  assert.match(shell, /rental-media-migration\.js/);
-  assert.match(shell, /testimonials-media-migration\.js/);
-  assert.match(shell, /core-media-migration\.js/);
-  assert.match(shell, /trusted-media-migration\.js/);
+  assert.doesNotMatch(shell, /rental-media-migration\.js/);
+  assert.doesNotMatch(shell, /testimonials-media-migration\.js/);
+  assert.doesNotMatch(shell, /core-media-migration\.js/);
+  assert.doesNotMatch(shell, /trusted-media-migration\.js/);
 });
 
-test("new presentation and migration browser scripts parse", async () => {
-  for (const path of [
-    "admin/editor/presentation-sections-editor.js",
-    "admin/editor/rental-media-migration.js",
-    "admin/editor/testimonials-media-migration.js"
-  ]) {
-    const source = await read(path);
-    assert.doesNotThrow(() => new Function(source), `${path} should parse as browser JavaScript`);
-  }
+test("presentation editor browser script parses after migration closeout", async () => {
+  const path = "admin/editor/presentation-sections-editor.js";
+  const source = await read(path);
+  assert.doesNotThrow(() => new Function(source), `${path} should parse as browser JavaScript`);
 });
 
 test("Rental media editor reuses the shared R2 Media Library", async () => {
