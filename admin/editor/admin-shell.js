@@ -29,6 +29,7 @@
 
     const script = document.createElement("script");
     script.src = src;
+    script.async = false;
     script.setAttribute(`data-${datasetKey}`, "true");
     document.body.appendChild(script);
   }
