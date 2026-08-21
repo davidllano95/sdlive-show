@@ -99,6 +99,10 @@
         "sdlive-visual-safeguards-editor"
       );
       loadEditorScript(
+        "./safeguards-status-placement.js?v=20260821-1",
+        "sdlive-safeguards-status-placement"
+      );
+      loadEditorScript(
         "./editor-resilience.js?v=20260821-2",
         "sdlive-editor-resilience"
       );
