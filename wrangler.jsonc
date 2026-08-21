@@ -19,7 +19,8 @@
 
   "vars": {
     "TEAM_DOMAIN": "https://sdlive-show.cloudflareaccess.com",
-    "POLICY_AUD": "510624979f4eb3e43797993696d0a49ecb7812dab18a4c3f48e9569ae8254d02"
+    "POLICY_AUD": "510624979f4eb3e43797993696d0a49ecb7812dab18a4c3f48e9569ae8254d02",
+    "MEDIA_PUBLIC_BASE": "https://media.sdlive.show"
   },
 
   "d1_databases": [
@@ -27,6 +28,13 @@
       "binding": "CMS_DB",
       "database_name": "sdlive-cms-production",
       "database_id": "102616c5-bbe7-417a-9a7a-c0a062f91134"
+    }
+  ],
+
+  "r2_buckets": [
+    {
+      "binding": "MEDIA_BUCKET",
+      "bucket_name": "sdlive-media-production"
     }
   ]
 }

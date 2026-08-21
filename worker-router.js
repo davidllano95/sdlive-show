@@ -1,4 +1,5 @@
 import baseWorker from "./worker-entry.js";
+import { handleMediaApi } from "./media-api.js";
 import { handleTrustedApi } from "./trusted-api.js";
 
 function normalizedPath(request) {
@@ -40,6 +41,18 @@ async function verifyAdminViaExistingApi(request, env) {
 export default {
   async fetch(request, env) {
     const path = normalizedPath(request);
+
+    if (path.startsWith("/api/admin/media")) {
+      const response = await handleMediaApi(
+        request,
+        env,
+        {
+          verifyAdmin: verifyAdminViaExistingApi
+        }
+      );
+
+      if (response) return response;
+    }
 
     if (
       path === "/api/content/trusted" ||
