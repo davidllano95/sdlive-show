@@ -8,8 +8,8 @@
 
   if (!iframe || !toolbar) return;
 
-  const STYLE_HREF = "/visual-safeguards.css?v=20260821-1";
-  const SCRIPT_SRC = "/visual-safeguards.js?v=20260821-1";
+  const STYLE_HREF = "/visual-safeguards.css?v=20260821-2";
+  const SCRIPT_SRC = "/visual-safeguards.js?v=20260821-2";
   let panel = null;
   let button = null;
 
@@ -162,9 +162,11 @@
     if (!link) {
       link = doc.createElement("link");
       link.rel = "stylesheet";
-      link.href = STYLE_HREF;
       link.setAttribute("data-sdlive-visual-safeguards", "true");
       doc.head.appendChild(link);
+    }
+    if (link.getAttribute("href") !== STYLE_HREF) {
+      link.href = STYLE_HREF;
     }
 
     if (!iframe.contentWindow?.SDLiveVisualSafeguards) {

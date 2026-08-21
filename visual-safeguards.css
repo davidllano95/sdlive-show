@@ -44,12 +44,13 @@ html[data-sdlive-vfx="on"][data-sdlive-vfx-reveals="on"] .reveal.is-visible {
 /*
  * Established Trusted + Testimonials sheen.
  * The guarded version animates background-position rather than a child
- * transform. That keeps the same narrow moving highlight while avoiding the
- * Safari compositor interaction that could disturb the moving Trusted track.
+ * transform. The travel distance is tuned to match the perceived speed of the
+ * original 900ms sheen while avoiding Safari compositor jumps in Trusted.
  */
 html[data-sdlive-vfx="on"][data-sdlive-vfx-sheen="on"] .client-strip-card,
 html[data-sdlive-vfx="on"][data-sdlive-vfx-sheen="on"] .testimonials--public .testimonial-card {
   isolation: isolate;
+  overflow: hidden;
 }
 
 html[data-sdlive-vfx="on"][data-sdlive-vfx-sheen="on"] .client-strip-card > *,
@@ -62,8 +63,9 @@ html[data-sdlive-vfx="on"][data-sdlive-vfx-sheen="on"] .client-strip-card::after
 html[data-sdlive-vfx="on"][data-sdlive-vfx-sheen="on"] .testimonials--public .testimonial-card::after {
   position: absolute;
   z-index: 2;
-  inset: -45% -12%;
+  inset: 0;
   width: auto;
+  border-radius: inherit;
   content: "";
   pointer-events: none;
   opacity: 0;
@@ -78,7 +80,7 @@ html[data-sdlive-vfx="on"][data-sdlive-vfx-sheen="on"] .testimonials--public .te
   );
   background-repeat: no-repeat;
   background-size: 320% 100%;
-  background-position: 145% 0;
+  background-position: 90% 0;
   filter: blur(1px);
 }
 
@@ -92,13 +94,13 @@ html[data-sdlive-vfx="on"][data-sdlive-vfx-sheen="on"] .testimonials--public .te
 @keyframes sdlive-guard-card-sheen {
   0% {
     opacity: 0;
-    background-position: 145% 0;
+    background-position: 90% 0;
   }
   18% { opacity: 1; }
   82% { opacity: 1; }
   100% {
     opacity: 0;
-    background-position: -45% 0;
+    background-position: 10% 0;
   }
 }
 

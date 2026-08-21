@@ -12,7 +12,7 @@ import {
 } from "./trusted-edge.js";
 
 const TRUSTED_RUNTIME_VERSION = "20260821-1";
-const VISUAL_SAFEGUARDS_VERSION = "20260821-1";
+const VISUAL_SAFEGUARDS_VERSION = "20260821-2";
 
 function normalizedPath(request) {
   const url = new URL(request.url);
@@ -160,8 +160,6 @@ function transformCmsHomeResponse(
 }
 
 async function servePublicHome(request, env) {
-  // The Admin iframe intentionally receives the untouched static document so
-  // local Draft renderers remain isolated from Published CMS content.
   if (isAdminPreviewRequest(request)) {
     return baseWorker.fetch(request, env);
   }
