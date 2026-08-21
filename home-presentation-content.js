@@ -52,7 +52,7 @@ export const PRESENTATION_SECTION_DEFAULTS = {
       wing: {
         title: localized("Behringer WING", "Behringer WING"),
         description: localized("Digital console for FOH, monitors and show control.", "Consola digital para FOH, monitores y control de show."),
-        technicalNote: localized("Includes router and network switch. Standalone: 8 XLR inputs with phantom power, 8 aux inputs, 8 XLR outputs and 8 aux outputs.", "Incluye router y switch de red. Sin DL32: 8 entradas XLR con phantom power, 8 entradas auxiliares, 8 salidas XLR y 8 salidas auxiliares."),
+        technicalNote: localized("Includes router and network switch. Standalone: 8 XLR inputs with phantom power, 8 aux inputs, 8 XLR outputs and 8 aux outputs.", "Incluye router y switch de red. Sin DL32: 8 entradas XLR con phantom, 8 entradas auxiliares, 8 salidas XLR y 8 salidas auxiliares."),
         image: { src: "assets/equipment/display/behringer-wing.webp", alt: "Behringer WING digital mixing console", width: 1200, height: 572, scale: 1 }
       },
       flow8: {
