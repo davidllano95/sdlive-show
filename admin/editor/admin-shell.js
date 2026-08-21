@@ -110,6 +110,10 @@
         "./automatic-failsafe.js?v=20260821-1",
         "sdlive-automatic-failsafe"
       );
+      loadEditorScript(
+        "./publish-progress.js?v=20260821-1",
+        "sdlive-publish-progress"
+      );
     },
     { once: true }
   );
