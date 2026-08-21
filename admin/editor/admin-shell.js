@@ -70,6 +70,10 @@
         "./trusted-media-controls.js?v=20260820-1",
         "sdlive-trusted-media-controls"
       );
+      loadEditorScript(
+        "./trusted-brand-placement.js?v=20260820-1",
+        "sdlive-trusted-brand-placement"
+      );
     },
     { once: true }
   );
