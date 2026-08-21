@@ -65,7 +65,7 @@ test("stable Trusted sheen no longer depends on transformed pseudo-element anima
   assert.doesNotMatch(trustedRuntime, /client-strip-card:hover::after[\s\S]*animation:\s*none/);
 });
 
-test("public Home always receives safeguards independently of CMS fallback state", async () => {
+test("public Home always receives safeguards independently of every CMS fallback state", async () => {
   const router = await source("worker-router.js");
 
   assert.match(router, /VISUAL_SAFEGUARDS_VERSION = "20260821-2"/);
@@ -78,11 +78,17 @@ test("public Home always receives safeguards independently of CMS fallback state
   )?.[0] || "";
 
   assert.match(headHandler, /visual-safeguards\.css/);
-  assert.match(headHandler, /if \(!trustedIsCms\) return/);
+  assert.match(headHandler, /visual-safeguards\.js/);
+  assert.match(headHandler, /if \(trustedIsCms\)/);
   assert.ok(
     headHandler.indexOf("visual-safeguards.css") <
-      headHandler.indexOf("if (!trustedIsCms) return"),
-    "visual safeguards must load even when Trusted falls back to static markup"
+      headHandler.indexOf("if (trustedIsCms)"),
+    "visual safeguards must be injected before optional CMS-specific runtimes"
+  );
+  assert.doesNotMatch(
+    headHandler,
+    /if \(!(?:trustedIsCms|testimonialsIsCms)\) return/,
+    "visual safeguards must not depend on a section having CMS data"
   );
 });
 
