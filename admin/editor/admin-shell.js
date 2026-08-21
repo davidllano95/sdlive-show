@@ -75,10 +75,6 @@
         "sdlive-trusted-media-controls"
       );
       loadEditorScript(
-        "./trusted-media-migration.js?v=20260820-2",
-        "sdlive-trusted-media-migration"
-      );
-      loadEditorScript(
         "./trusted-brand-placement.js?v=20260820-2",
         "sdlive-trusted-brand-placement"
       );
@@ -91,10 +87,6 @@
         "sdlive-testimonials-editor"
       );
       loadEditorScript(
-        "./testimonials-media-migration.js?v=20260821-1",
-        "sdlive-testimonials-media-migration"
-      );
-      loadEditorScript(
         "./core-sections-bootstrap.js?v=20260821-1",
         "sdlive-core-sections-bootstrap"
       );
@@ -103,20 +95,12 @@
         "sdlive-core-sections-editor"
       );
       loadEditorScript(
-        "./core-media-migration.js?v=20260821-1",
-        "sdlive-core-media-migration"
-      );
-      loadEditorScript(
         "./core-media-library-bridge.js?v=20260821-1",
         "sdlive-core-media-library-bridge"
       );
       loadEditorScript(
         "./presentation-sections-editor.js?v=20260821-1",
         "sdlive-presentation-sections-editor"
-      );
-      loadEditorScript(
-        "./rental-media-migration.js?v=20260821-1",
-        "sdlive-rental-media-migration"
       );
       loadEditorScript(
         "./visual-safeguards-editor.js?v=20260821-3",

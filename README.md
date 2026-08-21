@@ -74,7 +74,7 @@ When a future improvement is approved or requested during work on SD.Live, recor
 | Admin access | Cloudflare Access |
 | Future CRM / Lead→Quote→Project→Invoice ownership | **TBD until explicitly designed; do not duplicate sources** |
 
-Critical branding such as the primary SD.Live logo, favicon/app icons and essential fallbacks remain versioned with the code. CMS-managed media is migrated progressively to R2.
+Critical branding such as the primary SD.Live logo, favicon/app icons and essential fallbacks remain versioned with the code. Home CMS-managed media has completed its R2 migration/production-reference verification; intentional GitHub fallback originals remain versioned unless a later reference-aware cleanup explicitly proves they are safe to remove.
 
 ## CMS state
 
@@ -96,11 +96,15 @@ Hero Draft/Published is fully connected to production. Published content is rend
 
 ### Reusable Media Library
 
-**P2.5 implemented.** The Editor has a reusable R2 Media Library and section bridges. It currently supports folder filtering, search, upload, reuse/copy-reference and delete controls. Reference-aware delete/soft-delete and orphan cleanup remain future hardening. Temporary legacy-media migrators remain only for migration/closeout and are not permanent UX.
+**P2.5 implemented; Home legacy-media closeout verified.** The Editor has a reusable R2 Media Library and section bridges. It currently supports folder filtering, search, upload, reuse/copy-reference and delete controls. Reference-aware delete/soft-delete and orphan cleanup remain future hardening. The temporary Trusted, Testimonials, About/Work and Rental migration UIs were retained only until Draft/Published and production R2 references were verified; the current closeout gate removes those temporary migrators without removing critical GitHub fallbacks.
 
 ### Rental / Contact
 
 **P2.6 implemented and production-smoked.** Rental presentation copy/media and Contact copy/labels use D1 Draft/Published without taking ownership of transactional logic. Rental pricing, stock behavior, preset composition, cart IDs, quote math and email routing remain system-owned. Rental and Testimonials legacy media migration was validated as Draft-only; Rental cart behavior and Contact/Turnstile remained intact. PR #35 corrected the Rental D1 market key to `col` after the first production smoke exposed the invalid `colombia` value.
+
+### Home media R2 closeout
+
+**Production references verified 2026-08-21.** About, Selected Work, Testimonials, Rental and Trusted/Supported Brands were checked from the public site and their managed images/logos resolve through `media.sdlive.show`. About, Testimonials, Rental and Trusted had no unpublished media change; Selected Work had a saved unpublished Draft, was visually compared with live, published deliberately and finished with the automatic Failsafe green. Critical static/GitHub fallbacks remain in place.
 
 ## Global Select invariant
 
@@ -114,7 +118,7 @@ For every new CMS section or page, smoke testing must include:
 - correct market/page routing when the content requires it;
 - no accidental interaction/navigation while Select mode is active.
 
-Current P2.7 work extends the existing `editor-resilience.js` rather than creating a parallel Select implementation. Current Home routing includes Hero, Trusted, About, Services, International, Work, Testimonials, Rental and Contact; future page editors must extend the same routing contract.
+**P2.7 is merged and production-smoked.** The implementation extends the existing `editor-resilience.js` rather than creating a parallel Select system. Current Home routing includes Hero, Trusted, About, Services, International, Work, Testimonials, Rental and Contact. Production smoke passed same-section exact-item routing, cross-section routing, non-card Services filter routing and Interact mode. Rental is intentionally absent in the INT preview, so that manual click case is not applicable; automated regression coverage preserves the INT→COL recovery path for a selectable Rental target.
 
 ## Visual safeguards / aesthetic invariants
 
@@ -139,8 +143,8 @@ Automated tests lock guard assets, public injection, Editor controls and critica
 - Upload keys are versioned for long-lived immutable caching.
 - Visual resize/position belongs in D1/CSS metadata; moving a slider does not create a new R2 object.
 - Do not enable paid media products or extra R2 features unless explicitly approved.
-- Temporary legacy migrators may reset Editor navigation state after completing; this is accepted while they remain temporary, provided Draft/Published isolation is verified.
-- Remove legacy migrators and duplicate originals only after production references are verified and critical fallbacks are preserved.
+- Home legacy-media migrators are temporary migration tooling, not permanent Editor UX. Once production references are verified, retire the migrator scripts/UI rather than leaving dead migration controls loaded indefinitely.
+- **Do not equate migrator retirement with deleting fallback assets.** Duplicate/original GitHub assets may only be removed through a separate reference-aware cleanup after critical fallbacks and all consumers are proven safe.
 
 ## Back-office reality
 
@@ -160,7 +164,7 @@ These requirements are preserved but are **not active work until explicitly prio
 
 ### Media / content systems
 
-- R2 Media Library hardening: reference-safe delete/soft-delete, unused-media detection, richer tags, Library-level alt metadata, crop/focal point, optional automatic WebP/AVIF only if justified, OG/social image management and final legacy-reference cleanup.
+- R2 Media Library hardening: reference-safe delete/soft-delete, unused-media detection, richer tags, Library-level alt metadata, crop/focal point, optional automatic WebP/AVIF only if justified, OG/social image management and later reference-aware cleanup of duplicate originals/fallbacks where proven safe.
 - Portfolio/Selected Work deeper model: Highlight Projects, credits, role, client, year, tags, featured/hidden, video, filters, case studies, before/after and authorized QLab/audio/video examples.
 - Raw vs Mixed: real audio pairs, Admin management, waveform, sample-accurate switching if justified and multiple examples.
 - Remaining hidden/staging content should be audited and moved into real CMS/templates only when content/scope is approved; Testimonials are already a real CMS and Sound for Picture must not be published merely because placeholder markup exists.
@@ -332,14 +336,21 @@ After a material milestone, update `PROJECT_STATUS.md`, this README and, when th
 
 ## Current active gate
 
-**P2.7 — Global Select + permanent repository change-safety policy.**
+**Home CMS closeout cleanup — retire completed legacy-media migration tooling.**
 
-Scope:
+Evidence before cleanup:
 
-- extend the existing Select resilience layer across current Home CMS owners instead of creating parallel section implementations;
-- make cross-section Select open the correct inspector/item and recover Rental from INT→COL when necessary;
-- lock global Select behavior with regression tests;
-- maintain Current State / Active Gates / Backlog / Future Integrations / Vision separation;
-- preserve the full reconciled historical backlog without treating it as automatic work.
+- P2.7 Global Select is merged on `main` at `7d54b83b37e6e30f889eff9a41b25a18b268b8a9` and production-smoked.
+- Saved Draft media checks report R2 for About, Selected Work, Testimonials, Rental and Trusted.
+- Public production images/logos for those same areas were manually verified to resolve via `media.sdlive.show`.
+- Selected Work's one unpublished saved Draft was compared visually with live, published deliberately and passed the automatic Failsafe.
 
-After P2.7 production validation, perform a **Home CMS closeout inventory** before choosing the next implementation block. Temporary legacy-media migrator cleanup happens only after production R2 references/fallbacks are verified. Sound for Picture remains inert staging until real content/scope is explicitly approved.
+Active cleanup scope is deliberately narrow:
+
+- retire the four temporary Home migration scripts/UI and migration-only tests;
+- keep Media Library, media controls and CMS bridges intact;
+- preserve static/GitHub fallback assets and all public/runtime behavior;
+- add regression coverage that the retired migrators are no longer loaded;
+- run CI and then production-smoke the Editor after merge.
+
+No subsequent backlog item becomes active automatically. After this closeout is merged/smoked, review `ROADMAP_MASTER_CHECKLIST.md` and explicitly promote only the next approved item to **F — Active Gate**. Sound for Picture remains inert staging until real content/scope is explicitly approved.
