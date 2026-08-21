@@ -82,6 +82,10 @@
         "./trusted-preview-parity.js?v=20260820-2",
         "sdlive-trusted-preview-parity"
       );
+      loadEditorScript(
+        "./testimonials-editor.js?v=20260820-1",
+        "sdlive-testimonials-editor"
+      );
     },
     { once: true }
   );
