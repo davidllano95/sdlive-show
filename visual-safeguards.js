@@ -1,7 +1,7 @@
 (() => {
   if (window.SDLiveVisualSafeguards) return;
 
-  const STYLESHEET_HREF = "/visual-safeguards.css?v=20260821-1";
+  const STYLESHEET_HREF = "/visual-safeguards.css?v=20260821-2";
   const ROOT_ATTR = "data-sdlive-vfx";
   const FEATURES = [
     { id: "surfaces", label: "Glass surfaces" },
@@ -30,7 +30,7 @@
   function ensureStylesheet() {
     let link = document.querySelector("link[data-sdlive-visual-safeguards]");
     if (link) {
-      if (!String(link.getAttribute("href") || "").includes("visual-safeguards.css")) {
+      if (String(link.getAttribute("href") || "") !== STYLESHEET_HREF) {
         link.href = STYLESHEET_HREF;
       }
       return link;
@@ -141,13 +141,15 @@
     );
     if (testimonialCard) {
       const sheen = safeStyle(testimonialCard, "::after");
+      const cardStyle = safeStyle(testimonialCard);
       checks.push({
         id: "testimonial-sheen",
         label: "Testimonials card sheen",
         healthy: Boolean(
           sheen &&
           sheen.content !== "none" &&
-          sheen.backgroundImage !== "none"
+          sheen.backgroundImage !== "none" &&
+          cardStyle?.overflow === "hidden"
         )
       });
     }
@@ -219,9 +221,6 @@
   applyState();
 
   const observer = new MutationObserver(() => {
-    // CMS/editor rebuilds are allowed to replace section DOM, but not the
-    // visual baseline. Reassert the stable root state and stylesheet if a
-    // future change removes either accidentally.
     ensureStylesheet();
     applyState();
   });
