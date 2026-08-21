@@ -1,7 +1,5 @@
-import {
-  CORE_SECTION_KEYS,
-  validateCoreSectionDraft
-} from "./core-sections-content.js";
+import { CORE_SECTION_KEYS } from "./core-sections-content.js";
+import { validateCoreSectionPayload } from "./core-sections-security.js";
 
 const LOGICAL_MEDIA_PREFIX = "assets/media/";
 const MEDIA_PUBLIC_BASE = "https://media.sdlive.show";
@@ -108,12 +106,12 @@ export async function readPublishedCoreSection(env, section) {
 
   if (!row) return { content: null, publishedAt: null };
   const content = JSON.parse(decodeBlobText(row.published_blob));
-  validateCoreSectionDraft(section, content);
+  validateCoreSectionPayload(section, content);
   return { content, publishedAt: row.published_at || null };
 }
 
 export function renderAboutInnerHtml(content, lang = "en") {
-  validateCoreSectionDraft("about", content);
+  validateCoreSectionPayload("about", content);
   const safeLang = lang === "es" ? "es" : "en";
   const paragraphs = content.paragraphs.map((paragraph, index) => {
     const value = localized(paragraph, safeLang);
@@ -174,7 +172,7 @@ function renderService(item, index, lang) {
 }
 
 export function renderServicesInnerHtml(content, lang = "en") {
-  validateCoreSectionDraft("services", content);
+  validateCoreSectionPayload("services", content);
   const safeLang = lang === "es" ? "es" : "en";
   return [
     '<div class="container">',
@@ -215,7 +213,7 @@ function renderWorkItem(item, lang) {
 }
 
 export function renderWorkInnerHtml(content, lang = "en") {
-  validateCoreSectionDraft("work", content);
+  validateCoreSectionPayload("work", content);
   const safeLang = lang === "es" ? "es" : "en";
   return [
     '<div class="container">',
@@ -232,7 +230,7 @@ export function renderWorkInnerHtml(content, lang = "en") {
 }
 
 export function renderInternationalInnerHtml(content, lang = "en") {
-  validateCoreSectionDraft("international", content);
+  validateCoreSectionPayload("international", content);
   const safeLang = lang === "es" ? "es" : "en";
   return [
     '<div class="container">',
