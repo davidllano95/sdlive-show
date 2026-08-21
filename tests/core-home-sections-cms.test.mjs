@@ -7,6 +7,7 @@ import {
   cloneCoreSectionDefault,
   validateCoreSectionDraft
 } from "../core-sections-content.js";
+import { validateCoreSectionPayload } from "../core-sections-security.js";
 import { handleCoreSectionsApi, sectionFromPath } from "../core-sections-api.js";
 import {
   readPublishedCoreSection,
@@ -45,7 +46,7 @@ function d1SingleRow(section, row, onSql = () => {}) {
 
 test("all four core Home defaults validate and clone independently", () => {
   for (const section of ["about", "services", "work", "international"]) {
-    assert.doesNotThrow(() => validateCoreSectionDraft(section, CORE_SECTION_DEFAULTS[section]));
+    assert.doesNotThrow(() => validateCoreSectionPayload(section, CORE_SECTION_DEFAULTS[section]));
     const copy = cloneCoreSectionDefault(section);
     assert.notEqual(copy, CORE_SECTION_DEFAULTS[section]);
   }
@@ -58,23 +59,27 @@ test("all four core Home defaults validate and clone independently", () => {
 test("core section validation rejects remote media, unsafe rich markup and invalid commercial metadata", () => {
   const about = cloneCoreSectionDefault("about");
   about.image.src = "https://example.com/person.jpg";
-  assert.throws(() => validateCoreSectionDraft("about", about), /first-party asset/);
+  assert.throws(() => validateCoreSectionPayload("about", about), /first-party asset/);
 
   const rich = cloneCoreSectionDefault("about");
   rich.paragraphs[0].en = '<strong onclick="bad()">No</strong>';
-  assert.throws(() => validateCoreSectionDraft("about", rich), /may only contain <strong>/);
+  assert.throws(() => validateCoreSectionPayload("about", rich), /may only contain <strong>/);
 
   const services = cloneCoreSectionDefault("services");
   services.items[0].market = "mars";
-  assert.throws(() => validateCoreSectionDraft("services", services), /market is invalid/);
+  assert.throws(() => validateCoreSectionPayload("services", services), /market is invalid/);
 
   const badCategory = cloneCoreSectionDefault("services");
   badCategory.items[0].categories = ["doorway-keyword"];
-  assert.throws(() => validateCoreSectionDraft("services", badCategory), /categories is invalid/);
+  assert.throws(() => validateCoreSectionPayload("services", badCategory), /categories is invalid/);
 
   const work = cloneCoreSectionDefault("work");
   work.items[0].cta.href.en = "https://example.com/redirect";
-  assert.throws(() => validateCoreSectionDraft("work", work), /internal SD.Live path or hash/);
+  assert.throws(() => validateCoreSectionPayload("work", work), /internal SD.Live path or hash/);
+
+  const internal = cloneCoreSectionDefault("work");
+  assert.doesNotThrow(() => validateCoreSectionPayload("work", internal));
+  assert.doesNotThrow(() => validateCoreSectionDraft("work", internal));
 });
 
 test("core media keeps first-party static assets and resolves logical R2 references", () => {
@@ -175,6 +180,18 @@ test("Published core reader reads published_json only and validates before rende
       })
     }, "services"),
     /services\.items is invalid/
+  );
+
+  const unsafeLink = cloneCoreSectionDefault("work");
+  unsafeLink.items[0].cta.href.en = "https://example.com";
+  await assert.rejects(
+    readPublishedCoreSection({
+      CMS_DB: d1SingleRow("work", {
+        published_blob: blobBytes(unsafeLink),
+        published_at: "2026-08-21 01:00:00"
+      })
+    }, "work"),
+    /internal SD.Live path or hash/
   );
 });
 
