@@ -19,3 +19,18 @@ test("Trusted media migration copies legacy client and brand assets to R2 withou
   assert.match(source, /dispatchEvent\(new Event\("input"/);
   assert.doesNotMatch(source, /\/api\/admin\/content\/trusted[^\n]*method:\s*"PUT"/);
 });
+
+test("Trusted migration button stays actionable and verifies legacy references from the saved Draft", async () => {
+  const source = await readFile(
+    new URL("../admin/editor/trusted-media-migration.js", import.meta.url),
+    "utf8"
+  );
+
+  assert.match(source, /\/api\/admin\/content\/trusted/);
+  assert.match(source, /legacyReferencesFromDraft/);
+  assert.match(source, /effectiveLegacyReferences/);
+  assert.match(source, /Check legacy media/);
+  assert.match(source, /button\.disabled = busy/);
+  assert.doesNotMatch(source, /button\.disabled = busy \|\| count === 0/);
+  assert.match(source, /setText\(element, value\)/);
+});
