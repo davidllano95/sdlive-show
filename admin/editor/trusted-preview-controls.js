@@ -7,10 +7,12 @@
     '[data-section="trustedTitle"]'
   );
   const previewMeta = document.querySelector(".preview-meta");
+  const editorBody = document.getElementById("editorBody");
 
   if (!iframe || !trustedSectionButton || !previewMeta) return;
 
   let manualPaused = false;
+  let savedProgress = null;
   let previewObserver = null;
 
   const style = document.createElement("style");
@@ -140,14 +142,41 @@
     }) || null;
   }
 
+  function animationDuration(animation) {
+    const duration = Number(
+      animation?.effect?.getComputedTiming?.().duration
+    );
+    return Number.isFinite(duration) && duration > 0 ? duration : 0;
+  }
+
+  function captureCarouselProgress() {
+    const animation = primaryAnimation(marquee());
+    const duration = animationDuration(animation);
+    if (!animation || !duration) return;
+
+    const current = Number(animation.currentTime);
+    if (!Number.isFinite(current)) return;
+
+    savedProgress = ((current % duration) + duration) % duration / duration;
+  }
+
+  function restoreCarouselProgress(target) {
+    if (savedProgress == null) return false;
+
+    const animation = primaryAnimation(target);
+    const duration = animationDuration(animation);
+    if (!animation || !duration) return false;
+
+    animation.currentTime = savedProgress * duration;
+    return true;
+  }
+
   function fallbackShift(target, direction) {
     const animation = primaryAnimation(target);
     if (!animation) return false;
 
-    const duration = Number(
-      animation.effect?.getComputedTiming?.().duration
-    );
-    if (!Number.isFinite(duration) || duration <= 0) return false;
+    const duration = animationDuration(animation);
+    if (!duration) return false;
 
     const current = Number(animation.currentTime) || 0;
     const delta = duration * 0.08 * (direction < 0 ? -1 : 1);
@@ -215,10 +244,11 @@
     toolbar.classList.toggle("is-paused", manualPaused);
   }
 
-  function restorePauseAfterPreviewChange() {
+  function restoreCarouselStateAfterPreviewChange() {
     const target = marquee();
     if (!target) return;
 
+    restoreCarouselProgress(target);
     setPauseOnTarget(target, manualPaused);
     syncPauseLabel();
   }
@@ -232,13 +262,13 @@
       if (!section) return;
 
       previewObserver = new MutationObserver(() => {
-        window.queueMicrotask(restorePauseAfterPreviewChange);
+        window.queueMicrotask(restoreCarouselStateAfterPreviewChange);
       });
       previewObserver.observe(section, {
         childList: true
       });
 
-      restorePauseAfterPreviewChange();
+      restoreCarouselStateAfterPreviewChange();
     } catch {
       // Preview can be between navigations.
     }
@@ -254,9 +284,12 @@
     } else {
       fallbackShift(target, direction);
     }
+
+    window.setTimeout(captureCarouselProgress, 0);
   }
 
   function togglePause() {
+    captureCarouselProgress();
     manualPaused = !manualPaused;
     setPauseOnTarget(marquee(), manualPaused);
     syncPauseLabel();
@@ -269,7 +302,7 @@
 
     if (active) {
       window.setTimeout(() => {
-        restorePauseAfterPreviewChange();
+        restoreCarouselStateAfterPreviewChange();
         syncPauseLabel();
       }, 100);
     }
@@ -279,15 +312,47 @@
   next.addEventListener("click", () => shift(1));
   pause.addEventListener("click", togglePause);
 
-  trustedSectionButton.addEventListener("click", () => {
-    window.setTimeout(syncVisibility, 0);
-  });
+  // Capture the current phase before any editor-side action can rebuild
+  // Trusted By. This keeps the carousel visually in place while editing.
+  document.addEventListener(
+    "click",
+    (event) => {
+      if (!trustedSectionButton.classList.contains("is-active")) return;
+      if (editorBody?.contains(event.target) || event.target === trustedSectionButton) {
+        captureCarouselProgress();
+      }
+    },
+    true
+  );
+
+  document.addEventListener(
+    "input",
+    (event) => {
+      if (!trustedSectionButton.classList.contains("is-active")) return;
+      if (editorBody?.contains(event.target)) captureCarouselProgress();
+    },
+    true
+  );
+
+  trustedSectionButton.addEventListener(
+    "click",
+    () => {
+      captureCarouselProgress();
+      window.setTimeout(syncVisibility, 0);
+    },
+    true
+  );
 
   document.querySelectorAll("[data-section]").forEach((button) => {
     if (button === trustedSectionButton) return;
-    button.addEventListener("click", () => {
-      window.setTimeout(syncVisibility, 0);
-    });
+    button.addEventListener(
+      "click",
+      () => {
+        captureCarouselProgress();
+        window.setTimeout(syncVisibility, 0);
+      },
+      true
+    );
   });
 
   iframe.addEventListener("load", () => {
