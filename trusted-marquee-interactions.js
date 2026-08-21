@@ -82,6 +82,11 @@ function setInteractionPaused(marquee, paused) {
 export function setTrustedMarqueePaused(marquee, paused) {
   if (!marquee) return false;
 
+  // Trusted By preview can rebuild the marquee from Draft content after this
+  // module first initializes. Binding here guarantees every newly-created
+  // marquee gets the authoritative manual-pause guard before Pause is applied.
+  bindManualPauseGuard(marquee);
+
   marquee.dataset.manualPaused = paused ? "true" : "false";
   marquee.dataset.interactionPaused = paused ? "true" : "false";
   return applyPlaybackState(marquee);
