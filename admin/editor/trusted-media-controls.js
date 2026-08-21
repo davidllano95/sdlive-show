@@ -66,9 +66,7 @@
     strong.textContent = title;
     toast.appendChild(strong);
 
-    if (detail) {
-      toast.append(document.createTextNode(` ${detail}`));
-    }
+    if (detail) toast.append(document.createTextNode(` ${detail}`));
 
     toastStack.appendChild(toast);
     window.setTimeout(() => toast.remove(), 4200);
@@ -99,7 +97,6 @@
 
     (draft?.clients || []).forEach((client) => {
       collectScale(client.logo);
-
       (client.reveal?.items || []).forEach((item) => {
         if (item.type === "collaboration") collectScale(item.image);
         else collectScale(item);
@@ -119,7 +116,7 @@
       queueDecorate();
       applyPreviewMedia();
     } catch (error) {
-      mediaStatus = null;
+      mediaStatus = { configured: false, publicBase: DEFAULT_PUBLIC_BASE };
       queueDecorate();
       console.warn("Trusted media controls unavailable", error);
     }
@@ -145,10 +142,6 @@
     return true;
   }
 
-  function sourceInputFor(path) {
-    return editorBody.querySelector(`[data-trusted-path="${CSS.escape(path)}"]`);
-  }
-
   function scaleForSource(source) {
     return clampScale(scaleBySource.get(source) ?? 1);
   }
@@ -156,15 +149,12 @@
   function updatePreviewImage(image, source) {
     if (!image || !source) return;
 
-    const scale = scaleForSource(source);
-    image.style.scale = String(scale);
+    image.style.scale = String(scaleForSource(source));
 
     if (String(source).startsWith(LOGICAL_MEDIA_PREFIX)) {
       image.dataset.cmsMediaSource = source;
       const resolved = publicMediaUrl(source);
-      if (image.getAttribute("src") !== resolved) {
-        image.setAttribute("src", resolved);
-      }
+      if (image.getAttribute("src") !== resolved) image.setAttribute("src", resolved);
     }
   }
 
@@ -206,11 +196,7 @@
       window.requestAnimationFrame(applyPreviewMedia);
     });
 
-    previewObserver.observe(section, {
-      childList: true,
-      subtree: true
-    });
-
+    previewObserver.observe(section, { childList: true, subtree: true });
     applyPreviewMedia();
   }
 
@@ -223,7 +209,8 @@
   }
 
   function statusText(source) {
-    if (!mediaStatus?.configured) return "R2 unavailable";
+    if (!mediaStatus) return "Checking R2…";
+    if (!mediaStatus.configured) return "R2 unavailable";
     return mediaKind(source);
   }
 
@@ -312,18 +299,12 @@
     upload.type = "button";
     upload.className = "trusted-mini-button trusted-media-upload";
     upload.textContent = source ? "Replace" : "Upload";
-    upload.disabled = mediaStatus ? !mediaStatus.configured : true;
+    upload.disabled = !mediaStatus?.configured;
     upload.title = `Upload or replace ${noun} in R2`;
     upload.addEventListener("click", () => fileInput.click());
 
     fileInput.addEventListener("change", () => {
-      void uploadForField({
-        sourceInput,
-        folder,
-        button: upload,
-        status,
-        fileInput
-      });
+      void uploadForField({ sourceInput, folder, button: upload, status, fileInput });
     });
 
     top.append(status, upload, fileInput);
@@ -350,9 +331,7 @@
       const nextScale = clampScale(range.value);
       output.textContent = scaleLabel(nextScale);
 
-      if (currentSource) {
-        scaleBySource.set(currentSource, nextScale);
-      }
+      if (currentSource) scaleBySource.set(currentSource, nextScale);
 
       setDraftPathThroughBoundInput(sourceInput, scalePath, nextScale);
       applyPreviewMedia();
@@ -380,6 +359,27 @@
     return tools;
   }
 
+  function refreshExistingTools(field, sourceInput) {
+    const tools = field.querySelector(".trusted-media-tools");
+    if (!tools) return false;
+
+    const source = sourceInput.value.trim();
+    const status = tools.querySelector(".trusted-media-tools__status");
+    const upload = tools.querySelector(".trusted-media-upload");
+    const range = tools.querySelector('.trusted-media-scale input[type="range"]');
+    const output = tools.querySelector(".trusted-media-scale output");
+
+    if (status) status.textContent = statusText(source);
+    if (upload) {
+      upload.disabled = !mediaStatus?.configured;
+      upload.textContent = source ? "Replace" : "Upload";
+    }
+    if (range) range.value = String(scaleForSource(source));
+    if (output) output.textContent = scaleLabel(scaleForSource(source));
+
+    return true;
+  }
+
   function decorateMediaFields() {
     editorDecorateQueued = false;
 
@@ -388,11 +388,15 @@
     editorBody
       .querySelectorAll('input[data-trusted-path$=".src"]')
       .forEach((sourceInput) => {
-        const path = sourceInput.dataset.trustedPath || "";
         const field = sourceInput.closest(".field");
-        if (!field || field.querySelector(`.trusted-media-tools[data-media-path="${CSS.escape(path)}"]`)) {
-          return;
+        if (!field) return;
+
+        const help = field.querySelector(".field-help");
+        if (help) {
+          help.textContent = "Source reference. Upload/Replace stores new media in R2.";
         }
+
+        if (refreshExistingTools(field, sourceInput)) return;
 
         const tools = buildMediaTools(sourceInput);
         if (tools) field.appendChild(tools);
@@ -410,10 +414,7 @@
     window.setTimeout(bindPreviewObserver, 0);
   });
 
-  editorObserver.observe(editorBody, {
-    childList: true,
-    subtree: true
-  });
+  editorObserver.observe(editorBody, { childList: true, subtree: true });
 
   trustedSectionButton.addEventListener("click", () => {
     window.setTimeout(() => {
