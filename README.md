@@ -21,6 +21,7 @@ For current progress, roadmap, invariants and the next gate, read **`PROJECT_STA
 - **Trusted By edge renderer:** `trusted-edge.js`, applied by `worker-router.js`.
 - **Testimonials edge renderer:** `testimonials-edge.js`, applied by `worker-router.js`.
 - **API Worker:** `worker.js` plus section APIs such as `trusted-api.js` and `testimonials-api.js`.
+- **Visual safeguard layer:** `visual-safeguards.css` + `visual-safeguards.js`, injected on the public Home by `worker-router.js` and controllable/diagnosable from the Editor.
 - **Admin:** `/admin/` behind Cloudflare Access.
 - **Analytics:** GTM + GA4 with consent gating.
 - **Forms:** Turnstile + D1 + Resend.
@@ -81,6 +82,28 @@ Hero Draft/Published is fully connected to production. Published content is rend
 
 The rollout gate is the same one already proven on Trusted: visual EN/ES + Desktop/Mobile smoke, then verify `Save Draft ≠ live` and `Publish = live` in production.
 
+## Visual safeguards / aesthetic invariants
+
+Established production aesthetics are a **site contract**, not incidental CSS. CMS/editor work must preserve them unless a visual change is explicitly approved.
+
+The public Home loads `visual-safeguards.css` + `visual-safeguards.js` after the main styling path. This small guard layer intentionally reasserts only critical stable behaviors that are especially vulnerable to DOM rebuilds, stacking-context changes or section CMS work:
+
+- glass surfaces;
+- aurora ambience;
+- reveal-on-scroll motion;
+- Trusted and Testimonials card sheen/highlight;
+- Trusted carousel motion;
+- Supported Brand reveal motion;
+- established primary/ghost CTA hover treatments.
+
+The Trusted sheen uses a guarded background-position sweep rather than animating a transformed child layer, preserving the highlight without recreating the Safari carousel-compositor regression that previously caused movement near the end of the marquee.
+
+The Site Editor exposes a **Safeguards** panel with live diagnostics, per-layer protection state and **Restore all defaults**. Editor toggles affect preview protection only; they are not saved into a content Draft. Production always loads the safeguard layer enabled by default. The runtime also restores its stylesheet/root guard state if a CMS rebuild removes them accidentally.
+
+Automated tests lock the guard assets, public injection, Editor control panel and critical selectors/keyframes. Future CMS PRs should extend the guard registry/tests when they introduce another established visual system that must survive content reconstruction.
+
+This is a failsafe for the known class of CSS/DOM/editor regressions; it does not replace visual smoke testing and cannot guarantee recovery from arbitrary broken JavaScript or a completely failed deployment.
+
 ## R2 media rules
 
 - Bucket: `sdlive-media-production`.
@@ -99,8 +122,9 @@ Trusted media is already migrated. Testimonials now has its own R2 upload folder
 
 - `index.html` — main public Home shell and static fallback content.
 - `styles.css` — main public styles.
+- `visual-safeguards.css` / `visual-safeguards.js` — self-healing baseline for established visual contracts.
 - `script.js` — primary public UI/runtime behavior.
-- `worker-router.js` — top-level Worker router; section SSR plus Trusted/Testimonials/media API routing.
+- `worker-router.js` — top-level Worker router; section SSR, public visual safeguards, and Trusted/Testimonials/media API routing.
 - `worker-entry.js` — Hero edge rendering and base routing.
 - `worker.js` — base CMS/admin APIs, Contact, Rental, D1 and email logic.
 - `trusted-edge.js` — validates and renders Published Trusted By at the edge.
@@ -110,7 +134,7 @@ Trusted media is already migrated. Testimonials now has its own R2 upload folder
 - `testimonials-api.js` / `testimonials-content.js` — Testimonials Draft/Published API and schema/default content.
 - `media-api.js` — authenticated R2 media status/upload API.
 - `trusted-marquee-interactions.js` — Trusted carousel controls/mobile interactions.
-- `admin/editor/` — protected visual editor, including `testimonials-editor.js`.
+- `admin/editor/` — protected visual editor, including `testimonials-editor.js` and `visual-safeguards-editor.js`.
 - `PROJECT_STATUS.md` — master roadmap and handoff.
 
 ## Critical routes / endpoints
@@ -142,6 +166,8 @@ API:
 - Canonical tagline: **Creative Audio. Technical systems. Built for the show.**
 - Visible `SD.Live` mentions should use the floating-dot wordmark when appropriate; metadata/machine strings stay literal.
 - WLive remains visible.
+- Established production aesthetics are protected visual contracts; CMS/editor changes must preserve them unless an explicit redesign is approved.
+- The public Home must keep the visual safeguard layer enabled; Editor preview may inspect/toggle individual protection layers but those controls are not content state.
 - Rental is Colombia-first and hidden by default for International visitors.
 - Rental notifications go **only to `rental@sdlive.show`**.
 - General Contact notifications go to `hello@sdlive.show`.
@@ -183,6 +209,6 @@ After a material milestone is completed, update `PROJECT_STATUS.md` and this REA
 
 **P2.3 production validation.**
 
-Deploy the completed Testimonials CMS block, validate visual parity in EN/ES and Desktop/Mobile, then confirm `Save Draft ≠ live` and `Publish = live`. After that, move to Services in the next larger implementation block.
+Deploy the completed Testimonials CMS block, validate the restored Trusted sheen + visual safeguards first, then validate Testimonials in EN/ES and Desktop/Mobile and confirm `Save Draft ≠ live` / `Publish = live`. After that, move to Services in the next larger implementation block.
 
 Non-blocking Editor polish remains in backlog, including the small left-navigation alignment offset when jumping to Trusted By.
