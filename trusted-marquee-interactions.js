@@ -44,20 +44,27 @@ export function stepDuration(duration, fraction = DEFAULT_STEP_FRACTION) {
   return safeDuration * Math.min(safeFraction, 0.5);
 }
 
-export function setTrustedMarqueePaused(marquee, paused) {
+function applyPlaybackState(marquee) {
   if (!marquee) return false;
 
-  marquee.dataset.interactionPaused = paused ? "true" : "false";
+  const manuallyPaused = marquee.dataset.manualPaused === "true";
+  if (manuallyPaused) {
+    marquee.dataset.interactionPaused = "true";
+  }
 
   const view = marquee.ownerDocument?.defaultView;
   if (typeof view?.updateTrustedMarqueePlayback === "function") {
     view.updateTrustedMarqueePlayback(marquee);
   } else {
+    const shouldPause =
+      manuallyPaused ||
+      marquee.dataset.interactionPaused === "true";
+
     marquee
       .querySelector?.(".trusted-track")
       ?.getAnimations?.()
       .forEach((animation) => {
-        if (paused) animation.pause();
+        if (shouldPause) animation.pause();
         else animation.play();
       });
   }
@@ -65,8 +72,23 @@ export function setTrustedMarqueePaused(marquee, paused) {
   return true;
 }
 
+function setInteractionPaused(marquee, paused) {
+  if (!marquee) return false;
+
+  marquee.dataset.interactionPaused = paused ? "true" : "false";
+  return applyPlaybackState(marquee);
+}
+
+export function setTrustedMarqueePaused(marquee, paused) {
+  if (!marquee) return false;
+
+  marquee.dataset.manualPaused = paused ? "true" : "false";
+  marquee.dataset.interactionPaused = paused ? "true" : "false";
+  return applyPlaybackState(marquee);
+}
+
 export function isTrustedMarqueePaused(marquee) {
-  return marquee?.dataset?.interactionPaused === "true";
+  return marquee?.dataset?.manualPaused === "true";
 }
 
 export function shiftTrustedMarquee(marquee, direction = 1) {
@@ -80,6 +102,33 @@ export function shiftTrustedMarquee(marquee, direction = 1) {
   const delta = stepDuration(duration) * (direction < 0 ? -1 : 1);
   animation.currentTime = wrapAnimationTime(current + delta, duration);
   return true;
+}
+
+function enforceManualPause(marquee) {
+  if (!isTrustedMarqueePaused(marquee)) return;
+
+  marquee.dataset.interactionPaused = "true";
+  marquee
+    .querySelector?.(".trusted-track")
+    ?.getAnimations?.()
+    .forEach((animation) => animation.pause());
+}
+
+function bindManualPauseGuard(marquee) {
+  if (!marquee || marquee.dataset.sdliveManualPauseGuard === "true") return;
+
+  marquee.dataset.sdliveManualPauseGuard = "true";
+  const region = marquee.closest?.(".trusted-wrap") || marquee;
+
+  const restoreIfNeeded = () => {
+    queueMicrotask(() => enforceManualPause(marquee));
+  };
+
+  // Existing desktop hover/reveal handlers use interactionPaused as a transient
+  // state. When the user explicitly pressed Pause in the editor, those transient
+  // handlers must never be allowed to resume playback on pointer/focus exit.
+  region.addEventListener("pointerout", restoreIfNeeded);
+  region.addEventListener("focusout", restoreIfNeeded);
 }
 
 function moveAnimationByPixels(marquee, deltaX) {
@@ -135,8 +184,10 @@ function bindMobileSwipe(marquee) {
         .querySelector(".supported-reveal.is-active")
     );
 
-    if (!gesture.wasPaused && !revealOpen) {
-      setTrustedMarqueePaused(marquee, false);
+    if (gesture.wasPaused) {
+      enforceManualPause(marquee);
+    } else if (!revealOpen) {
+      setInteractionPaused(marquee, false);
     }
 
     try {
@@ -158,7 +209,7 @@ function bindMobileSwipe(marquee) {
     gesture.dragged = false;
     gesture.wasPaused = isTrustedMarqueePaused(marquee);
 
-    setTrustedMarqueePaused(marquee, true);
+    setInteractionPaused(marquee, true);
     marquee.dataset.touchDragging = "false";
 
     try {
@@ -211,7 +262,10 @@ function bindMobileSwipe(marquee) {
 export function initTrustedMarqueeInteractions(root = document) {
   root
     .querySelectorAll?.("[data-marquee]")
-    .forEach(bindMobileSwipe);
+    .forEach((marquee) => {
+      bindManualPauseGuard(marquee);
+      bindMobileSwipe(marquee);
+    });
 }
 
 if (typeof window !== "undefined") {
