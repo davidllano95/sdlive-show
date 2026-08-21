@@ -103,6 +103,10 @@
         "sdlive-core-media-migration"
       );
       loadEditorScript(
+        "./core-media-library-bridge.js?v=20260821-1",
+        "sdlive-core-media-library-bridge"
+      );
+      loadEditorScript(
         "./visual-safeguards-editor.js?v=20260821-3",
         "sdlive-visual-safeguards-editor"
       );
