@@ -1,1 +1,1 @@
-noop
+// Placeholder intentionally contains no tests. Routing regression coverage lives in PR-scoped changes.
