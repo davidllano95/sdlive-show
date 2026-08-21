@@ -15,6 +15,12 @@
 
   let busy = false;
   let decorateQueued = false;
+  let savedDraftReferences = [];
+  let snapshotLoading = false;
+
+  function setText(element, value) {
+    if (element && element.textContent !== value) element.textContent = value;
+  }
 
   function showToast(title, detail = "", type = "success") {
     if (!toastStack) return;
@@ -57,12 +63,69 @@
     );
   }
 
-  function legacyInputs() {
-    return sourceInputs().filter((input) => isLegacyTrustedSource(input.value));
-  }
-
   function folderForPath(path) {
     return String(path || "").includes(".reveal.items.") ? "brands" : "clients";
+  }
+
+  function reference(path, source) {
+    const normalized = String(source || "").trim().replace(/^\//, "");
+    if (!path || !isLegacyTrustedSource(normalized)) return null;
+    return { path, source: normalized, folder: folderForPath(path) };
+  }
+
+  function legacyReferencesFromDraft(draft) {
+    const references = [];
+
+    (draft?.clients || []).forEach((client, clientIndex) => {
+      const clientLogo = reference(
+        `clients.${clientIndex}.logo.src`,
+        client?.logo?.src
+      );
+      if (clientLogo) references.push(clientLogo);
+
+      (client?.reveal?.items || []).forEach((item, itemIndex) => {
+        const base = `clients.${clientIndex}.reveal.items.${itemIndex}`;
+        const next = item?.type === "collaboration"
+          ? reference(`${base}.image.src`, item?.image?.src)
+          : reference(`${base}.src`, item?.src);
+        if (next) references.push(next);
+      });
+    });
+
+    return references;
+  }
+
+  function currentLegacyReferences() {
+    return sourceInputs()
+      .map((input) => reference(input.dataset.trustedPath, input.value))
+      .filter(Boolean);
+  }
+
+  function effectiveLegacyReferences() {
+    const inputs = sourceInputs();
+    const current = currentLegacyReferences();
+    const byPath = new Map(inputs.map((input) => [input.dataset.trustedPath, input]));
+    const missing = savedDraftReferences.filter((item) => !byPath.has(item.path));
+
+    return [...current, ...missing].filter(
+      (item, index, array) =>
+        array.findIndex((candidate) => candidate.path === item.path) === index
+    );
+  }
+
+  async function refreshDraftSnapshot() {
+    if (snapshotLoading) return;
+    snapshotLoading = true;
+
+    try {
+      const trusted = await fetchJson("/api/admin/content/trusted");
+      savedDraftReferences = legacyReferencesFromDraft(trusted?.entry?.draft);
+    } catch (error) {
+      console.warn("Could not refresh Trusted media migration snapshot", error);
+    } finally {
+      snapshotLoading = false;
+      queueDecorate();
+    }
   }
 
   function extensionType(path) {
@@ -126,6 +189,10 @@
     return logicalMediaPath(data.media.key);
   }
 
+  function inputForPath(path) {
+    return sourceInputs().find((input) => input.dataset.trustedPath === path) || null;
+  }
+
   function preserveScaleAndReplace(input, nextSource) {
     const tools = input.closest(".field")?.querySelector(".trusted-media-tools");
     const range = tools?.querySelector('.trusted-media-scale input[type="range"]');
@@ -143,22 +210,29 @@
   async function migrateLegacyMedia(button, status) {
     if (busy) return;
 
-    const inputs = legacyInputs();
-    if (!inputs.length) {
-      showToast("Trusted media is already on R2.");
+    setText(status, "Checking current Draft…");
+    await refreshDraftSnapshot();
+
+    const references = effectiveLegacyReferences();
+    if (!references.length) {
+      showToast("No legacy Trusted media found.", "Current Draft references are already on R2 or non-legacy sources.");
       decorate();
       return;
     }
 
+    const missingInputs = references.filter((item) => !inputForPath(item.path));
+    if (missingInputs.length) {
+      showToast(
+        "Reload Trusted By before migrating.",
+        `${missingInputs.length} media field${missingInputs.length === 1 ? " is" : "s are"} not mounted in the editor yet.`,
+        "error"
+      );
+      return;
+    }
+
     const unique = new Map();
-    inputs.forEach((input) => {
-      const source = input.value.trim().replace(/^\//, "");
-      if (!unique.has(source)) {
-        unique.set(source, {
-          source,
-          folder: folderForPath(input.dataset.trustedPath)
-        });
-      }
+    references.forEach((item) => {
+      if (!unique.has(item.source)) unique.set(item.source, item);
     });
 
     const approved = window.confirm(
@@ -168,41 +242,44 @@
 
     busy = true;
     button.disabled = true;
-    const originalText = button.textContent;
     const migrated = new Map();
 
     try {
       let index = 0;
       for (const entry of unique.values()) {
         index += 1;
-        button.textContent = `Migrating ${index}/${unique.size}…`;
-        status.textContent = entry.source;
+        setText(button, `Migrating ${index}/${unique.size}…`);
+        setText(status, entry.source);
         migrated.set(
           entry.source,
           await uploadLegacySource(entry.source, entry.folder)
         );
       }
 
-      inputs.forEach((input) => {
-        const source = input.value.trim().replace(/^\//, "");
-        const nextSource = migrated.get(source);
-        if (!nextSource) return;
+      references.forEach((item) => {
+        const input = inputForPath(item.path);
+        const nextSource = migrated.get(item.source);
+        if (!input || !nextSource) return;
+        if (!isLegacyTrustedSource(input.value)) return;
         preserveScaleAndReplace(input, nextSource);
       });
 
-      status.textContent = `${unique.size} migrated · Save Draft to keep`;
+      savedDraftReferences = [];
+      setText(status, `${unique.size} migrated · Save Draft to keep`);
       showToast(
         "Trusted media copied to R2.",
         "Review the preview, then click Save Draft. The public Home has not changed."
       );
     } catch (error) {
-      status.textContent = "Migration stopped · Draft references unchanged";
+      setText(status, "Migration stopped · Draft references unchanged");
       showToast("Media migration failed.", error.message, "error");
     } finally {
       busy = false;
       button.disabled = false;
-      button.textContent = originalText;
-      window.setTimeout(decorate, 0);
+      window.setTimeout(() => {
+        void refreshDraftSnapshot();
+        decorate();
+      }, 0);
     }
   }
 
@@ -240,17 +317,29 @@
 
     const button = panel.querySelector(".trusted-media-migration__button");
     const status = panel.querySelector(".trusted-media-migration__status");
-    const count = legacyInputs().length;
+    const count = effectiveLegacyReferences().length;
 
     if (button) {
-      button.textContent = count ? `Migrate legacy media (${count})` : "Legacy media migrated";
-      button.disabled = busy || count === 0;
+      setText(
+        button,
+        busy
+          ? button.textContent
+          : count
+            ? `Migrate legacy media (${count})`
+            : "Check legacy media"
+      );
+      button.disabled = busy;
     }
 
     if (status && !busy) {
-      status.textContent = count
-        ? `${count} current GitHub asset reference${count === 1 ? "" : "s"}`
-        : "All current Trusted media references use R2 or a non-legacy source.";
+      setText(
+        status,
+        snapshotLoading
+          ? "Checking current Draft…"
+          : count
+            ? `${count} current GitHub asset reference${count === 1 ? "" : "s"}`
+            : "Click to verify whether any legacy media remains."
+      );
     }
   }
 
@@ -264,7 +353,10 @@
   observer.observe(editorBody, { childList: true, subtree: true });
 
   trustedSectionButton.addEventListener("click", () => {
-    window.setTimeout(queueDecorate, 160);
+    window.setTimeout(() => {
+      queueDecorate();
+      void refreshDraftSnapshot();
+    }, 160);
   });
 
   function injectStyles() {
@@ -317,4 +409,5 @@
 
   injectStyles();
   queueDecorate();
+  void refreshDraftSnapshot();
 })();
