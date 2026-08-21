@@ -17,11 +17,6 @@
     trusted: "trustedTitle"
   };
 
-  const CORE_PREFIXES = {
-    services: "service:",
-    work: "work:"
-  };
-
   let boundPreviewWindow = null;
   let highlightTimer = 0;
 
@@ -61,16 +56,6 @@
       || document.querySelector(`[data-section="${CSS.escape(key)}"]`);
   }
 
-  function activeSection() {
-    return document.querySelector(".section-link.is-active[data-section]")?.dataset.section || "";
-  }
-
-  function indexWithin(node, selector) {
-    const parent = node?.parentElement;
-    if (!parent) return -1;
-    return Array.from(parent.querySelectorAll(`:scope > ${selector}`)).indexOf(node);
-  }
-
   function closestKey(target, attribute) {
     const node = target?.closest?.(`[${attribute}]`);
     return node?.getAttribute(attribute) || "";
@@ -105,6 +90,8 @@
     if (!section) return null;
     const explicit = closestKey(target, "data-cms-editor-key");
     if (explicit) return { section: "services", key: explicit, label: "Services" };
+    if (target.closest(".filter-btn")) return { section: "services", summary: "Filter labels", label: "Service filter" };
+    if (target.closest(".section-detail-link")) return { section: "services", summary: "Section detail link", label: "Services detail link" };
     const card = target.closest(".service-card");
     if (card) {
       const cards = Array.from(section.querySelectorAll(".service-card"));
@@ -116,7 +103,7 @@
       };
     }
     if (target.closest(".section-head")) return { section: "services", summary: "Services heading", label: "Services heading" };
-    return { section: "services", label: "Services" };
+    return { section: "services", summary: "Services heading", label: "Services" };
   }
 
   function descriptorForWork(target) {
@@ -135,7 +122,7 @@
       };
     }
     if (target.closest(".section-head")) return { section: "work", summary: "Selected Work heading", label: "Selected Work heading" };
-    return { section: "work", label: "Selected Work" };
+    return { section: "work", summary: "Selected Work heading", label: "Selected Work" };
   }
 
   function descriptorForInternational(target) {
@@ -147,7 +134,7 @@
     if (target.closest("h2")) return { section: "international", key: "international:title", label: "International title" };
     if (target.closest(".btn")) return { section: "international", key: "international:cta", label: "International CTA" };
     if (target.closest("p")) return { section: "international", key: "international:body", label: "International body" };
-    return { section: "international", label: "International" };
+    return { section: "international", summary: "International productions", label: "International" };
   }
 
   function descriptorForTrusted(target) {
@@ -187,6 +174,9 @@
     const preset = target.closest("[data-rental-preset]");
     if (preset?.dataset.rentalPreset) {
       return { section: "rental", key: `rental:preset:${preset.dataset.rentalPreset}`, label: preset.dataset.rentalPreset };
+    }
+    if (target.closest("#mixingEquipmentTitle, #stageRackEquipmentTitle, #wirelessEquipmentTitle, #paEquipmentTitle, #productionToolsTitle")) {
+      return { section: "rental", summary: "Equipment group headings", label: "Rental equipment group heading" };
     }
     if (target.closest(".rental-subhead")) return { section: "rental", key: "rental:recommended", label: "Recommended configurations" };
     if (target.closest(".rental-cart-hint")) return { section: "rental", key: "rental:cartHint", label: "Rental cart guidance" };
@@ -258,6 +248,16 @@
     }) || null;
   }
 
+  function summaryFallbackForKey(key) {
+    if (!key) return "";
+    if (key === "about:image") return "Portrait / production photo";
+    if (key === "about:eyebrow" || key === "about:title") return "About heading";
+    if (key === "services:eyebrow" || key === "services:title") return "Services heading";
+    if (key === "work:eyebrow" || key === "work:title" || key === "work:intro") return "Selected Work heading";
+    if (key.startsWith("international:")) return "International productions";
+    return "";
+  }
+
   function exactEditorTarget(descriptor) {
     const selectors = [];
 
@@ -295,7 +295,8 @@
       if (descriptor.index >= 0 && candidates[descriptor.index]) return candidates[descriptor.index];
     }
 
-    if (descriptor.summary) return summaryTarget(descriptor.summary);
+    const summary = descriptor.summary || summaryFallbackForKey(descriptor.key);
+    if (summary) return summaryTarget(summary);
     return null;
   }
 
@@ -364,8 +365,8 @@
 
     // This bridge listens at iframe Window capture, one level before the base
     // document selector. It never replaces section-specific editors; it only
-    // routes Select to the existing owner and then lets the base selector draw
-    // its preview outline.
+    // routes Select to the existing owner and lets the base selector keep its
+    // preview outline behavior.
     event.preventDefault();
     window.setTimeout(() => routeDescriptor(descriptor), 0);
   }
