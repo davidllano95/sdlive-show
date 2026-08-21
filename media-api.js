@@ -9,6 +9,7 @@ const ALLOWED_TYPES = new Map([
 const ALLOWED_FOLDERS = new Set([
   "clients",
   "brands",
+  "testimonials",
   "portfolio",
   "rental",
   "insights",
