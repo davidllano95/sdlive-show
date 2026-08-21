@@ -7,207 +7,91 @@
     '[data-section="trustedTitle"]'
   );
   const editorBody = document.getElementById("editorBody");
+  const inspector = document.getElementById("contentInspector");
+  const toggleInspectorButton = document.getElementById("toggleInspector");
 
   if (!iframe || !trustedSectionButton || !editorBody) return;
 
+  const KEY_ATTR = "data-trusted-editor-key";
   let highlightTimer = 0;
+
+  function isTrustedActive() {
+    return trustedSectionButton.classList.contains("is-active");
+  }
+
+  function ensureInspectorVisible() {
+    if (
+      inspector?.getAttribute("aria-hidden") === "true" &&
+      toggleInspectorButton
+    ) {
+      toggleInspectorButton.click();
+    }
+  }
 
   function firstTrustedSet(doc) {
     return doc?.querySelector(".trusted-set") || null;
   }
 
-  function clientIndexFromPreview(doc, clientId) {
-    const firstSet = firstTrustedSet(doc);
-    if (!firstSet || !clientId) return -1;
+  function clientIndexForReveal(doc, reveal) {
+    if (!reveal?.id) return -1;
 
     const cards = Array.from(
-      firstSet.querySelectorAll(":scope > .client-strip-card[data-client]")
+      firstTrustedSet(doc)?.querySelectorAll(
+        ":scope > .client-strip-card[data-client]"
+      ) || []
     );
 
-    return cards.findIndex((card) => card.dataset.client === clientId);
-  }
-
-  function clientSelectionFromCard(doc, card) {
-    if (!card) return null;
-
-    const clientId = card.dataset.client || "";
-    const clientName = String(
-      card.querySelector("figcaption strong")?.textContent || ""
-    ).trim();
-
-    return {
-      kind: "client",
-      clientId,
-      clientName,
-      clientIndex: clientIndexFromPreview(doc, clientId)
-    };
-  }
-
-  function clientSelectionFromReveal(doc, reveal) {
-    if (!reveal?.id) return null;
-
-    const firstSet = firstTrustedSet(doc);
-    const card = firstSet?.querySelector(
-      `.client-strip-card[data-supported-reveal="${CSS.escape(reveal.id)}"]`
+    return cards.findIndex(
+      (card) => card.dataset.supportedReveal === reveal.id
     );
-
-    if (!card) return null;
-    return clientSelectionFromCard(doc, card);
   }
 
-  function previewMediaSource(image) {
-    if (!image) return "";
-    return String(
-      image.dataset.cmsMediaSource ||
-      image.getAttribute("src") ||
-      ""
-    ).trim();
-  }
+  function previewRevealItems(reveal) {
+    if (!reveal) return [];
 
-  function previewItemSelection(doc, target, reveal) {
-    const client = clientSelectionFromReveal(doc, reveal);
-    if (!client) return null;
-
-    const visualItem = target.closest?.(
-      ".supported-brand-tile, .collaboration-credit, .supported-reveal-logos > img"
-    );
-
-    if (!visualItem || !reveal.contains(visualItem)) {
-      return {
-        ...client,
-        kind: "reveal",
-        revealId: reveal.id
-      };
-    }
-
-    const image =
-      visualItem.matches?.("img")
-        ? visualItem
-        : visualItem.querySelector("img");
-
-    const source = previewMediaSource(image);
-    const label = String(
-      image?.getAttribute("alt") ||
-      visualItem.querySelector("strong")?.textContent ||
-      ""
-    ).trim();
-
-    return {
-      ...client,
-      kind: "item",
-      revealId: reveal.id,
-      source,
-      label
-    };
-  }
-
-  function selectionFromPreview(doc, target) {
-    if (!target?.closest) return null;
-
-    const trustedWrap = target.closest(".trusted-wrap");
-    if (!trustedWrap) return null;
-
-    if (target.closest("#trustedTitle")) {
-      return { kind: "section" };
-    }
-
-    const card = target.closest(".client-strip-card[data-client]");
-    if (card) return clientSelectionFromCard(doc, card);
-
-    const reveal = target.closest(".supported-reveal");
-    if (reveal) return previewItemSelection(doc, target, reveal);
-
-    return { kind: "section" };
-  }
-
-  function editorClients() {
     return Array.from(
-      editorBody.querySelectorAll(".trusted-collection-item")
+      reveal.querySelectorAll(
+        [
+          ".collaboration-credit",
+          ".supported-reveal-logos > .supported-brand-tile",
+          ".supported-reveal-logos > img"
+        ].join(",")
+      )
     );
   }
 
-  function findClientEditor(selection) {
-    const clients = editorClients();
+  function decoratePreviewTargets(doc) {
+    const wrap = doc?.querySelector(".trusted-wrap");
+    if (!wrap) return;
 
-    if (
-      Number.isInteger(selection.clientIndex) &&
-      selection.clientIndex >= 0 &&
-      clients[selection.clientIndex]
-    ) {
-      return clients[selection.clientIndex];
-    }
+    const title = wrap.querySelector("#trustedTitle");
+    if (title) title.setAttribute(KEY_ATTR, "section:title");
 
-    const byId = selection.clientId
-      ? clients.find(
-          (item) => item.dataset.trustedClientId === selection.clientId
-        )
-      : null;
-    if (byId) return byId;
-
-    const byName = selection.clientName
-      ? clients.find((item) => {
-          const name = item.querySelector(
-            ":scope > .trusted-item-head strong"
-          )?.textContent;
-          return String(name || "").trim() === selection.clientName;
-        })
-      : null;
-
-    return byName || null;
-  }
-
-  function normalizeSource(value) {
-    const source = String(value || "").trim();
-    if (!source) return "";
-
-    try {
-      const url = new URL(source, iframe.contentWindow?.location?.href || location.href);
-      if (url.origin === location.origin) {
-        return url.pathname.replace(/^\//, "");
-      }
-    } catch {
-      // Keep the literal source below.
-    }
-
-    return source.replace(/^\//, "");
-  }
-
-  function findRevealItemEditor(clientEditor, selection) {
-    if (!clientEditor) return null;
-
-    const subitems = Array.from(
-      clientEditor.querySelectorAll(".trusted-subitem")
-    );
-
-    const wantedSource = normalizeSource(selection.source);
-    if (wantedSource) {
-      const bySource = subitems.find((subitem) => {
-        return Array.from(
-          subitem.querySelectorAll('input[data-trusted-path$=".src"]')
-        ).some((input) => normalizeSource(input.value) === wantedSource);
+    wrap.querySelectorAll(".trusted-set").forEach((set) => {
+      Array.from(
+        set.querySelectorAll(":scope > .client-strip-card[data-client]")
+      ).forEach((card, clientIndex) => {
+        card.setAttribute(KEY_ATTR, `client:${clientIndex}`);
       });
+    });
 
-      if (bySource) return bySource;
-    }
+    wrap.querySelectorAll(".supported-reveal").forEach((reveal) => {
+      const clientIndex = clientIndexForReveal(doc, reveal);
+      if (clientIndex < 0) return;
 
-    const wantedLabel = String(selection.label || "").trim();
-    if (wantedLabel) {
-      const byLabel = subitems.find((subitem) => {
-        const heading = String(
-          subitem.querySelector(":scope > .trusted-item-head strong")
-            ?.textContent ||
-          ""
-        ).trim();
-        return heading === wantedLabel;
+      reveal.setAttribute(KEY_ATTR, `reveal:${clientIndex}`);
+
+      previewRevealItems(reveal).forEach((item, itemIndex) => {
+        const key = `item:${clientIndex}:${itemIndex}`;
+        item.setAttribute(KEY_ATTR, key);
+        item.querySelectorAll("img").forEach((image) => {
+          image.setAttribute(KEY_ATTR, key);
+        });
       });
-
-      if (byLabel) return byLabel;
-    }
-
-    return null;
+    });
   }
 
-  function findSectionHeadingEditor() {
+  function editorSectionHeading() {
     return Array.from(
       editorBody.querySelectorAll("details.editor-section")
     ).find((details) => {
@@ -217,28 +101,44 @@
     }) || null;
   }
 
-  function resolveEditorTarget(selection) {
-    if (selection.kind === "section") {
-      return findSectionHeadingEditor();
+  function decorateEditorTargets() {
+    const sectionHeading = editorSectionHeading();
+    if (sectionHeading) {
+      sectionHeading.setAttribute(KEY_ATTR, "section:title");
     }
 
-    const clientEditor = findClientEditor(selection);
-    if (!clientEditor) return null;
+    Array.from(
+      editorBody.querySelectorAll(".trusted-collection-item")
+    ).forEach((client, clientIndex) => {
+      client.setAttribute(KEY_ATTR, `client:${clientIndex}`);
 
-    if (selection.kind === "client") return clientEditor;
+      const reveal = client.querySelector(":scope > .trusted-reveal-editor");
+      if (!reveal) return;
 
-    const revealEditor = clientEditor.querySelector(".trusted-reveal-editor");
-    if (selection.kind === "reveal") return revealEditor || clientEditor;
+      reveal.setAttribute(KEY_ATTR, `reveal:${clientIndex}`);
 
-    if (selection.kind === "item") {
-      return (
-        findRevealItemEditor(clientEditor, selection) ||
-        revealEditor ||
-        clientEditor
-      );
+      Array.from(
+        reveal.querySelectorAll(":scope > .trusted-subitem")
+      ).forEach((item, itemIndex) => {
+        item.setAttribute(KEY_ATTR, `item:${clientIndex}:${itemIndex}`);
+      });
+    });
+  }
+
+  function selectionKeyFromPreview(doc, target) {
+    if (!target?.closest) return "";
+
+    const wrap = target.closest(".trusted-wrap");
+    if (!wrap) return "";
+
+    decoratePreviewTargets(doc);
+
+    const keyed = target.closest(`[${KEY_ATTR}]`);
+    if (keyed && wrap.contains(keyed)) {
+      return keyed.getAttribute(KEY_ATTR) || "";
     }
 
-    return clientEditor;
+    return "section:title";
   }
 
   function openEditorAncestors(target) {
@@ -265,24 +165,28 @@
 
     anchor.scrollIntoView({
       behavior: "smooth",
-      block: "start"
+      block: "center"
     });
 
     window.clearTimeout(highlightTimer);
     highlightTimer = window.setTimeout(() => {
       target.classList.remove("sdlive-editor-jump-target");
-    }, 1800);
+    }, 2200);
   }
 
-  function focusTrustedSelection(selection) {
-    const deadline = performance.now() + 2500;
+  function focusTrustedKey(key) {
+    const deadline = performance.now() + 3000;
 
     const locate = () => {
-      const target = resolveEditorTarget(selection);
+      decorateEditorTargets();
+
+      const target = Array.from(
+        editorBody.querySelectorAll(`[${KEY_ATTR}]`)
+      ).find((item) => item.getAttribute(KEY_ATTR) === key);
 
       if (!target) {
         if (performance.now() < deadline) {
-          window.setTimeout(locate, 60);
+          window.setTimeout(locate, 50);
         }
         return;
       }
@@ -292,6 +196,20 @@
     };
 
     locate();
+  }
+
+  function routeTrustedSelection(key) {
+    if (!key) return;
+
+    ensureInspectorVisible();
+
+    // Re-clicking Trusted By rebuilds the preview and restarts the marquee.
+    // Only activate the section when Select comes from another editor section.
+    if (!isTrustedActive()) {
+      trustedSectionButton.click();
+    }
+
+    focusTrustedKey(key);
   }
 
   function bindPreviewWindow() {
@@ -315,21 +233,31 @@
           return;
         }
 
-        const selection = selectionFromPreview(doc, event.target);
-        if (!selection) return;
+        const key = selectionKeyFromPreview(doc, event.target);
+        if (!key) return;
 
-        window.setTimeout(() => {
-          trustedSectionButton.click();
-          focusTrustedSelection(selection);
-        }, 0);
+        window.setTimeout(() => routeTrustedSelection(key), 0);
       },
       true
     );
   }
 
   iframe.addEventListener("load", () => {
-    window.setTimeout(bindPreviewWindow, 0);
+    window.setTimeout(() => {
+      bindPreviewWindow();
+      try {
+        decoratePreviewTargets(iframe.contentDocument);
+      } catch {
+        // Preview may still be settling.
+      }
+    }, 0);
   });
 
+  const editorObserver = new MutationObserver(() => {
+    window.requestAnimationFrame(decorateEditorTargets);
+  });
+  editorObserver.observe(editorBody, { childList: true, subtree: true });
+
   bindPreviewWindow();
+  decorateEditorTargets();
 })();

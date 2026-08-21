@@ -59,11 +59,11 @@
         "sdlive-trusted-editor"
       );
       loadEditorScript(
-        "./trusted-preview-controls.js?v=20260820-3",
+        "./trusted-preview-controls.js?v=20260820-4",
         "sdlive-trusted-preview-controls"
       );
       loadEditorScript(
-        "./trusted-select-bridge.js?v=20260820-3",
+        "./trusted-select-bridge.js?v=20260820-4",
         "sdlive-trusted-select-bridge"
       );
       loadEditorScript(
@@ -73,6 +73,10 @@
       loadEditorScript(
         "./trusted-brand-placement.js?v=20260820-1",
         "sdlive-trusted-brand-placement"
+      );
+      loadEditorScript(
+        "./trusted-preview-parity.js?v=20260820-1",
+        "sdlive-trusted-preview-parity"
       );
     },
     { once: true }
