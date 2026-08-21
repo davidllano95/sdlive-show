@@ -104,6 +104,26 @@ export function shiftTrustedMarquee(marquee, direction = 1) {
   return true;
 }
 
+function moveAnimationByPixels(marquee, deltaX) {
+  const animation = animationFor(marquee);
+  if (!animation) return false;
+
+  const duration = animationDuration(animation);
+  const set = marquee.querySelector(".trusted-set");
+  const setWidth = Number(set?.getBoundingClientRect?.().width) || 0;
+
+  if (!duration || setWidth <= 0) return false;
+
+  const current = Number(animation.currentTime) || 0;
+  const timeDelta = (-deltaX / setWidth) * duration;
+  animation.currentTime = wrapAnimationTime(
+    current + timeDelta,
+    duration
+  );
+
+  return true;
+}
+
 function enforceManualPause(marquee) {
   if (!isTrustedMarqueePaused(marquee)) return;
 
@@ -129,26 +149,28 @@ function bindManualPauseGuard(marquee) {
   // handlers must never be allowed to resume playback on pointer/focus exit.
   region.addEventListener("pointerout", restoreIfNeeded);
   region.addEventListener("focusout", restoreIfNeeded);
-}
 
-function moveAnimationByPixels(marquee, deltaX) {
-  const animation = animationFor(marquee);
-  if (!animation) return false;
+  // Some hover paths resume through a delayed close timer. Watching the transient
+  // pause attribute makes manual Pause authoritative even when that timer fires
+  // after pointerout/focusout has already completed.
+  const pauseObserver = new MutationObserver(() => {
+    if (!isTrustedMarqueePaused(marquee)) return;
 
-  const duration = animationDuration(animation);
-  const set = marquee.querySelector(".trusted-set");
-  const setWidth = Number(set?.getBoundingClientRect?.().width) || 0;
+    if (marquee.dataset.interactionPaused !== "true") {
+      enforceManualPause(marquee);
+      return;
+    }
 
-  if (!duration || setWidth <= 0) return false;
+    marquee
+      .querySelector?.(".trusted-track")
+      ?.getAnimations?.()
+      .forEach((animation) => animation.pause());
+  });
 
-  const current = Number(animation.currentTime) || 0;
-  const timeDelta = (-deltaX / setWidth) * duration;
-  animation.currentTime = wrapAnimationTime(
-    current + timeDelta,
-    duration
-  );
-
-  return true;
+  pauseObserver.observe(marquee, {
+    attributes: true,
+    attributeFilter: ["data-interaction-paused"]
+  });
 }
 
 function bindMobileSwipe(marquee) {
