@@ -16,6 +16,20 @@ test("Trusted select bridge jumps client cards to the Trusted editor", async () 
   assert.match(source, /scrollIntoView/);
 });
 
+test("Editor plugin loader keeps Trusted helpers in deterministic order", async () => {
+  const source = await readFile(
+    new URL("../admin/editor/admin-shell.js", import.meta.url),
+    "utf8"
+  );
+
+  assert.doesNotThrow(() => new Function(source));
+  assert.match(source, /script\.async = false/);
+  assert.ok(
+    source.indexOf("trusted-editor.js") <
+      source.indexOf("trusted-select-bridge.js")
+  );
+});
+
 test("Editor toast stack is offset away from inspector actions", async () => {
   const css = await readFile(
     new URL("../admin/editor/editor-ux.css", import.meta.url),
@@ -26,7 +40,7 @@ test("Editor toast stack is offset away from inspector actions", async () => {
   assert.match(css, /right:\s*calc\(var\(--inspector\) \+ 34px\)/);
 });
 
-test("Manual carousel pause guards delayed hover resume", async () => {
+test("Manual carousel pause guards rebuilt marquee and delayed hover resume", async () => {
   const source = await readFile(
     new URL("../trusted-marquee-interactions.js", import.meta.url),
     "utf8"
@@ -36,4 +50,8 @@ test("Manual carousel pause guards delayed hover resume", async () => {
   assert.match(source, /new MutationObserver/);
   assert.match(source, /data-interaction-paused/);
   assert.match(source, /enforceManualPause/);
+  assert.match(
+    source,
+    /setTrustedMarqueePaused[\s\S]*bindManualPauseGuard\(marquee\)/
+  );
 });
