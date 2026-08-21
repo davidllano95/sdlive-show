@@ -7,7 +7,7 @@ Public media: `https://media.sdlive.show`
 
 The public site is a vanilla HTML/CSS/JS frontend served by Cloudflare Workers Static Assets. Dynamic APIs, CMS publishing, forms and edge rendering run in Cloudflare Workers. D1 stores structured CMS content and R2 stores editor-managed media.
 
-For current progress, active gates, evidence, architectural invariants and the classified roadmap, read **`PROJECT_STATUS.md` first**. The repository and production behavior remain authoritative over planning prose.
+For current progress, active gates, evidence, architectural invariants and the classified roadmap, read **`PROJECT_STATUS.md` first**. For the reconciled historical/future feature inventory, then read **`ROADMAP_MASTER_CHECKLIST.md`**. The repository and production behavior remain authoritative over planning prose.
 
 ## Authority and precedence
 
@@ -15,16 +15,18 @@ When sources conflict, use this order:
 
 1. **Current code + behavior that can be verified in production.**
 2. **Current schema, migrations and deployed configuration.**
-3. **`PROJECT_STATUS.md` — operational roadmap and handoff.**
+3. **`PROJECT_STATUS.md` — operational current state / active gate / roadmap.**
 4. **This README.**
-5. Prompts, ideas, benchmark notes and external references.
+5. **`ROADMAP_MASTER_CHECKLIST.md`** for preserved backlog detail.
+6. Prompts, ideas, benchmark notes and external references.
 
 A prompt, benchmark or future-vision document never silently overrides an existing working feature, invariant or source-of-truth. A conflicting change requires an explicit decision and a safe migration plan.
 
-The project distinguishes four planning levels:
+The project distinguishes planning levels:
 
 - **CURRENT STATE** — demonstrable in the repository and/or production.
 - **ROADMAP / ACTIVE GATES** — approved and prioritized work.
+- **BACKLOG** — wanted work preserved for later prioritization.
 - **FUTURE INTEGRATION** — documented possibility; not authorized by its presence alone.
 - **VISION** — strategic direction; not an implementation commitment.
 
@@ -34,7 +36,7 @@ The project distinguishes four planning levels:
 
 Before modifying an existing system, first establish where it lives, who consumes it, what persists, what public/API/SEO/visual behavior depends on it, what tests/fallbacks exist, and whether the change can be incremental and reversible. If any important answer is unknown, **investigate first; do not assume**.
 
-When a future improvement is approved or requested during work on SD.Live, record it in **both this README and `PROJECT_STATUS.md`** before the current documentation checkpoint is closed. Future ideas do not become active work unless explicitly prioritized.
+When a future improvement is approved or requested during work on SD.Live, record it in **both this README and the roadmap (`PROJECT_STATUS.md` and/or its detailed companion `ROADMAP_MASTER_CHECKLIST.md`)** before the current documentation checkpoint is closed. Future ideas do not become active work unless explicitly prioritized.
 
 ## Current architecture
 
@@ -86,7 +88,7 @@ Hero Draft/Published is fully connected to production. Published content is rend
 
 ### Testimonials
 
-**P2.3 completed and validated in production.** Testimonials has D1 Draft/Published/revisions, EN/ES editing, add/delete/reorder, visibility/featured controls, optional R2 logos, edge SSR/fallback and production-validated Draft isolation.
+**P2.3 completed and validated in production.** Testimonials has D1 Draft/Published/revisions, EN/ES editing, add/delete/reorder, visibility/featured controls, optional R2 logos, edge SSR/fallback and production-validated Draft isolation. The current default schema contains real testimonial content rather than the old pair of balancing mockups.
 
 ### About / Services / International / Selected Work
 
@@ -94,7 +96,7 @@ Hero Draft/Published is fully connected to production. Published content is rend
 
 ### Reusable Media Library
 
-**P2.5 implemented.** The Editor has a reusable R2 Media Library and section bridges. Temporary legacy-media migrators remain only for migration/closeout and are not permanent UX.
+**P2.5 implemented.** The Editor has a reusable R2 Media Library and section bridges. It currently supports folder filtering, search, upload, reuse/copy-reference and delete controls. Reference-aware delete/soft-delete and orphan cleanup remain future hardening. Temporary legacy-media migrators remain only for migration/closeout and are not permanent UX.
 
 ### Rental / Contact
 
@@ -148,11 +150,59 @@ This distinction is mandatory for coding agents: **do not infer implementation f
 
 ## Approved future improvements register
 
-These items are recorded requirements but are **not active work until explicitly prioritized**:
+These requirements are preserved but are **not active work until explicitly prioritized**. The detailed status/subtasks live in `ROADMAP_MASTER_CHECKLIST.md`.
 
-- **Rental compatibility recommendations:** when a client adds a **Behringer WING**, the cart should recommend the correct compatible stagebox; when adding **LV1 Classic**, it should recommend **StageGrid 4000**. The purpose is to prevent confusion for non-technical clients. Visual treatment and exact interaction must be approved before implementation.
-- **Rental item creation + pricing rules:** a future Rental Admin should allow adding a new inventory item and attaching validated commercial/pricing behavior such as fixed price, per-day rules, multi-day changes, quantities, pair/bundle relationships and conditional pricing with another item. The UI may edit a validated model, but **the backend remains the pricing source of truth**; do not create a second pricing engine in the CMS.
-- **Global/page-aware Select:** future pages added to the Editor must participate in the same global Select routing contract rather than implementing isolated Select handlers.
+### Site Editor / layout
+
+- Drag & drop, generic reorder, snap-to-grid, card/block resize, spacing/gap/padding/alignment, independent Desktop/Mobile layout, show/hide by device/market, Undo/Redo, revision rollback, full-page Draft, templates, hidden-staging access, duplicate/create blocks, autosave Draft, change comparison, scheduled Publish/visibility, shortcuts and Draft share/preview links.
+- Header visual management: reorder/spacing, link targets, scroll offsets, menu items, Show Day/Live Mode/WhatsApp visibility and contextual header presets.
+- Floating-control positioning, page/device visibility, ordering and iPhone safe-area preview.
+
+### Media / content systems
+
+- R2 Media Library hardening: reference-safe delete/soft-delete, unused-media detection, richer tags, Library-level alt metadata, crop/focal point, optional automatic WebP/AVIF only if justified, OG/social image management and final legacy-reference cleanup.
+- Portfolio/Selected Work deeper model: Highlight Projects, credits, role, client, year, tags, featured/hidden, video, filters, case studies, before/after and authorized QLab/audio/video examples.
+- Raw vs Mixed: real audio pairs, Admin management, waveform, sample-accurate switching if justified and multiple examples.
+- Remaining hidden/staging content should be audited and moved into real CMS/templates only when content/scope is approved; Testimonials are already a real CMS and Sound for Picture must not be published merely because placeholder markup exists.
+
+### Rental / Contact
+
+- **Rental compatibility recommendations:** WING should recommend the appropriate Midas DL32 stagebox; LV1 Classic should recommend StageGrid 4000. Exact UX must be approved and equipment must never be silently auto-added.
+- **Rental item creation + pricing rules:** future Rental Admin can add items and validated fixed/per-day/multi-day/quantity/pair/bundle/conditional pricing rules while the backend remains the source of truth.
+- Make Rental unmistakably a **request for quotation, not checkout**, to reduce lead abandonment.
+- Equipment Rental service card → `#rental` with a deliberate INT fallback/behavior.
+- Inventory/calendar availability and double-booking prevention, PDF quote/validity/approval, delivery/logistics and future CRM relationship.
+- Contact automatic visitor confirmation email is optional future work; Turnstile/D1/direct backend/email notification already exist. Explicit rate limiting remains security backlog.
+
+### Business back-office
+
+- CRM pipeline, clients/contacts/companies, notes/history/source and Lead → Quote → Project → Invoice.
+- AppSheet integration only after per-field source-of-truth is defined.
+- Automatic Show Day from Calendar/AppSheet with configurable window and manual override.
+- Admin Calendar, Projects, quote automation, native Workspace Inbox and correct-alias replies.
+- Private recruiter/client Portfolio/CV variants with noindex/share controls.
+- Business analytics/Data Studio/Looker or hybrid only when reliable source data exists.
+- Settings module, Admin audit log, backups/export, rollback, activity/automation center, Client Portal, generic share links, role-based access, Admin PWA, QR generator and UTM/link builder are future/optional capabilities.
+
+### Analytics / SEO / acquisition
+
+- GA4/GTM base and `generate_lead`/WhatsApp/Email validation already exist. Remaining integrity work includes internal-traffic separation, explicit duplicate-firing proof if not closed, Key Event hygiene and downstream funnel attribution once CRM stages exist.
+- Permanent analytics rule: **observe → test → confirm → correct → retest**. Do not edit GTM solely because normal traffic is absent from DebugView; use Realtime for live traffic validation.
+- Final Colombia/international SEO audit, Core Web Vitals, internal linking, alt/media audit, Search Console/Bing/index coverage and future SEO controls in Admin.
+- Candidate queries such as `alquiler sonido bogota`, `sonido eventos corporativos bogota`, `alquiler consolas bogota` and `behringer wing bogota` require real-offer/intention/URL-overlap research before any page is created.
+- Audit public landing visual consistency, EN/ES/hreflang/COL-INT behavior, orphan pages and future Show Day behavior across pages.
+- Analyze acquisition channels by ROI/audience: social/LinkedIn, referrals/partners, targeted outreach, tutorials/training and podcast only if a credible distribution/business case exists.
+- Restore Journal/Insights only with real editorial value: professional-audio insights, AV briefs for marketing teams, technical education and responsible Suno/AI/audio-production analysis. No mass AI filler.
+- **Technical Audio Training** is an approved backlog service concept: define curriculum, audience, delivery, market, capacity, evidence and pricing before publishing.
+
+### Platform / quality / security
+
+- Code cleanup/optimization is a quality stream: audit and refactor incrementally with tests, smoke and rollback; never change approved behavior just for elegance.
+- COL vs INT needs an explicit full production audit and ideally a privacy-respecting Admin diagnosis of detected market/reason.
+- Worker/D1/R2/publish/deploy/error observability, backups, threshold warnings and safe media cleanup.
+- Security hardening: verifiable rate limiting, CSP/Referrer-Policy/Permissions-Policy, abuse testing and incident/backup discipline.
+- Evaluate Cloudflare free-vs-paid security capabilities against actual SD.Live risk before enabling recurring-cost products.
+- Main public contact config uses `hello@sdlive.show` and Rental uses `rental@sdlive.show`; perform a final stale-personal-email audit and verify Workspace aliases/DMARC before automation.
 
 ## SEO / content safety rules
 
@@ -182,9 +232,9 @@ These sites are **learning references only**. They are never templates or requir
 
 ## Future evolution roadmap
 
-`PROJECT_STATUS.md` contains the classified **Future Evolution — SD.Live 2.0** roadmap covering deeper service pages, SEO-first CMS, Rental product SEO, Projects/case studies, Journal, internal linking, CRM attribution, analytics dashboards, authority/press, video, accessibility, performance and security hardening.
+`PROJECT_STATUS.md` contains the classified **Future Evolution — SD.Live 2.0** roadmap. `ROADMAP_MASTER_CHECKLIST.md` preserves the complete reconciled historical backlog and explicitly marks what is already done versus partial/pending.
 
-Those items are **future integrations, not immediate instructions**. The roadmap also records deferred/not-recommended ideas such as full rewrites, mass AI content, doorway/location pages, duplicate pricing/CMS systems and copying competitor design/branding.
+Those items are **future integrations/backlog, not immediate instructions**, unless explicitly promoted to **F — Active Gate**. The roadmap also records deferred/not-recommended ideas such as full rewrites, mass AI content, doorway/location pages, duplicate pricing/CMS systems and copying competitor design/branding.
 
 ## Important files
 
@@ -203,7 +253,8 @@ Those items are **future integrations, not immediate instructions**. The roadmap
 - `admin/editor/editor-resilience.js` — global Select routing/resilience layer.
 - `admin/editor/automatic-failsafe.js` — automatic publish verification.
 - `admin/editor/visual-safeguards-editor.js` — visual diagnostics/restore panel.
-- `PROJECT_STATUS.md` — master current state, active gates, backlog, future evolution and handoff.
+- `PROJECT_STATUS.md` — operational current state, active gate, evidence and roadmap policy.
+- `ROADMAP_MASTER_CHECKLIST.md` — reconciled historical/future feature inventory; preservation layer, not automatic work authorization.
 
 ## Critical routes / endpoints
 
@@ -277,7 +328,7 @@ close milestone/update evidence
 
 Do not treat a feature-branch deployment as production. `sdlive.show` represents the active `main` deployment unless Cloudflare explicitly exposes a preview URL.
 
-After a material milestone, update `PROJECT_STATUS.md` and this README. When a future improvement is requested during an active block, it may be bundled into that block's documentation update rather than causing a separate deployment, but it must not be lost.
+After a material milestone, update `PROJECT_STATUS.md`, this README and, when the backlog itself changes, `ROADMAP_MASTER_CHECKLIST.md`. A future improvement may be bundled into the active block's documentation update rather than causing a separate deployment, but it must not be lost.
 
 ## Current active gate
 
@@ -288,7 +339,7 @@ Scope:
 - extend the existing Select resilience layer across current Home CMS owners instead of creating parallel section implementations;
 - make cross-section Select open the correct inspector/item and recover Rental from INT→COL when necessary;
 - lock global Select behavior with regression tests;
-- update README/`PROJECT_STATUS.md` to separate Current State, Active Gates, Backlog, Future Integrations and Vision;
-- add evidence/precedence/source-of-truth/change-safety rules and benchmark references.
+- maintain Current State / Active Gates / Backlog / Future Integrations / Vision separation;
+- preserve the full reconciled historical backlog without treating it as automatic work.
 
 After P2.7 production validation, perform a **Home CMS closeout inventory** before choosing the next implementation block. Temporary legacy-media migrator cleanup happens only after production R2 references/fallbacks are verified. Sound for Picture remains inert staging until real content/scope is explicitly approved.
