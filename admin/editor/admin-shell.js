@@ -87,7 +87,7 @@
         "sdlive-testimonials-editor"
       );
       loadEditorScript(
-        "./visual-safeguards-editor.js?v=20260821-1",
+        "./visual-safeguards-editor.js?v=20260821-2",
         "sdlive-visual-safeguards-editor"
       );
     },
