@@ -225,11 +225,11 @@
       proxy.dataset.trustedPath = path;
       proxy.value = String(value);
       proxy.dispatchEvent(new Event("input"));
-
-      proxy.dataset.trustedPath = originalPath;
-      proxy.value = originalValue;
-      proxy.dispatchEvent(new Event("input"));
     } finally {
+      // The first synthetic input is enough to update the Trusted draft and
+      // rebuild the preview. Dispatching a second input after restoring the
+      // source field caused the carousel continuity guard to capture the new
+      // animation at time zero and overwrite the phase saved before the edit.
       proxy.dataset.trustedPath = originalPath;
       proxy.value = originalValue;
       bridgeWrite = false;
