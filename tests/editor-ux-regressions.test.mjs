@@ -2,25 +2,23 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
-test("Trusted select bridge routes clients and supported brands to exact editor items", async () => {
+test("Trusted Select routes by stable editor keys without reactivating an already-active section", async () => {
   const source = await readFile(
     new URL("../admin/editor/trusted-select-bridge.js", import.meta.url),
     "utf8"
   );
 
   assert.doesNotThrow(() => new Function(source));
-  assert.match(source, /sdliveAdminSelect/);
-  assert.match(source, /client-strip-card\[data-client\]/);
+  assert.match(source, /data-trusted-editor-key/);
+  assert.match(source, /section:title/);
+  assert.match(source, /client:\$\{clientIndex\}/);
+  assert.match(source, /reveal:\$\{clientIndex\}/);
+  assert.match(source, /item:\$\{clientIndex\}:\$\{itemIndex\}/);
   assert.match(source, /supported-brand-tile/);
   assert.match(source, /collaboration-credit/);
   assert.match(source, /trusted-subitem/);
-  assert.match(source, /data-trusted-path\$=\"\.src\"/);
-  assert.match(source, /cmsMediaSource/);
-  assert.match(source, /trustedSectionButton\.click\(\)/);
-  assert.match(source, /trusted-collection-item/);
-  assert.match(source, /trusted-reveal-editor/);
-  assert.match(source, /:scope > \.trusted-item-head/);
-  assert.match(source, /block:\s*"start"/);
+  assert.match(source, /if \(!isTrustedActive\(\)\)\s*\{\s*trustedSectionButton\.click\(\)/);
+  assert.match(source, /block:\s*"center"/);
 });
 
 test("Editor plugin loader keeps Trusted helpers in deterministic order", async () => {
@@ -38,6 +36,10 @@ test("Editor plugin loader keeps Trusted helpers in deterministic order", async 
   assert.ok(
     source.indexOf("trusted-select-bridge.js") <
       source.indexOf("trusted-media-controls.js")
+  );
+  assert.ok(
+    source.indexOf("trusted-brand-placement.js") <
+      source.indexOf("trusted-preview-parity.js")
   );
 });
 
@@ -67,7 +69,7 @@ test("Manual carousel pause guards delayed hover resume", async () => {
   );
 });
 
-test("Trusted preview transport preserves manual Pause across editor rebuilds", async () => {
+test("Trusted preview transport preserves pause and carousel phase across editor rebuilds", async () => {
   const source = await readFile(
     new URL("../admin/editor/trusted-preview-controls.js", import.meta.url),
     "utf8"
@@ -75,8 +77,27 @@ test("Trusted preview transport preserves manual Pause across editor rebuilds", 
 
   assert.doesNotThrow(() => new Function(source));
   assert.match(source, /let manualPaused = false/);
-  assert.match(source, /restorePauseAfterPreviewChange/);
+  assert.match(source, /let savedProgress = null/);
+  assert.match(source, /captureCarouselProgress/);
+  assert.match(source, /restoreCarouselProgress/);
+  assert.match(source, /restoreCarouselStateAfterPreviewChange/);
   assert.match(source, /previewObserver\.observe\(section/);
   assert.match(source, /setPauseOnTarget\(target, manualPaused\)/);
   assert.match(source, /manualPaused = !manualPaused/);
+});
+
+test("Desktop Admin preview reasserts the published Wonderlust two-row layout", async () => {
+  const source = await readFile(
+    new URL("../admin/editor/trusted-preview-parity.js", import.meta.url),
+    "utf8"
+  );
+
+  assert.doesNotThrow(() => new Function(source));
+  assert.match(source, /data-sdlive-admin-device/);
+  assert.match(source, /supported-reveal-logos--wonderlust/);
+  assert.match(source, /repeat\(15, minmax\(0, 1fr\)\)/);
+  assert.match(source, /grid-column: span 5/);
+  assert.match(source, /grid-column: span 3/);
+  assert.match(source, /height: 92px/);
+  assert.match(source, /height: 72px/);
 });
