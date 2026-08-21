@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
-test("Trusted select bridge jumps client cards to the Trusted editor", async () => {
+test("Trusted select bridge jumps client cards to the principal client header", async () => {
   const source = await readFile(
     new URL("../admin/editor/trusted-select-bridge.js", import.meta.url),
     "utf8"
@@ -13,7 +13,8 @@ test("Trusted select bridge jumps client cards to the Trusted editor", async () 
   assert.match(source, /client-strip-card\[data-client\]/);
   assert.match(source, /trustedSectionButton\.click\(\)/);
   assert.match(source, /trusted-collection-item/);
-  assert.match(source, /scrollIntoView/);
+  assert.match(source, /:scope > \.trusted-item-head/);
+  assert.match(source, /block:\s*"start"/);
 });
 
 test("Editor plugin loader keeps Trusted helpers in deterministic order", async () => {
@@ -40,7 +41,7 @@ test("Editor toast stack is offset away from inspector actions", async () => {
   assert.match(css, /right:\s*calc\(var\(--inspector\) \+ 34px\)/);
 });
 
-test("Manual carousel pause guards rebuilt marquee and delayed hover resume", async () => {
+test("Manual carousel pause guards delayed hover resume", async () => {
   const source = await readFile(
     new URL("../trusted-marquee-interactions.js", import.meta.url),
     "utf8"
@@ -54,4 +55,18 @@ test("Manual carousel pause guards rebuilt marquee and delayed hover resume", as
     source,
     /setTrustedMarqueePaused[\s\S]*bindManualPauseGuard\(marquee\)/
   );
+});
+
+test("Trusted preview transport preserves manual Pause across editor rebuilds", async () => {
+  const source = await readFile(
+    new URL("../admin/editor/trusted-preview-controls.js", import.meta.url),
+    "utf8"
+  );
+
+  assert.doesNotThrow(() => new Function(source));
+  assert.match(source, /let manualPaused = false/);
+  assert.match(source, /restorePauseAfterPreviewChange/);
+  assert.match(source, /previewObserver\.observe\(section/);
+  assert.match(source, /setPauseOnTarget\(target, manualPaused\)/);
+  assert.match(source, /manualPaused = !manualPaused/);
 });
