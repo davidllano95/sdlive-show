@@ -96,7 +96,7 @@ The public Home loads `visual-safeguards.css` + `visual-safeguards.js` after the
 - Supported Brand reveal motion;
 - established primary/ghost CTA hover treatments.
 
-The guard registry is deliberately extensible: when another established visual behavior becomes CMS-managed or otherwise vulnerable to reconstruction, it should be added to this registry and its regression tests rather than relying on implicit CSS inheritance alone.
+The guard registry is deliberately extensible. **Any future CMS/editor change that makes an already-approved aesthetic behavior vulnerable to reconstruction must add that behavior to the guard registry and its regression tests in the same PR.** Do not wait for a production regression to discover that protection is missing.
 
 The previous live-carousel stability workaround had explicitly suppressed the Trusted hover sheen to avoid a Safari compositor hitch. That suppression is removed. The protected sheen now sweeps by animating `background-position` rather than translating a child layer, preserving the established highlight while avoiding the transformed-child interaction that could disturb the moving marquee.
 
@@ -169,6 +169,7 @@ API:
 - Visible `SD.Live` mentions should use the floating-dot wordmark when appropriate; metadata/machine strings stay literal.
 - WLive remains visible.
 - Established production aesthetics are protected visual contracts; CMS/editor changes must preserve them unless an explicit redesign is approved.
+- Any future CMS/editor PR that can reconstruct or override an established aesthetic must extend the visual guard + regression tests in that same PR.
 - The public Home must keep the visual safeguard layer enabled; Editor preview may inspect/toggle individual protection layers but those controls are not content state.
 - Rental is Colombia-first and hidden by default for International visitors.
 - Rental notifications go **only to `rental@sdlive.show`**.
