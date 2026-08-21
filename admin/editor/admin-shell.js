@@ -98,6 +98,10 @@
         "./visual-safeguards-editor.js?v=20260821-2",
         "sdlive-visual-safeguards-editor"
       );
+      loadEditorScript(
+        "./editor-resilience.js?v=20260821-1",
+        "sdlive-editor-resilience"
+      );
     },
     { once: true }
   );
