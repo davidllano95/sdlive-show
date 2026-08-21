@@ -7,7 +7,7 @@ Public media: `https://media.sdlive.show`
 
 The public site is a vanilla HTML/CSS/JS frontend served by Cloudflare Workers Static Assets. Dynamic APIs, CMS publishing, forms and edge rendering run in Cloudflare Workers. D1 stores structured CMS content and R2 stores editor-managed media.
 
-For current progress, roadmap, invariants and the next gate, read **`PROJECT_STATUS.md` first**.
+For current progress, the active implementation sequence, invariants and the classified future-evolution roadmap, read **`PROJECT_STATUS.md` first**.
 
 ## Current architecture
 
@@ -51,7 +51,7 @@ Hero Draft/Published is fully connected to production. Published content is rend
 
 ### Trusted By / Brands Supported Through
 
-**Production milestone completed.** Trusted By now has:
+**Production milestone completed.** Trusted By has:
 
 - Draft and Published state in D1;
 - client/reveal editing, ordering and WLive protection;
@@ -66,9 +66,9 @@ Hero Draft/Published is fully connected to production. Published content is rend
 
 ### Testimonials
 
-**Implemented in P2.3; production smoke remains the rollout gate until the PR is deployed.** The Testimonials block follows the same established CMS contract:
+**P2.3 completed and validated in production.** Testimonials follows the same established CMS contract:
 
-- schema/default seed based on the current Manuel Matamoros / WLive testimonial;
+- schema/default seed based on the real testimonial content already present;
 - Draft, Published and revision history in D1;
 - EN/ES heading, name, role/company and quote editing;
 - add, delete and reorder testimonials;
@@ -78,15 +78,14 @@ Hero Draft/Published is fully connected to production. Published content is rend
 - visual logo scaling stored as metadata rather than derivative images;
 - Published → public Home edge SSR using only `published_json`;
 - static public markup as fallback when Published content is missing or invalid;
-- Admin iframe isolated from Published SSR so the working Draft stays local.
-
-The rollout gate is the same one already proven on Trusted: visual EN/ES + Desktop/Mobile smoke, then verify `Save Draft ≠ live` and `Publish = live` in production.
+- Admin iframe isolated from Published SSR so the working Draft stays local;
+- production-validated Desktop/Mobile, EN/ES and `Save Draft ≠ live` / `Publish = live` behavior.
 
 ## Visual safeguards / aesthetic invariants
 
 Established production aesthetics are a **site contract**, not incidental CSS. CMS/editor work must preserve them unless a visual change is explicitly approved.
 
-The public Home loads `visual-safeguards.css` + `visual-safeguards.js` after the main styling path. This small guard layer intentionally reasserts critical stable behaviors that are especially vulnerable to DOM rebuilds, stacking-context changes or section CMS work:
+The public Home loads `visual-safeguards.css` + `visual-safeguards.js` after the main styling path. This guard layer reasserts critical stable behaviors that are especially vulnerable to DOM rebuilds, stacking-context changes or section CMS work:
 
 - glass surfaces;
 - aurora ambience;
@@ -96,15 +95,13 @@ The public Home loads `visual-safeguards.css` + `visual-safeguards.js` after the
 - Supported Brand reveal motion;
 - established primary/ghost CTA hover treatments.
 
-The guard registry is deliberately extensible. **Any future CMS/editor change that makes an already-approved aesthetic behavior vulnerable to reconstruction must add that behavior to the guard registry and its regression tests in the same PR.** Do not wait for a production regression to discover that protection is missing.
+The guard registry is deliberately extensible. **Any future CMS/editor change that makes an already-approved aesthetic behavior vulnerable to reconstruction must add that behavior to the guard registry and its regression tests in the same PR.**
 
-The previous live-carousel stability workaround had explicitly suppressed the Trusted hover sheen to avoid a Safari compositor hitch. That suppression is removed. The protected sheen now sweeps by animating `background-position` rather than translating a child layer, preserving the established highlight while avoiding the transformed-child interaction that could disturb the moving marquee.
+The previous live-carousel stability workaround had explicitly suppressed the Trusted hover sheen to avoid a Safari compositor hitch. That suppression is gone. The protected sheen now sweeps through `background-position` rather than translating a child layer. PR #25 tuned its perceived speed and clips the effect inside the card, preserving the approved reflection without reintroducing the carousel jump.
 
-The Site Editor exposes a **Safeguards** panel with live diagnostics, per-layer protection state and **Restore all defaults**. Editor toggles affect preview protection only; they are not saved into a content Draft. Production always loads the safeguard layer enabled by default. The runtime also restores its stylesheet/root guard state if a CMS rebuild removes them accidentally.
+The Site Editor exposes a **Safeguards** panel with live diagnostics, per-layer protection state and **Restore all defaults**. Editor toggles affect preview protection only; they are not saved into a content Draft. Production loads the safeguard layer enabled by default. The runtime also restores its stylesheet/root guard state if a CMS rebuild removes them accidentally.
 
-Automated tests lock the guard assets, public injection, Editor control panel and critical selectors/keyframes. Future CMS PRs should extend the guard registry/tests when they introduce another established visual system that must survive content reconstruction.
-
-This is a failsafe for the known class of CSS/DOM/editor regressions; it does not replace visual smoke testing and cannot guarantee recovery from arbitrary broken JavaScript or a completely failed deployment.
+Automated tests lock the guard assets, public injection, Editor control panel and critical visual contracts. This failsafe targets the known class of CSS/DOM/editor regressions; it does not replace production smoke testing and cannot recover from arbitrary broken JavaScript or a failed deployment.
 
 ## R2 media rules
 
@@ -118,7 +115,19 @@ This is a failsafe for the known class of CSS/DOM/editor regressions; it does no
 - Visual resize/position belongs in D1/CSS metadata; moving a slider does not create a new R2 object.
 - Do not enable paid media products or extra R2 features unless explicitly approved.
 
-Trusted media is already migrated. Testimonials now has its own R2 upload folder for editable logos. Later media migrations should happen section-by-section: Portfolio / Selected Work, Rental imagery, Insights/blog and other content that becomes CMS-managed. GitHub originals should only be removed after production validation and only when they are not required as critical fallbacks.
+Trusted media is migrated. Testimonials has its own R2 upload folder for editable logos. Later media migrations happen section-by-section: Portfolio / Selected Work, Rental imagery, Insights/Journal and other content that becomes CMS-managed. GitHub originals should only be removed after production validation and only when they are not required as critical fallbacks.
+
+## Back-office reality
+
+The Site Editor/CMS is live, but the dashboard modules labelled Leads/CRM, Rental Admin, Projects, Calendar, reusable Media Library, Analytics and SEO are still planned/disabled unless `PROJECT_STATUS.md` explicitly marks a component implemented. Public Rental/forms and the R2 media foundation already exist; that is not the same as having those full Admin modules.
+
+This distinction is important when using future planning prompts: **the repository is the source of truth.** Extend working systems rather than creating parallel implementations based on assumptions.
+
+## Future evolution roadmap
+
+`PROJECT_STATUS.md` includes a classified **Future Evolution — SD.Live 2.0** roadmap covering deeper service pages, SEO-first CMS, Rental product SEO, Projects/case studies, Journal, internal linking, CRM attribution, analytics dashboards, authority/press, video, accessibility, performance and security hardening.
+
+Those items are **future integrations, not immediate instructions**. They do not change the current implementation order unless explicitly reprioritized. The roadmap also records deferred/not-recommended ideas such as full rewrites, mass AI content, doorway/location pages, duplicate pricing/CMS systems and copying competitor design/branding.
 
 ## Important files
 
@@ -170,7 +179,7 @@ API:
 - WLive remains visible.
 - Established production aesthetics are protected visual contracts; CMS/editor changes must preserve them unless an explicit redesign is approved.
 - Any future CMS/editor PR that can reconstruct or override an established aesthetic must extend the visual guard + regression tests in that same PR.
-- The public Home must keep the visual safeguard layer enabled; Editor preview may inspect/toggle individual protection layers but those controls are not content state.
+- The public Home keeps the visual safeguard layer enabled; Editor preview may inspect/toggle individual protection layers but those controls are not content state.
 - Rental is Colombia-first and hidden by default for International visitors.
 - Rental notifications go **only to `rental@sdlive.show`**.
 - General Contact notifications go to `hello@sdlive.show`.
@@ -179,6 +188,7 @@ API:
 - GTM is for consent/analytics/events, not navigation, branding or layout.
 - GitHub is source-of-truth for code, D1 for structured CMS content, R2 for editor-managed media.
 - Do not restore Netlify, the old Owner Access mockup, `site-runtime`, or GTM-driven navigation.
+- Do not replace working architecture just because a future vision mentions a different implementation. Preserve and extend by default.
 
 ## Tests
 
@@ -210,8 +220,10 @@ After a material milestone is completed, update `PROJECT_STATUS.md` and this REA
 
 ## Current next gate
 
-**P2.3 production validation.**
+**P2.4 — Services CMS.**
 
-Deploy the completed Testimonials CMS block, validate the restored Trusted sheen + visual safeguards first, then validate Testimonials in EN/ES and Desktop/Mobile and confirm `Save Draft ≠ live` / `Publish = live`. After that, move to Services in the next larger implementation block.
+Continue the same incremental CMS pattern already validated with Hero, Trusted and Testimonials. Preserve current visual behavior and extend Safeguards/tests if Services reconstruction makes an approved aesthetic vulnerable. Do **not** bundle the broad future SEO/IA/CRM vision into this block unless it is explicitly reprioritized.
+
+After Services, the active order remains **Media Library reusable → Portfolio / Selected Work**.
 
 Non-blocking Editor polish remains in backlog, including the small left-navigation alignment offset when jumping to Trusted By.
