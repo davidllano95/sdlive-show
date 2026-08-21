@@ -1,0 +1,160 @@
+/*
+ * SD.Live visual safeguards
+ *
+ * This stylesheet intentionally duplicates only the small set of established
+ * visual contracts that must survive CMS DOM rebuilds and future editor work.
+ * It loads after the main stylesheet and is controlled by visual-safeguards.js.
+ * Do not use this file to redesign the site; update a guard only when the
+ * corresponding established production aesthetic changes deliberately.
+ */
+
+html[data-sdlive-vfx="on"][data-sdlive-vfx-surfaces="on"] .glass {
+  background: var(--color-panel);
+  border: 1px solid rgba(244, 245, 247, var(--panel-border-opacity));
+  backdrop-filter: blur(var(--panel-blur));
+  -webkit-backdrop-filter: blur(var(--panel-blur));
+  border-radius: var(--radius-medium);
+}
+
+html[data-sdlive-vfx="on"][data-sdlive-vfx-ambient="on"] .aurora::before,
+html[data-sdlive-vfx="on"][data-sdlive-vfx-ambient="on"] .aurora::after {
+  animation: sdlive-guard-aurora-drift 26s ease-in-out infinite alternate;
+}
+
+html[data-sdlive-vfx="on"][data-sdlive-vfx-ambient="on"] .aurora::after {
+  animation-delay: -12s;
+}
+
+@keyframes sdlive-guard-aurora-drift {
+  from { transform: translate(0, 0) scale(1); }
+  to { transform: translate(6%, 4%) scale(1.12); }
+}
+
+html[data-sdlive-vfx="on"][data-sdlive-vfx-reveals="on"] .reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity var(--transition-slow), transform var(--transition-slow);
+}
+
+html[data-sdlive-vfx="on"][data-sdlive-vfx-reveals="on"] .reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/*
+ * Established Trusted + Testimonials sheen.
+ * The guarded version animates background-position rather than a child
+ * transform. That keeps the same narrow moving highlight while avoiding the
+ * Safari compositor interaction that could disturb the moving Trusted track.
+ */
+html[data-sdlive-vfx="on"][data-sdlive-vfx-sheen="on"] .client-strip-card,
+html[data-sdlive-vfx="on"][data-sdlive-vfx-sheen="on"] .testimonials--public .testimonial-card {
+  isolation: isolate;
+}
+
+html[data-sdlive-vfx="on"][data-sdlive-vfx-sheen="on"] .client-strip-card > *,
+html[data-sdlive-vfx="on"][data-sdlive-vfx-sheen="on"] .testimonials--public .testimonial-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+html[data-sdlive-vfx="on"][data-sdlive-vfx-sheen="on"] .client-strip-card::after,
+html[data-sdlive-vfx="on"][data-sdlive-vfx-sheen="on"] .testimonials--public .testimonial-card::after {
+  position: absolute;
+  z-index: 2;
+  inset: -45% -12%;
+  width: auto;
+  content: "";
+  pointer-events: none;
+  opacity: 0;
+  transform: none;
+  background-image: linear-gradient(
+    108deg,
+    transparent 37%,
+    rgba(255, 255, 255, 0.025) 43%,
+    rgba(255, 255, 255, 0.2) 50%,
+    rgba(255, 255, 255, 0.025) 57%,
+    transparent 63%
+  );
+  background-repeat: no-repeat;
+  background-size: 320% 100%;
+  background-position: 145% 0;
+  filter: blur(1px);
+}
+
+html[data-sdlive-vfx="on"][data-sdlive-vfx-sheen="on"] .client-strip-card:hover::after,
+html[data-sdlive-vfx="on"][data-sdlive-vfx-sheen="on"] .client-strip-card:focus-within::after,
+html[data-sdlive-vfx="on"][data-sdlive-vfx-sheen="on"] .testimonials--public .testimonial-card:hover::after,
+html[data-sdlive-vfx="on"][data-sdlive-vfx-sheen="on"] .testimonials--public .testimonial-card:focus-within::after {
+  animation: sdlive-guard-card-sheen 900ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes sdlive-guard-card-sheen {
+  0% {
+    opacity: 0;
+    background-position: 145% 0;
+  }
+  18% { opacity: 1; }
+  82% { opacity: 1; }
+  100% {
+    opacity: 0;
+    background-position: -45% 0;
+  }
+}
+
+html[data-sdlive-vfx="on"][data-sdlive-vfx-trusted-motion="on"] .trusted-marquee.is-ready .trusted-track {
+  animation: sdlive-guard-trusted-scroll var(--trusted-marquee-duration) linear infinite;
+}
+
+html[data-sdlive-vfx="on"][data-sdlive-vfx-trusted-motion="on"] .trusted-marquee[data-in-viewport="false"] .trusted-track {
+  animation-play-state: paused;
+}
+
+@keyframes sdlive-guard-trusted-scroll {
+  from { transform: translateX(calc(-33.333333% + var(--trusted-marquee-start-offset))); }
+  to { transform: translateX(calc(-66.666667% + var(--trusted-marquee-start-offset))); }
+}
+
+html[data-sdlive-vfx="on"][data-sdlive-vfx-supported-reveals="on"] .supported-reveal {
+  transition:
+    grid-template-rows var(--transition-normal),
+    margin-top var(--transition-normal),
+    opacity var(--transition-fast),
+    transform var(--transition-normal);
+}
+
+html[data-sdlive-vfx="on"][data-sdlive-vfx-supported-reveals="on"] .supported-reveal.is-active {
+  margin-top: 24px;
+  grid-template-rows: 1fr;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+html[data-sdlive-vfx="on"][data-sdlive-vfx-buttons="on"] .btn-primary:hover {
+  transform: translateY(-2px);
+  border-color: var(--color-accent);
+  background: rgba(var(--color-accent-rgb), 0.16);
+  color: var(--color-text);
+}
+
+html[data-sdlive-vfx="on"][data-sdlive-vfx-buttons="on"] .btn-ghost:hover {
+  border-color: rgba(var(--color-accent-rgb), 0.78);
+  background: rgba(var(--color-accent-rgb), 0.1);
+  color: var(--color-text);
+}
+
+/* Accessibility remains authoritative over aesthetic motion safeguards. */
+@media (prefers-reduced-motion: reduce) {
+  html[data-sdlive-vfx="on"] .aurora::before,
+  html[data-sdlive-vfx="on"] .aurora::after,
+  html[data-sdlive-vfx="on"] .client-strip-card::after,
+  html[data-sdlive-vfx="on"] .testimonials--public .testimonial-card::after,
+  html[data-sdlive-vfx="on"] .trusted-marquee.is-ready .trusted-track {
+    animation: none !important;
+  }
+
+  html[data-sdlive-vfx="on"] .reveal,
+  html[data-sdlive-vfx="on"] .supported-reveal {
+    transition-duration: 0s !important;
+  }
+}

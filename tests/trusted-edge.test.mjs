@@ -169,14 +169,22 @@ test("Worker router binds Trusted Published only on the public Home and preserve
   assert.match(source, /setInnerContent/);
   assert.match(source, /X-SDLive-Trusted-Render/);
   assert.match(source, /trusted-published-runtime\.js/);
-  assert.match(source, /TRUSTED_RUNTIME_VERSION = "20260820-2"/);
+  assert.match(source, /TRUSTED_RUNTIME_VERSION = "20260821-1"/);
+  assert.match(source, /visual-safeguards\.css/);
+  assert.match(source, /visual-safeguards\.js/);
 });
 
 test("Published Trusted runtime preserves responsive placement and live carousel stability", async () => {
-  const source = await readFile(
-    new URL("../trusted-published-runtime.js", import.meta.url),
-    "utf8"
-  );
+  const [source, safeguards] = await Promise.all([
+    readFile(
+      new URL("../trusted-published-runtime.js", import.meta.url),
+      "utf8"
+    ),
+    readFile(
+      new URL("../visual-safeguards.css", import.meta.url),
+      "utf8"
+    )
+  ]);
 
   assert.doesNotThrow(() => new Function(source));
   assert.match(source, /data-cms-brand-placement/);
@@ -185,7 +193,7 @@ test("Published Trusted runtime preserves responsive placement and live carousel
   assert.match(source, /ResizeObserver/);
   assert.match(source, /gridColumn = `\$\{start\} \/ span \$\{span\}`/);
 
-  // Language switching must freeze/restore the existing animation instead of
+  // Language switching freezes/restores the existing animation instead of
   // rebuilding duplicate marquee sets and losing their hover listeners.
   assert.match(source, /stablePrepareMarqueesForLanguageChange/);
   assert.match(source, /stableRestoreMarqueesAfterLanguageChange/);
@@ -194,8 +202,11 @@ test("Published Trusted runtime preserves responsive placement and live carousel
   assert.match(source, /animation\.currentTime = currentTime/);
   assert.doesNotMatch(source, /track\.lastElementChild\.remove/);
 
-  // Moving cards do not start a child sheen animation on hover, avoiding a
-  // compositor hitch that can look like the marquee briefly jumps backward.
-  assert.match(source, /client-strip-card:hover::after/);
-  assert.match(source, /animation: none !important/);
+  // The old live workaround that disabled the sheen is gone. The visual
+  // safeguard layer restores the established highlight with a background
+  // position sweep, avoiding the transformed-child compositor regression.
+  assert.doesNotMatch(source, /trusted-live-hover-stability/);
+  assert.doesNotMatch(source, /animation:\s*none !important/);
+  assert.match(safeguards, /sdlive-guard-card-sheen/);
+  assert.match(safeguards, /background-position/);
 });

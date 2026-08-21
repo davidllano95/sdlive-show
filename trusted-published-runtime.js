@@ -146,21 +146,6 @@
       stableRestoreMarqueesAfterLanguageChange;
   }
 
-  function installStableCarouselHoverPaint() {
-    if (document.getElementById("trusted-live-hover-stability")) return;
-
-    const style = document.createElement("style");
-    style.id = "trusted-live-hover-stability";
-    style.textContent = `
-      .trusted-wrap[data-content-source="cms-ssr"]
-      .trusted-marquee .client-strip-card:hover::after {
-        animation: none !important;
-        opacity: 0 !important;
-      }
-    `;
-    document.head.appendChild(style);
-  }
-
   window.addEventListener("resize", schedule, { passive: true });
 
   if (typeof ResizeObserver === "function") {
@@ -171,6 +156,5 @@
   }
 
   installLanguageMarqueeStability();
-  installStableCarouselHoverPaint();
   schedule();
 })();

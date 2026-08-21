@@ -2,6 +2,46 @@ const MOBILE_POINTER_QUERY = "(hover: none) and (pointer: coarse)";
 const SWIPE_THRESHOLD_PX = 8;
 const CLICK_SUPPRESS_MS = 420;
 const DEFAULT_STEP_FRACTION = 0.08;
+const TRUSTED_CARD_AESTHETIC_STYLE_ID = "sdlive-trusted-card-aesthetic-guard";
+
+export function ensureTrustedCardAestheticLayer(root = document) {
+  const doc = root?.nodeType === 9
+    ? root
+    : root?.ownerDocument || document;
+
+  if (!doc?.head || doc.getElementById?.(TRUSTED_CARD_AESTHETIC_STYLE_ID)) {
+    return false;
+  }
+
+  const style = doc.createElement("style");
+  style.id = TRUSTED_CARD_AESTHETIC_STYLE_ID;
+  style.textContent = `
+    /* Keep the established Trusted By sheen above CMS-managed logos/text.
+       Uploaded/scaled media can create its own stacking context, so the
+       reflection layer must be explicitly ordered instead of relying on
+       implicit pseudo-element painting order. */
+    .client-strip-card {
+      isolation: isolate;
+    }
+
+    .client-strip-card > * {
+      position: relative;
+      z-index: 1;
+    }
+
+    .client-strip-card::after {
+      z-index: 2;
+    }
+
+    .client-strip-card:hover::after,
+    .client-strip-card:focus-within::after {
+      animation: client-card-sheen 900ms cubic-bezier(0.22, 1, 0.36, 1);
+    }
+  `;
+
+  doc.head.appendChild(style);
+  return true;
+}
 
 function animationFor(marquee) {
   const track = marquee?.querySelector?.(".trusted-track");
@@ -291,6 +331,8 @@ function bindMobileSwipe(marquee) {
 }
 
 export function initTrustedMarqueeInteractions(root = document) {
+  ensureTrustedCardAestheticLayer(root);
+
   root
     .querySelectorAll?.("[data-marquee]")
     .forEach((marquee) => {

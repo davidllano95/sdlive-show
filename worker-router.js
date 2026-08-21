@@ -1,12 +1,18 @@
 import baseWorker, { isAdminPreviewRequest } from "./worker-entry.js";
 import { handleMediaApi } from "./media-api.js";
+import { handleTestimonialsApi } from "./testimonials-api.js";
 import { handleTrustedApi } from "./trusted-api.js";
+import {
+  readPublishedTestimonials,
+  renderTestimonialsInnerHtml
+} from "./testimonials-edge.js";
 import {
   readPublishedTrusted,
   renderTrustedInnerHtml
 } from "./trusted-edge.js";
 
-const TRUSTED_RUNTIME_VERSION = "20260820-2";
+const TRUSTED_RUNTIME_VERSION = "20260821-1";
+const VISUAL_SAFEGUARDS_VERSION = "20260821-1";
 
 function normalizedPath(request) {
   const url = new URL(request.url);
@@ -52,14 +58,25 @@ function responseLanguage(response) {
     : "en";
 }
 
-function transformTrustedHomeResponse(response, publishedTrusted) {
-  const isCms = Boolean(publishedTrusted?.content);
+function transformCmsHomeResponse(
+  response,
+  publishedTrusted,
+  publishedTestimonials
+) {
+  const trustedIsCms = Boolean(publishedTrusted?.content);
+  const testimonialsIsCms = Boolean(publishedTestimonials?.content);
   const lang = responseLanguage(response);
 
   const rewriter = new HTMLRewriter()
     .on("head", {
       element(element) {
-        if (!isCms) return;
+        element.append(
+          `<link rel="stylesheet" href="/visual-safeguards.css?v=${VISUAL_SAFEGUARDS_VERSION}" data-sdlive-visual-safeguards/>` +
+          `<script defer src="/visual-safeguards.js?v=${VISUAL_SAFEGUARDS_VERSION}"></script>`,
+          { html: true }
+        );
+
+        if (!trustedIsCms) return;
 
         element.append(
           `<script defer src="/trusted-published-runtime.js?v=${TRUSTED_RUNTIME_VERSION}"></script>`,
@@ -72,11 +89,11 @@ function transformTrustedHomeResponse(response, publishedTrusted) {
         element.setAttribute("data-cms-state", "ready");
         element.setAttribute(
           "data-content-source",
-          isCms ? "cms-ssr" : "static-fallback"
+          trustedIsCms ? "cms-ssr" : "static-fallback"
         );
         element.setAttribute("data-server-rendered", "true");
 
-        if (isCms && publishedTrusted.publishedAt) {
+        if (trustedIsCms && publishedTrusted.publishedAt) {
           element.setAttribute(
             "data-cms-published-at",
             publishedTrusted.publishedAt
@@ -85,9 +102,39 @@ function transformTrustedHomeResponse(response, publishedTrusted) {
           element.removeAttribute("data-cms-published-at");
         }
 
-        if (isCms) {
+        if (trustedIsCms) {
           element.setInnerContent(
             renderTrustedInnerHtml(publishedTrusted.content, lang),
+            { html: true }
+          );
+        }
+      }
+    })
+    .on(".testimonials--public#testimonials", {
+      element(element) {
+        element.setAttribute("data-cms-state", "ready");
+        element.setAttribute(
+          "data-content-source",
+          testimonialsIsCms ? "cms-ssr" : "static-fallback"
+        );
+        element.setAttribute("data-server-rendered", "true");
+
+        if (testimonialsIsCms && publishedTestimonials.publishedAt) {
+          element.setAttribute(
+            "data-cms-published-at",
+            publishedTestimonials.publishedAt
+          );
+        } else {
+          element.removeAttribute("data-cms-published-at");
+        }
+
+        if (testimonialsIsCms) {
+          element.setAttribute("aria-labelledby", "testimonialsTitle");
+          element.setInnerContent(
+            renderTestimonialsInnerHtml(
+              publishedTestimonials.content,
+              lang
+            ),
             { html: true }
           );
         }
@@ -98,7 +145,11 @@ function transformTrustedHomeResponse(response, publishedTrusted) {
   const headers = new Headers(transformed.headers);
   headers.set(
     "X-SDLive-Trusted-Render",
-    isCms ? "cms-ssr" : "static-fallback"
+    trustedIsCms ? "cms-ssr" : "static-fallback"
+  );
+  headers.set(
+    "X-SDLive-Testimonials-Render",
+    testimonialsIsCms ? "cms-ssr" : "static-fallback"
   );
 
   return new Response(transformed.body, {
@@ -110,7 +161,7 @@ function transformTrustedHomeResponse(response, publishedTrusted) {
 
 async function servePublicHome(request, env) {
   // The Admin iframe intentionally receives the untouched static document so
-  // its local Draft renderer remains isolated from Published CMS content.
+  // local Draft renderers remain isolated from Published CMS content.
   if (isAdminPreviewRequest(request)) {
     return baseWorker.fetch(request, env);
   }
@@ -124,10 +175,19 @@ async function servePublicHome(request, env) {
       );
       return null;
     });
+  const testimonialsPromise = readPublishedTestimonials(env)
+    .catch((error) => {
+      console.error(
+        "[SD.Live] Edge Testimonials render failed; serving static fallback.",
+        error
+      );
+      return null;
+    });
 
-  const [response, publishedTrusted] = await Promise.all([
+  const [response, publishedTrusted, publishedTestimonials] = await Promise.all([
     basePromise,
-    trustedPromise
+    trustedPromise,
+    testimonialsPromise
   ]);
 
   const contentType = response.headers.get("Content-Type") || "";
@@ -135,7 +195,11 @@ async function servePublicHome(request, env) {
     return response;
   }
 
-  return transformTrustedHomeResponse(response, publishedTrusted);
+  return transformCmsHomeResponse(
+    response,
+    publishedTrusted,
+    publishedTestimonials
+  );
 }
 
 export default {
@@ -159,6 +223,21 @@ export default {
       path.startsWith("/api/admin/content/trusted")
     ) {
       const response = await handleTrustedApi(
+        request,
+        env,
+        {
+          verifyAdmin: verifyAdminViaExistingApi
+        }
+      );
+
+      if (response) return response;
+    }
+
+    if (
+      path === "/api/content/testimonials" ||
+      path.startsWith("/api/admin/content/testimonials")
+    ) {
+      const response = await handleTestimonialsApi(
         request,
         env,
         {
