@@ -96,7 +96,7 @@ The public Home loads `visual-safeguards.css` + `visual-safeguards.js` after the
 - Supported Brand reveal motion;
 - established primary/ghost CTA hover treatments.
 
-The Trusted sheen uses a guarded background-position sweep rather than animating a transformed child layer, preserving the highlight without recreating the Safari carousel-compositor regression that previously caused movement near the end of the marquee.
+The previous live-carousel stability workaround had explicitly suppressed the Trusted hover sheen to avoid a Safari compositor hitch. That suppression is removed. The protected sheen now sweeps by animating `background-position` rather than translating a child layer, preserving the established highlight while avoiding the transformed-child interaction that could disturb the moving marquee.
 
 The Site Editor exposes a **Safeguards** panel with live diagnostics, per-layer protection state and **Restore all defaults**. Editor toggles affect preview protection only; they are not saved into a content Draft. Production always loads the safeguard layer enabled by default. The runtime also restores its stylesheet/root guard state if a CMS rebuild removes them accidentally.
 
