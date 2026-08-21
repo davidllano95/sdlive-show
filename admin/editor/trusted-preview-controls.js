@@ -17,40 +17,81 @@
       align-items: center;
       gap: 6px;
       margin-inline: auto 8px;
-      padding: 4px;
-      border: 1px solid rgba(255,255,255,.12);
+      padding: 4px 5px;
+      border: 1px solid rgba(160,137,229,.42);
       border-radius: 10px;
-      background: rgba(8,10,16,.72);
+      background: rgba(14,12,24,.9);
+      box-shadow: 0 0 0 1px rgba(160,137,229,.08), 0 8px 26px rgba(0,0,0,.18);
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
     }
     .trusted-preview-transport.is-visible {
       display: inline-flex;
     }
+    .trusted-preview-transport.is-paused {
+      border-color: rgba(160,137,229,.72);
+      box-shadow: 0 0 0 1px rgba(160,137,229,.16), 0 8px 26px rgba(0,0,0,.18);
+    }
+    .trusted-preview-transport__label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin: 0 4px 0 3px;
+      color: rgba(244,245,247,.72);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .09em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+    .trusted-preview-transport__dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #a089e5;
+      box-shadow: 0 0 10px rgba(160,137,229,.65);
+    }
     .trusted-preview-transport button {
       min-width: 34px;
       min-height: 30px;
       padding: 5px 9px;
-      border: 1px solid rgba(255,255,255,.12);
+      border: 1px solid rgba(255,255,255,.14);
       border-radius: 7px;
-      background: rgba(255,255,255,.04);
+      background: rgba(255,255,255,.05);
       color: inherit;
       font: inherit;
       cursor: pointer;
     }
     .trusted-preview-transport button:hover {
-      border-color: rgba(160,137,229,.6);
-      background: rgba(160,137,229,.12);
+      border-color: rgba(160,137,229,.7);
+      background: rgba(160,137,229,.14);
     }
     .trusted-preview-transport button[data-role="pause"] {
-      min-width: 72px;
+      min-width: 78px;
+    }
+    .trusted-preview-transport.is-paused button[data-role="pause"] {
+      color: #d9ccff;
+      background: rgba(160,137,229,.13);
+      border-color: rgba(160,137,229,.52);
     }
   `;
   document.head.appendChild(style);
 
   const toolbar = document.createElement("div");
   toolbar.className = "trusted-preview-transport";
-  toolbar.setAttribute("aria-label", "Trusted By preview controls");
+  toolbar.setAttribute("aria-label", "Trusted By carousel preview controls");
+  toolbar.title = "Trusted By carousel preview controls";
+
+  const label = document.createElement("span");
+  label.className = "trusted-preview-transport__label";
+
+  const dot = document.createElement("span");
+  dot.className = "trusted-preview-transport__dot";
+  dot.setAttribute("aria-hidden", "true");
+
+  const labelText = document.createElement("span");
+  labelText.textContent = "Carousel";
+  label.append(dot, labelText);
 
   const previous = document.createElement("button");
   previous.type = "button";
@@ -61,7 +102,7 @@
   const pause = document.createElement("button");
   pause.type = "button";
   pause.dataset.role = "pause";
-  pause.textContent = "Pause";
+  pause.textContent = "⏸ Pause";
   pause.title = "Pause company movement";
   pause.setAttribute("aria-label", "Pause company movement");
 
@@ -71,7 +112,7 @@
   next.title = "Show next companies";
   next.setAttribute("aria-label", "Show next companies");
 
-  toolbar.append(previous, pause, next);
+  toolbar.append(label, previous, pause, next);
 
   const metaRight = previewMeta.querySelector(".meta-right");
   previewMeta.insertBefore(toolbar, metaRight || null);
@@ -115,6 +156,7 @@
   function fallbackPause(target, shouldPause) {
     if (!target) return false;
 
+    target.dataset.manualPaused = shouldPause ? "true" : "false";
     target.dataset.interactionPaused = shouldPause ? "true" : "false";
 
     try {
@@ -149,13 +191,14 @@
   function isPaused(target) {
     const api = getApi();
     if (api?.isPaused) return Boolean(api.isPaused(target));
-    return target?.dataset?.interactionPaused === "true";
+    return target?.dataset?.manualPaused === "true";
   }
 
   function syncPauseLabel() {
     const target = marquee();
     const paused = isPaused(target);
-    pause.textContent = paused ? "Play" : "Pause";
+
+    pause.textContent = paused ? "▶ Play" : "⏸ Pause";
     pause.title = paused
       ? "Resume company movement"
       : "Pause company movement";
@@ -164,6 +207,7 @@
       paused ? "Resume company movement" : "Pause company movement"
     );
     pause.setAttribute("aria-pressed", String(paused));
+    toolbar.classList.toggle("is-paused", paused);
   }
 
   function shift(direction) {

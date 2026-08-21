@@ -23,7 +23,7 @@
   }
 
   function loadTrustedMarqueeInteractions() {
-    import("/trusted-marquee-interactions.js?v=20260820-1").catch((error) => {
+    import("/trusted-marquee-interactions.js?v=20260820-2").catch((error) => {
       // The existing autoplay/tap behavior remains the fallback if the optional
       // mobile swipe enhancement cannot be loaded.
       console.warn(

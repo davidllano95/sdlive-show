@@ -41,7 +41,7 @@
         "sdlive-trusted-editor"
       );
       loadEditorScript(
-        "./trusted-preview-controls.js?v=20260820-1",
+        "./trusted-preview-controls.js?v=20260820-2",
         "sdlive-trusted-preview-controls"
       );
     },
