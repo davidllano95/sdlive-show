@@ -35,7 +35,9 @@
 
     const byName = clientName
       ? clients.find((item) => {
-          const name = item.querySelector(".trusted-item-head strong")?.textContent;
+          const name = item.querySelector(
+            ":scope > .trusted-item-head strong"
+          )?.textContent;
           return String(name || "").trim() === clientName;
         })
       : null;
@@ -65,9 +67,13 @@
         .forEach((item) => item.classList.remove("sdlive-editor-jump-target"));
 
       target.classList.add("sdlive-editor-jump-target");
-      target.scrollIntoView({
+
+      const clientHeader =
+        target.querySelector(":scope > .trusted-item-head") || target;
+
+      clientHeader.scrollIntoView({
         behavior: "smooth",
-        block: "center"
+        block: "start"
       });
 
       window.clearTimeout(highlightTimer);
