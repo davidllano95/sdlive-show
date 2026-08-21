@@ -79,7 +79,7 @@
         "sdlive-trusted-brand-placement"
       );
       loadEditorScript(
-        "./trusted-preview-parity.js?v=20260820-1",
+        "./trusted-preview-parity.js?v=20260820-2",
         "sdlive-trusted-preview-parity"
       );
     },

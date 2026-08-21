@@ -86,13 +86,18 @@ test("Trusted preview transport preserves pause and carousel phase across editor
   assert.match(source, /manualPaused = !manualPaused/);
 });
 
-test("Desktop Admin preview reasserts the published Wonderlust two-row layout", async () => {
+test("Desktop Admin preview matches Wonderlust production markup and two-row layout", async () => {
   const source = await readFile(
     new URL("../admin/editor/trusted-preview-parity.js", import.meta.url),
     "utf8"
   );
 
   assert.doesNotThrow(() => new Function(source));
+  assert.match(source, /normalizeWonderlustTiles/);
+  assert.match(source, /querySelectorAll\(":scope > img"\)/);
+  assert.match(source, /createElement\("span"\)/);
+  assert.match(source, /tile\.className = "supported-brand-tile"/);
+  assert.match(source, /previewObserver\.observe\(section/);
   assert.match(source, /data-sdlive-admin-device/);
   assert.match(source, /supported-reveal-logos--wonderlust/);
   assert.match(source, /repeat\(15, minmax\(0, 1fr\)\)/);
@@ -100,4 +105,6 @@ test("Desktop Admin preview reasserts the published Wonderlust two-row layout", 
   assert.match(source, /grid-column: span 3/);
   assert.match(source, /height: 92px/);
   assert.match(source, /height: 72px/);
+  assert.match(source, /width: 100%/);
+  assert.match(source, /object-fit: contain/);
 });
