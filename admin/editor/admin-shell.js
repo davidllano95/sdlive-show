@@ -29,9 +29,27 @@
 
     const script = document.createElement("script");
     script.src = src;
+    script.async = false;
     script.setAttribute(`data-${datasetKey}`, "true");
     document.body.appendChild(script);
   }
+
+  function loadEditorStylesheet(href, datasetKey) {
+    if (document.querySelector(`link[data-${datasetKey}]`)) {
+      return;
+    }
+
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = href;
+    link.setAttribute(`data-${datasetKey}`, "true");
+    document.head.appendChild(link);
+  }
+
+  loadEditorStylesheet(
+    "./editor-ux.css?v=20260820-1",
+    "sdlive-editor-ux"
+  );
 
   document.addEventListener(
     "DOMContentLoaded",
@@ -43,6 +61,10 @@
       loadEditorScript(
         "./trusted-preview-controls.js?v=20260820-2",
         "sdlive-trusted-preview-controls"
+      );
+      loadEditorScript(
+        "./trusted-select-bridge.js?v=20260820-1",
+        "sdlive-trusted-select-bridge"
       );
     },
     { once: true }

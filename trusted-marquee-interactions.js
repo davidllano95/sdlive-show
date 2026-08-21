@@ -82,6 +82,11 @@ function setInteractionPaused(marquee, paused) {
 export function setTrustedMarqueePaused(marquee, paused) {
   if (!marquee) return false;
 
+  // Trusted By preview can rebuild the marquee from Draft content after this
+  // module first initializes. Binding here guarantees every newly-created
+  // marquee gets the authoritative manual-pause guard before Pause is applied.
+  bindManualPauseGuard(marquee);
+
   marquee.dataset.manualPaused = paused ? "true" : "false";
   marquee.dataset.interactionPaused = paused ? "true" : "false";
   return applyPlaybackState(marquee);
@@ -101,6 +106,26 @@ export function shiftTrustedMarquee(marquee, direction = 1) {
   const current = Number(animation.currentTime) || 0;
   const delta = stepDuration(duration) * (direction < 0 ? -1 : 1);
   animation.currentTime = wrapAnimationTime(current + delta, duration);
+  return true;
+}
+
+function moveAnimationByPixels(marquee, deltaX) {
+  const animation = animationFor(marquee);
+  if (!animation) return false;
+
+  const duration = animationDuration(animation);
+  const set = marquee.querySelector(".trusted-set");
+  const setWidth = Number(set?.getBoundingClientRect?.().width) || 0;
+
+  if (!duration || setWidth <= 0) return false;
+
+  const current = Number(animation.currentTime) || 0;
+  const timeDelta = (-deltaX / setWidth) * duration;
+  animation.currentTime = wrapAnimationTime(
+    current + timeDelta,
+    duration
+  );
+
   return true;
 }
 
@@ -127,28 +152,34 @@ function bindManualPauseGuard(marquee) {
   // Existing desktop hover/reveal handlers use interactionPaused as a transient
   // state. When the user explicitly pressed Pause in the editor, those transient
   // handlers must never be allowed to resume playback on pointer/focus exit.
-  region.addEventListener("pointerout", restoreIfNeeded);
-  region.addEventListener("focusout", restoreIfNeeded);
-}
+  if (typeof region?.addEventListener === "function") {
+    region.addEventListener("pointerout", restoreIfNeeded);
+    region.addEventListener("focusout", restoreIfNeeded);
+  }
 
-function moveAnimationByPixels(marquee, deltaX) {
-  const animation = animationFor(marquee);
-  if (!animation) return false;
+  if (typeof MutationObserver !== "function") return;
 
-  const duration = animationDuration(animation);
-  const set = marquee.querySelector(".trusted-set");
-  const setWidth = Number(set?.getBoundingClientRect?.().width) || 0;
+  // Some hover paths resume through a delayed close timer. Watching the transient
+  // pause attribute makes manual Pause authoritative even when that timer fires
+  // after pointerout/focusout has already completed.
+  const pauseObserver = new MutationObserver(() => {
+    if (!isTrustedMarqueePaused(marquee)) return;
 
-  if (!duration || setWidth <= 0) return false;
+    if (marquee.dataset.interactionPaused !== "true") {
+      enforceManualPause(marquee);
+      return;
+    }
 
-  const current = Number(animation.currentTime) || 0;
-  const timeDelta = (-deltaX / setWidth) * duration;
-  animation.currentTime = wrapAnimationTime(
-    current + timeDelta,
-    duration
-  );
+    marquee
+      .querySelector?.(".trusted-track")
+      ?.getAnimations?.()
+      .forEach((animation) => animation.pause());
+  });
 
-  return true;
+  pauseObserver.observe(marquee, {
+    attributes: true,
+    attributeFilter: ["data-interaction-paused"]
+  });
 }
 
 function bindMobileSwipe(marquee) {
