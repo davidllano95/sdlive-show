@@ -5,7 +5,11 @@ import { readFile } from "node:fs/promises";
 const files = [
   "admin/editor/admin-shell.js",
   "admin/editor/trusted-editor.js",
-  "admin/editor/trusted-brand-placement.js"
+  "admin/editor/trusted-preview-controls.js",
+  "admin/editor/trusted-select-bridge.js",
+  "admin/editor/trusted-media-controls.js",
+  "admin/editor/trusted-brand-placement.js",
+  "admin/editor/trusted-preview-parity.js"
 ];
 
 for (const file of files) {
