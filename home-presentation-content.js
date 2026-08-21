@@ -1,5 +1,5 @@
 export const PRESENTATION_SECTION_KEYS = {
-  rental: { section: "rental", market: "colombia", route: "root" },
+  rental: { section: "rental", market: "col", route: "root" },
   contact: { section: "contact", market: "all", route: "root" }
 };
 

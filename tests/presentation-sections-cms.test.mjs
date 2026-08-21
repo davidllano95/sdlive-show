@@ -4,6 +4,7 @@ import { readFile } from "node:fs/promises";
 
 import {
   PRESENTATION_SECTION_DEFAULTS,
+  PRESENTATION_SECTION_KEYS,
   clonePresentationDefault,
   validatePresentationSection
 } from "../home-presentation-content.js";
@@ -14,6 +15,14 @@ test("Rental and Contact defaults validate", () => {
   assert.doesNotThrow(() => validatePresentationSection("rental", clonePresentationDefault("rental")));
   assert.doesNotThrow(() => validatePresentationSection("contact", clonePresentationDefault("contact")));
   assert.equal(Object.keys(PRESENTATION_SECTION_DEFAULTS.rental.items).length, 11);
+});
+
+test("Presentation section market keys stay compatible with the D1 schema", () => {
+  const allowedMarkets = new Set(["all", "col", "int"]);
+  for (const [section, key] of Object.entries(PRESENTATION_SECTION_KEYS)) {
+    assert.ok(allowedMarkets.has(key.market), `${section} market key must match the D1 CHECK constraint`);
+  }
+  assert.equal(PRESENTATION_SECTION_KEYS.rental.market, "col");
 });
 
 test("Rental CMS keeps fixed transactional item keys", () => {
