@@ -21,6 +21,12 @@
     return `data-sdlive-vfx-${id}`;
   }
 
+  function setAttributeIfNeeded(element, name, value) {
+    if (element.getAttribute(name) === value) return false;
+    element.setAttribute(name, value);
+    return true;
+  }
+
   function ensureStylesheet() {
     let link = document.querySelector("link[data-sdlive-visual-safeguards]");
     if (link) {
@@ -40,10 +46,11 @@
 
   function applyState() {
     const root = document.documentElement;
-    root.setAttribute(ROOT_ATTR, "on");
+    setAttributeIfNeeded(root, ROOT_ATTR, "on");
 
     FEATURES.forEach(({ id }) => {
-      root.setAttribute(
+      setAttributeIfNeeded(
+        root,
         featureAttribute(id),
         featureState.get(id) === false ? "off" : "on"
       );
