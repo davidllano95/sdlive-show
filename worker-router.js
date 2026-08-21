@@ -12,6 +12,7 @@ import {
 } from "./trusted-edge.js";
 
 const TRUSTED_RUNTIME_VERSION = "20260820-2";
+const VISUAL_SAFEGUARDS_VERSION = "20260821-1";
 
 function normalizedPath(request) {
   const url = new URL(request.url);
@@ -69,6 +70,12 @@ function transformCmsHomeResponse(
   const rewriter = new HTMLRewriter()
     .on("head", {
       element(element) {
+        element.append(
+          `<link rel="stylesheet" href="/visual-safeguards.css?v=${VISUAL_SAFEGUARDS_VERSION}" data-sdlive-visual-safeguards/>` +
+          `<script defer src="/visual-safeguards.js?v=${VISUAL_SAFEGUARDS_VERSION}"></script>`,
+          { html: true }
+        );
+
         if (!trustedIsCms) return;
 
         element.append(
