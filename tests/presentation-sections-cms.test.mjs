@@ -47,7 +47,8 @@ test("Rental and Contact use targeted edge patching, preserving transactional DO
   assert.match(router, /applyRentalHandlers/);
   assert.match(router, /applyContactHandlers/);
   assert.match(router, /readPublishedPresentationSection/);
-  assert.match(router, /api\\\/content\\\/(?:rental\|contact)/);
+  assert.match(router, /handlePresentationSectionsApi/);
+  assert.match(router, /rental\|contact/);
 });
 
 test("Draft save and Publish remain separate operations", async () => {
@@ -80,6 +81,17 @@ test("Editor loads presentation CMS and all current media migration helpers", as
   assert.match(shell, /testimonials-media-migration\.js/);
   assert.match(shell, /core-media-migration\.js/);
   assert.match(shell, /trusted-media-migration\.js/);
+});
+
+test("new presentation and migration browser scripts parse", async () => {
+  for (const path of [
+    "admin/editor/presentation-sections-editor.js",
+    "admin/editor/rental-media-migration.js",
+    "admin/editor/testimonials-media-migration.js"
+  ]) {
+    const source = await read(path);
+    assert.doesNotThrow(() => new Function(source), `${path} should parse as browser JavaScript`);
+  }
 });
 
 test("Rental media editor reuses the shared R2 Media Library", async () => {
