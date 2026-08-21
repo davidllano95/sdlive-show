@@ -152,8 +152,12 @@ function bindManualPauseGuard(marquee) {
   // Existing desktop hover/reveal handlers use interactionPaused as a transient
   // state. When the user explicitly pressed Pause in the editor, those transient
   // handlers must never be allowed to resume playback on pointer/focus exit.
-  region.addEventListener("pointerout", restoreIfNeeded);
-  region.addEventListener("focusout", restoreIfNeeded);
+  if (typeof region?.addEventListener === "function") {
+    region.addEventListener("pointerout", restoreIfNeeded);
+    region.addEventListener("focusout", restoreIfNeeded);
+  }
+
+  if (typeof MutationObserver !== "function") return;
 
   // Some hover paths resume through a delayed close timer. Watching the transient
   // pause attribute makes manual Pause authoritative even when that timer fires
