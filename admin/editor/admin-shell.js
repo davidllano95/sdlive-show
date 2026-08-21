@@ -59,11 +59,11 @@
         "sdlive-trusted-editor"
       );
       loadEditorScript(
-        "./trusted-preview-controls.js?v=20260820-2",
+        "./trusted-preview-controls.js?v=20260820-3",
         "sdlive-trusted-preview-controls"
       );
       loadEditorScript(
-        "./trusted-select-bridge.js?v=20260820-1",
+        "./trusted-select-bridge.js?v=20260820-2",
         "sdlive-trusted-select-bridge"
       );
     },
