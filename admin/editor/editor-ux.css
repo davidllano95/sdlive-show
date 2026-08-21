@@ -1,0 +1,20 @@
+/* SD.Live Site Editor — small UX fixes layered over admin.css */
+
+/* Keep status toasts clear of the inspector action buttons. */
+.toast-stack {
+  right: calc(var(--inspector) + 34px);
+  bottom: 68px;
+}
+
+/* Make a preview-selected Trusted client easy to find in the inspector. */
+.sdlive-editor-jump-target {
+  border-color: rgba(var(--accent-rgb), .62) !important;
+  box-shadow:
+    0 0 0 1px rgba(var(--accent-rgb), .2),
+    0 0 28px rgba(var(--accent-rgb), .16);
+  background: rgba(var(--accent-rgb), .055) !important;
+  transition:
+    border-color .18s ease,
+    box-shadow .18s ease,
+    background .18s ease;
+}
