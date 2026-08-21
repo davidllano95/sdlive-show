@@ -48,7 +48,7 @@ test("Testimonials static seed validates and clones independently", () => {
   assert.equal(TESTIMONIALS_DEFAULT_CONTENT.items[0].name, "Manuel Matamoros");
 });
 
-test("Testimonials validation rejects duplicate ids and remote media", () => {
+test("Testimonials validation rejects duplicate ids, remote media and all-hidden content", () => {
   const duplicate = cloneTestimonialsDefault();
   duplicate.items.push(structuredClone(duplicate.items[0]));
   assert.throws(() => validateTestimonialsDraft(duplicate), /must be unique/);
@@ -56,6 +56,10 @@ test("Testimonials validation rejects duplicate ids and remote media", () => {
   const remote = cloneTestimonialsDefault();
   remote.items[0].logo.src = "https://example.com/logo.png";
   assert.throws(() => validateTestimonialsDraft(remote), /first-party asset/);
+
+  const hidden = cloneTestimonialsDefault();
+  hidden.items[0].visible = false;
+  assert.throws(() => validateTestimonialsDraft(hidden), /At least one testimonial/);
 });
 
 test("Testimonials media helpers preserve R2 logical references and safe scale", () => {
@@ -72,15 +76,25 @@ test("Testimonials media helpers preserve R2 logical references and safe scale",
   assert.equal(normalizeFolder("testimonials"), "testimonials");
 });
 
-test("Testimonials public renderer outputs localized cards and CMS media metadata", () => {
+test("Testimonials public renderer outputs localized visible cards and CMS media metadata", () => {
   const content = cloneTestimonialsDefault();
   content.items[0].logo.src = "assets/media/cms/testimonials/wlive.webp";
   content.items[0].logo.scale = 1.2;
+  content.items.push({
+    id: "hidden-example",
+    name: "Hidden Example",
+    role: { en: "Hidden", es: "Oculto" },
+    quote: { en: "Should not render", es: "No debe renderizar" },
+    visible: false,
+    featured: false,
+    logo: null
+  });
 
   const html = renderTestimonialsInnerHtml(content, "es");
   assert.match(html, /Testimonios/);
   assert.match(html, /Opiniones de clientes y aliados de producción/);
   assert.match(html, /Manuel Matamoros/);
+  assert.doesNotMatch(html, /Hidden Example/);
   assert.match(html, /testimonial-card--featured/);
   assert.match(html, /data-testimonial-id="manuel-matamoros"/);
   assert.match(html, /https:\/\/media\.sdlive\.show\/cms\/testimonials\/wlive\.webp/);
@@ -161,7 +175,7 @@ test("Worker router binds Testimonials Published only on the public Home", async
   assert.match(source, /isAdminPreviewRequest\(request\)/);
 });
 
-test("Testimonials editor owns Draft, Publish, R2 upload and exact preview selection", async () => {
+test("Testimonials editor owns Draft, Publish, R2 upload, visibility and exact preview selection", async () => {
   const editor = await readFile(
     new URL("../admin/editor/testimonials-editor.js", import.meta.url),
     "utf8"
@@ -176,6 +190,7 @@ test("Testimonials editor owns Draft, Publish, R2 upload and exact preview selec
   assert.match(editor, /api\/admin\/content\/testimonials\/publish/);
   assert.match(editor, /form\.set\("folder", "testimonials"\)/);
   assert.match(editor, /assets\/media\//);
+  assert.match(editor, /Visible on public Home/);
   assert.match(editor, /data-testimonial-id/);
   assert.match(editor, /stopImmediatePropagation/);
   assert.match(editor, /The public site has not changed yet/);
