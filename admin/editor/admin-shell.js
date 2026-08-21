@@ -106,6 +106,10 @@
         "./editor-resilience.js?v=20260821-2",
         "sdlive-editor-resilience"
       );
+      loadEditorScript(
+        "./automatic-failsafe.js?v=20260821-1",
+        "sdlive-automatic-failsafe"
+      );
     },
     { once: true }
   );
