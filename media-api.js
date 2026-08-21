@@ -10,6 +10,7 @@ const ALLOWED_FOLDERS = new Set([
   "clients",
   "brands",
   "testimonials",
+  "about",
   "portfolio",
   "rental",
   "insights",
