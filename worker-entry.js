@@ -359,6 +359,18 @@ export function isAdminPreviewRequest(request) {
 
   try {
     const requestUrl = new URL(request.url);
+
+    // The automatic post-publish verifier is intentionally an iframe inside
+    // /admin/, but it must receive the real public Home (Published D1 + edge
+    // SSR + public visual safeguards) rather than the Draft-isolated Admin
+    // preview document. Keep this exception narrow to the verifier marker.
+    if (
+      requestUrl.pathname === "/" &&
+      requestUrl.searchParams.has("failsafe_verify")
+    ) {
+      return false;
+    }
+
     const refererUrl = new URL(referer);
 
     return refererUrl.origin === requestUrl.origin &&
