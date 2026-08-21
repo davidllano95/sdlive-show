@@ -127,7 +127,7 @@
         "sdlive-safeguards-status-placement"
       );
       loadEditorScript(
-        "./editor-resilience.js?v=20260821-2",
+        "./editor-resilience.js?v=20260821-3",
         "sdlive-editor-resilience"
       );
       loadEditorScript(
