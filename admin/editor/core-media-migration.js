@@ -35,6 +35,10 @@
   let busy = false;
   let decorateQueued = false;
 
+  function setText(element, value) {
+    if (element && element.textContent !== value) element.textContent = value;
+  }
+
   function showToast(title, detail = "", type = "success") {
     if (!toastStack) return;
     const toast = document.createElement("div");
@@ -145,13 +149,13 @@
     if (busy || !DEFINITIONS[section]) return;
     busy = true;
     button.disabled = true;
-    button.textContent = "Checking…";
-    status.textContent = "Reading saved Draft…";
+    setText(button, "Checking…");
+    setText(status, "Reading saved Draft…");
 
     try {
       const { draft, references } = await snapshot(section);
       if (!references.length) {
-        status.textContent = "No legacy media remains in the saved Draft.";
+        setText(status, "No legacy media remains in the saved Draft.");
         showToast(`${DEFINITIONS[section].label} media is already on R2.`);
         return;
       }
@@ -170,8 +174,8 @@
       let index = 0;
       for (const item of unique.values()) {
         index += 1;
-        button.textContent = `Migrating ${index}/${unique.size}…`;
-        status.textContent = item.source;
+        setText(button, `Migrating ${index}/${unique.size}…`);
+        setText(status, item.source);
         migrated.set(item.source, await uploadLegacy(item.source, item.folder));
       }
 
@@ -181,8 +185,8 @@
         setAtPath(draft, item.path, migrated.get(item.source));
       });
 
-      button.textContent = "Saving Draft…";
-      status.textContent = "Writing R2 references to D1 Draft…";
+      setText(button, "Saving Draft…");
+      setText(status, "Writing R2 references to D1 Draft…");
       await fetchJson(`/api/admin/content/${section}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -193,15 +197,15 @@
         `${DEFINITIONS[section].label} media migrated to R2.`,
         "The Draft was saved; production is unchanged until Publish. Reloading the Editor now."
       );
-      status.textContent = `${unique.size} copied to R2 · Draft saved`;
+      setText(status, `${unique.size} copied to R2 · Draft saved`);
       window.setTimeout(() => window.location.reload(), 950);
     } catch (error) {
-      status.textContent = "Migration stopped · Published content unchanged";
+      setText(status, "Migration stopped · Published content unchanged");
       showToast("Media migration failed.", error.message, "error");
     } finally {
       busy = false;
       button.disabled = false;
-      if (button.isConnected) button.textContent = "Check legacy media";
+      if (button.isConnected) setText(button, "Check legacy media");
     }
   }
 
@@ -212,14 +216,20 @@
     if (!button || !status) return;
     try {
       const { references } = await snapshot(section);
-      button.textContent = references.length
-        ? `Migrate legacy media (${references.length})`
-        : "Check legacy media";
-      status.textContent = references.length
-        ? `${references.length} GitHub asset reference${references.length === 1 ? "" : "s"} in saved Draft`
-        : "Saved Draft is already using R2 media.";
+      setText(
+        button,
+        references.length
+          ? `Migrate legacy media (${references.length})`
+          : "Check legacy media"
+      );
+      setText(
+        status,
+        references.length
+          ? `${references.length} GitHub asset reference${references.length === 1 ? "" : "s"} in saved Draft`
+          : "Saved Draft is already using R2 media."
+      );
     } catch (error) {
-      status.textContent = `Could not inspect Draft · ${error.message}`;
+      setText(status, `Could not inspect Draft · ${error.message}`);
     }
   }
 
