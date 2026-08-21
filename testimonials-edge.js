@@ -124,6 +124,7 @@ export function renderTestimonialsInnerHtml(content, lang = "en") {
   const safeLang = lang === "es" ? "es" : "en";
   const eyebrow = content.eyebrow[safeLang];
   const title = content.title[safeLang];
+  const visibleItems = content.items.filter((item) => item.visible);
 
   return [
     '<div class="container">',
@@ -132,7 +133,7 @@ export function renderTestimonialsInnerHtml(content, lang = "en") {
     `<h2 id="testimonialsTitle" ${localizedAttributes(content.title)}>${visibleHtml(title)}</h2>`,
     "</div>",
     '<div class="testimonial-grid">',
-    content.items.map((item) => renderTestimonial(item, safeLang)).join(""),
+    visibleItems.map((item) => renderTestimonial(item, safeLang)).join(""),
     "</div>",
     "</div>"
   ].join("");
