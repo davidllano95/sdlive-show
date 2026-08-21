@@ -63,7 +63,7 @@
         "sdlive-trusted-preview-controls"
       );
       loadEditorScript(
-        "./trusted-select-bridge.js?v=20260820-2",
+        "./trusted-select-bridge.js?v=20260820-3",
         "sdlive-trusted-select-bridge"
       );
       loadEditorScript(
