@@ -75,7 +75,7 @@
         "sdlive-trusted-media-migration"
       );
       loadEditorScript(
-        "./trusted-brand-placement.js?v=20260820-1",
+        "./trusted-brand-placement.js?v=20260820-2",
         "sdlive-trusted-brand-placement"
       );
       loadEditorScript(
