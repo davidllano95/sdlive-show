@@ -66,6 +66,10 @@
         "./trusted-select-bridge.js?v=20260820-2",
         "sdlive-trusted-select-bridge"
       );
+      loadEditorScript(
+        "./trusted-media-controls.js?v=20260820-1",
+        "sdlive-trusted-media-controls"
+      );
     },
     { once: true }
   );
