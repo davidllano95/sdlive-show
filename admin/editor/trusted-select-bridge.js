@@ -23,16 +23,32 @@
     return cards.findIndex((card) => card.dataset.client === clientId);
   }
 
-  function focusClientEditor(index) {
-    if (index < 0) return;
+  function findClientEditor({ clientId, clientName, index }) {
+    const clients = Array.from(
+      editorBody.querySelectorAll(".trusted-collection-item")
+    );
 
+    const byId = clientId
+      ? clients.find((item) => item.dataset.trustedClientId === clientId)
+      : null;
+    if (byId) return byId;
+
+    const byName = clientName
+      ? clients.find((item) => {
+          const name = item.querySelector(".trusted-item-head strong")?.textContent;
+          return String(name || "").trim() === clientName;
+        })
+      : null;
+    if (byName) return byName;
+
+    return index >= 0 ? clients[index] || null : null;
+  }
+
+  function focusClientEditor(selection) {
     const deadline = performance.now() + 2500;
 
     const locate = () => {
-      const clients = Array.from(
-        editorBody.querySelectorAll(".trusted-collection-item")
-      );
-      const target = clients[index];
+      const target = findClientEditor(selection);
 
       if (!target) {
         if (performance.now() < deadline) {
@@ -90,12 +106,14 @@
         if (!card) return;
 
         const clientId = card.dataset.client || "";
+        const clientName = String(
+          card.querySelector("figcaption strong")?.textContent || ""
+        ).trim();
         const index = clientIndexFromPreview(doc, clientId);
-        if (index < 0) return;
 
         window.setTimeout(() => {
           trustedSectionButton.click();
-          focusClientEditor(index);
+          focusClientEditor({ clientId, clientName, index });
         }, 0);
       },
       true
