@@ -15,6 +15,7 @@ test("Editor Select routes globally to the owning section and closest exact CMS 
   assert.match(resilience, /function descriptorFromTarget/);
   assert.match(resilience, /function activateSection/);
   assert.match(resilience, /function focusWhenReady/);
+  assert.match(resilience, /function summaryFallbackForKey/);
   assert.match(resilience, /ensureInspectorVisible/);
   assert.match(resilience, /button\.click\(\)/);
   assert.match(resilience, /data-core-editor-key/);
@@ -29,6 +30,11 @@ test("Editor Select routes globally to the owning section and closest exact CMS 
   assert.match(resilience, /international:cta/);
   assert.match(resilience, /trustedTitle/);
   assert.match(resilience, /Section heading/);
+  assert.match(resilience, /Filter labels/);
+  assert.match(resilience, /Section detail link/);
+  assert.match(resilience, /Equipment group headings/);
+  assert.match(resilience, /Portrait \/ production photo/);
+  assert.match(resilience, /International productions/);
   assert.match(resilience, /Global Select routed to the owning CMS section/);
   assert.match(resilience, /details\.editor-section/);
   assert.match(resilience, /scrollIntoView\(\{ behavior: "smooth", block: "center" \}\)/);
