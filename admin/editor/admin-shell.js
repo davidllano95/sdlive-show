@@ -87,6 +87,14 @@
         "sdlive-testimonials-editor"
       );
       loadEditorScript(
+        "./core-sections-bootstrap.js?v=20260821-1",
+        "sdlive-core-sections-bootstrap"
+      );
+      loadEditorScript(
+        "./core-sections-editor.js?v=20260821-1",
+        "sdlive-core-sections-editor"
+      );
+      loadEditorScript(
         "./visual-safeguards-editor.js?v=20260821-2",
         "sdlive-visual-safeguards-editor"
       );
