@@ -55,6 +55,10 @@
     "DOMContentLoaded",
     () => {
       loadEditorScript(
+        "./media-library.js?v=20260821-1",
+        "sdlive-media-library"
+      );
+      loadEditorScript(
         "./trusted-editor.js?v=20260820-1",
         "sdlive-trusted-editor"
       );
@@ -93,6 +97,10 @@
       loadEditorScript(
         "./core-sections-editor.js?v=20260821-1",
         "sdlive-core-sections-editor"
+      );
+      loadEditorScript(
+        "./core-media-migration.js?v=20260821-1",
+        "sdlive-core-media-migration"
       );
       loadEditorScript(
         "./visual-safeguards-editor.js?v=20260821-3",
