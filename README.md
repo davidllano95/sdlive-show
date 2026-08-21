@@ -5,7 +5,7 @@ Production website and back-office for **SD.Live — Creative Audio**.
 Production: `https://sdlive.show`  
 Public media: `https://media.sdlive.show`
 
-The public site is a vanilla HTML/CSS/JS frontend served by Cloudflare Workers Static Assets. Dynamic APIs, CMS publishing, forms and edge rendering run in Cloudflare Workers. D1 is the structured-content database and R2 is the storage layer for editor-managed media.
+The public site is a vanilla HTML/CSS/JS frontend served by Cloudflare Workers Static Assets. Dynamic APIs, CMS publishing, forms and edge rendering run in Cloudflare Workers. D1 stores structured CMS content and R2 stores editor-managed media.
 
 For current progress, roadmap, invariants and the next gate, read **`PROJECT_STATUS.md` first**.
 
@@ -17,32 +17,52 @@ For current progress, roadmap, invariants and the next gate, read **`PROJECT_STA
 - **Media storage:** Cloudflare R2 binding `MEDIA_BUCKET` → `sdlive-media-production`.
 - **Public media domain:** `media.sdlive.show`.
 - **Worker router:** `worker-router.js`.
-- **Base Worker / edge renderer:** `worker-entry.js`.
+- **Hero edge renderer / base Worker:** `worker-entry.js`.
+- **Trusted By edge renderer:** `trusted-edge.js`, applied by `worker-router.js`.
 - **API Worker:** `worker.js`.
 - **Admin:** `/admin/` behind Cloudflare Access.
 - **Analytics:** GTM + GA4 with consent gating.
 - **Forms:** Turnstile + D1 + Resend.
-- **Languages:** EN / ES with persisted preference.
+- **Languages:** EN / ES with persisted preference and server-side first-paint resolution.
 - **Markets:** Colombia / International behavior.
 
 ## Content ownership
 
-The project deliberately separates code, structured content and media:
-
 ```text
 GitHub
-  code, CSS/JS, critical branding/fallback assets
+  code, CSS/JS, critical branding and static fallback assets
 
 D1
-  text, ordering, visibility, associations and media metadata
+  Draft/Published text, ordering, associations and media metadata
 
 R2
-  editor-managed logos, photos and content imagery
+  editor-managed logos, photos and other replaceable content imagery
 ```
 
-Critical branding such as the primary SD.Live logo, favicon/app icons and essential fallback assets remain versioned with the code. Media that should be replaceable from the Editor is migrated progressively to R2.
+Critical branding such as the primary SD.Live logo, favicon/app icons and essential fallbacks remain versioned with the code. CMS-managed media is migrated progressively to R2.
 
-The first migration target is **Trusted By + Supported Brands**. Later migrations include Portfolio / Selected Work, Rental imagery, Testimonials imagery where applicable, Insights/blog thumbnails and other CMS-managed images. Do not mass-migrate everything in one change; validate each section in production before removing GitHub duplicates.
+## CMS state
+
+### Hero
+
+Hero Draft/Published is fully connected to production. Published content is rendered at the Cloudflare edge before first paint, with the static HTML as fallback if D1 is unavailable or invalid.
+
+### Trusted By / Brands Supported Through
+
+**Production milestone completed.** Trusted By now has:
+
+- Draft and Published state in D1.
+- client/reveal editing, ordering and WLive protection;
+- Upload/Replace of Trusted and Supported Brand media through authenticated R2 upload;
+- visual logo scaling and Supported Brand placement metadata;
+- migrated Trusted By / Supported Brands media served from `media.sdlive.show`;
+- Published → public Home server-side rendering with static fallback;
+- Draft isolation from the public site;
+- EN/ES switching without rebuilding the live carousel;
+- carousel pause/play, arrows, mobile swipe and stable hover behavior;
+- production-validated `Save Draft ≠ live` and `Publish = live` semantics.
+
+The Admin iframe remains isolated from Published SSR so it can render the working Draft locally.
 
 ## R2 media rules
 
@@ -51,52 +71,26 @@ The first migration target is **Trusted By + Supported Brands**. Later migration
 - Public domain: `https://media.sdlive.show`.
 - Public Development URL / `r2.dev`: disabled.
 - Admin uploads go through authenticated Worker endpoints.
-- Public image delivery should use the custom domain/CDN directly rather than proxying every read through a Worker endpoint.
-- Upload keys are versioned so long-lived immutable caching is safe.
-- Visual resize/position belongs in D1/CSS metadata; do not create a new R2 object for each slider adjustment.
-- Keep files reasonably optimized and avoid unnecessary duplicate originals.
+- Public reads use the custom domain/CDN directly rather than proxying each image through a Worker.
+- Upload keys are versioned for long-lived immutable caching.
+- Visual resize/position belongs in D1/CSS metadata; moving a slider does not create a new R2 object.
 - Do not enable paid media products or extra R2 features unless explicitly approved.
 
-## Hero CMS flow
-
-Published Hero content is server-rendered at the Cloudflare edge before first paint:
-
-```text
-GET /
-  ↓
-worker-entry.js
-  ↓
-read Published Hero from D1
-  ↓
-HTMLRewriter injects CMS copy into index.html
-  ↓
-initial HTML reaches the browser already resolved
-```
-
-This avoids client-side text swapping and layout popping while preserving the static Hero as a fallback if D1 is unavailable or returns invalid content.
-
-The language preference is mirrored to a cookie so the Worker can render the correct language before first paint. `localStorage` remains supported for browser-side behavior and migration.
-
-## Trusted By CMS state
-
-Trusted By / Brands Supported Through already has its own Draft/Published model in D1 and Editor controls. Draft changes do not affect the public Home. Published content is stored in D1 but is **not yet bound to the public Home**.
-
-Current Trusted editor UX includes reorder controls, fast carousel arrows, persistent Pause/Play, mobile swipe and Select-to-client inspector navigation.
-
-The next gate is to add **Upload / Replace + visual logo scaling**, migrate Trusted By media to R2, and then connect Published Trusted By to the public Home with SSR/fallback.
+The next media migrations should happen section-by-section: Testimonials where applicable, Portfolio / Selected Work, Rental imagery, Insights/blog and other content that becomes CMS-managed. GitHub originals should only be removed after production validation and only when they are not required as critical fallbacks.
 
 ## Important files
 
 - `index.html` — main public Home shell and static fallback content.
 - `styles.css` — main public styles.
 - `script.js` — primary public UI/runtime behavior.
-- `worker-router.js` — routes Trusted/media APIs before delegating to the base Worker.
-- `worker-entry.js` — edge HTML rendering and base routing.
+- `worker-router.js` — top-level Worker router; Trusted SSR plus Trusted/media API routing.
+- `worker-entry.js` — Hero edge rendering and base routing.
 - `worker.js` — CMS/admin APIs, Contact, Rental, D1 and email logic.
+- `trusted-edge.js` — validates and renders Published Trusted By at the edge.
+- `trusted-published-runtime.js` — small public runtime for CMS Trusted placement/language stability.
 - `trusted-api.js` — Trusted By Draft/Published API.
 - `trusted-content.js` — Trusted By schema/default content.
 - `media-api.js` — authenticated R2 media status/upload API.
-- `hero-content.js` — Hero client resilience and Admin-preview isolation.
 - `trusted-marquee-interactions.js` — Trusted carousel controls/mobile interactions.
 - `admin/editor/` — protected visual editor.
 - `PROJECT_STATUS.md` — master roadmap and handoff.
@@ -118,7 +112,7 @@ API:
 - `GET /api/content/hero`
 - `GET /api/content/trusted`
 - Admin content endpoints under `/api/admin/...`
-- Admin media status/upload endpoints under `/api/admin/media/...`
+- Admin media endpoints under `/api/admin/media/...`
 - `POST /api/contact`
 - `POST /api/rental`
 
@@ -144,20 +138,18 @@ API:
 npm test
 ```
 
-The test suite uses Node's built-in test runner and GitHub Actions runs it on pull requests and main.
+The test suite uses Node's built-in test runner and GitHub Actions runs it on pull requests and `main`.
 
 ## Development workflow
-
-Use short-lived branches from current `main`:
 
 ```text
 main
   ↓
-feature/fix/docs branch
+short-lived feature/fix/docs branch
   ↓
 Pull Request
   ↓
-checks + deploy validation
+CI + deploy validation
   ↓
 Squash and merge
   ↓
@@ -166,10 +158,12 @@ production smoke test
 
 Do not treat a feature-branch deployment as production. `sdlive.show` represents the active `main` deployment unless Cloudflare explicitly exposes a preview URL.
 
-After a material milestone is completed, update `PROJECT_STATUS.md` and update this README when architecture or operation changes. Do not create documentation commits for every micro-fix.
+After a material milestone is completed, update `PROJECT_STATUS.md` and this README when architecture or operation changed.
 
 ## Current next gate
 
-**P2.1.2 — Trusted By media integration.**
+**P2.3 — Testimonials CMS.**
 
-Add Upload / Replace and visual logo scaling in the Editor, migrate Trusted By + Supported Brands media to R2, validate Draft/Publish behavior, then bind Published Trusted By to the public Home using the established SSR/fallback pattern.
+Use the same proven pattern as Hero/Trusted: explicit schema, Draft/Published isolation, R2 only for editable media, fallback-safe public rendering, tests and production validation before moving to Services.
+
+Non-blocking Editor polish remains in backlog, including the small left-navigation alignment offset when jumping to Trusted By.
