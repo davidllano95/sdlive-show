@@ -11,7 +11,7 @@ import {
   renderTrustedInnerHtml
 } from "./trusted-edge.js";
 
-const TRUSTED_RUNTIME_VERSION = "20260820-2";
+const TRUSTED_RUNTIME_VERSION = "20260821-1";
 const VISUAL_SAFEGUARDS_VERSION = "20260821-1";
 
 function normalizedPath(request) {
