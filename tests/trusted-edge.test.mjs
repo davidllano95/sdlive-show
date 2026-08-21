@@ -169,9 +169,10 @@ test("Worker router binds Trusted Published only on the public Home and preserve
   assert.match(source, /setInnerContent/);
   assert.match(source, /X-SDLive-Trusted-Render/);
   assert.match(source, /trusted-published-runtime\.js/);
+  assert.match(source, /TRUSTED_RUNTIME_VERSION = "20260820-2"/);
 });
 
-test("Published placement runtime preserves responsive grid semantics", async () => {
+test("Published Trusted runtime preserves responsive placement and live carousel stability", async () => {
   const source = await readFile(
     new URL("../trusted-published-runtime.js", import.meta.url),
     "utf8"
@@ -183,4 +184,18 @@ test("Published placement runtime preserves responsive grid semantics", async ()
   assert.match(source, /gridSpan/);
   assert.match(source, /ResizeObserver/);
   assert.match(source, /gridColumn = `\$\{start\} \/ span \$\{span\}`/);
+
+  // Language switching must freeze/restore the existing animation instead of
+  // rebuilding duplicate marquee sets and losing their hover listeners.
+  assert.match(source, /stablePrepareMarqueesForLanguageChange/);
+  assert.match(source, /stableRestoreMarqueesAfterLanguageChange/);
+  assert.match(source, /window\.prepareMarqueesForLanguageChange/);
+  assert.match(source, /window\.restoreMarqueesAfterLanguageChange/);
+  assert.match(source, /animation\.currentTime = currentTime/);
+  assert.doesNotMatch(source, /track\.lastElementChild\.remove/);
+
+  // Moving cards do not start a child sheen animation on hover, avoiding a
+  // compositor hitch that can look like the marquee briefly jumps backward.
+  assert.match(source, /client-strip-card:hover::after/);
+  assert.match(source, /animation: none !important/);
 });

@@ -83,6 +83,84 @@
     frame = window.requestAnimationFrame(applyAllPlacements);
   }
 
+  function stablePrepareMarqueesForLanguageChange() {
+    return Array.from(document.querySelectorAll("[data-marquee]")).flatMap((marquee) => {
+      if (!marquee.classList.contains("is-ready")) return [];
+
+      const track = marquee.querySelector(".trusted-track");
+      const animation = track?.getAnimations?.()[0];
+      if (!track || !animation || animation.currentTime === null) return [];
+
+      const state = {
+        marquee,
+        track,
+        currentTime: animation.currentTime,
+        wasPaused: animation.playState === "paused"
+      };
+
+      // Language changes only alter localized text. Trusted cards have fixed
+      // widths, so rebuilding the three marquee sets is unnecessary and drops
+      // direct hover listeners from the cloned sets. Freeze in place instead.
+      animation.pause();
+      return [state];
+    });
+  }
+
+  function stableRestoreMarqueesAfterLanguageChange(states) {
+    states.forEach(({ marquee, track, currentTime, wasPaused }) => {
+      const animation = track?.getAnimations?.()[0];
+      if (!animation) return;
+
+      animation.currentTime = currentTime;
+
+      if (wasPaused) {
+        animation.pause();
+        return;
+      }
+
+      if (typeof window.updateTrustedMarqueePlayback === "function") {
+        window.updateTrustedMarqueePlayback(marquee);
+        return;
+      }
+
+      const shouldPlay =
+        marquee.dataset.inViewport !== "false" &&
+        marquee.dataset.interactionPaused !== "true";
+
+      if (shouldPlay) animation.play();
+      else animation.pause();
+    });
+  }
+
+  function installLanguageMarqueeStability() {
+    if (
+      typeof window.prepareMarqueesForLanguageChange !== "function" ||
+      typeof window.restoreMarqueesAfterLanguageChange !== "function"
+    ) {
+      return;
+    }
+
+    window.prepareMarqueesForLanguageChange =
+      stablePrepareMarqueesForLanguageChange;
+    window.restoreMarqueesAfterLanguageChange =
+      stableRestoreMarqueesAfterLanguageChange;
+  }
+
+  function installStableCarouselHoverPaint() {
+    if (document.getElementById("trusted-live-hover-stability")) return;
+
+    const style = document.createElement("style");
+    style.id = "trusted-live-hover-stability";
+    style.textContent = `
+      .trusted-wrap[data-content-source="cms-ssr"]
+      .trusted-marquee .client-strip-card:hover::after {
+        animation: none !important;
+        opacity: 0 !important;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
   window.addEventListener("resize", schedule, { passive: true });
 
   if (typeof ResizeObserver === "function") {
@@ -92,5 +170,7 @@
       .forEach((grid) => observer.observe(grid));
   }
 
+  installLanguageMarqueeStability();
+  installStableCarouselHoverPaint();
   schedule();
 })();

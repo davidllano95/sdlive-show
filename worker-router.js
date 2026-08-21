@@ -6,7 +6,7 @@ import {
   renderTrustedInnerHtml
 } from "./trusted-edge.js";
 
-const TRUSTED_RUNTIME_VERSION = "20260820-1";
+const TRUSTED_RUNTIME_VERSION = "20260820-2";
 
 function normalizedPath(request) {
   const url = new URL(request.url);
