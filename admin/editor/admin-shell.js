@@ -91,6 +91,10 @@
         "sdlive-testimonials-editor"
       );
       loadEditorScript(
+        "./testimonials-media-migration.js?v=20260821-1",
+        "sdlive-testimonials-media-migration"
+      );
+      loadEditorScript(
         "./core-sections-bootstrap.js?v=20260821-1",
         "sdlive-core-sections-bootstrap"
       );
@@ -105,6 +109,14 @@
       loadEditorScript(
         "./core-media-library-bridge.js?v=20260821-1",
         "sdlive-core-media-library-bridge"
+      );
+      loadEditorScript(
+        "./presentation-sections-editor.js?v=20260821-1",
+        "sdlive-presentation-sections-editor"
+      );
+      loadEditorScript(
+        "./rental-media-migration.js?v=20260821-1",
+        "sdlive-rental-media-migration"
       );
       loadEditorScript(
         "./visual-safeguards-editor.js?v=20260821-3",
