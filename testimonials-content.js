@@ -25,6 +25,7 @@ export const TESTIMONIALS_DEFAULT_CONTENT = {
         en: "We have had the opportunity to work with Samuel on multiple projects, where he has consistently demonstrated an exceptional level of professionalism, commitment, and broad technical expertise. His industry experience has been key to ensuring high-quality results in both in-person events and live broadcast productions. Without a doubt, he is a highly recommended professional for any production that requires high standards in live sound, broadcast, or corporate events.",
         es: "Hemos tenido la oportunidad de trabajar con Samuel en múltiples proyectos en donde siempre ha demostrado un nivel excepcional de profesionalismo, compromiso y amplio conocimiento técnico. Su experiencia en la industria ha sido clave para garantizar resultados de alta calidad tanto en eventos presenciales como en producciones de transmisión en vivo. Sin duda, es un profesional altamente recomendado para cualquier producción que requiera altos estándares en sonido en vivo, broadcast o eventos corporativos."
       },
+      visible: true,
       featured: true,
       logo: {
         src: "assets/clients/wlive.png",
@@ -155,12 +156,20 @@ export function validateTestimonialsDraft(value) {
     requireLocalized(item.role, `${field}.role`, 240, { allowEmpty: true });
     requireLocalized(item.quote, `${field}.quote`, 3000);
 
+    if (typeof item.visible !== "boolean") {
+      throw new Error(`${field}.visible must be a boolean`);
+    }
+
     if (typeof item.featured !== "boolean") {
       throw new Error(`${field}.featured must be a boolean`);
     }
 
     validateLogo(item.logo, `${field}.logo`);
   });
+
+  if (!value.items.some((item) => item.visible)) {
+    throw new Error("At least one testimonial must remain visible");
+  }
 
   return JSON.stringify(value);
 }
