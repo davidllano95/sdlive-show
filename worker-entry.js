@@ -226,6 +226,13 @@ function transformHomeResponse(assetResponse, publishedHero, lang) {
         );
       }
     })
+    .on("#contentStaging", {
+      element(element) {
+        // Staging remains in the static source for the isolated Admin iframe,
+        // but unfinished placeholder content must never ship in public Home HTML.
+        element.remove();
+      }
+    })
     .on("[data-en]", {
       element(element) {
         localizeStaticElement(element, lang);
