@@ -29,6 +29,12 @@ const TRUSTED_RUNTIME_VERSION = "20260821-1";
 const VISUAL_SAFEGUARDS_VERSION = "20260821-2";
 const HEADER_LOGO_WIDTHS = [192, 384];
 const HEADER_LOGO_SIZES = "(max-width: 700px) 148px, 178px";
+const TRUSTED_LOGO_WIDTHS = [192, 384, 768];
+const TRUSTED_LOGO_SIZES = "184px";
+const TRUSTED_LOGO_LARGE_SIZES = "230px";
+const ABOUT_IMAGE_WIDTHS = [384, 768, 960];
+const ABOUT_IMAGE_SIZES = "(max-width: 700px) calc(100vw - 48px), 520px";
+const MEDIA_ORIGIN = "https://media.sdlive.show";
 const CONSENT_DEFAULT_BOOTSTRAP = `<script data-sdlive-consent-default>
 window.dataLayer=window.dataLayer||[];
 window.gtag=window.gtag||function(){window.dataLayer.push(arguments);};
@@ -66,6 +72,28 @@ function sameZoneImageTransformUrl(source, width) {
   return `/cdn-cgi/image/width=${normalizedWidth},format=auto,fit=scale-down${sourcePath}`;
 }
 
+function remoteMediaImageTransformUrl(source, width) {
+  const value = String(source || "").trim();
+  const normalizedWidth = Number(width);
+
+  if (!value || !Number.isInteger(normalizedWidth) || normalizedWidth <= 0) {
+    return null;
+  }
+
+  let parsed;
+  try {
+    parsed = new URL(value);
+  } catch {
+    return null;
+  }
+
+  if (parsed.origin !== MEDIA_ORIGIN || parsed.protocol !== "https:") {
+    return null;
+  }
+
+  return `/cdn-cgi/image/width=${normalizedWidth},format=auto,fit=scale-down/${value}`;
+}
+
 export function headerLogoSrcset(source) {
   return HEADER_LOGO_WIDTHS
     .map((width) => {
@@ -74,6 +102,50 @@ export function headerLogoSrcset(source) {
     })
     .filter(Boolean)
     .join(", ");
+}
+
+export function remoteCmsImageSrcset(source, widths) {
+  return widths
+    .map((width) => {
+      const url = remoteMediaImageTransformUrl(source, width);
+      return url ? `${url} ${width}w` : null;
+    })
+    .filter(Boolean)
+    .join(", ");
+}
+
+export function trustedClientLogoSizes(className = "") {
+  return String(className)
+    .split(/\s+/)
+    .includes("client-logo--sonolux")
+    ? TRUSTED_LOGO_LARGE_SIZES
+    : TRUSTED_LOGO_SIZES;
+}
+
+function applyResponsiveMediaDelivery(response) {
+  return new HTMLRewriter()
+    .on('.trusted-wrap img.client-logo[data-cms-media-source]', {
+      element(element) {
+        const src = element.getAttribute("src");
+        const srcset = remoteCmsImageSrcset(src, TRUSTED_LOGO_WIDTHS);
+        if (!srcset) return;
+        element.setAttribute("srcset", srcset);
+        element.setAttribute(
+          "sizes",
+          trustedClientLogoSizes(element.getAttribute("class"))
+        );
+      }
+    })
+    .on('#about .about-photo img[data-cms-media-source]', {
+      element(element) {
+        const src = element.getAttribute("src");
+        const srcset = remoteCmsImageSrcset(src, ABOUT_IMAGE_WIDTHS);
+        if (!srcset) return;
+        element.setAttribute("srcset", srcset);
+        element.setAttribute("sizes", ABOUT_IMAGE_SIZES);
+      }
+    })
+    .transform(response);
 }
 
 async function verifyAdminViaExistingApi(request, env) {
@@ -181,7 +253,7 @@ function transformCmsHomeResponse(response, publishedTrusted, publishedTestimoni
   applyRentalHandlers(rewriter, presentation.rental, lang);
   applyContactHandlers(rewriter, presentation.contact, lang);
 
-  const transformed = rewriter.transform(response);
+  const transformed = applyResponsiveMediaDelivery(rewriter.transform(response));
   const headers = new Headers(transformed.headers);
   headers.set("X-SDLive-Trusted-Render", trustedIsCms ? "cms-ssr" : "static-fallback");
   headers.set("X-SDLive-Testimonials-Render", testimonialsIsCms ? "cms-ssr" : "static-fallback");
