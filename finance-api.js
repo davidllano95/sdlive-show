@@ -48,6 +48,53 @@ function requiredEnv(env, name) {
   return value;
 }
 
+export function financeHealthDiagnostic(error) {
+  const message = String(error?.message || error || "");
+
+  const missingMatch = message.match(/^Missing finance configuration: ([A-Z0-9_]+)$/);
+  if (missingMatch) {
+    return {
+      stage: "configuration",
+      code: `missing_${missingMatch[1]}`
+    };
+  }
+
+  const oauthStatusMatch = message.match(/^Google OAuth token exchange failed with status (\d+)$/);
+  if (oauthStatusMatch) {
+    return {
+      stage: "oauth_exchange",
+      code: `oauth_http_${oauthStatusMatch[1]}`
+    };
+  }
+
+  if (message === "Google OAuth token exchange returned no access token") {
+    return {
+      stage: "oauth_exchange",
+      code: "oauth_no_access_token"
+    };
+  }
+
+  const sheetsStatusMatch = message.match(/^Google Sheets read failed with status (\d+)$/);
+  if (sheetsStatusMatch) {
+    return {
+      stage: "sheets_read",
+      code: `sheets_http_${sheetsStatusMatch[1]}`
+    };
+  }
+
+  if (message === "Google Sheets returned no REGISTRO header row") {
+    return {
+      stage: "sheets_read",
+      code: "sheets_no_header_row"
+    };
+  }
+
+  return {
+    stage: "unknown",
+    code: "finance_unavailable"
+  };
+}
+
 export function validateFinanceHeaders(headers) {
   if (!Array.isArray(headers)) {
     return {
@@ -183,6 +230,8 @@ export async function handleFinanceApi(
         ok: false,
         source: "google-sheets",
         access: "read-only",
+        stage: "schema_validation",
+        code: "schema_mismatch",
         schema
       }, 503);
     }
@@ -200,11 +249,14 @@ export async function handleFinanceApi(
       String(error?.message || error)
     );
 
+    const diagnostic = financeHealthDiagnostic(error);
+
     return jsonResponse({
       ok: false,
       source: "google-sheets",
       access: "read-only",
-      error: "Finance source unavailable"
+      error: "Finance source unavailable",
+      ...diagnostic
     }, 503);
   }
 }
