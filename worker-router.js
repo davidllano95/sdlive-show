@@ -72,7 +72,7 @@ function transformCmsHomeResponse(response, publishedTrusted, publishedTestimoni
     .on("head", {
       element(element) {
         element.append(
-          `<link rel="stylesheet" href="/visual-safeguards.css?v=${VISUAL_SAFEGUARDS_VERSION}" media="print" onload="this.onload=null;this.media='all'" data-sdlive-visual-safeguards/>` +
+          `<link rel="stylesheet" href="/visual-safeguards.css?v=${VISUAL_SAFEGUARDS_VERSION}" data-sdlive-visual-safeguards/>` +
           `<script defer src="/visual-safeguards.js?v=${VISUAL_SAFEGUARDS_VERSION}"></script>`,
           { html: true }
         );
