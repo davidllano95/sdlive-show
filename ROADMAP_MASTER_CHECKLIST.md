@@ -6,7 +6,7 @@
 >
 > **Rule:** a checked item here means evidence exists elsewhere in the repo/production. A pending item remains backlog/future work unless `PROJECT_STATUS.md` explicitly promotes it to **F — Active Gate / Approved Work**.
 
-Last reconciliation: **2026-08-21 — America/Bogota**  
+Last reconciliation: **2026-08-22 — America/Bogota**
 Runtime production baseline checked against: `4a8c425bc016acad78ef15d07dd8a7a4792bbc73`; P2.8 Home media closeout is production-smoked and closed. P3.0 public/SEO/performance audit is now closed as an evidence checkpoint. Query GitHub live for the current `main` HEAD because docs-only commits may advance HEAD without changing the runtime baseline.
 
 ## Legend
@@ -19,7 +19,7 @@ Runtime production baseline checked against: `4a8c425bc016acad78ef15d07dd8a7a479
 
 ## Current Active Gate
 
-🚧 **F — Security baseline: rate limiting + baseline CSP.** P3.4 responsive image/media delivery is closed in production. Per `docs/roadmap/sdlive-control-center.md`, hardening is the next prerequisite before operational/financial-adjacent Control Center work. Availability/WhatsApp remains the one allowed parallel track only after this gate closes.
+🚧 **F — Control Center Step 3: full finance-app audit / repair-vs-rewrite decision.** P3.4 and the Security baseline are both closed and production-smoked. Per `docs/roadmap/sdlive-control-center.md`, the audit must finish before repair/rewrite, rename, finance integration or source-of-truth changes. Availability/WhatsApp is now eligible as the one explicit parallel track, but is not active automatically.
 
 ---
 
@@ -253,12 +253,12 @@ Resolved:
 - ✅ Turnstile anti-spam.
 - ✅ Public success/error UI.
 - ✅ Contact presentation CMS edits copy without owning submission logic.
+- ✅ P3.1 Consent Mode parity is closed across the current public GTM page set.
+- ✅ Explicit/verifiable Worker-native rate limiting is live for `POST /api/contact` (10/60s, independent from Rental) and production smoke confirmed a normal submission still succeeds and notifies `hello@sdlive.show`.
 
 Pending:
 
-- 🚧 **P3.1:** ensure every public page that loads GTM establishes the same Consent Mode/default-denied contract before GTM; this is analytics/privacy shell work, not Contact submission logic.
 - ⏳ P3.0 accessibility finding: correct Turnstile container semantics/ARIA compatibility without breaking widget render/action.
-- ⏳ Explicit/verifiable rate limiting.
 - ⏳ Optional automatic confirmation email to visitor; design copy/deliverability before enabling.
 - ⏳ Future CRM conversion/association when CRM exists.
 
@@ -275,6 +275,7 @@ Resolved:
 - ✅ Cart/items/quantities/totals/form smoke passed after P2.6.
 - ✅ Rental presentation CMS deliberately does not own transactional IDs/pricing.
 - ✅ Rental managed media migration completed and public R2 reference verified.
+- ✅ Explicit/verifiable Worker-native rate limiting is live for `POST /api/rental` (10/60s, independent from Contact) and production smoke confirmed a normal request still succeeds and notifies only `rental@sdlive.show`.
 
 Pending:
 
@@ -298,7 +299,7 @@ Pending:
 
 ## 14.5 — SD.Live as Control Center (reprioritized 2026-08-22)
 
-**Status: ⏳ D direction queued immediately after the active security gate; not yet implemented.** Full sequencing contract: `docs/roadmap/sdlive-control-center.md`. Required order is security baseline → full finance-app audit + repair-vs-rewrite decision → brand-coherent rename → field/source mapping → read-only Admin insights → later write-back/bidirectional phases. The Availability-Aware Contact Widget / WhatsApp qualification track is the sole explicit parallel-track exception after security closes. Do not reorder without explicit re-approval.
+**Status: 🚧 F — Step 3 finance audit is active; Steps 1–2 prerequisites are closed.** Full sequencing contract: `docs/roadmap/sdlive-control-center.md`. P3.4 + security baseline are complete; required order now is full finance-app audit + repair-vs-rewrite decision → brand-coherent rename → field/source mapping → read-only Admin insights → later write-back/bidirectional phases. The Availability-Aware Contact Widget / WhatsApp qualification track is the sole explicit parallel-track exception and is eligible now, but not active automatically. Do not reorder without explicit re-approval.
 
 ## 14. Basic CRM
 

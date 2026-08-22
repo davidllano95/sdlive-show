@@ -2,7 +2,7 @@
 
 **Reprioritized:** 2026-08-22 — America/Bogota
 
-**Status:** Reprioritized roadmap direction — queued immediately after the current active gate closes; not current runtime work while P3.4 is open.
+**Status:** Active sequenced initiative — Steps 1–2 are closed; **Step 3 finance-app audit / repair-vs-rewrite decision is the current F Active Gate**. Availability/WhatsApp is eligible as the documented parallel track but is not active automatically.
 
 This initiative supersedes the earlier informal Category D / future-integration framing for CRM, AppSheet integration, Automatic Show Day and Calendar. Existing detail in those sections remains valid; this document defines the required sequence and priority.
 
@@ -14,24 +14,24 @@ That direction must preserve the source-of-truth discipline already established 
 
 ## Required sequence — do not reorder without explicit re-approval
 
-### 1. Close the current active gate
+### 1. Close the current active gate — ✅ CLOSED
 
-No Control Center implementation starts before the current active gate closes and its production smoke passes.
+P3.4 — Responsive image/media delivery closed on 2026-08-22 with production smoke. Responsive header + R2/CMS delivery is live; final Mobile PageSpeed smoke measured Performance 90 / LCP 3.1 s and ~58 KiB residual `Improve image delivery` savings.
 
-Current active gate at the time of this reprioritization: **P3.4 — Responsive image/media delivery pipeline**.
-
-### 2. Security backlog — rate limiting + baseline CSP
+### 2. Security backlog — rate limiting + baseline CSP — ✅ CLOSED
 
 Promote the already-documented security backlog before operational/financial-adjacent integration begins.
 
-- [ ] Explicit, verifiable rate limiting for relevant public APIs/forms.
-- [ ] Baseline CSP compatible with GTM, Turnstile, R2/media, Workers and current public behavior.
-- [ ] Preserve Referrer-Policy / Permissions-Policy follow-up where appropriate.
-- [ ] CI + production smoke + rollback plan.
+- [x] Explicit, verifiable rate limiting for the two public write endpoints: independent Contact/Rental Worker bindings at 10 requests / 60 seconds.
+- [x] Baseline CSP compatible with GTM/GA, Turnstile, R2/media, Google Fonts, Cloudflare Insights, Workers and current public behavior.
+- [x] `X-Content-Type-Options`, `SAMEORIGIN`, Referrer-Policy and Permissions-Policy baseline applied without breaking the same-origin Admin preview.
+- [x] CI + production smoke completed: Home, `/en/`, Admin/Editor preview, Contact submit/email and Rental submit/email all PASS.
+
+Evidence: PR #53 / `2710c0c0...` (headers/CSP) and PR #54 / `2c0fe574...` (rate limiting).
 
 Rationale: the site will begin holding or relaying operational and financial-adjacent data, not only marketing content.
 
-### 3. Full audit of the finance app currently known as NextPay26
+### 3. Full audit of the finance app currently known as NextPay26 — 🚧 F ACTIVE GATE
 
 Do not limit this audit to previously observed issues. Review the complete system before choosing repair or rewrite.
 
@@ -101,7 +101,7 @@ Guardrails:
 
 ### 7. Availability-aware contact widget + WhatsApp AI qualification
 
-This is an **independent sub-track**. It may run in parallel with steps 3–6 once the current active gate is closed; it neither blocks nor is blocked by the finance-app audit/integration track.
+This is an **independent sub-track**. P3.4 and the Security baseline are now closed, so it may be promoted to run in parallel with steps 3–6; it neither blocks nor is blocked by the finance-app audit/integration track. Eligibility does not make it active automatically.
 
 The detailed contract is preserved in `docs/roadmap/availability-aware-contact-widget.md`.
 
@@ -172,4 +172,4 @@ Existing sections remain valid detail and should not be deleted or recreated:
 - **16 — Automatic Show Day Mode**
 - **17 — Calendar**
 
-This **14.5 Control Center** initiative owns their sequencing and reprioritization. When P3.4 closes, the root README and `PROJECT_STATUS.md` must point here before the checkpoint is considered fully closed.
+This **14.5 Control Center** initiative owns their sequencing and reprioritization. README, `PROJECT_STATUS.md` and the master checklist now point here; Step 3 finance audit is the active gate after the production-smoked P3.4 + Security prerequisites.
