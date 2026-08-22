@@ -6,8 +6,8 @@
 >
 > **Rule:** a checked item here means evidence exists elsewhere in the repo/production. A pending item remains backlog/future work unless `PROJECT_STATUS.md` explicitly promotes it to **F — Active Gate / Approved Work**.
 
-Last reconciliation: **2026-08-21**  
-Production baseline checked against: `main` at `4a8c425bc016acad78ef15d07dd8a7a4792bbc73`; P2.8 Home media closeout is production-smoked and closed.
+Last reconciliation: **2026-08-21 — America/Bogota**  
+Runtime production baseline checked against: `4a8c425bc016acad78ef15d07dd8a7a4792bbc73`; P2.8 Home media closeout is production-smoked and closed. Query GitHub live for the current `main` HEAD because docs-only commits may advance HEAD without changing the runtime baseline.
 
 ## Legend
 
@@ -16,6 +16,10 @@ Production baseline checked against: `main` at `4a8c425bc016acad78ef15d07dd8a7a4
 - ⏳ **D / backlog/future:** wanted/documented, not active merely because it appears here.
 - 🚧 **F / active gate:** explicitly approved current work in `PROJECT_STATUS.md`.
 - ❓ **UNKNOWN:** must be investigated; never assume.
+
+## Current Active Gate
+
+🚧 **F — P3.0 Public Production Integrity + Commercial/SEO Audit.** Audit-first: inventory the real public surface; verify COL/INT, EN/ES, Desktop/Mobile, CTAs/forms, email routing/references, links/status/redirects, canonical/hreflang/robots/sitemap/indexability, public visual consistency, Rental quote clarity and a reproducible performance/TTFB baseline. Findings must be classified before opening narrow fixes. P3.0 does **not** automatically implement the future integrations added below.
 
 ---
 
@@ -134,6 +138,7 @@ Still pending / future:
 - ⏳ Automatic WebP/AVIF optimization only if cost/performance evidence justifies it.
 - ⏳ Detect unused/orphaned media safely.
 - ⏳ Reference-aware delete / soft delete / rollback.
+- ⏳ **remove.bg opt-in upload processing:** when explicitly promoted, evaluate `https://www.remove.bg/api#remove-background` so each authenticated upload may ask whether to remove background. API key server-side only; preserve/identify original, version processed result in R2, surface failure cleanly, and re-check pricing/credits/privacy/file limits before implementation. Never remove backgrounds silently.
 - ⏳ Optional later cleanup of duplicate/original GitHub assets only after a separate consumer/reference audit proves each asset safe to remove. **Migrator retirement does not authorize this.**
 
 ## 6. Trusted By
@@ -390,12 +395,14 @@ Do not create a second pricing engine; Rental backend pricing remains authoritat
 
 - ⏳ Private, noindex, non-public-navigation Portfolio/CV pages.
 - ⏳ Variants: Sound Design / Live Audio / Theatre / AV-Systems / Production / General CV.
+- ⏳ **Canonical editable HTML CV:** build the master CV as maintainable HTML coherent with SD.Live visual/editorial language, responsive and print-friendly, with controlled PDF export. Keep content factual and easy to fork into application-specific variants.
 - ⏳ Share only when needed.
 - ⏳ Revocable links / expiry / access limits.
 - ⏳ Open tracking only with privacy/consent implications understood.
 - ⏳ Recipient-specific label such as `Portfolio prepared for [Company]`.
 - ⏳ Downloadable CV PDF.
 - ⏳ Save an application-specific version.
+- ⏳ Do not publish/index the canonical CV by default without a deliberate visibility decision.
 
 ## 24. Data Studio / business analytics
 
@@ -441,7 +448,7 @@ Already implemented base:
 
 Pending:
 
-- ⏳ Final professional Colombia + international audit.
+- 🚧 **P3.0 active:** final professional Colombia + international public-surface audit.
 - ⏳ Titles / meta descriptions / schema / canonical / OG review after architecture stabilizes.
 - ⏳ Internal-linking audit.
 - ⏳ Alt-text/content-media audit.
@@ -461,13 +468,13 @@ For each: establish real offer, search intent, existing URL overlap, operational
 
 ## 27. SEO / alternative public pages
 
-**Status: 🟡/⏳ B/D.**
+**Status: 🟡/🚧 B/F for audit; implementation remains classified after findings.**
 
-- ⏳ Audit every current landing for visual consistency with Home.
-- ⏳ Consistent header/footer/Back to Home where appropriate.
-- ⏳ EN/ES and hreflang correctness.
-- ⏳ COL/INT behavior where applicable.
-- ⏳ No orphan pages.
+- 🚧 P3.0: audit every current landing for visual consistency with Home.
+- 🚧 P3.0: consistent header/footer/Back to Home where appropriate.
+- 🚧 P3.0: EN/ES and hreflang correctness.
+- 🚧 P3.0: COL/INT behavior where applicable.
+- 🚧 P3.0: identify orphan pages/dead CTAs/redirect issues.
 - ⏳ All relevant public pages should participate in Show Day Mode when the shared/runtime architecture supports it; define behavior before broad rollout.
 
 ## 28. Hidden/staging content in code
@@ -483,15 +490,17 @@ For each: establish real offer, search intent, existing URL overlap, operational
 
 ## 29. AI chatbot
 
-**Status: ⏳ D, cost-gated.**
+**Status: ⏳ D, cost/privacy/reliability-gated.**
 
-- ⏳ Only if free/practically free or with demonstrated ROI.
-- ⏳ Start from owned FAQ/knowledge base.
+- ⏳ **Dapta.ai is the current named candidate** (`https://dapta.ai`); re-check the provider's current free tier/limits at implementation time rather than treating “free” as a permanent invariant.
+- ⏳ Review embed/API capabilities, privacy/data processing, branding, analytics/consent and operational reliability before adding third-party scripts.
+- ⏳ Start from owned FAQ/knowledge/content sources.
 - ⏳ Services / Rental / general availability / Portfolio knowledge.
-- ⏳ Never invent price or availability.
-- ⏳ Conversation → Lead only when CRM exists.
+- ⏳ Never invent price, availability, projects or capabilities; deterministic site/backend sources remain authoritative.
+- ⏳ Preserve a clear human handoff to Contact/Rental.
+- ⏳ Conversation → Lead only when CRM exists or via an explicitly designed current form handoff.
 - ⏳ Rental configuration recommendation only when compatibility/pricing sources are reliable.
-- If recurring cost has no clear return: do not implement.
+- If recurring cost or data/privacy risk has no clear return: do not implement.
 
 ## 30. System / infrastructure
 
@@ -499,6 +508,8 @@ For each: establish real offer, search intent, existing URL overlap, operational
 
 - ✅ Public/API health endpoint exists.
 - ✅ D1/R2/Access/Turnstile foundational integrations exist.
+- ✅ **Verified cache baseline:** `worker-entry.js::transformHomeResponse()` sets `Cache-Control: no-store` for public root HTML and `Vary: Accept-Language, Cookie` while CMS/HTMLRewriter rendering occurs per request.
+- ⏳ **Home edge-cache optimization:** measure TTFB/D1/Worker impact; compare bounded `public` TTL + `stale-while-revalidate` against publish-triggered selective invalidation/purge. Any design must preserve EN/ES, COL/INT behavior, request variants, Admin preview, automatic publish failsafe, Draft ≠ Published and acceptable Publish freshness. Do not change `no-store` blindly.
 - ⏳ Admin-visible Worker health.
 - ⏳ D1 status.
 - ⏳ R2 status/usage and threshold warnings.
@@ -551,12 +562,25 @@ For each: establish real offer, search intent, existing URL overlap, operational
 
 # Cross-cutting requirements preserved from the historical backlog
 
+## P3.0 public production integrity
+
+**Status: 🚧 F — active audit gate.**
+
+- 🚧 Inventory actual public routes/canonicals/aliases from repo, redirects and sitemap.
+- 🚧 Verify HTTP status/redirects/404 and relevant internal links.
+- 🚧 Audit COL/INT, EN/ES and Desktop/Mobile behavior on applicable routes.
+- 🚧 Audit CTAs, WhatsApp, Contact/Rental flows, stale emails and dead ends.
+- 🚧 Audit canonical/hreflang/robots/sitemap/meta robots/indexability/orphans/duplicates.
+- 🚧 Audit public visual consistency without assuming a redesign is required.
+- 🚧 Measure performance/TTFB/CWV baseline and record the current Home `no-store` condition.
+- 🚧 Classify findings P0/P1/P2 before any implementation PR.
+
 ## COL vs INT production validation
 
-**Status: 🟡 B.**
+**Status: 🟡/🚧 B/F for audit.**
 
 - Existing COL/INT runtime and Admin preview exist; Rental visibility has been exercised during CMS smoke.
-- ⏳ Perform an explicit end-to-end production audit of market detection and all affected CTAs/content/SEO.
+- 🚧 P3.0: perform an explicit end-to-end production audit of market detection and all affected CTAs/content/SEO.
 - ⏳ Add an Admin diagnostic that exposes detected market and reason/source if this can be done without privacy-hostile fingerprinting.
 
 ## Commercial strategy / ROI
@@ -567,6 +591,23 @@ For each: establish real offer, search intent, existing URL overlap, operational
 - ⏳ Measurable funnel, useful market/service landing pages, real CTAs/forms, CRM/follow-up/case studies, SEO, outreach and UTMs.
 - ⏳ Evaluate best traffic channels based on audience/ROI: LinkedIn/social platforms, partnerships/referrals, targeted outreach, educational content, tutorials, podcast only if distribution/business case is credible.
 - Never add a channel because it is fashionable; define expected audience, cost, metric and conversion path first.
+
+## Legacy personal-site coherence
+
+**Status: ⏳ D external.**
+
+- ⏳ Audit `https://samueldavidllano.carrd.co` against current `sdlive.show`: positioning, biography, roles/services, links, contact destinations, visual identity and calls to action.
+- ⏳ Decide deliberately what should be updated, retained, redirected or retired; avoid two public identities making contradictory claims.
+- ⏳ Do not rewrite/redirect the Carrd merely because SD.Live exists; inspect its current purpose/traffic first.
+
+## Canonical HTML CV
+
+**Status: ⏳ D professional deliverable.**
+
+- ⏳ Build a maintainable HTML source for the CV, coherent with SD.Live but optimized for recruitment/readability rather than copying the marketing site wholesale.
+- ⏳ Responsive + print stylesheet + predictable PDF export.
+- ⏳ Factual source content, reusable sections and application-specific variants.
+- ⏳ Default private/noindex strategy until a public CV decision is made.
 
 ## Content / Journal / educational authority
 
@@ -598,11 +639,33 @@ Do not mass-generate generic SEO articles.
 
 ## Search-engine indexing
 
-**Status: 🟡 B.**
+**Status: 🟡/🚧 B/F for current audit.**
 
 - Technical discoverability base exists.
-- ⏳ Continue Google Search Console / Bing Webmaster/index coverage review, sitemap submission/validation, indexed-vs-canonical analysis, orphan/duplicate detection, hreflang and post-architecture monitoring.
+- 🚧 P3.0: verify current canonical/indexability/orphan/duplicate/hreflang/sitemap state across real public routes.
+- ⏳ Continue Google Search Console / Bing Webmaster/index coverage review, sitemap submission/validation and indexed-vs-canonical analysis when account evidence is available.
 - ⏳ Include organic search metrics in future reporting only after data becomes trustworthy.
+
+## Home HTML cache / performance optimization
+
+**Status: ⏳ D; current `no-store` condition is ✅ evidenced.**
+
+- ✅ `worker-entry.js::transformHomeResponse()` explicitly sets `Cache-Control: no-store` and `Vary: Accept-Language, Cookie` on public root HTML.
+- ⏳ Measure real TTFB/Worker/D1 cost and determine whether this is materially affecting visitors/CWV.
+- ⏳ Evaluate simple bounded edge/shared caching such as a short TTL + `stale-while-revalidate` versus a more robust Publish-triggered purge/invalidation path.
+- ⏳ Cache keys/variants must safely respect language/cookies and actual COL/INT behavior; admin/preview/authenticated surfaces must not be shared-cached.
+- ⏳ Publish/failsafe correctness must remain stronger than performance gains; define rollback before implementation.
+- ⏳ Confirm current Cloudflare plan/API capabilities and any recurring cost before choosing purge architecture.
+
+## CMS image background removal
+
+**Status: ⏳ D external integration.**
+
+- ⏳ `remove.bg` is the named API candidate.
+- ⏳ UI must ask per upload; no silent/automatic processing.
+- ⏳ API secret server-side only; never expose it in browser code/GitHub.
+- ⏳ Define original + processed object ownership/versioning in R2 and how Undo/Replace behaves.
+- ⏳ Review external image-data processing/privacy, pricing/credits, format/dimension limits and failure handling at implementation time.
 
 ## Code audit / optimization without regression
 
@@ -673,4 +736,5 @@ Current work order remains controlled by `PROJECT_STATUS.md`. At this checkpoint
 2. P2.7 Global Select + permanent change-safety policy is closed, merged and production-smoked.
 3. Home CMS R2 closeout inventory is complete: current managed media for Trusted/About/Selected Work/Testimonials/Rental was verified in Saved Draft and public production.
 4. P2.8 Home media-migrator cleanup is closed: PR #37 merged at `4a8c425bc016acad78ef15d07dd8a7a4792bbc73`, CI passed and post-merge smoke confirmed Editor controls, Select/Interact, Safeguards 9/9 and R2 media remained healthy while GitHub/static fallbacks were preserved.
-5. **No F — Active Gate is currently open.** Review this checklist and explicitly promote only the next approved item before implementation begins.
+5. 🚧 **P3.0 is the only F — Active Gate:** audit the real public production surface and classify findings before fixes.
+6. Future integrations newly preserved — Home edge cache, Carrd coherence, canonical HTML CV, Dapta.ai candidate assistant and remove.bg upload option — remain **D**, not implementation instructions, until explicitly promoted.
