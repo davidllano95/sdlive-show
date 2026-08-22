@@ -21,9 +21,16 @@ test("baseline CSP allows required SD.Live integrations without unsafe-eval", ()
 
 test("static asset headers stay in parity with the Worker SSR contract", async () => {
   const staticHeaders = await readFile(new URL("../_headers", import.meta.url), "utf8");
+  const lines = staticHeaders
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
 
   for (const [name, value] of Object.entries(BASELINE_SECURITY_HEADERS)) {
-    assert.match(staticHeaders, new RegExp(`^\\s*${name}: ${value.replace(/[.*+?^${}()|[\\]\\]/g, "\\$&")}$`, "m"));
+    assert.ok(
+      lines.includes(`${name}: ${value}`),
+      `${name} must match the shared Worker header value exactly`
+    );
   }
 });
 
