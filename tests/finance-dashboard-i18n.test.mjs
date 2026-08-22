@@ -26,17 +26,18 @@ test("finance dashboard bilingual layer keeps EN/ES in a centralized persisted c
   assert.match(i18n, /Reserva fiscal/);
   assert.match(i18n, /Generated vs received/);
   assert.match(i18n, /Generado vs recibido/);
+  assert.match(i18n, /0–30 days/);
+  assert.match(i18n, /0–30 días/);
   assert.match(i18n, /Jan/);
   assert.match(i18n, /Ene/);
 });
 
-test("finance translations load before the finance dashboard and fail open to English", () => {
-  const i18nIndex = dashboard.indexOf("finance-dashboard-i18n.js");
-  const financeIndex = dashboard.indexOf("finance-dashboard.js");
-  assert.ok(i18nIndex >= 0);
-  assert.ok(financeIndex >= 0);
-  assert.ok(i18nIndex < financeIndex);
+test("finance translations gate dashboard loading and fail open to English", () => {
+  assert.match(dashboard, /i18n\.src = "\.\/finance-dashboard-i18n\.js"/);
+  assert.match(dashboard, /i18n\.addEventListener\("load", loadFinanceDashboardScript/);
+  assert.match(dashboard, /i18n\.addEventListener\("error", \(\) => \{/);
   assert.match(dashboard, /continuing in English/);
+  assert.match(dashboard, /loadFinanceDashboardScript\(\)/);
   assert.match(dashboard, /SDLiveFinanceI18n\?\.refresh/);
 });
 
