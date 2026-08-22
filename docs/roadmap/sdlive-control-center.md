@@ -2,13 +2,13 @@
 
 **Reprioritized:** 2026-08-22 — America/Bogota
 
-**Status:** Active sequenced initiative — Steps 1–3 are closed; **Step 4 brand-coherent rename is the current F Active Gate**. Availability/WhatsApp is eligible as the documented parallel track but is not active automatically.
+**Status:** Active sequenced initiative — Steps 1–3 are closed; **Step 4 brand-coherent rename is the current F Active Gate**. Final name selected: **SD.Live Track**. Availability/WhatsApp is eligible as the documented parallel track but is not active automatically.
 
 This initiative supersedes the earlier informal Category D / future-integration framing for CRM, AppSheet integration, Automatic Show Day and Calendar. Existing detail in those sections remains valid; this document defines the required sequence and priority.
 
 ## Why this changed
 
-SD.Live is intended to become Samuel's single operational control center, including the freelance finance system currently known as NextPay26 (Google Sheets + AppSheet), rather than remaining only a marketing/CMS site.
+SD.Live is intended to become Samuel's single operational control center, including the freelance finance system historically known as NextPay26 (Google Sheets + AppSheet), rather than remaining only a marketing/CMS site.
 
 That direction must preserve the source-of-truth discipline already established for CMS content, pricing, leads and media. Moving quickly means following the dependency order below, not skipping it.
 
@@ -27,7 +27,7 @@ P3.4 — Responsive image/media delivery closed on 2026-08-22 with production sm
 
 Evidence: PR #53 / `2710c0c0...` (headers/CSP) and PR #54 / `2c0fe574...` (rate limiting).
 
-### 3. Full audit of the finance app currently known as NextPay26 — ✅ CLOSED
+### 3. Full audit of the finance app historically known as NextPay26 — ✅ CLOSED
 
 **Decision: repair + integrate; do not rewrite from zero.**
 
@@ -59,18 +59,16 @@ Decision rationale:
 
 ### 4. Brand-coherent rename — 🚧 F ACTIVE GATE
 
-The current name **NextPay26** must be retired before deeper SD.Live integration so new integration code/documentation does not depend on the legacy name.
+**Approved final name: SD.Live Track.** Naming decision evidence: `docs/decisions/sdlive-track-name-2026-08-22.md`.
 
-Evaluate names against the existing SD.Live brand voice, including:
+The legacy name **NextPay26** must now be retired from the surviving user-facing Google Sheets + AppSheet implementation before deeper SD.Live integration so new integration code/documentation does not depend on it.
 
-- **SD.Live Ledger**
-- **SD.Live Finance**
-- **SD.Live Books**
-
-- [ ] Choose the final name deliberately.
-- [ ] Apply it consistently to the surviving repaired Google Sheets + AppSheet system.
+- [x] Final name chosen deliberately: **SD.Live Track**.
+- [ ] Apply **SD.Live Track** consistently to the surviving repaired Google Sheets + AppSheet system.
 - [ ] Preserve `NextPay26` only where needed for historical audit/migration context.
-- [ ] Do not alter formulas, sheet schema, AppSheet references or automation merely to rename presentation labels; identify technical references first.
+- [ ] Before changing any technical AppSheet app name/deep-link identifier, identify dependencies such as `LINKTOAPP()` or URL `appName` references; presentation labels may be renamed independently when safe.
+- [ ] Do not alter formulas, sheet schema, AppSheet table/column references, actions, slices, views or automation merely to rename presentation branding.
+- [ ] Smoke the renamed app: launch, sync, offline-capable capture path, core views/actions and existing bots remain operational.
 
 ### 5. Finance integration Phase 1 — source-of-truth mapping
 
@@ -183,4 +181,4 @@ Existing sections remain valid detail and should not be deleted or recreated:
 - **16 — Automatic Show Day Mode**
 - **17 — Calendar**
 
-This **14.5 Control Center** initiative owns their sequencing and reprioritization. README, `PROJECT_STATUS.md` and the master checklist point here; Step 4 brand-coherent rename is the active gate after the closed P3.4, Security and finance-audit prerequisites.
+This **14.5 Control Center** initiative owns their sequencing and reprioritization. README, `PROJECT_STATUS.md` and the master checklist point here; Step 4 brand-coherent rename remains the active gate until **SD.Live Track** is applied and smoke-tested in the surviving Sheets/AppSheet system.
