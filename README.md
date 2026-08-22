@@ -144,6 +144,8 @@ Automated tests lock guard assets, public injection, Editor controls and critica
 - Public Development URL / `r2.dev`: disabled.
 - Admin uploads go through authenticated Worker endpoints.
 - Public reads use the custom domain/CDN directly rather than proxying every image through a Worker.
+- **Responsive delivery (P3.4 CLOSED 2026-08-22):** Cloudflare Image Transformations are enabled for `sdlive.show` with Sources restricted to this zone (`sdlive.show` / `*.sdlive.show`). Public Home header fragments use responsive transformed candidates while retaining code-owned PNG masters as `src` fallback; Published Trusted client logos and About media use transformed `srcset` candidates sourced from `media.sdlive.show` while the R2 masters remain authoritative/fallback. Admin/static preview and Media Library continue to use the original source contract. Final Mobile PageSpeed smoke: Performance 90, LCP 3.1 s, `Improve image delivery` estimated savings reduced from ~1.423 MiB before P3.4 to ~58 KiB after P3.4b.
+- **Future media-payload optimization:** separately investigate lazy/deferred loading for hidden/offscreen R2 brand/reveal assets and `world-map.webp`; this is a payload-timing follow-up, not a reason to replace masters or reopen responsive sizing.
 - Upload keys are versioned for long-lived immutable caching.
 - Visual resize/position belongs in D1/CSS metadata; moving a slider does not create a new R2 object.
 - Do not enable paid media products or extra R2 features unless explicitly approved.
@@ -186,6 +188,7 @@ These requirements are preserved but are **not active work until explicitly prio
 
 ### Business back-office / professional identity
 
+- **SD.Live as Control Center — reprioritized direction:** sequencing and guardrails live in `docs/roadmap/sdlive-control-center.md`. After the current gate closes, the mandatory first block is security baseline (rate limiting + baseline CSP), followed by the finance-app audit / repair-vs-rewrite decision and the remaining Control Center sequence. Availability/WhatsApp is the only explicitly allowed parallel track after gate close.
 - CRM pipeline, clients/contacts/companies, notes/history/source and Lead → Quote → Project → Invoice.
 - AppSheet integration only after per-field source-of-truth is defined.
 - Automatic Show Day from Calendar/AppSheet with configurable window and manual override.

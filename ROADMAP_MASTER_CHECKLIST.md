@@ -19,7 +19,7 @@ Runtime production baseline checked against: `4a8c425bc016acad78ef15d07dd8a7a479
 
 ## Current Active Gate
 
-🚧 **F — P3.1 Consent Mode parity across every public GTM page.** Reuse the existing Home `analytics-consent.js`/default-denied contract and extend it to every public HTML surface that loads GTM. The contract must be established before GTM, must not create a second consent system, and must receive automated coverage plus private-window production smoke. **P3.2** is the next P0 candidate: strip hidden staging/placeholder markup from the public Home response while preserving static/Admin preview source.
+🚧 **F — Security baseline: rate limiting + baseline CSP.** P3.4 responsive image/media delivery is closed in production. Per `docs/roadmap/sdlive-control-center.md`, hardening is the next prerequisite before operational/financial-adjacent Control Center work. Availability/WhatsApp remains the one allowed parallel track only after this gate closes.
 
 ---
 
@@ -136,9 +136,10 @@ Still pending / future:
 - ⏳ Rich tags beyond current folder model.
 - ⏳ Alt-text metadata at Library level (section editors already expose alt where applicable).
 - ⏳ Crop / focal point.
-- ⏳ **Responsive delivery pipeline:** P3.0 Lighthouse found roughly 1.4 MB image-delivery savings on Mobile. Generate appropriate variants (for example small/medium/large widths as evidence supports), use `srcset`/`sizes`, and preserve original/master media; do not optimize manually image-by-image.
+- ✅ **P3.4 responsive delivery pipeline CLOSED (2026-08-22):** Cloudflare Image Transformations enabled with zone-only Sources; PR #50 added responsive transformed header candidates while preserving static masters/Admin isolation; PR #51 added responsive `srcset` for Published Trusted client logos and About R2 media while retaining R2 masters as `src` fallback. Mobile `Improve image delivery` savings fell from ~1.423 MiB to ~58 KiB; final smoke measured Performance 90 / LCP 3.1 s with Trusted/About visually normal and no CMS popping.
+- ⏳ **Future payload timing:** investigate lazy/deferred loading for hidden/offscreen R2 brand/reveal media and `world-map.webp`; keep this separate from responsive sizing and preserve masters/source-of-truth.
 - ⏳ Modern WebP/AVIF output only if pipeline/cost/browser evidence justifies it.
-- ⏳ Static header-logo PNG optimization can be handled separately from R2 because those assets are code-owned, but preserve visual identity and Show Day variants.
+- ✅ Static header-logo responsive optimization completed in P3.4a while preserving visual identity and Show Day variants.
 - ⏳ Detect unused/orphaned media safely.
 - ⏳ Reference-aware delete / soft delete / rollback.
 - ⏳ **remove.bg opt-in upload processing:** when explicitly promoted, evaluate `https://www.remove.bg/api#remove-background` so each authenticated upload may ask whether to remove background. API key server-side only; preserve/identify original, version processed result in R2, surface failure cleanly, and re-check pricing/credits/privacy/file limits before implementation. Never remove backgrounds silently.
@@ -294,6 +295,10 @@ Pending:
 - ✅ Public direct `/#rental` intent is handled by runtime and can reveal the required Rental surface even for INT visitors.
 - ⏳ Confirm/standardize all service-card destinations and labels so no dead CTA remains.
 - ⏳ Keep INT behavior deliberate; Rental remains hidden by default without direct intent.
+
+## 14.5 — SD.Live as Control Center (reprioritized 2026-08-22)
+
+**Status: ⏳ D direction queued immediately after the active security gate; not yet implemented.** Full sequencing contract: `docs/roadmap/sdlive-control-center.md`. Required order is security baseline → full finance-app audit + repair-vs-rewrite decision → brand-coherent rename → field/source mapping → read-only Admin insights → later write-back/bidirectional phases. The Availability-Aware Contact Widget / WhatsApp qualification track is the sole explicit parallel-track exception after security closes. Do not reorder without explicit re-approval.
 
 ## 14. Basic CRM
 
