@@ -24,19 +24,19 @@ jobs:
         run: |
           python - <<'PY2'
           from pathlib import Path
-          import textwrap
 
           source = Path('.github/workflows/docs-step5-reconcile.yml').read_text()
           marker = "          python - <<'PY'\n"
           start = source.index(marker) + len(marker)
           end = source.index("\n          PY\n", start)
-          script = textwrap.dedent(source[start:end])
+          raw = source[start:end]
+          script = '\n'.join(line[10:] if line.startswith('          ') else line for line in raw.splitlines())
           exec(compile(script, 'step5-docs-reconciler', 'exec'))
           PY2
 
           git rm .github/workflows/docs-step5-reconcile.yml
           git rm .github/workflows/docs-step5-pr-reconcile.yml
-          git rm docs/.step5-docs-trigger
+          git rm docs/.step5-*
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add README.md PROJECT_STATUS.md ROADMAP_MASTER_CHECKLIST.md docs/roadmap/sdlive-control-center.md docs/checkpoints/sdlive-track-source-of-truth-2026-08-22.md
