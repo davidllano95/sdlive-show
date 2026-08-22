@@ -40,6 +40,9 @@
     "Current outstanding net balances": "Saldos netos pendientes actuales",
     "Unpaid COP": "Cuentas no pagadas COP",
     "Unpaid USD": "Cuentas no pagadas USD",
+    "0–30 days": "0–30 días",
+    "31–60 days": "31–60 días",
+    "61+ days": "61+ días",
     "Top debtors": "Principales deudores",
     "Collection performance": "Desempeño de cobro",
     "How efficiently cash arrives": "Eficiencia de entrada de caja",
@@ -120,6 +123,9 @@
       const through = match[2] === "year end" ? "fin de año" : (ES[match[2]] || match[2]);
       return `${match[1]} · Acumulado hasta ${through}`;
     }
+
+    match = source.match(/^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) · (Received|Generated): (.+)$/);
+    if (match) return `${ES[match[1]] || match[1]} · ${ES[match[2]] || match[2]}: ${match[3]}`;
 
     match = source.match(/^(\d+) months? including zero months$/);
     if (match) return `${match[1]} ${pluralEs(match[1], "mes", "meses")} incluyendo meses en cero`;
