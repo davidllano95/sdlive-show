@@ -188,9 +188,9 @@ These requirements are preserved but are **not active work until explicitly prio
 
 ### Business back-office / professional identity
 
-- **SD.Live as Control Center — reprioritized direction:** sequencing and guardrails live in `docs/roadmap/sdlive-control-center.md`. After the current gate closes, the mandatory first block is security baseline (rate limiting + baseline CSP), followed by the finance-app audit / repair-vs-rewrite decision and the remaining Control Center sequence. Availability/WhatsApp is the only explicitly allowed parallel track after gate close.
+- **SD.Live as Control Center — active sequenced initiative:** P3.4, Security and the full finance audit are closed. The finance decision is **repair + integrate, not rewrite**; AppSheet keeps offline field capture. Current gate is the brand-coherent rename, followed by field/source mapping and then read-only `/admin` insights. Full evidence: `docs/audits/nextpay26-repair-vs-rewrite-2026-08-22.md`; sequence: `docs/roadmap/sdlive-control-center.md`.
 - CRM pipeline, clients/contacts/companies, notes/history/source and Lead → Quote → Project → Invoice.
-- AppSheet integration only after per-field source-of-truth is defined.
+- Existing Google Sheets + AppSheet finance system is retained after audit; AppSheet remains the offline capture surface. SD.Live integration still waits for rename + per-field source-of-truth mapping.
 - Automatic Show Day from Calendar/AppSheet with configurable window and manual override.
 - Admin Calendar, Projects, quote automation, native Workspace Inbox and correct-alias replies.
 - Private recruiter/client Portfolio/CV variants with noindex/share controls.
@@ -201,7 +201,7 @@ These requirements are preserved but are **not active work until explicitly prio
 
 ### AI / conversational integrations
 
-- **Availability-Aware Contact Widget — Medium-High backlog:** after the current active gate closes and is explicitly reprioritized, resolve owner availability server-side from one D1 `availability_state` source of truth using expiring manual override → travel mode → default `America/Bogota` weekly schedule. Owner WhatsApp commands must require exact `env.OWNER_WHATSAPP_NUMBER`; unavailable state may swap the existing WhatsApp bubble for a future lead-qualification AI widget. The bot must never own or invent pricing/catalog data and must write leads into the existing `leads` table. Full proposed scope and acceptance criteria: `docs/roadmap/availability-aware-contact-widget.md`.
+- **Availability-Aware Contact Widget — parallel-track eligible backlog:** P3.4 and Security prerequisites are closed, so this may be promoted independently while rename/source mapping proceeds; it is not active automatically. Resolve owner availability server-side from one D1 `availability_state` source of truth using expiring manual override → travel mode → default `America/Bogota` weekly schedule. Owner WhatsApp commands require exact `env.OWNER_WHATSAPP_NUMBER`; AI may qualify leads only and must never own pricing/catalog/finance data.
 - **Dapta.ai candidate assistant:** evaluate a future SD.Live website assistant using `https://dapta.ai`. Before implementation, re-verify the provider's current free/paid limits, embed/API capabilities, privacy/data processing, branding constraints and operational reliability. The assistant may guide visitors toward Services, Contact and Rental, but must never invent pricing, availability, project claims or technical capability; deterministic site/backend sources remain authoritative and human handoff must stay available.
 
 ### Performance / edge caching
@@ -232,7 +232,7 @@ These requirements are preserved but are **not active work until explicitly prio
 - Code cleanup/optimization is a quality stream: audit and refactor incrementally with tests, smoke and rollback; never change approved behavior just for elegance.
 - COL vs INT needs an explicit full production audit and ideally a privacy-respecting Admin diagnosis of detected market/reason.
 - Worker/D1/R2/publish/deploy/error observability, backups, threshold warnings and safe media cleanup.
-- Security hardening: verifiable rate limiting, CSP/Referrer-Policy/Permissions-Policy, abuse testing and incident/backup discipline.
+- Security baseline is closed: Worker-native rate limiting + CSP/Referrer-Policy/Permissions-Policy are live. Remaining security work is future abuse testing, observability, incident/backup discipline and evidence-based Cloudflare plan evaluation.
 - Evaluate Cloudflare free-vs-paid security capabilities against actual SD.Live risk before enabling recurring-cost products.
 - Main public contact config uses `hello@sdlive.show` and Rental uses `rental@sdlive.show`; perform a final stale-personal-email audit and verify Workspace aliases/DMARC before automation.
 
@@ -344,7 +344,8 @@ Those items are **future integrations/backlog, not immediate instructions**, unl
 - `admin/editor/automatic-failsafe.js` — automatic publish verification.
 - `admin/editor/visual-safeguards-editor.js` — visual diagnostics/restore panel.
 - `docs/roadmap/availability-aware-contact-widget.md` — proposed availability-aware WhatsApp/AI parallel track; eligible after the security closeout, not active by existence alone.
-- `docs/roadmap/sdlive-control-center.md` — required Control Center sequence; finance audit / repair-vs-rewrite is the current F Active Gate.
+- `docs/audits/nextpay26-repair-vs-rewrite-2026-08-22.md` — completed finance audit and repair + integrate decision evidence.
+- `docs/roadmap/sdlive-control-center.md` — required Control Center sequence; brand-coherent rename is the current F Active Gate.
 - `PROJECT_STATUS.md` — operational current state, active gate, evidence and roadmap policy.
 - `ROADMAP_MASTER_CHECKLIST.md` — reconciled historical/future feature inventory; preservation layer, not automatic work authorization.
 
@@ -431,9 +432,9 @@ After a material milestone, update `PROJECT_STATUS.md`, this README and, when th
 - **Security A — CSP/browser headers:** CLOSED via PR #53 / `2710c0c0...`; Home, `/en/`, Admin and the embedded Site Editor preview passed production smoke.
 - **Security B — public form rate limiting:** CLOSED via PR #54 / `2c0fe574...`; Contact and Rental normal submissions both passed production smoke and their notifications arrived at the intended mailboxes.
 
-The current approved gate is **F — Control Center Step 3: full audit of the finance app currently known as NextPay26, followed by an explicit repair-vs-rewrite decision before implementation.** Audit scope includes data quality, COP/USD/fees/retentions/invoicing/aging/payment-state formulas, AppSheet sync/actions/bots, the jobs/clients/payments/invoice data model, and migration/source-of-truth consequences. Do not choose repair, rewrite, D1 or permanent Sheets/AppSheet ownership before the evidence is complete.
+**Control Center Step 3 — finance audit is CLOSED.** The 2026-08-22 audit reviewed 12 Sheets tabs, 57 real records, 11 Actions, 3 Bots, 11 Views, 10 Slices and critical formulas/business rules. It found zero P0 data-loss/corruption issues and documented the explicit decision **repair + integrate; do not rewrite**. AppSheet remains the offline field-capture surface; the eventual `/admin` view starts read-only from the underlying Google Sheet/API.
 
-After the audit decision, the required sequence is brand-coherent rename → field/source-of-truth mapping → read-only Admin insights. The **Availability-Aware Contact Widget** is now eligible as the one explicit parallel track, but remains unimplemented and must not be treated as active unless separately promoted.
+The current approved gate is **F — Control Center Step 4: brand-coherent rename**. After rename, the required sequence is field/source-of-truth mapping → read-only Admin insights. The **Availability-Aware Contact Widget** is now eligible as the one explicit parallel track, but remains unimplemented and must not be treated as active unless separately promoted.
 
 The Bing indexation recheck remains required for **2026-08-28 through 2026-09-04**. Do not repeatedly resubmit the same URLs before that window without new evidence.
 

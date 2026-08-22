@@ -2,7 +2,7 @@
 
 **Reprioritized:** 2026-08-22 — America/Bogota
 
-**Status:** Active sequenced initiative — Steps 1–2 are closed; **Step 3 finance-app audit / repair-vs-rewrite decision is the current F Active Gate**. Availability/WhatsApp is eligible as the documented parallel track but is not active automatically.
+**Status:** Active sequenced initiative — Steps 1–3 are closed; **Step 4 brand-coherent rename is the current F Active Gate**. Availability/WhatsApp is eligible as the documented parallel track but is not active automatically.
 
 This initiative supersedes the earlier informal Category D / future-integration framing for CRM, AppSheet integration, Automatic Show Day and Calendar. Existing detail in those sections remains valid; this document defines the required sequence and priority.
 
@@ -20,8 +20,6 @@ P3.4 — Responsive image/media delivery closed on 2026-08-22 with production sm
 
 ### 2. Security backlog — rate limiting + baseline CSP — ✅ CLOSED
 
-Promote the already-documented security backlog before operational/financial-adjacent integration begins.
-
 - [x] Explicit, verifiable rate limiting for the two public write endpoints: independent Contact/Rental Worker bindings at 10 requests / 60 seconds.
 - [x] Baseline CSP compatible with GTM/GA, Turnstile, R2/media, Google Fonts, Cloudflare Insights, Workers and current public behavior.
 - [x] `X-Content-Type-Options`, `SAMEORIGIN`, Referrer-Policy and Permissions-Policy baseline applied without breaking the same-origin Admin preview.
@@ -29,25 +27,39 @@ Promote the already-documented security backlog before operational/financial-adj
 
 Evidence: PR #53 / `2710c0c0...` (headers/CSP) and PR #54 / `2c0fe574...` (rate limiting).
 
-Rationale: the site will begin holding or relaying operational and financial-adjacent data, not only marketing content.
+### 3. Full audit of the finance app currently known as NextPay26 — ✅ CLOSED
 
-### 3. Full audit of the finance app currently known as NextPay26 — 🚧 F ACTIVE GATE
+**Decision: repair + integrate; do not rewrite from zero.**
 
-Do not limit this audit to previously observed issues. Review the complete system before choosing repair or rewrite.
+Audit evidence is preserved in `docs/audits/nextpay26-repair-vs-rewrite-2026-08-22.md`.
 
-- [ ] Full data-quality audit beyond known ghost-row / sync issues.
-- [ ] Formula correctness review: COP/USD, fees, retentions, invoicing logic, aging and payment state.
-- [ ] AppSheet sync reliability and action/bot behavior review.
-- [ ] Data-model review: jobs/events, clients, payments, invoice lifecycle and derived fields.
-- [ ] Explicit **repair vs full rewrite decision** with written reasoning before implementation.
-- [ ] Do not assume repair is automatically cheaper.
-- [ ] Do not assume a rewrite is automatically cleaner or safer.
-- [ ] If rewrite is selected, define the target architecture and migration/rollback plan before writing integration code.
-- [ ] If D1 becomes the new backing store, define how/when Google Sheets ceases to be authoritative rather than creating dual ownership.
+Verified scope/results:
 
-### 4. Brand-coherent rename
+- [x] 12 Google Sheets tabs and 57 real work records reviewed.
+- [x] 11 Actions, 3 Bots, 11 Views and 10 Slices in AppSheet reviewed.
+- [x] Critical formulas and collection rules reviewed, including Net Value, COP/USD collection logic and the LiventX workflow.
+- [x] Two missing payment dates completed so monthly income summaries reflect them.
+- [x] `No Pagados USD` aligned with the COP rule so `Fecha cuenta enviada` is required before counting as outstanding.
+- [x] `No Pagados` view Show If simplified to reuse its own Slice rather than duplicate business logic.
+- [x] `REGISTRO` range reduced from 21,040 to 3,000 rows.
+- [x] Net Value formula improved so blank cells and genuine errors are not silently conflated.
+- [x] `HER_PENDIENTES_PIVOT` verified as functioning correctly; no unnecessary repair performed.
+- [x] High-risk LiventX rule confirmed already correct: entries do not enter collection until evaluation and signature are both complete.
+- [x] Audit found zero P0 data-loss/corruption issues.
+- [x] Explicit repair-vs-rewrite decision documented: retain the existing Google Sheets + AppSheet finance system and integrate it incrementally.
 
-The current name **NextPay26** must be retired before deeper SD.Live integration so no new integration code or documentation depends on the legacy name.
+Decision rationale:
+
+- Existing business logic already represents real operational edge cases and should not be rediscovered in a rewrite.
+- AppSheet's reliable offline field capture remains valuable and expensive to reproduce correctly in a new web application.
+- Current volume does not demonstrate a scaling problem requiring a new backing architecture.
+- The actual problem to solve is operational fragmentation, not a failed finance architecture.
+
+**Architecture consequence:** AppSheet remains the field/offline capture tool. The first SD.Live integration remains read-only and Admin-only, reading the underlying Google Sheet/API rather than treating AppSheet as a second API/source of truth. This decision does **not** pre-commit Google Sheets as the permanent backing store forever; future ownership changes still require the field-level source-of-truth mapping and a deliberate migration plan.
+
+### 4. Brand-coherent rename — 🚧 F ACTIVE GATE
+
+The current name **NextPay26** must be retired before deeper SD.Live integration so new integration code/documentation does not depend on the legacy name.
 
 Evaluate names against the existing SD.Live brand voice, including:
 
@@ -56,8 +68,9 @@ Evaluate names against the existing SD.Live brand voice, including:
 - **SD.Live Books**
 
 - [ ] Choose the final name deliberately.
-- [ ] Apply it consistently to whichever implementation survives step 3: repaired Sheets/AppSheet or rewritten native system.
-- [ ] Preserve historical references only where needed for migration/audit context.
+- [ ] Apply it consistently to the surviving repaired Google Sheets + AppSheet system.
+- [ ] Preserve `NextPay26` only where needed for historical audit/migration context.
+- [ ] Do not alter formulas, sheet schema, AppSheet references or automation merely to rename presentation labels; identify technical references first.
 
 ### 5. Finance integration Phase 1 — source-of-truth mapping
 
@@ -67,7 +80,7 @@ Required columns:
 
 | Field / datum | Current owner | Future owner | Sync direction | Read/write scope | Sensitive? | Notes |
 |---|---|---|---|---|---|---|
-| Example only | TBD | TBD | TBD | TBD | TBD | Must be audited first |
+| Example only | TBD | TBD | TBD | TBD | TBD | Audit decision is repair + integrate; ownership still must be mapped |
 
 No integration is allowed until the real table is completed for the fields SD.Live may touch.
 
@@ -75,13 +88,9 @@ No integration is allowed until the real table is completed for the fields SD.Li
 
 First useful integration is read-only and private.
 
-If the existing system is repaired:
-
 - Worker reads the **underlying Google Sheet/API**, not AppSheet as an assumed authoritative API layer.
-
-If rewritten:
-
-- Worker reads the approved native source of truth, e.g. D1.
+- AppSheet continues to handle field/offline capture.
+- `/admin` becomes the consolidated consultation/control surface without changing finance write logic in this phase.
 
 Admin-only view should surface useful operational insights such as:
 
@@ -89,7 +98,7 @@ Admin-only view should surface useful operational insights such as:
 - [ ] Outstanding retentions / deductions where applicable.
 - [ ] COP / USD split.
 - [ ] Aging / priority collection signals.
-- [ ] Relevant jobs/events if they remain outside the finance table after step 3.
+- [ ] Relevant jobs/events if they remain outside the finance table after source mapping.
 
 Guardrails:
 
@@ -101,7 +110,7 @@ Guardrails:
 
 ### 7. Availability-aware contact widget + WhatsApp AI qualification
 
-This is an **independent sub-track**. P3.4 and the Security baseline are now closed, so it may be promoted to run in parallel with steps 3–6; it neither blocks nor is blocked by the finance-app audit/integration track. Eligibility does not make it active automatically.
+This is an **independent sub-track**. P3.4 and the Security baseline are closed, so it may be promoted to run in parallel with steps 4–6; it neither blocks nor is blocked by the finance integration track. Eligibility does not make it active automatically.
 
 The detailed contract is preserved in `docs/roadmap/availability-aware-contact-widget.md`.
 
@@ -149,16 +158,18 @@ Potential later scope:
 - AI qualification has no access to pricing, rental catalog or finance data.
 - Read-only or write-once comes before bidirectional sync.
 - "As soon as possible" applies to moving through the sequence, not bypassing prerequisites.
-- Steps 1–4 are prerequisites for the finance/control-center track.
-- Step 7 is the explicit parallel-track exception after the current active gate closes.
-- Repair vs rewrite remains **UNKNOWN until the audit is complete**.
+- Steps 1–4 are prerequisites for the finance/control-center integration track.
+- Step 7 is the explicit parallel-track exception.
+- Repair vs rewrite is **DECIDED: repair + integrate** based on the 2026-08-22 full audit; do not reopen it without new evidence of material architectural failure.
+- AppSheet's current offline capture behavior is an asset to preserve unless a future replacement proves equivalent reliability before migration.
 
 ## Explicit non-goals for now
 
 - No public-facing financial data without separate explicit approval.
 - No two-way realtime sync in a first version.
-- No pre-commitment to Google Sheets/AppSheet as the permanent backing store.
-- No pre-commitment to D1 rewrite before the audit.
+- No rewrite merely to move the current finance workflow into SD.Live.
+- No pre-commitment to Google Sheets/AppSheet as the permanent backing store beyond the current repair/integration path.
+- No D1 finance rewrite without a future evidence-based migration decision.
 - No AI quoting or pricing.
 - No parallel chatbot-owned lead database.
 - No automatic promotion of old backlog items merely because they are related to this initiative.
@@ -172,4 +183,4 @@ Existing sections remain valid detail and should not be deleted or recreated:
 - **16 — Automatic Show Day Mode**
 - **17 — Calendar**
 
-This **14.5 Control Center** initiative owns their sequencing and reprioritization. README, `PROJECT_STATUS.md` and the master checklist now point here; Step 3 finance audit is the active gate after the production-smoked P3.4 + Security prerequisites.
+This **14.5 Control Center** initiative owns their sequencing and reprioritization. README, `PROJECT_STATUS.md` and the master checklist point here; Step 4 brand-coherent rename is the active gate after the closed P3.4, Security and finance-audit prerequisites.
