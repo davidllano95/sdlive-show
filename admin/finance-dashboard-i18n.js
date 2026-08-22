@@ -44,6 +44,7 @@
     "Collection performance": "Desempeño de cobro",
     "How efficiently cash arrives": "Eficiencia de entrada de caja",
     "Paid invoices in the selected year": "Cuentas pagadas en el año seleccionado",
+    "Collection & fees": "Cobranza y comisiones",
     "Planning": "Planeación",
     "Tax reserve": "Reserva fiscal",
     "Management reserve only · not taxes owed": "Reserva de planeación · no representa impuestos adeudados",
@@ -76,8 +77,15 @@
     "Loading collection queue…": "Cargando cola de cobranza…",
     "Could not load finance data.": "No se pudieron cargar los datos financieros.",
     "Finance source unavailable": "Fuente financiera no disponible",
+    "Paid rows missing received amount": "Filas pagadas sin valor recibido",
+    "Unsupported currencies": "Monedas no admitidas",
+    "Unpaid rows missing aging": "Filas no pagadas sin antigüedad",
+    "Paid rows missing payment date": "Filas pagadas sin fecha de pago",
+    "Invalid payment durations": "Duraciones de pago inválidas",
     "Saving…": "Guardando…",
     "Saved": "Guardado",
+    "e.g. 25": "ej. 25",
+    "e.g. 20": "ej. 20",
     "Jan": "Ene",
     "Feb": "Feb",
     "Mar": "Mar",
@@ -116,6 +124,9 @@
     match = source.match(/^(\d+) months? including zero months$/);
     if (match) return `${match[1]} ${pluralEs(match[1], "mes", "meses")} incluyendo meses en cero`;
 
+    match = source.match(/^(\d+) accounts? · oldest ([\d.]+)d$/);
+    if (match) return `${match[1]} ${pluralEs(match[1], "cuenta", "cuentas")} · más antigua ${match[2]}d`;
+
     match = source.match(/^(\d+) accounts?(.*)$/);
     if (match) {
       let suffix = match[2] || "";
@@ -131,9 +142,6 @@
 
     match = source.match(/^([\d.]+)d avg · (\d+) payments?$/);
     if (match) return `${match[1]}d prom. · ${match[2]} ${pluralEs(match[2], "pago", "pagos")}`;
-
-    match = source.match(/^(\d+) accounts? · oldest ([\d.]+)d$/);
-    if (match) return `${match[1]} ${pluralEs(match[1], "cuenta", "cuentas")} · más antigua ${match[2]}d`;
 
     match = source.match(/^Top 3 · ([\d.]+)%$/);
     if (match) return `Top 3 · ${match[1]}%`;
@@ -291,13 +299,14 @@
       if (translating) return;
       const relevant = mutations.some((mutation) => {
         if (mutation.type === "characterData") return mutation.target.parentElement?.closest("#financeOverview");
+        if (mutation.type === "attributes") return mutation.target.closest?.("#financeOverview");
         return [...mutation.addedNodes].some((node) =>
           node.nodeType === Node.ELEMENT_NODE
             ? (node.matches?.("#financeOverview") || node.closest?.("#financeOverview") || node.querySelector?.("#financeOverview"))
             : node.parentElement?.closest?.("#financeOverview")
         );
       });
-      if (relevant || document.getElementById("financeOverview")) queueMicrotask(refresh);
+      if (relevant) queueMicrotask(refresh);
     });
     observer.observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ["aria-label", "placeholder", "title"] });
   }
