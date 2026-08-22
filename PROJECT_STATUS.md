@@ -8,14 +8,14 @@
 |---|---|
 | Última revisión integral | 2026-08-22 — **America/Bogota** |
 | Rama verificada | `main` al iniciar este checkpoint; consultar HEAD live al retomar |
-| Runtime production baseline verificado | `49d09a8598d0a4c3c42de7b1dedacf763a26a91b` — P3.3 accepted runtime after PR #46/#47 production measurement |
-| Trabajo activo | **P3.4 — Responsive image/media delivery pipeline** |
+| Runtime production baseline verificado | `3501169a1f5131a0adae1bf13b955d6aa78dbb28` — P3.4b responsive R2/CMS media delivery, production-smoked |
+| Trabajo activo | **Security baseline — rate limiting + baseline CSP** |
 | Producción | `https://sdlive.show` |
 | Media pública | `https://media.sdlive.show` |
-| Milestone actual | P3 — integridad pública, conversión, SEO y performance basados en evidencia |
-| Estado | **P3.0–P3.3 CERRADOS; P3.4 promovido a F** |
-| Active Gate | **F — P3.4 Responsive image/media delivery pipeline** |
-| Gate posterior | **Availability-Aware Contact Widget — Medium-High backlog after current active gate; then general backlog unless reprioritized** |
+| Milestone actual | Control Center prerequisites — hardening before operational/financial-adjacent integrations |
+| Estado | **P3.0–P3.4 CERRADOS; Security baseline promovido a F** |
+| Active Gate | **F — Security baseline: rate limiting + baseline CSP** |
+| Gate posterior | **Full audit of finance app / repair-vs-rewrite decision; Availability/WhatsApp may run in parallel only after this gate closes** |
 
 ### Convención temporal y de commits
 
@@ -135,8 +135,10 @@ Estas reglas se consideran permanentes salvo decisión explícita respaldada por
 | Bing discovery/index state | 7 URLs known/submitted; aggregate coverage not populated yet | A current snapshot / D follow-up | sitemap Success 7; URL submissions; Live URL pass; Site Scan 7/7 |
 | Bing missing-alt warning | Scanner false positive / no action | E | 7 intentional `alt=""`: six aria-hidden header-logo fragments + mirrored aria-hidden PA image |
 | Mobile lab performance | P3.3 cerrado con mejora material en lab; field CWV sigue sin CrUX suficiente | A — P3.3 cerrado | baseline Mobile 61/66 con LCP 14.8/10.2 s; final post-#47 75/73 con LCP 5.4/6.0 s; TTFB ~10 ms |
-| Responsive image delivery | ~1.4 MB estimated savings repetido | **F — P3.4 / P1-HIGH** | variants/`srcset`/`sizes` pipeline; preservar masters y ownership R2/static |
+| Responsive image delivery | Producción smoke OK; P3.4 cerrado | **A — P3.4 cerrado** | PR #50 header responsive + PR #51 R2/CMS responsive; Cloudflare Transformations zone-only; Mobile final 90 / LCP 3.1 s; image-delivery savings ~1.423 MiB → ~58 KiB |
 | Availability-Aware Contact Widget | Propuesto; no runtime/schema | D — Medium-High backlog after active gate | `docs/roadmap/availability-aware-contact-widget.md`; future D1 `availability_state`, exact owner WhatsApp gate, existing `leads` table |
+| SD.Live as Control Center | Reprioritized direction; not yet implemented | D direction / sequenced after security gate | `docs/roadmap/sdlive-control-center.md`; security → finance audit → rename → source mapping → read-only Admin insights; Availability is the explicit parallel-track exception |
+| Hidden/offscreen media payload trimming | Future optimization; not active | D | P3.4 closeout: responsive sizing is solved; investigate lazy/deferred hidden R2 reveal/brand media + `world-map.webp` separately without deleting masters |
 | Home HTML cache policy | `no-store` actual; optimización pendiente | A current / D optimization | `worker-entry.js::transformHomeResponse()` fija `Cache-Control: no-store` y `Vary: Accept-Language, Cookie`; current lab TTFB es bajo |
 | Sound for Picture CMS | No implementado | D/UNKNOWN scope | static/Admin staging only; stripped from public response in P3.2 |
 | Projects | No implementado | D | Admin module disabled/planned |
