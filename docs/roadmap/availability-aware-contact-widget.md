@@ -1,10 +1,10 @@
 # Availability-Aware Contact Widget
 
-**Priority:** Medium-High — sequence after the current active gate closes; above general backlog items such as CRM, calendar and quote automation.
+**Priority:** Reprioritized under **14.5 — SD.Live as Control Center**. It may begin after the current active gate closes and may run in parallel with the finance-app audit/integration track; it does not replace the mandatory security/finance sequencing for the Control Center initiative.
 
-**Status:** Backlog / Proposed — not yet scoped into a numbered phase and not authorized for implementation by this document alone.
+**Status:** Reprioritized roadmap sub-track / Proposed — not current runtime work while P3.4 is open.
 
-**Roadmap placement:** recorded during the P3.3 closeout; it must not interrupt P3.4 or any other currently active F gate unless explicitly reprioritized.
+**Roadmap placement:** this specification is now the detailed contract for **Step 7** of `docs/roadmap/sdlive-control-center.md`. P3.4 must close first. After that, Availability is the explicit parallel-track exception: it may progress alongside Control Center steps 3–6 without waiting for the finance integration to finish.
 
 ## Problem
 
@@ -72,6 +72,7 @@ No unrelated site behavior changes as part of this feature.
 ## Explicit guardrails
 
 - The AI bot must not receive Rental pricing, presets or catalog authority. Its role when active is lead qualification only: event type, date, headcount/basic scope and contact information. Pricing remains backend/GitHub-owned under existing project invariants.
+- The AI bot must never receive financial/control-center data.
 - AI-captured leads must be written into the existing `leads` table used by the web contact flow. Do not create parallel lead storage in a third-party chatbot platform.
 - No new pricing/catalog source of truth is introduced.
 - `availability_state` in D1 is the single source of truth for owner availability.
@@ -88,6 +89,7 @@ No unrelated site behavior changes as part of this feature.
 - [ ] Manual override auto-expires without manual intervention.
 - [ ] Travel mode expires and falls back to the default weekly schedule.
 - [ ] AI bot never references or invents pricing/catalog data.
+- [ ] AI bot never receives financial/control-center data.
 - [ ] AI bot leads land in the same `leads` table as web-form leads.
 - [ ] Short caching does not create a materially stale availability state after an owner command.
 
@@ -95,12 +97,14 @@ No unrelated site behavior changes as part of this feature.
 
 - AI-generated quotes or pricing.
 - Giving the bot Rental catalog/preset authority.
-- A full CRM view of WhatsApp conversations; that remains a separate, lower-priority CRM backlog item.
+- Giving the bot access to finance/control-center data.
+- A full CRM view of WhatsApp conversations; CRM remains a separate Control Center component with its own source-of-truth work.
 - Replacing the existing Contact/Rental backend sources of truth.
 
 ## Dependencies / sequencing
 
-- Must not interrupt the current active gate.
-- Sequence Medium-High immediately after the active gate is closed and explicitly reprioritized, ahead of general CRM/calendar/quote-automation backlog work.
+- **P3.4 must close first.**
+- This item is Step 7 of `docs/roadmap/sdlive-control-center.md` and is the explicit parallel-track exception after the active gate closes.
+- It does not need to wait for the finance-app audit/integration steps 3–6 to finish, but it must not weaken the project's security/source-of-truth rules.
 - WhatsApp command transport may reuse future AI-qualification webhook infrastructure, but this item must not assume that integration exists until verified.
 - Before implementation, confirm the actual WhatsApp provider/webhook architecture, credential storage, webhook signature/auth model, D1 migration strategy, cache invalidation/TTL and AI-provider privacy/retention terms.
