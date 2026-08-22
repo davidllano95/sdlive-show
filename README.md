@@ -84,6 +84,8 @@ Critical branding such as the primary SD.Live logo, favicon/app icons and essent
 
 Hero Draft/Published is fully connected to production. Published content is rendered at the Cloudflare edge before first paint, with static HTML as fallback if D1 is unavailable or invalid.
 
+**First-paint / anti-popping invariant:** the public Home must not visibly paint stale static CMS copy and then replace it with Published content. Edge SSR is the preferred path; the existing client hydration path remains a resilience fallback for non-SSR/static shells and Admin isolation. Performance work may skip redundant `hero-content.js` / `cms-hydration.js` loading when `data-server-rendered="true"`, but must not delete the fallback, blank the document to hide transitions, or reintroduce static→CMS flash/popping.
+
 ### Trusted By / Brands Supported Through
 
 **Production milestone completed.** Trusted By has Draft/Published state, ordering, WLive protection, R2 media, placement/scale metadata, server-side Published rendering, Draft isolation, EN/ES stability and production-validated `Save Draft ≠ live` / `Publish = live` semantics.
@@ -156,13 +158,14 @@ This distinction is mandatory for coding agents: **do not infer implementation f
 
 ## Approved future improvements register
 
-These requirements are preserved but are **not active work until explicitly prioritized**. The detailed status/subtasks live in `ROADMAP_MASTER_CHECKLIST.md`.
+These requirements are preserved but are **not active work until explicitly prioritized**. The detailed status/subtasks live in `ROADMAP_MASTER_CHECKLIST.md` and dedicated roadmap specs where linked.
 
 ### Site Editor / layout
 
 - Drag & drop, generic reorder, snap-to-grid, card/block resize, spacing/gap/padding/alignment, independent Desktop/Mobile layout, show/hide by device/market, Undo/Redo, revision rollback, full-page Draft, templates, hidden-staging access, duplicate/create blocks, autosave Draft, change comparison, scheduled Publish/visibility, shortcuts and Draft share/preview links.
 - Header visual management: reorder/spacing, link targets, scroll offsets, menu items, Show Day/Live Mode/WhatsApp visibility and contextual header presets.
 - Floating-control positioning, page/device visibility, ordering and iPhone safe-area preview.
+- **Hash/scroll-restoration polish:** refreshing a Home URL that retains `#rental` can visibly pass through top → Rental → the browser-restored prior scroll position because `initMarket()` currently forces `scrollIntoView()` while the browser restores history. Fix separately without hiding the document, disabling native restoration globally, or harming LCP. Safari can additionally show a brief native top→restored-position flash without a hash; treat that separately from CMS content popping.
 
 ### Media / content systems
 
@@ -195,6 +198,7 @@ These requirements are preserved but are **not active work until explicitly prio
 
 ### AI / conversational integrations
 
+- **Availability-Aware Contact Widget — Medium-High backlog:** after the current active gate closes and is explicitly reprioritized, resolve owner availability server-side from one D1 `availability_state` source of truth using expiring manual override → travel mode → default `America/Bogota` weekly schedule. Owner WhatsApp commands must require exact `env.OWNER_WHATSAPP_NUMBER`; unavailable state may swap the existing WhatsApp bubble for a future lead-qualification AI widget. The bot must never own or invent pricing/catalog data and must write leads into the existing `leads` table. Full proposed scope and acceptance criteria: `docs/roadmap/availability-aware-contact-widget.md`.
 - **Dapta.ai candidate assistant:** evaluate a future SD.Live website assistant using `https://dapta.ai`. Before implementation, re-verify the provider's current free/paid limits, embed/API capabilities, privacy/data processing, branding constraints and operational reliability. The assistant may guide visitors toward Services, Contact and Rental, but must never invent pricing, availability, project claims or technical capability; deterministic site/backend sources remain authoritative and human handoff must stay available.
 
 ### Performance / edge caching
@@ -259,6 +263,21 @@ Both P0 corrections raised by P3.0 are **closed and production-smoked**.
 
 Current runtime production baseline after these P0 closeouts: **`d4e3a28140664b96fc5d74578cef0442baa1a191`**.
 
+## P3.3 production closeout — 2026-08-22 America/Bogota
+
+**P3.3 — Mobile critical rendering path is CLOSED as an evidence-driven optimization gate.** The goal was not to chase a Lighthouse score at any cost; it was to remove proven redundant work while preserving privacy, server-resolved language, CMS first-paint correctness and established visual behavior.
+
+- The first experiment (PR #44) moved `site-consistency.css` and `visual-safeguards.css` out of the blocking path. Two-run measurement showed no attributable benefit, so it was reverted through PR #45 rather than accumulating complexity.
+- PR #46, squash merge `d52ca8d80c4e9fd3caa5f6be1aaae423e00c0840`, stops `home-navigation.js` from importing `hero-content.js` → `cms-hydration.js` when the Hero already has `data-server-rendered="true"`. The fallback remains intact for static/non-edge shells and Admin isolation. Production smoke showed no CMS content popping, and the redundant hydration chain disappeared from the public SSR Home dependency tree.
+- Historical reason for `cms-hydration.js`: it protects against the earlier static→CMS replacement flash/popping. **Do not delete this fallback merely because SSR can skip it on the normal public path.** Any future rendering optimization must test cold-load/reload for stale-content flash, Hero blanking and page popping.
+- PR #47, squash merge `49d09a8598d0a4c3c42de7b1dedacf763a26a91b`, keeps a tiny Consent Mode `default: denied` bootstrap synchronous before GTM on public `/`, while deferring the full existing consent manager/UI. Banner presence and Necessary-only persistence passed production smoke; `analytics-consent.js` disappeared from Lighthouse render blockers.
+- P3.0 Mobile baseline was 61/66 Performance with LCP 14.8/10.2 s. The final two post-#47 runs were **75 / LCP 5.4 s** and **73 / LCP 6.0 s**, with FCP 2.7 s in both and Hero element render delay about **810/670 ms**. Lighthouse remains variable, so preserve these as lab evidence rather than field-CWV claims.
+- TTFB remained around 10 ms in LCP breakdowns, reinforcing that Home `no-store` caching is not the demonstrated primary LCP cause.
+- The remaining repeated high-value opportunity is responsive image delivery (~1.4 MB estimated savings); that belongs to the separate P3.4 gate rather than being mixed into P3.3.
+- Separate navigation polish discovered during smoke: refresh with retained `#rental` can race our explicit `scrollIntoView()` against browser history restoration, producing top → Rental → prior position. This is **not CMS popping** and must be fixed independently without document blanking or LCP regression.
+
+Runtime production baseline after the accepted P3.3 changes: **`49d09a8598d0a4c3c42de7b1dedacf763a26a91b`**.
+
 ## SEO / content safety rules
 
 The intended sequence is:
@@ -308,6 +327,7 @@ Those items are **future integrations/backlog, not immediate instructions**, unl
 - `admin/editor/editor-resilience.js` — global Select routing/resilience layer.
 - `admin/editor/automatic-failsafe.js` — automatic publish verification.
 - `admin/editor/visual-safeguards-editor.js` — visual diagnostics/restore panel.
+- `docs/roadmap/availability-aware-contact-widget.md` — proposed Medium-High availability-aware WhatsApp/AI contact roadmap item; backlog, not active by existence alone.
 - `PROJECT_STATUS.md` — operational current state, active gate, evidence and roadmap policy.
 - `ROADMAP_MASTER_CHECKLIST.md` — reconciled historical/future feature inventory; preservation layer, not automatic work authorization.
 
@@ -344,6 +364,7 @@ API includes:
 - **Stability > novelty.** Preserve and extend working architecture by default.
 - Established production aesthetics are protected visual contracts.
 - Global Select must route to the owning CMS section/item and is part of every CMS smoke test.
+- Public CMS first paint must not reintroduce static→Published flash/popping; SSR may skip redundant hydration but fallback resilience remains required.
 - Rental is Colombia-first and hidden by default for International visitors.
 - Rental notifications go **only to `rental@sdlive.show`**.
 - General Contact notifications go to `hello@sdlive.show`.
@@ -387,13 +408,16 @@ After a material milestone, update `PROJECT_STATUS.md`, this README and, when th
 
 ## Current gate status
 
-**P3.0 Public Production Integrity + Commercial/SEO Audit is CLOSED as an audit/evidence checkpoint. P3.1 and P3.2 are also CLOSED and production-smoked.**
+**P3.0 Public Production Integrity + Commercial/SEO Audit, P3.1 Consent Mode parity, P3.2 public staging strip and P3.3 Mobile critical rendering path are CLOSED and production-smoked/evidenced.**
 
-- **P3.1 — Consent Mode parity:** CLOSED via PR #41 / `2d7a934d...`; consent default-denied/bootstrap now precedes GTM across the current public GTM page set, with private-session EN/ES/Rental/404 smoke passing.
-- **P3.2 — public Home staging strip:** CLOSED via PR #42 / runtime baseline `d4e3a281...`; public View Source no longer exposes `contentStaging`/`Future picture project`, while Admin preview remains normal and Safeguards stays 9/9 healthy.
+- **P3.1 — Consent Mode parity:** CLOSED via PR #41 / `2d7a934d...`; consent default-denied/bootstrap precedes GTM across the current public GTM page set, with private-session EN/ES/Rental/404 smoke passing.
+- **P3.2 — public Home staging strip:** CLOSED via PR #42 / `d4e3a281...`; public View Source no longer exposes `contentStaging`/`Future picture project`, while Admin preview remains normal and Safeguards stays 9/9 healthy.
+- **P3.3 — Mobile critical rendering path:** CLOSED via measured/reversible experiments. PR #46 skips redundant Hero hydration only when SSR is already authoritative; PR #47 defers the full Home consent UI after a synchronous default-denied bootstrap. Final post-#47 Mobile runs were 75/LCP 5.4 s and 73/LCP 6.0 s with no CMS content popping.
 
-The next approved narrow gate is **F — P3.3 Mobile critical rendering path**. Its scope is to measure and reduce render-blocking cost around the Home first paint while preserving the privacy default-denied contract, server-resolved language/anti-flash behavior and Visual Safeguards. **Responsive image/media variants remain a separate next candidate (P3.4)** unless P3.3 evidence proves a direct dependency; do not mix the two by default.
+The next narrow gate is **F — P3.4 Responsive image/media delivery pipeline**, focused on the repeated ~1.4 MB Mobile image-delivery opportunity through variants/`srcset`/`sizes` while preserving masters and current CMS/R2 ownership. Do not solve it by manually compressing assets one by one.
+
+The **Availability-Aware Contact Widget** is a **Medium-High backlog item after the current active gate**, above general CRM/calendar/quote-automation backlog work, and is not part of P3.4. See `docs/roadmap/availability-aware-contact-widget.md`.
 
 The Bing indexation recheck remains required for **2026-08-28 through 2026-09-04**. Do not repeatedly resubmit the same URLs before that window without new evidence.
 
-The future Carrd coherence audit, editable HTML CV, Dapta.ai assistant, remove.bg upload option, Home cache optimization and Cloudflare Crawler Hints/IndexNow remain backlog/future integrations and are **not automatically part of P3.3**. Sound for Picture remains inert staging until real content/scope is explicitly approved.
+The future Carrd coherence audit, editable HTML CV, Dapta.ai assistant, remove.bg upload option, Home cache optimization and Cloudflare Crawler Hints/IndexNow remain backlog/future integrations and are **not automatically part of P3.4**. Sound for Picture remains inert staging until real content/scope is explicitly approved.
