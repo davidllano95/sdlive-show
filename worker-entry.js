@@ -226,6 +226,14 @@ function transformHomeResponse(assetResponse, publishedHero, lang) {
         );
       }
     })
+    .on("link[data-sdlive-consistency]", {
+      element(element) {
+        // The main stylesheet already owns Home first-paint layout/branding.
+        // Keep this shared secondary-page polish, but do not make it block LCP.
+        element.setAttribute("media", "print");
+        element.setAttribute("onload", "this.onload=null;this.media='all'");
+      }
+    })
     .on("#contentStaging", {
       element(element) {
         // Staging remains in the static source for the isolated Admin iframe,
