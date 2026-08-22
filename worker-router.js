@@ -27,6 +27,18 @@ import {
 
 const TRUSTED_RUNTIME_VERSION = "20260821-1";
 const VISUAL_SAFEGUARDS_VERSION = "20260821-2";
+const CONSENT_DEFAULT_BOOTSTRAP = `<script data-sdlive-consent-default>
+window.dataLayer=window.dataLayer||[];
+window.gtag=window.gtag||function(){window.dataLayer.push(arguments);};
+window.gtag("consent","default",{
+  analytics_storage:"denied",
+  ad_storage:"denied",
+  ad_user_data:"denied",
+  ad_personalization:"denied",
+  functionality_storage:"granted",
+  security_storage:"granted"
+});
+</script>`;
 
 function normalizedPath(request) {
   const url = new URL(request.url);
@@ -79,6 +91,15 @@ function transformCmsHomeResponse(response, publishedTrusted, publishedTestimoni
         if (trustedIsCms) {
           element.append(`<script defer src="/trusted-published-runtime.js?v=${TRUSTED_RUNTIME_VERSION}"></script>`, { html: true });
         }
+      }
+    })
+    .on('script[src*="analytics-consent.js"]', {
+      element(element) {
+        // Consent Mode must still be default-denied before GTM, but the banner/UI
+        // manager does not need to block first paint. Keep the privacy-critical
+        // default inline and let the existing manager run after HTML parsing.
+        element.before(CONSENT_DEFAULT_BOOTSTRAP, { html: true });
+        element.setAttribute("defer", "");
       }
     })
     .on(".trusted-wrap", {
