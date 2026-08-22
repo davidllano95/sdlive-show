@@ -7,7 +7,7 @@
 > **Rule:** a checked item here means evidence exists elsewhere in the repo/production. A pending item remains backlog/future work unless `PROJECT_STATUS.md` explicitly promotes it to **F — Active Gate / Approved Work**.
 
 Last reconciliation: **2026-08-21 — America/Bogota**  
-Runtime production baseline checked against: `4a8c425bc016acad78ef15d07dd8a7a4792bbc73`; P2.8 Home media closeout is production-smoked and closed. Query GitHub live for the current `main` HEAD because docs-only commits may advance HEAD without changing the runtime baseline.
+Runtime production baseline checked against: `4a8c425bc016acad78ef15d07dd8a7a4792bbc73`; P2.8 Home media closeout is production-smoked and closed. P3.0 public/SEO/performance audit is now closed as an evidence checkpoint. Query GitHub live for the current `main` HEAD because docs-only commits may advance HEAD without changing the runtime baseline.
 
 ## Legend
 
@@ -19,7 +19,7 @@ Runtime production baseline checked against: `4a8c425bc016acad78ef15d07dd8a7a479
 
 ## Current Active Gate
 
-🚧 **F — P3.0 Public Production Integrity + Commercial/SEO Audit.** Audit-first: inventory the real public surface; verify COL/INT, EN/ES, Desktop/Mobile, CTAs/forms, email routing/references, links/status/redirects, canonical/hreflang/robots/sitemap/indexability, public visual consistency, Rental quote clarity and a reproducible performance/TTFB baseline. Findings must be classified before opening narrow fixes. P3.0 does **not** automatically implement the future integrations added below.
+🚧 **F — P3.1 Consent Mode parity across every public GTM page.** Reuse the existing Home `analytics-consent.js`/default-denied contract and extend it to every public HTML surface that loads GTM. The contract must be established before GTM, must not create a second consent system, and must receive automated coverage plus private-window production smoke. **P3.2** is the next P0 candidate: strip hidden staging/placeholder markup from the public Home response while preserving static/Admin preview source.
 
 ---
 
@@ -104,6 +104,7 @@ Still pending / future:
 - ⏳ Reordering when several controls coexist.
 - ⏳ Show/Hide by page/market/device.
 - ⏳ iPhone safe-area preview to avoid notch/home-indicator conflicts.
+- ⏳ **P3.0 finding:** public landings do not consistently include the Home WhatsApp CTA. Add it as a shared conversion-consistency improvement when promoted, preserving destination/tracking/safe-area behavior.
 
 ## 5. Media Library + Cloudflare R2
 
@@ -135,7 +136,9 @@ Still pending / future:
 - ⏳ Rich tags beyond current folder model.
 - ⏳ Alt-text metadata at Library level (section editors already expose alt where applicable).
 - ⏳ Crop / focal point.
-- ⏳ Automatic WebP/AVIF optimization only if cost/performance evidence justifies it.
+- ⏳ **Responsive delivery pipeline:** P3.0 Lighthouse found roughly 1.4 MB image-delivery savings on Mobile. Generate appropriate variants (for example small/medium/large widths as evidence supports), use `srcset`/`sizes`, and preserve original/master media; do not optimize manually image-by-image.
+- ⏳ Modern WebP/AVIF output only if pipeline/cost/browser evidence justifies it.
+- ⏳ Static header-logo PNG optimization can be handled separately from R2 because those assets are code-owned, but preserve visual identity and Show Day variants.
 - ⏳ Detect unused/orphaned media safely.
 - ⏳ Reference-aware delete / soft delete / rollback.
 - ⏳ **remove.bg opt-in upload processing:** when explicitly promoted, evaluate `https://www.remove.bg/api#remove-background` so each authenticated upload may ask whether to remove background. API key server-side only; preserve/identify original, version processed result in R2, surface failure cleanly, and re-check pricing/credits/privacy/file limits before implementation. Never remove backgrounds silently.
@@ -162,6 +165,7 @@ Still pending if desired as generic layout capabilities:
 - ⏳ Duplicate client/card action.
 - ⏳ Snap-to-grid / arbitrary layout resize.
 - ⏳ Generic COL/INT visibility control per item.
+- ⏳ P3.0 accessibility: use an accessible contrast token for `TRUSTED BY` rather than globally changing the muted token.
 
 ## 7. Brands Supported Through
 
@@ -210,6 +214,7 @@ Future deeper Portfolio/Projects scope:
 - ⏳ Extended case studies.
 - ⏳ Before/After.
 - ⏳ Embedded QLab/audio/video examples where rights/performance allow.
+- ⏳ **P3.0 language continuity fix:** the current EN Wonderlust/Work CTA to “Explore live and broadcast audio” resolves to a Spanish landing. Correct destination/translation without duplicating pages unnecessarily.
 
 ## 9. Raw vs Mixed
 
@@ -250,6 +255,8 @@ Resolved:
 
 Pending:
 
+- 🚧 **P3.1:** ensure every public page that loads GTM establishes the same Consent Mode/default-denied contract before GTM; this is analytics/privacy shell work, not Contact submission logic.
+- ⏳ P3.0 accessibility finding: correct Turnstile container semantics/ARIA compatibility without breaking widget render/action.
 - ⏳ Explicit/verifiable rate limiting.
 - ⏳ Optional automatic confirmation email to visitor; design copy/deliverability before enabling.
 - ⏳ Future CRM conversion/association when CRM exists.
@@ -270,6 +277,7 @@ Resolved:
 
 Pending:
 
+- ⏳ Reject a request with **0 equipment + 0 services** in both frontend and backend; service-only requests remain valid when at least one service is selected.
 - ⏳ Future CRM Lead/Rental Request relationship once source-of-truth is designed.
 - ⏳ Automatic PDF quotation, validity, approval workflow.
 - ⏳ Real-time availability.
@@ -277,13 +285,15 @@ Pending:
 - ⏳ Clearer wording that the cart is a **quote request, not checkout**, to reduce lead abandonment.
 - ⏳ Compatibility guidance: WING → recommend DL32; LV1 Classic → recommend StageGrid 4000, with UX approved before implementation and no silent auto-add.
 - ⏳ Rental Admin item creation + validated backend-owned pricing rules (fixed/per-day/multi-day/quantity/pair/bundle/conditional rules).
+- ⏳ Protect against pricing-copy drift between static/JSON-LD presentation and backend-owned pricing through shared-source/test strategy; do not create a second browser/CMS pricing engine.
 
 ## 13. Equipment Rental service card
 
-**Status: ⏳ D.**
+**Status: 🟡 B / existing intent behavior verified, copy/navigation polish may remain.**
 
-- ⏳ Card should lead directly to `#rental` where appropriate.
-- ⏳ Define INT behavior when Rental is hidden; do not create a dead CTA.
+- ✅ Public direct `/#rental` intent is handled by runtime and can reveal the required Rental surface even for INT visitors.
+- ⏳ Confirm/standardize all service-card destinations and labels so no dead CTA remains.
+- ⏳ Keep INT behavior deliberate; Rental remains hidden by default without direct intent.
 
 ## 14. Basic CRM
 
@@ -319,6 +329,7 @@ Pending:
 - ⏳ Auto-disable after event.
 - ⏳ Configurable activation window (for example 3h before → 2h after).
 - ⏳ Manual Admin override.
+- ⏳ P3.0 accessibility finding: improve contrast of the Show Day Mode control using a local accessible token, not a global muted-color change.
 
 ## 17. Calendar
 
@@ -421,9 +432,11 @@ Do not build before source-of-truth and sufficient real data exist.
 
 ## 25. Web analytics
 
-**Status: 🟡 B.**
+**Status: 🟡/🚧 B/F.**
 
-- ✅ GTM + GA4 + Consent Mode base exists.
+- ✅ GTM + GA4 base exists.
+- ✅ Home establishes Consent Mode/default denied before GTM and exposes the Privacy & analytics choice.
+- 🚧 **P3.1:** `/en/`, `/es-co/`, Theatre, public service/Rental landings and 404 (where they load GTM) must receive the same consent contract before GTM. Reuse the existing implementation.
 - ✅ `generate_lead`, WhatsApp and Email events are documented as validated/observed in GA4 Realtime; do not repeat the old initial validation from zero unless regression evidence appears.
 - ⏳ Separate internal/testing traffic once active debugging no longer requires it.
 - ⏳ Confirm one real form submission → one `generate_lead` if duplicate-firing integrity has not been explicitly closed.
@@ -439,23 +452,32 @@ Current pre-marketing warning remains: historical development traffic is contami
 
 ## 26. SEO
 
-**Status: 🟡 B.**
+**Status: 🟡 B; P3.0 audit checkpoint ✅ closed.**
 
-Already implemented base:
+Already implemented / verified base:
 
 - ✅ Canonicals/hreflang/robots/sitemap/JSON-LD/OG and redirects for current architecture.
 - ✅ Existing EN/ES-COL and rental/service landings.
+- ✅ Google sitemap Success with 7 discovered URLs during P3.0.
+- ✅ Google URL Inspection checked all seven; 6/7 indexed at audit time, and `/audio-eventos-streaming-teatro-bogota` passed Live Test + indexing request.
+- ✅ Google Manual Actions and Security Issues: no issues detected during audit.
+- ✅ Bing sitemap Success with 7 URLs; all 7 were already submitted 2026-08-18.
+- ✅ Tested Bing Live URLs were indexable; Home and Bogotá services were re-submitted 2026-08-21.
+- ✅ Bing Site Scan: 7/7 pages, 0 errors, 1 scanner warning, 0 notices.
+- ✅ Bing “missing alt” scanner warning reviewed as **non-actionable**: exactly seven intentional decorative `alt=""` instances (six header logo fragments inside aria-hidden brand graphics + mirrored aria-hidden PA image). Do not add redundant alt text to silence scanner.
 
-Pending:
+Pending / follow-up:
 
-- 🚧 **P3.0 active:** final professional Colombia + international public-surface audit.
-- ⏳ Titles / meta descriptions / schema / canonical / OG review after architecture stabilizes.
+- ⏳ **Bing indexation recheck:** revisit Bing after **7–14 days from 2026-08-21**, approximately **2026-08-28 through 2026-09-04**. Check URL Inspection, Site Explorer/Indexed URLs and sitemap crawl state before calling the current lack of aggregate data a technical fault.
+- ⏳ Do not repeatedly re-submit the same seven URLs while no new evidence exists; distinguish Bing crawl/report latency from an actual indexability issue.
+- ⏳ Google: revisit the one requested Bogotá services URL after a reasonable processing period; do not request indexing repeatedly.
+- ⏳ Titles / meta descriptions / schema / canonical / OG review after architecture/content changes.
 - ⏳ Internal-linking audit.
-- ⏳ Alt-text/content-media audit.
-- ⏳ Performance / Core Web Vitals.
+- ⏳ Performance / Core Web Vitals: Search Console had insufficient field/CrUX data, so use lab evidence for optimization without declaring a field failure.
 - ⏳ SEO controls from Admin when page model is ready.
-- ⏳ Search Console / Bing Webmaster / indexing monitoring and ongoing discoverability review.
-- ⏳ Measure queries/impressions/CTR/countries/landing pages.
+- ⏳ Ongoing Search Console / Bing Webmaster / indexing monitoring and discoverability review.
+- ⏳ Measure queries/impressions/CTR/countries/landing pages when data volume becomes useful.
+- ⏳ `sitemap.xml` `lastmod` is static while Home CMS can Publish independently; design maintenance/automation only when it accurately reflects meaningful updates.
 
 Candidate commercial queries to research, **not automatic page-generation instructions**:
 
@@ -468,21 +490,25 @@ For each: establish real offer, search intent, existing URL overlap, operational
 
 ## 27. SEO / alternative public pages
 
-**Status: 🟡/🚧 B/F for audit; implementation remains classified after findings.**
+**Status: 🟡 B; P3.0 audit ✅ completed, fixes remain individually prioritized.**
 
-- 🚧 P3.0: audit every current landing for visual consistency with Home.
-- 🚧 P3.0: consistent header/footer/Back to Home where appropriate.
-- 🚧 P3.0: EN/ES and hreflang correctness.
-- 🚧 P3.0: COL/INT behavior where applicable.
-- 🚧 P3.0: identify orphan pages/dead CTAs/redirect issues.
+- ✅ Current public landings participated in sitemap/Search Console/Bing audit.
+- ✅ No broad routing/HTTPS/canonical failure was found.
+- ⏳ Fix EN Work CTA that currently leads to a Spanish landing.
+- ⏳ Add/standardize WhatsApp on public landings where appropriate, preserving tracking and responsive safe areas.
+- ⏳ Maintain consistent Consent Mode shell via P3.1 before GTM across all public pages.
+- ⏳ Continue visual consistency polish only from specific evidence; no redesign by default.
 - ⏳ All relevant public pages should participate in Show Day Mode when the shared/runtime architecture supports it; define behavior before broad rollout.
 
 ## 28. Hidden/staging content in code
 
-**Status: 🟡 B.**
+**Status: 🟡/P0 next gate.**
 
 - ✅ Hidden/staging content has historically included Sound for Picture, Raw vs Mixed, Future Projects, Behind the Console / Field Notes and prior testimonial mockups.
 - ✅ Testimonials are no longer treated as hidden mockup content; they now have a real CMS.
+- ✅ P3.0 proved `#contentStaging` placeholder copy is still present in the **public/indexable Home HTML response** despite `hidden`/`aria-hidden`; visually hidden is not equivalent to absent from crawler-visible HTML.
+- ⏳ **P3.2 candidate:** strip staging from the public Home response at edge/runtime while preserving `index.html` source/static Admin preview if the Editor still needs it.
+- ⏳ Add regression that public `/` does not contain staging identifiers/copy such as `contentStaging` / `Future picture project`, while Admin preview contract remains intact.
 - ⏳ Audit the remaining hidden/staging blocks against current code before moving anything.
 - ⏳ Migrate reusable, approved patterns to Template Library when that system exists.
 - ⏳ Do not leave valuable content indefinitely as manual hidden HTML.
@@ -509,7 +535,11 @@ For each: establish real offer, search intent, existing URL overlap, operational
 - ✅ Public/API health endpoint exists.
 - ✅ D1/R2/Access/Turnstile foundational integrations exist.
 - ✅ **Verified cache baseline:** `worker-entry.js::transformHomeResponse()` sets `Cache-Control: no-store` for public root HTML and `Vary: Accept-Language, Cookie` while CMS/HTMLRewriter rendering occurs per request.
-- ⏳ **Home edge-cache optimization:** measure TTFB/D1/Worker impact; compare bounded `public` TTL + `stale-while-revalidate` against publish-triggered selective invalidation/purge. Any design must preserve EN/ES, COL/INT behavior, request variants, Admin preview, automatic publish failsafe, Draft ≠ Published and acceptable Publish freshness. Do not change `no-store` blindly.
+- ✅ P3.0 Lighthouse lab showed roughly 10 ms TTFB in the measured runs, while Mobile LCP remained poor; therefore current evidence does **not** support treating `no-store` as the main current LCP cause.
+- ⏳ **Home edge-cache optimization:** still valid future architecture work, but measure real TTFB/D1/Worker impact first; compare bounded `public` TTL + `stale-while-revalidate` against publish-triggered selective invalidation/purge. Preserve EN/ES, COL/INT behavior, variants, Admin preview, failsafe, Draft ≠ Published and acceptable Publish freshness.
+- ✅ P3.0 verified no existing IndexNow implementation in repo and Cloudflare **Crawler Hints is OFF**.
+- ⏳ **IndexNow/Crawler Hints:** evaluate Crawler Hints together with future cache/invalidation so change signals are reliable; avoid adding a parallel manual IndexNow API/key solely because Bing crawl is currently slow.
+- ⏳ **Mobile critical render path:** Lighthouse identified render-blocking first-party CSS/consent/language bootstrap + Google Fonts and a Hero `<h1>` LCP render delay. Optimize incrementally; preserve default-denied consent, first-paint language and Visual Safeguards.
 - ⏳ Admin-visible Worker health.
 - ⏳ D1 status.
 - ⏳ R2 status/usage and threshold warnings.
@@ -520,6 +550,7 @@ For each: establish real offer, search intent, existing URL overlap, operational
 - ⏳ Rollback from UI.
 - ⏳ Cloudflare security review/testing: document what the current free tier provides, what paid tiers/features would materially add, and do not buy/enable products without evidence/approval.
 - ⏳ Security testing/hardening: rate limits, CSP/Referrer-Policy/Permissions-Policy, Access/JWT validation boundaries, form abuse, dependency/runtime review, backups and incident recovery.
+- ⏳ Remove public `deploy-test.txt` in a later cleanup if no longer needed.
 
 ## 31. Settings
 
@@ -564,24 +595,43 @@ For each: establish real offer, search intent, existing URL overlap, operational
 
 ## P3.0 public production integrity
 
-**Status: 🚧 F — active audit gate.**
+**Status: ✅ A — audit/evidence gate closed 2026-08-21.**
 
-- 🚧 Inventory actual public routes/canonicals/aliases from repo, redirects and sitemap.
-- 🚧 Verify HTTP status/redirects/404 and relevant internal links.
-- 🚧 Audit COL/INT, EN/ES and Desktop/Mobile behavior on applicable routes.
-- 🚧 Audit CTAs, WhatsApp, Contact/Rental flows, stale emails and dead ends.
-- 🚧 Audit canonical/hreflang/robots/sitemap/meta robots/indexability/orphans/duplicates.
-- 🚧 Audit public visual consistency without assuming a redesign is required.
-- 🚧 Measure performance/TTFB/CWV baseline and record the current Home `no-store` condition.
-- 🚧 Classify findings P0/P1/P2 before any implementation PR.
+- ✅ Inventory actual public routes/canonicals/aliases from repo, redirects and sitemap.
+- ✅ Verify HTTP status/redirects/404 and relevant internal links.
+- ✅ Audit COL/INT, EN/ES and Desktop/Mobile behavior on applicable routes.
+- ✅ Audit CTAs, WhatsApp, Contact/Rental flows, stale-email/routing context and dead ends.
+- ✅ Audit canonical/hreflang/robots/sitemap/meta robots/indexability/orphans/duplicates.
+- ✅ Audit public visual consistency without assuming a redesign is required.
+- ✅ Measure performance/TTFB/Lighthouse baseline and record the Home `no-store` condition.
+- ✅ Search Console URL Inspection all 7 sitemap URLs; 6 indexed, 1 live-indexable and submitted.
+- ✅ Bing sitemap/submission/Live URL/Site Scan audit; 7/7 scan with no actionable technical SEO error.
+- ✅ Classify findings P0/P1/P2 before implementation.
+
+**Classified P0:** Consent Mode parity; public Home staging removal.  
+**P1-HIGH:** mobile critical rendering; responsive image delivery.  
+**P1:** accessibility, language CTA continuity, WhatsApp landings, Rental empty-request/RFQ clarity, pricing drift protection.  
+**P2:** sitemap lastmod maintenance, deploy-test cleanup, experimental agentic diagnostics.
+
+## P3.1 Consent Mode parity
+
+**Status: 🚧 F — active.**
+
+- 🚧 Inventory every public HTML file/route that loads GTM.
+- 🚧 Reuse the existing `analytics-consent.js`; do not build a parallel banner/consent manager.
+- 🚧 Ensure default-denied state executes before GTM on every in-scope page.
+- 🚧 Cover Home, EN/ES landings, Theatre, services/Rental landings and 404 as applicable; inspect Privacy separately.
+- 🚧 Add automated regression for coverage + ordering.
+- 🚧 Private-window production smoke after merge.
 
 ## COL vs INT production validation
 
-**Status: 🟡/🚧 B/F for audit.**
+**Status: 🟡 B after P3.0.**
 
 - Existing COL/INT runtime and Admin preview exist; Rental visibility has been exercised during CMS smoke.
-- 🚧 P3.0: perform an explicit end-to-end production audit of market detection and all affected CTAs/content/SEO.
+- ✅ P3.0 confirmed direct `#rental` intent can expose the necessary Rental surface for INT even though Rental remains hidden by default.
 - ⏳ Add an Admin diagnostic that exposes detected market and reason/source if this can be done without privacy-hostile fingerprinting.
+- ⏳ Continue checking new public pages/components for market parity as they are added.
 
 ## Commercial strategy / ROI
 
@@ -639,11 +689,16 @@ Do not mass-generate generic SEO articles.
 
 ## Search-engine indexing
 
-**Status: 🟡/🚧 B/F for current audit.**
+**Status: 🟡 B / monitored external state.**
 
-- Technical discoverability base exists.
-- 🚧 P3.0: verify current canonical/indexability/orphan/duplicate/hreflang/sitemap state across real public routes.
-- ⏳ Continue Google Search Console / Bing Webmaster/index coverage review, sitemap submission/validation and indexed-vs-canonical analysis when account evidence is available.
+- ✅ Technical discoverability base exists.
+- ✅ P3.0 verified current sitemap/canonical/indexability state across the seven intended URLs.
+- ✅ Google: 6/7 indexed at audit time; seventh Live Test passed and indexing was requested.
+- ✅ Bing: sitemap Success/discovered 7; all 7 submitted; tested Live URLs indexable; Site Scan 7/7 with 0 errors.
+- ⏳ **Bing follow-up mandatory:** re-check **7–14 days after 2026-08-21**, target **2026-08-28 to 2026-09-04**. Review Home + one landing in URL Inspection, Site Explorer Indexed URLs/All URLs, and sitemap crawl state.
+- ⏳ If Bing still shows known/discovered but not crawled while Live URL remains indexable, treat crawler/report latency as a plausible explanation and investigate evidence before code changes.
+- ⏳ Avoid repeated URL submissions without new evidence.
+- ⏳ Continue Google Search Console / Bing Webmaster coverage and indexed-vs-canonical analysis over time.
 - ⏳ Include organic search metrics in future reporting only after data becomes trustworthy.
 
 ## Home HTML cache / performance optimization
@@ -651,11 +706,37 @@ Do not mass-generate generic SEO articles.
 **Status: ⏳ D; current `no-store` condition is ✅ evidenced.**
 
 - ✅ `worker-entry.js::transformHomeResponse()` explicitly sets `Cache-Control: no-store` and `Vary: Accept-Language, Cookie` on public root HTML.
-- ⏳ Measure real TTFB/Worker/D1 cost and determine whether this is materially affecting visitors/CWV.
+- ✅ P3.0 lab TTFB was roughly 10 ms in tested Lighthouse runs, so current evidence does not make cache the primary Mobile LCP bottleneck.
+- ⏳ Measure real TTFB/Worker/D1 cost over time and determine whether caching materially helps visitors/cost.
 - ⏳ Evaluate simple bounded edge/shared caching such as a short TTL + `stale-while-revalidate` versus a more robust Publish-triggered purge/invalidation path.
 - ⏳ Cache keys/variants must safely respect language/cookies and actual COL/INT behavior; admin/preview/authenticated surfaces must not be shared-cached.
 - ⏳ Publish/failsafe correctness must remain stronger than performance gains; define rollback before implementation.
 - ⏳ Confirm current Cloudflare plan/API capabilities and any recurring cost before choosing purge architecture.
+- ✅ Cloudflare **Crawler Hints currently OFF** and no IndexNow implementation found in repo during P3.0.
+- ⏳ Evaluate Crawler Hints/IndexNow together with the future cache/invalidation architecture; do not add a manual parallel API just to compensate for Bing's current crawl delay.
+
+## Mobile performance / critical rendering
+
+**Status: ⏳ D/P1-high from P3.0 evidence.**
+
+- ✅ Mobile Lighthouse runs: Performance 61 and 66 under Slow 4G/Moto G Power emulation; Desktop 96.
+- ✅ Mobile LCP element is Hero `<h1>`; render delay dominates observed LCP breakdown while TTFB is low.
+- ✅ Total payload around 4.4 MB in audit; image delivery estimated ~1.4 MB savings.
+- ⏳ Optimize responsive image delivery via pipeline/variants/`srcset`/`sizes`.
+- ⏳ Review render-blocking CSS/fonts and early consent/language scripts incrementally; preserve privacy default-denied and first-paint language behavior.
+- ⏳ Preserve Visual Safeguards rather than deleting safeguards to chase a score.
+- ⏳ Re-run Mobile/Desktop Lighthouse after each material optimization and await CrUX field data before declaring real-user CWV results.
+
+## Accessibility
+
+**Status: ⏳ D/P1 from P3.0 evidence.**
+
+- ✅ Lighthouse Accessibility score 89 reproduced Mobile/Desktop.
+- ⏳ Consent banner: correct incompatible/unnamed dialog semantics while keeping preference UX non-blocking as designed.
+- ⏳ Contact/Rental Turnstile containers: remove prohibited generic-div `aria-label` pattern and use compatible accessible structure without breaking Turnstile.
+- ⏳ Local contrast fixes for `TRUSTED BY`, footer `SITE`/`CONNECT`, and Show Day Mode; avoid globally brightening `--color-muted`.
+- ⏳ Footer heading order: replace/adjust `h4` semantic level for `SITE` while preserving styling.
+- ✅ Bing's seven empty-alt instances are intentional decorative images and are **not** an accessibility defect; keep `alt=""`/aria-hidden semantics unless the underlying role changes.
 
 ## CMS image background removal
 
@@ -678,9 +759,10 @@ Do not mass-generate generic SEO articles.
 
 ## Rental quote clarity
 
-**Status: ⏳ D conversion improvement.**
+**Status: ⏳ D/P1 conversion improvement.**
 
 - Make it unmistakable that the Rental cart is a **request for quotation**, not payment/checkout, so pricing does not scare away or lose a lead.
+- Reject completely empty requests at frontend + backend while preserving legitimate service-only inquiries.
 - Measure conversion/friction before and after when analytics maturity allows.
 
 ## Cybersecurity / Cloudflare evaluation
@@ -706,9 +788,11 @@ This preserves the detailed analytics handoff while reconciling it with later co
 - ✅ `lead_type` and `market` were observed on validated lead events.
 - ✅ WhatsApp and Email tracking are now documented in the operational roadmap as validated/observed in GA4 Realtime.
 - ✅ No reason to assume tags are unpublished merely because normal traffic is absent from DebugView.
+- ✅ P3.0 identified Consent Mode parity as a **public-page shell issue**, not evidence that the already-validated Home GA4 events need to be rebuilt.
 
 ## Remaining integrity work
 
+- 🚧 P3.1: apply existing consent default-denied before GTM across every public GTM page.
 - ⏳ If not yet explicitly evidenced, execute one controlled production form submission and verify exactly one `generate_lead` for duplicate-firing integrity.
 - ⏳ Validate required parameters when tags/forms change.
 - ⏳ Separate developer/internal traffic after active debugging.
@@ -736,5 +820,8 @@ Current work order remains controlled by `PROJECT_STATUS.md`. At this checkpoint
 2. P2.7 Global Select + permanent change-safety policy is closed, merged and production-smoked.
 3. Home CMS R2 closeout inventory is complete: current managed media for Trusted/About/Selected Work/Testimonials/Rental was verified in Saved Draft and public production.
 4. P2.8 Home media-migrator cleanup is closed: PR #37 merged at `4a8c425bc016acad78ef15d07dd8a7a4792bbc73`, CI passed and post-merge smoke confirmed Editor controls, Select/Interact, Safeguards 9/9 and R2 media remained healthy while GitHub/static fallbacks were preserved.
-5. 🚧 **P3.0 is the only F — Active Gate:** audit the real public production surface and classify findings before fixes.
-6. Future integrations newly preserved — Home edge cache, Carrd coherence, canonical HTML CV, Dapta.ai candidate assistant and remove.bg upload option — remain **D**, not implementation instructions, until explicitly promoted.
+5. ✅ **P3.0 audit is closed:** Google/Bing/search/performance/accessibility evidence is recorded and findings are classified.
+6. 🚧 **P3.1 is the only F — Active Gate:** Consent Mode parity across every public GTM page, reusing the existing Home contract.
+7. **P3.2** is the next P0 candidate: remove staging placeholders from the public Home HTML response while preserving Admin/static preview.
+8. **Bing must be re-checked 7–14 days after 2026-08-21 (target 2026-08-28–2026-09-04)** before escalating the current crawl/report delay.
+9. Future integrations — Home edge cache + Crawler Hints/IndexNow, Carrd coherence, canonical HTML CV, Dapta.ai candidate assistant and remove.bg upload option — remain **D**, not implementation instructions, until explicitly promoted.
