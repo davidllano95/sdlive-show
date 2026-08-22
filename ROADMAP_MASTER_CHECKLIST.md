@@ -7,7 +7,7 @@
 > **Rule:** a checked item here means evidence exists elsewhere in the repo/production. A pending item remains backlog/future work unless `PROJECT_STATUS.md` explicitly promotes it to **F — Active Gate / Approved Work**.
 
 Last reconciliation: **2026-08-21**  
-Production baseline checked against: `main` at `7d54b83b37e6e30f889eff9a41b25a18b268b8a9`; active cleanup branch: `chore/home-cms-closeout-cleanup`.
+Production baseline checked against: `main` at `4a8c425bc016acad78ef15d07dd8a7a4792bbc73`; P2.8 Home media closeout is production-smoked and closed.
 
 ## Legend
 
@@ -103,7 +103,7 @@ Still pending / future:
 
 ## 5. Media Library + Cloudflare R2
 
-**Status: ✅/🟡 A/B — core library exists; Home migration is verified; advanced DAM remains. P2.8 is the narrow cleanup of retired migration tooling.**
+**Status: ✅/🟡 A/B — core library exists; Home migration/closeout is verified and P2.8 is closed; advanced DAM remains future work.**
 
 Already implemented / verified:
 
@@ -123,9 +123,9 @@ Already implemented / verified:
 - ✅ Saved Draft checks confirmed R2 media for About, Selected Work, Testimonials, Rental and Trusted.
 - ✅ Public production checks confirmed managed media for those same Home areas resolves via `media.sdlive.show`.
 - ✅ Selected Work's saved unpublished Draft was visually compared with live, published deliberately and passed the automatic Failsafe.
-- 🚧 **P2.8 Active Gate:** remove only the four temporary Home legacy-media migrator scripts/loaders and migration-only tests; preserve Media Library, section bridges/controls and all critical GitHub/static fallbacks.
+- ✅ **P2.8 closed:** the four temporary Home legacy-media migrator scripts/loaders and migration-only tests were retired in PR #37; Media Library, section bridges/controls and all critical GitHub/static fallbacks were preserved. CI passed and post-merge production smoke confirmed Editor, Select/Interact, Safeguards 9/9 and R2 media remained healthy.
 
-Pending after this closeout:
+Still pending / future:
 
 - ⏳ OG/social images as first-class CMS media.
 - ⏳ Rich tags beyond current folder model.
@@ -672,5 +672,5 @@ Current work order remains controlled by `PROJECT_STATUS.md`. At this checkpoint
 1. P2.6 is closed and production-smoked.
 2. P2.7 Global Select + permanent change-safety policy is closed, merged and production-smoked.
 3. Home CMS R2 closeout inventory is complete: current managed media for Trusted/About/Selected Work/Testimonials/Rental was verified in Saved Draft and public production.
-4. P2.8 is the only **F — Active Gate**: retire the now-redundant migration tooling while preserving Media Library and GitHub/static fallbacks, then require CI + merge + production smoke.
-5. After P2.8 closes, no backlog item becomes active automatically; review this checklist and explicitly promote only the next approved item to F.
+4. P2.8 Home media-migrator cleanup is closed: PR #37 merged at `4a8c425bc016acad78ef15d07dd8a7a4792bbc73`, CI passed and post-merge smoke confirmed Editor controls, Select/Interact, Safeguards 9/9 and R2 media remained healthy while GitHub/static fallbacks were preserved.
+5. **No F — Active Gate is currently open.** Review this checklist and explicitly promote only the next approved item before implementation begins.
