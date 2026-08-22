@@ -6,16 +6,16 @@
 
 | Campo | Valor |
 |---|---|
-| Última revisión integral | 2026-08-21 — **America/Bogota** |
+| Última revisión integral | 2026-08-22 — **America/Bogota** |
 | Rama verificada | `main` al iniciar este checkpoint; consultar HEAD live al retomar |
-| Runtime production baseline verificado | `d4e3a28140664b96fc5d74578cef0442baa1a191` — P3.2 merge con smoke público/Admin/Safeguards aprobado |
-| Trabajo activo | **P3.3 — Mobile critical rendering path** |
+| Runtime production baseline verificado | `49d09a8598d0a4c3c42de7b1dedacf763a26a91b` — P3.3 accepted runtime after PR #46/#47 production measurement |
+| Trabajo activo | **P3.4 — Responsive image/media delivery pipeline** |
 | Producción | `https://sdlive.show` |
 | Media pública | `https://media.sdlive.show` |
 | Milestone actual | P3 — integridad pública, conversión, SEO y performance basados en evidencia |
-| Estado | **P3.0 audit CERRADO; P3.1 y P3.2 CERRADOS y smokeados; P3.3 promovido a F** |
-| Active Gate | **F — P3.3 Mobile critical rendering path** |
-| Gate posterior | **P3.4 candidate — responsive image/media delivery pipeline; no mezclar por defecto con P3.3** |
+| Estado | **P3.0–P3.3 CERRADOS; P3.4 promovido a F** |
+| Active Gate | **F — P3.4 Responsive image/media delivery pipeline** |
+| Gate posterior | **Availability-Aware Contact Widget — Medium-High backlog after current active gate; then general backlog unless reprioritized** |
 
 ### Convención temporal y de commits
 
@@ -85,6 +85,7 @@ Estas reglas se consideran permanentes salvo decisión explícita respaldada por
 - Established production aesthetics son contratos; si un cambio CMS vuelve vulnerable una estética aprobada, extender **Visual Safeguards + tests** en el mismo PR.
 - `Save Draft` nunca cambia producción; `Publish` es la acción que puede promover Draft → Published.
 - Public content CMS usa **Published**, nunca Draft.
+- **CMS first-paint anti-popping:** Published SSR no debe pintar visiblemente copy estático viejo y luego reemplazarlo. `cms-hydration.js` permanece como fallback de resiliencia para paths non-SSR/static/Admin; performance puede omitir hidratación redundante solo cuando SSR ya es authoritative y nunca debe ocultar todo el documento para maquillar transiciones.
 - **Global Select** debe llevar desde el visual al dueño CMS y al item correcto, aunque otra sección esté activa; futuros page editors deben extender el mismo contrato.
 - Rental pricing/quote logic vive en backend y no puede convertirse en copy editable.
 - Rental notifica **solo a `rental@sdlive.show`**; Contact general a `hello@sdlive.show`.
@@ -108,6 +109,7 @@ Estas reglas se consideran permanentes salvo decisión explícita respaldada por
 | Future CRM | **TBD** | Admin module aún Planned/Soon |
 | Future Lead → Quote → Project → Invoice | **TBD antes de implementar** | no existe source-of-truth único todavía |
 | AppSheet futuro | **No decidir todavía** | integración pendiente; evitar segundo source-of-truth accidental |
+| Future owner availability | D1 `availability_state` **solo si se implementa** | proposed in `docs/roadmap/availability-aware-contact-widget.md`; no schema/runtime aún |
 
 ## Evidence matrix — sistemas de alto riesgo
 
@@ -132,9 +134,10 @@ Estas reglas se consideran permanentes salvo decisión explícita respaldada por
 | Google index coverage at audit | 6/7 indexed; 1 live-indexable + requested | A current snapshot / follow-up | URL Inspection all seven + request on Bogotá services landing |
 | Bing discovery/index state | 7 URLs known/submitted; aggregate coverage not populated yet | A current snapshot / D follow-up | sitemap Success 7; URL submissions; Live URL pass; Site Scan 7/7 |
 | Bing missing-alt warning | Scanner false positive / no action | E | 7 intentional `alt=""`: six aria-hidden header-logo fragments + mirrored aria-hidden PA image |
-| Mobile lab performance | weak under throttled Lighthouse; Desktop strong | **F — P3.3 / P1-HIGH** | Mobile 61/66, Desktop 96; LCP Hero h1; TTFB ~10 ms |
-| Responsive image delivery | ~1.4 MB estimated savings in audit | P1-HIGH / P3.4 candidate | PageSpeed image opportunities; needs variants/`srcset` pipeline |
-| Home HTML cache policy | `no-store` actual; optimización pendiente | A current / D optimization | `worker-entry.js::transformHomeResponse()` fija `Cache-Control: no-store` y `Vary: Accept-Language, Cookie`; current lab TTFB is low |
+| Mobile lab performance | P3.3 cerrado con mejora material en lab; field CWV sigue sin CrUX suficiente | A — P3.3 cerrado | baseline Mobile 61/66 con LCP 14.8/10.2 s; final post-#47 75/73 con LCP 5.4/6.0 s; TTFB ~10 ms |
+| Responsive image delivery | ~1.4 MB estimated savings repetido | **F — P3.4 / P1-HIGH** | variants/`srcset`/`sizes` pipeline; preservar masters y ownership R2/static |
+| Availability-Aware Contact Widget | Propuesto; no runtime/schema | D — Medium-High backlog after active gate | `docs/roadmap/availability-aware-contact-widget.md`; future D1 `availability_state`, exact owner WhatsApp gate, existing `leads` table |
+| Home HTML cache policy | `no-store` actual; optimización pendiente | A current / D optimization | `worker-entry.js::transformHomeResponse()` fija `Cache-Control: no-store` y `Vary: Accept-Language, Cookie`; current lab TTFB es bajo |
 | Sound for Picture CMS | No implementado | D/UNKNOWN scope | static/Admin staging only; stripped from public response in P3.2 |
 | Projects | No implementado | D | Admin module disabled/planned |
 | CRM pipeline | No implementado | D | leads/forms existen; pipeline ausente |
@@ -167,7 +170,7 @@ Para CMS/editor, el smoke debe incluir cuando aplique: EN/ES, COL/INT, Desktop/M
 
 Cuando se defina una mejora futura para SD.Live:
 
-1. registrarla en **README + este roadmap**; el detalle extenso puede vivir en `ROADMAP_MASTER_CHECKLIST.md`, que forma parte del roadmap documental;
+1. registrarla en **README + este roadmap**; el detalle extenso puede vivir en `ROADMAP_MASTER_CHECKLIST.md` o un spec dedicado bajo `docs/roadmap/`;
 2. clasificarla A–F y distinguir Backlog/Future Integration/Active Gate;
 3. registrar dependencias/source-of-truth cuando aplique;
 4. **no implementarla automáticamente** salvo priorización explícita.
@@ -436,7 +439,7 @@ Evidencia previa al cleanup:
 - [x] Testimonials Published/producción: logo/imagen pública resuelve vía `media.sdlive.show`.
 - [x] Rental Published/producción: imagen pública resuelve vía `media.sdlive.show`.
 - [x] Trusted Published/producción: logo público resuelve vía `media.sdlive.show`.
-- [x] Selected Work tenía Publish habilitado; preview vs live se comparó visualmente como idéntico, se publicó y Failsafe terminó verde.
+- [x] Selected Work tenía Publish habilitado; preview vs live se comparó visualmente como idéntico, se publicó y Failsafe quedó verde.
 
 Scope ejecutado y cierre:
 
@@ -549,22 +552,40 @@ Objetivo cumplido: retirar el staging/placeholder oculto del **response público
 
 ## P3.3 — Mobile critical rendering path
 
+**Estado: CERRADO y VALIDADO CON PRODUCCIÓN + LAB el 2026-08-22.**
+
+Objetivo cumplido: retirar trabajo redundante demostrado en el first paint/LCP móvil sin degradar privacidad, idioma SSR, CMS Published first paint ni contratos visuales.
+
+- [x] Baseline P3.0: Mobile 61/66; LCP 14.8/10.2 s; Hero `<h1>` como LCP; TTFB ~10 ms.
+- [x] PR #44 probó defer de CSS secundarios; dos corridas no mostraron beneficio atribuible y se revirtió en PR #45. No acumular optimizaciones sin evidencia.
+- [x] PR #46 (`d52ca8d80c4e9fd3caa5f6be1aaae423e00c0840`) evita importar `hero-content.js` → `cms-hydration.js` cuando `data-server-rendered="true"`; static/non-edge/Admin conservan el fallback.
+- [x] Motivo histórico preservado: `cms-hydration.js` existe para evitar static→CMS flash/popping. No borrarlo; en SSR solo se evita la hidratación redundante.
+- [x] Smoke después de PR #46: no CMS content popping; cadena redundante desapareció del dependency tree.
+- [x] PR #47 (`49d09a8598d0a4c3c42de7b1dedacf763a26a91b`) mantiene un bootstrap síncrono mínimo de Consent Mode `default: denied` antes de GTM y difiere el gestor/UI completo de consentimiento en `/` público.
+- [x] Smoke PR #47: fresh private banner presente; `Necessary only` persiste tras reload; no CMS content popping.
+- [x] `analytics-consent.js` dejó de aparecer entre Render-blocking requests del Home público medido.
+- [x] Final post-#47 Mobile PageSpeed: **75 / LCP 5.4 s** y **73 / LCP 6.0 s**; FCP 2.7 s en ambas; Hero element render delay ~810/670 ms.
+- [x] No se cambió `Cache-Control: no-store`; TTFB bajo no lo identifica como cuello principal demostrado.
+- [x] Hallazgo separado: refresh con `#rental` puede competir `scrollIntoView()` con history restoration y producir top → Rental → posición previa. No es CMS popping; queda polish futuro y no debe resolverse ocultando el documento ni forzando scroll restoration global.
+
+## P3.4 — Responsive image/media delivery pipeline
+
 **Estado: F — ACTIVE GATE / APPROVED WORK.**
 
-Objetivo: reducir el coste de bloqueo/render delay del first paint/LCP móvil demostrado por P3.0, sin debilitar privacidad, idioma SSR/anti-flash ni contratos visuales.
+Objetivo: atacar la oportunidad Mobile repetida de ~1.4 MB mediante un pipeline de entrega responsive, sin degradar masters, CMS/R2 source-of-truth, branding ni fallbacks.
 
 Change Safety / acceptance antes de implementar:
 
-- [ ] Reproducir/actualizar baseline móvil y separar render-blocking real de payload de imágenes; no usar un solo score como verdad absoluta.
-- [ ] Inventariar orden y dependencia de `analytics-consent.js`, `language-bootstrap.js`, CSS principal/consistency/visual safeguards, fonts y scripts del Home.
-- [ ] Preservar **Consent Mode default-denied antes de GTM** incluso si se reduce el bootstrap/UI blocking cost.
-- [ ] Preservar idioma correcto antes del first paint y evitar flash EN/ES.
-- [ ] Preservar Hero SSR/fallback, Published/Draft semantics y Admin preview isolation.
-- [ ] Preservar Visual Safeguards y estética aprobada; cualquier defer/inline debe tener tests de orden/availability.
-- [ ] Preferir cambios pequeños y reversibles; medir antes/después en Mobile y Desktop.
-- [ ] No cambiar `Cache-Control: no-store` dentro de este gate: TTFB lab ~10 ms no lo identifica como cuello principal.
-- [ ] No convertir P3.3 en pipeline de imágenes. Responsive variants/`srcset` queda como **P3.4 candidate** salvo dependencia demostrada.
-- [ ] PR + CI + production smoke EN/ES, consent fresh/persisted, Home visual/Safeguards y PageSpeed comparable.
+- [ ] Inventariar cuáles assets concretos explican el ahorro: R2 CMS media vs logos/header/static code-owned.
+- [ ] Preservar master/original; no comprimir ni reemplazar manualmente assets uno por uno.
+- [ ] Definir variantes y `srcset`/`sizes` basados en dimensiones reales de render, no en nombres arbitrarios.
+- [ ] Mantener R2 como source-of-truth binario de media administrable y GitHub para branding/fallbacks code-owned.
+- [ ] No introducir Cloudflare Images/servicio pago sin evidencia de necesidad/coste y aprobación.
+- [ ] Mantener alt/ARIA existentes y no alterar contenido CMS/Draft/Published.
+- [ ] Evitar layout shift: width/height/aspect-ratio deben seguir definidos.
+- [ ] Medir PageSpeed Mobile antes/después con al menos dos corridas comparables; revisar bytes y LCP/FCP además del score.
+- [ ] Smoke visual Desktop/Mobile, EN/ES, COL/INT, Editor/Media Library, Safeguards y fallbacks relevantes.
+- [ ] PR + CI + rollback estrecho.
 
 ---
 
@@ -605,6 +626,7 @@ Change Safety / acceptance antes de implementar:
 - [ ] Reordenar/espaciar elementos del header desde Admin.
 - [ ] Show/hide de CTAs, Show Day, WhatsApp y controles por página/mercado/dispositivo.
 - [ ] Configurar anchors y scroll offset.
+- [ ] **Hash/scroll restoration polish:** con `#rental` retenido, refresh puede mostrar top → Rental → posición restaurada por carrera entre `scrollIntoView()` y history restoration. Corregir sin blanking, sin `scrollRestoration=manual` global a ciegas y sin regresión de LCP. Safari puede mostrar además un microflash nativo top→posición restaurada sin hash; no confundir con CMS popping.
 - [ ] Agregar/quitar items del menú.
 - [ ] Posición independiente Mobile de WhatsApp, cart, Show Day/Live controls y Back to Top.
 - [ ] Presets contextuales de header y preview de safe areas Mobile si se aprueba.
@@ -675,6 +697,7 @@ Change Safety / acceptance antes de implementar:
 
 ## AI / media processing integrations
 
+- [ ] **Availability-Aware Contact Widget — D / Medium-High backlog after active gate:** resolver disponibilidad server-side con D1 `availability_state`: manual override con expiración → travel mode → horario semanal default en `America/Bogota`. Comandos WhatsApp `away`/`back`/`status` requieren match exacto con `env.OWNER_WHATSAPP_NUMBER` antes de cualquier routing customer/AI. Cuando no esté disponible, un futuro widget AI solo puede calificar leads; no puede poseer/inventar pricing/catalog y debe escribir al `leads` existente. Full spec: `docs/roadmap/availability-aware-contact-widget.md`.
 - [ ] **Dapta.ai website assistant — D Future Integration:** evaluar `https://dapta.ai` como bot/asistente del sitio. Revalidar en el momento de implementación si el plan gratuito sigue existiendo y sus límites; revisar embed/API, privacidad/data processing, branding, analytics/consent, reliability y handoff humano. Nunca puede inventar precio, disponibilidad, proyectos o capacidades; Services/Contact/Rental/backend siguen siendo authoritative.
 - [ ] **remove.bg opt-in desde CMS — D Future Integration:** integrar `https://www.remove.bg/api#remove-background` solo si se aprueba un flujo en el que cada upload pregunte si se desea remover background. API key exclusivamente server-side; conservar/identificar original, versionar resultado en R2, manejar errores/fallback, y revisar pricing/credits, límites y tratamiento de imágenes antes de implementar. Nunca procesar silenciosamente.
 
@@ -720,10 +743,10 @@ Antes de crear una página SEO, determinar qué servicio real representa, quién
 - [x] Visual regression contracts para sistemas protegidos por Safeguards.
 - [x] Automatic publish verification base.
 - [x] `/api/health` existe; ampliar observabilidad sin duplicar sistemas.
-- [ ] **Optimización de cache Home:** condición actual verificada: `transformHomeResponse()` usa `Cache-Control: no-store`, de modo que el root no obtiene shared HTML caching. P3.0 mostró TTFB lab ~10 ms, así que no tratar cache como causa principal del LCP actual. Evaluar TTL corto + `stale-while-revalidate` versus invalidación/purge en Publish solo con medición y correctness. Debe preservar `Vary: Accept-Language, Cookie`, EN/ES, COL/INT, Admin preview, failsafe, Draft/Published y frescura de Publish.
+- [ ] **Optimización de cache Home:** condición actual verificada: `transformHomeResponse()` usa `Cache-Control: no-store`, de modo que el root no obtiene shared HTML caching. P3.0/P3.3 mostraron TTFB lab ~10 ms, así que no tratar cache como causa principal del LCP actual. Evaluar TTL corto + `stale-while-revalidate` versus invalidación/purge en Publish solo con medición y correctness. Debe preservar `Vary: Accept-Language, Cookie`, EN/ES, COL/INT, Admin preview, failsafe, Draft/Published y frescura de Publish.
 - [ ] **IndexNow/Crawler Hints:** Cloudflare Crawler Hints está OFF y no existe integración IndexNow en repo. Evaluarlo junto con la estrategia futura de cache/invalidation; evitar una segunda API/key manual salvo necesidad probada.
-- [ ] Responsive image/media pipeline: variantes y `srcset`/`sizes` para R2/media + optimización independiente de header static logos; preservar master/original y no resolver asset-by-asset. **P3.4 candidate, no activo mientras P3.3 esté abierto.**
-- [ ] **F — P3.3 Mobile critical rendering path:** reducir blocking cost de CSS/fonts/scripts preservando consent default-denied, language first-paint, Hero SSR y Visual Safeguards; medir antes/después.
+- [ ] **F — P3.4 Responsive image/media delivery pipeline:** variantes y `srcset`/`sizes` para R2/media + optimización separada de header/static assets; preservar master/original y no resolver asset-by-asset.
+- [x] **P3.3 Mobile critical rendering path:** cerrado 2026-08-22; PR #46/#47 aceptados por medición, anti-popping preservado y render blocking reducido.
 - [ ] Rate limiting explícito y verificable.
 - [ ] CSP, Referrer-Policy y Permissions-Policy sin romper GTM/Turnstile/media.
 - [ ] Migraciones/versionado de esquema D1.
@@ -763,10 +786,10 @@ La visión recibida el 2026-08-21 se interpreta como una dirección estratégica
 
 ## Current State contrastado con el repo
 
-- **A — Ya existe:** frontend vanilla HTML/CSS/JS; Cloudflare Workers/Static Assets; D1; R2; Cloudflare Access; CMS Draft/Published/revisions; Hero/Trusted/Testimonials/About/Services/International/Work/Rental/Contact CMS según scope; reusable Media Library; Rental público con pricing backend; Contact/Rental forms; EN/ES; COL/INT; landings SEO actuales; canonical/hreflang/robots/sitemap/JSON-LD base; Visual Safeguards; automatic publish failsafe; Global Select cross-section production-smoked; Home managed-media production refs on R2; temporary Home media migrators retired and production-smoked in P2.8; P3.0 evidence audit completed; **P3.1 Consent parity y P3.2 public staging strip cerrados y smokeados**.
-- **B — Parcial:** Portfolio/Work sin case-study model profundo, Raw vs Mixed sin media real/Admin, Show Day sin calendario, Rental sin catálogo/admin completo, SEO sin sistema CMS-first para metadata de páginas futuras, analytics sin dashboard comercial/tráfico interno limpio, Insights/Journal sin sistema editorial real, mobile critical render todavía por optimizar.
-- **D — Future Integration:** layout visual avanzado, header/floating controls, Projects/case studies, Rental product SEO/Admin pricing rules/compatibility guidance, Article/Journal CMS, CRM pipeline/atribución, AppSheet, Calendar, quote automation, private portfolios, analytics dashboards, SEO CMS, internal linking graph, security/observability, Training, Carrd coherence, editable HTML CV, Dapta.ai assistant, remove.bg opt-in upload processing, Home edge-cache optimization y Crawler Hints/IndexNow.
-- **F — Active Gate:** **P3.3 Mobile critical rendering path.** Reducir blocking/render delay sin degradar consent, idioma first-paint, SSR ni Safeguards.
+- **A — Ya existe:** frontend vanilla HTML/CSS/JS; Cloudflare Workers/Static Assets; D1; R2; Cloudflare Access; CMS Draft/Published/revisions; Hero/Trusted/Testimonials/About/Services/International/Work/Rental/Contact CMS según scope; reusable Media Library; Rental público con pricing backend; Contact/Rental forms; EN/ES; COL/INT; landings SEO actuales; canonical/hreflang/robots/sitemap/JSON-LD base; Visual Safeguards; automatic publish failsafe; Global Select cross-section production-smoked; Home managed-media production refs on R2; temporary Home media migrators retired and production-smoked in P2.8; P3.0 evidence audit completed; **P3.1 Consent parity, P3.2 public staging strip y P3.3 critical rendering cerrados y smokeados/evidenciados**.
+- **B — Parcial:** Portfolio/Work sin case-study model profundo, Raw vs Mixed sin media real/Admin, Show Day sin calendario, Rental sin catálogo/admin completo, SEO sin sistema CMS-first para metadata de páginas futuras, analytics sin dashboard comercial/tráfico interno limpio, Insights/Journal sin sistema editorial real.
+- **D — Future Integration:** layout visual avanzado, header/floating controls, Projects/case studies, Rental product SEO/Admin pricing rules/compatibility guidance, Article/Journal CMS, CRM pipeline/atribución, AppSheet, Calendar, quote automation, private portfolios, analytics dashboards, SEO CMS, internal linking graph, security/observability, Training, Carrd coherence, editable HTML CV, Dapta.ai assistant, remove.bg opt-in upload processing, Home edge-cache optimization, Crawler Hints/IndexNow, Availability-Aware Contact Widget y hash/scroll-restoration polish.
+- **F — Active Gate:** **P3.4 Responsive image/media delivery pipeline.** Reducir bytes/imágenes responsive sin degradar masters, CMS/R2 ownership, layout ni branding.
 - **Importante:** aunque una visión futura describa CRM, Projects, Rental Admin u otros módulos, el repo manda. No documentarlos ni tratarlos como implementados hasta que exista código/flujo real.
 
 ## Gap analysis / priorización futura
@@ -778,8 +801,9 @@ La visión recibida el 2026-08-21 se interpreta como una dirección estratégica
 | Public Home hidden staging | public strip cerrado; static/Admin source preservado | conservar edge strip y Admin isolation | **A — P3.2 closed** | closed | — | alto | bajo | PR #42 + View Source/Admin/Safeguards smoke |
 | Home media closeout | R2 refs verificadas; migradores temporales retirados; smoke post-merge OK | conservar Media Library/fallbacks; cualquier cleanup adicional requiere auditoría separada | **A** | closed | — | medio | bajo | PR #37 + `4a8c425b...` + production smoke |
 | Global Select | cross-section/page-aware implementado y smokeado | conservar/expandir el mismo contrato para futuros pages | A/B | P0 | incremental | alto | bajo/medio | PR #36 + production smoke |
-| Mobile critical rendering | lab Mobile 61/66; Desktop 96; Hero h1 LCP; TTFB ~10ms | reducir blocking/render delay con medición y guardrails | **F — P3.3** | P1-HIGH | M | alto | medio | PageSpeed audit + first-paint contracts |
-| Responsive image delivery | ~1.4 MB estimated savings | variants/`srcset`/`sizes` pipeline; preservar masters | P3.4 candidate | P1-HIGH | M/L | alto | medio | PageSpeed audit + R2/static asset architecture |
+| Mobile critical rendering | P3.3 cerrado; final lab 75/73, LCP 5.4/6.0 s | conservar accepted changes + anti-popping/privacy invariants | **A — P3.3 closed** | closed | — | alto | bajo | PR #46/#47 + production smoke + PageSpeed |
+| Responsive image delivery | ~1.4 MB estimated savings repetido | variants/`srcset`/`sizes` pipeline; preservar masters | **F — P3.4** | P1-HIGH | M/L | alto | medio | PageSpeed audit + R2/static asset architecture |
+| Availability-aware contact | no existe runtime/schema todavía | D1 availability state + owner commands + WhatsApp/AI surface switching | **D — Medium-High after active gate** | next backlog | L | alto conversión | alto | exact owner auth + existing `leads` + provider/webhook validation |
 | Accessibility | Lighthouse 89 | dialog/Turnstile semantics, local contrast, footer heading order | D | P1 | S/M | alto | bajo | Lighthouse exact failures |
 | Home HTML edge cache | root SSR `no-store`; current TTFB lab low | medir y diseñar TTL/SWR o purge-on-Publish seguro por variantes | D | P2 optimization | M | medio | medio | `worker-entry.js`, variants/preview/failsafe |
 | Bing crawl/index follow-up | 7 known/submitted; tested Live URLs indexable; aggregate Site Explorer empty | recheck 7–14 days, then diagnose only if still stalled | D external follow-up | P1 | S | medio | bajo | Bing Webmaster audit |
@@ -831,7 +855,8 @@ La visión recibida el 2026-08-21 se interpreta como una dirección estratégica
 6. **Internal linking model.** Relaciones explícitas entre Services, Products, Projects y Articles.
 7. **CRM + attribution.** Forms actuales alimentarán pipeline real cuando source-of-truth esté definido.
 8. **Analytics integrity before marketing decisions.** Internal traffic, Key Events and downstream funnel evidence before trusting acquisition/revenue reporting.
-9. **Responsive image/media delivery + mobile critical rendering.** P3.3 toma primero critical rendering; variants/pipeline queda separado como siguiente candidate.
+9. **Responsive image/media delivery.** P3.4 es el gate activo tras cerrar P3.3; variants/`srcset`/`sizes` deben preservar masters y ownership.
+10. **Availability-Aware Contact Widget.** Medium-High inmediatamente después del active gate salvo repriorización explícita; D1 availability source-of-truth, owner WhatsApp hard gate y existing `leads` table.
 
 ### P2 — crecimiento/autoridad después de modelos sólidos
 
@@ -914,6 +939,8 @@ La visión recibida el 2026-08-21 se interpreta como una dirección estratégica
 - No restaurar Netlify, Owner Access mockup, `site-runtime` ni navegación por GTM.
 - No guardar secretos ni datos sensibles en GitHub.
 - GitHub = source-of-truth de código; D1 = contenido estructurado; R2 = media administrable.
+- **CMS anti-popping:** no sacrificar first-paint correctness por métricas; SSR puede evitar hidratación redundante, pero `cms-hydration.js`/fallback no se elimina sin reemplazo probado.
+- **Availability futura:** si se implementa, D1 `availability_state` será la única fuente de verdad; chatbot/proveedor no puede poseer disponibilidad, pricing, catálogo ni leads.
 - `media.sdlive.show` es el dominio público canónico para media R2.
 - Public Development URL de R2 permanece desactivado salvo necesidad explícita.
 - Established aesthetics son contratos: no degradar branding/UX por trabajo CMS. Safeguards + tests deben acompañar reconstrucciones vulnerables.
@@ -992,20 +1019,29 @@ P3.0 Public Production Integrity + Commercial/SEO Audit se promovió como gate a
 
 **CERRADO.** PR #42 squash-merged en `d4e3a28140664b96fc5d74578cef0442baa1a191`; CI verde. View Source público no contiene `Future picture project` ni `contentStaging`; Admin Editor permanece normal y Safeguards continúa 9/9. Static/Admin staging se conservó y Sound for Picture no fue publicado.
 
+## 2026-08-22 — P3.3 Mobile critical rendering path
+
+**CERRADO.** El experimento CSS #44 se revirtió en #45 por falta de beneficio medible. PR #46 (`d52ca8d8...`) eliminó la descarga redundante `hero-content.js`→`cms-hydration.js` solo cuando SSR ya era authoritative, conservando el fallback anti-popping. PR #47 (`49d09a85...`) separó el Consent Mode default-denied síncrono del gestor/UI diferido en Home. Smoke confirmó banner/persistencia y ausencia de CMS popping. Dos corridas finales Mobile: 75/LCP 5.4 s y 73/LCP 6.0 s.
+
+## 2026-08-22 — Availability-Aware Contact roadmap checkpoint
+
+**BACKLOG D / Medium-High.** Se preservó `docs/roadmap/availability-aware-contact-widget.md`. Debe ir después del active gate y por encima del backlog general CRM/Calendar/quote automation salvo repriorización. No existe todavía D1 schema/API/webhook/widget; no tratar como implementado.
+
 ---
 
 # Siguiente trabajo
 
-**P3.3 está activo.** Orden de ejecución:
+**P3.4 está activo.** Orden de ejecución:
 
-1. reproducir y documentar baseline comparable de first paint/LCP móvil y Desktop control;
-2. aplicar Change Safety a consent bootstrap, language bootstrap, CSS/fonts y Visual Safeguards antes de mover/deferir/inlinear recursos;
-3. separar render-blocking del payload de imágenes; no usar P3.3 para construir todavía el pipeline responsive;
-4. implementar la mínima reducción de blocking/render delay que preserve default-denied antes de GTM, idioma correcto antes del paint, Hero SSR/fallback y Safeguards;
-5. añadir/ajustar regresiones de orden y disponibilidad de recursos críticos;
-6. PR + CI + production smoke EN/ES, consent fresh/persisted, visual/Safeguards;
-7. repetir PageSpeed móvil/desktop bajo condiciones comparables y documentar efecto real;
-8. después decidir si P3.4 responsive images se promueve como siguiente gate;
-9. mantener el recheck de Bing para 2026-08-28 a 2026-09-04 sin re-submissions repetidos mientras tanto.
+1. inventariar assets que explican el ~1.4 MB estimado: media R2/CMS vs branding/header/static;
+2. medir dimensiones reales de render y consumidores antes de definir variantes;
+3. diseñar el mínimo pipeline de variants + `srcset`/`sizes` preservando masters/originales y fallbacks;
+4. mantener R2 como owner de media CMS y GitHub como owner de branding/static critical assets;
+5. no activar Cloudflare Images ni producto pago sin evidencia/approval;
+6. añadir tests de resolución/markup/dimensiones y evitar CLS;
+7. PR + CI + smoke Desktop/Mobile, EN/ES, COL/INT, Editor/Media Library/Safeguards;
+8. repetir PageSpeed Mobile al menos dos veces y comparar bytes/FCP/LCP además del score;
+9. después del cierre de P3.4, el **Availability-Aware Contact Widget** queda como backlog Medium-High siguiente por encima de CRM/Calendar/quote automation, salvo repriorización explícita;
+10. mantener el recheck de Bing para 2026-08-28 a 2026-09-04 sin re-submissions repetidos mientras tanto.
 
 **Sound for Picture permanece inert staging en static/Admin source hasta contenido/scope real aprobado; no forma parte del response público Home desde P3.2.**
