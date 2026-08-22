@@ -1,6 +1,8 @@
 const GOOGLE_TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token";
 const GOOGLE_SHEETS_API_BASE = "https://sheets.googleapis.com/v4/spreadsheets";
 const FINANCE_HEADER_RANGE = "REGISTRO!A1:AA1";
+const FINANCE_DATA_RANGE = "REGISTRO!A1:AA3000";
+const SUPPORTED_CURRENCIES = Object.freeze(["COP", "USD"]);
 
 export const EXPECTED_FINANCE_HEADERS = Object.freeze([
   "Fecha trabajo",
@@ -32,6 +34,12 @@ export const EXPECTED_FINANCE_HEADERS = Object.freeze([
   "NUM CONTACTO"
 ]);
 
+const FIELD_INDEX = Object.freeze(
+  Object.fromEntries(
+    EXPECTED_FINANCE_HEADERS.map((header, index) => [header, index])
+  )
+);
+
 function jsonResponse(data, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
@@ -46,6 +54,71 @@ function requiredEnv(env, name) {
   const value = String(env?.[name] || "").trim();
   if (!value) throw new Error(`Missing finance configuration: ${name}`);
   return value;
+}
+
+function cleanString(value) {
+  return value === undefined || value === null
+    ? ""
+    : String(value).trim();
+}
+
+function numericValue(value) {
+  if (value === "" || value === undefined || value === null) return null;
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
+}
+
+function emptyCurrencyTotals() {
+  return { COP: 0, USD: 0 };
+}
+
+function normalizedCurrency(value) {
+  const currency = cleanString(value).toUpperCase();
+  return SUPPORTED_CURRENCIES.includes(currency) ? currency : null;
+}
+
+function addCurrencyAmount(totals, currency, amount) {
+  if (!currency || amount === null) return;
+  totals[currency] += amount;
+}
+
+function recordCell(row, field) {
+  return row?.[FIELD_INDEX[field]];
+}
+
+function hasPersistedId(row) {
+  return Boolean(cleanString(recordCell(row, "ID")));
+}
+
+function isPaidState(value) {
+  return cleanString(value).toLowerCase() === "pagado";
+}
+
+function isPendingInvoiceState(value) {
+  return cleanString(value).toLowerCase() === "pendiente envio";
+}
+
+function collectionEligibility(row) {
+  const state = recordCell(row, "Estado");
+  const sentAt = cleanString(recordCell(row, "Fecha cuenta enviada"));
+
+  if (isPaidState(state) || isPendingInvoiceState(state) || !sentAt) {
+    return { collectible: false, workflowBlocked: false };
+  }
+
+  const client = cleanString(recordCell(row, "Cliente"));
+  if (client !== "LiventX") {
+    return { collectible: true, workflowBlocked: false };
+  }
+
+  const evaluatedAt = cleanString(recordCell(row, "Fecha evaluación"));
+  const signedAt = cleanString(recordCell(row, "Fecha firma"));
+  const ready = Boolean(evaluatedAt && signedAt);
+
+  return {
+    collectible: ready,
+    workflowBlocked: !ready
+  };
 }
 
 export function financeHealthDiagnostic(error) {
@@ -160,12 +233,17 @@ export async function fetchGoogleAccessToken(env, fetchImpl = fetch) {
   return accessToken;
 }
 
-export async function readFinanceHeader(env, fetchImpl = fetch) {
+async function readFinanceValues(env, range, fetchImpl = fetch) {
   const spreadsheetId = requiredEnv(env, "GOOGLE_FINANCE_SPREADSHEET_ID");
   const accessToken = await fetchGoogleAccessToken(env, fetchImpl);
-  const range = encodeURIComponent(FINANCE_HEADER_RANGE);
+  const encodedRange = encodeURIComponent(range);
   const spreadsheet = encodeURIComponent(spreadsheetId);
-  const url = `${GOOGLE_SHEETS_API_BASE}/${spreadsheet}/values/${range}?majorDimension=ROWS`;
+  const params = new URLSearchParams({
+    majorDimension: "ROWS",
+    valueRenderOption: "UNFORMATTED_VALUE",
+    dateTimeRenderOption: "FORMATTED_STRING"
+  });
+  const url = `${GOOGLE_SHEETS_API_BASE}/${spreadsheet}/values/${encodedRange}?${params}`;
 
   const response = await fetchImpl(url, {
     method: "GET",
@@ -180,16 +258,174 @@ export async function readFinanceHeader(env, fetchImpl = fetch) {
   }
 
   const data = await response.json().catch(() => null);
-  const headers = data?.values?.[0];
+  const values = data?.values;
 
-  if (!Array.isArray(headers)) {
+  if (!Array.isArray(values) || !Array.isArray(values[0])) {
     throw new Error("Google Sheets returned no REGISTRO header row");
   }
 
   return {
-    range: data?.range || FINANCE_HEADER_RANGE,
-    headers
+    range: data?.range || range,
+    values
   };
+}
+
+export async function readFinanceHeader(env, fetchImpl = fetch) {
+  const result = await readFinanceValues(env, FINANCE_HEADER_RANGE, fetchImpl);
+  return {
+    range: result.range,
+    headers: result.values[0]
+  };
+}
+
+export async function readFinanceRows(env, fetchImpl = fetch) {
+  const result = await readFinanceValues(env, FINANCE_DATA_RANGE, fetchImpl);
+  return {
+    range: result.range,
+    headers: result.values[0],
+    rows: result.values.slice(1).filter(hasPersistedId)
+  };
+}
+
+export function buildFinanceSummary(rows) {
+  const records = Array.isArray(rows) ? rows.filter(hasPersistedId) : [];
+  const toInvoiceGrossByCurrency = emptyCurrencyTotals();
+  const receivableNetByCurrency = emptyCurrencyTotals();
+  const receivedByCurrency = emptyCurrencyTotals();
+  const paidFeesByCurrency = emptyCurrencyTotals();
+  const agingMap = new Map();
+  const priority = [];
+
+  let toInvoiceCount = 0;
+  let receivableCount = 0;
+  let paidCount = 0;
+  let paidMissingReceivedCount = 0;
+  let collectionBlockedCount = 0;
+  let unsupportedCurrencyCount = 0;
+
+  for (const row of records) {
+    const currency = normalizedCurrency(recordCell(row, "Moneda"));
+    const rawCurrency = cleanString(recordCell(row, "Moneda"));
+    if (rawCurrency && !currency) unsupportedCurrencyCount += 1;
+
+    const state = recordCell(row, "Estado");
+
+    if (isPendingInvoiceState(state)) {
+      toInvoiceCount += 1;
+      addCurrencyAmount(
+        toInvoiceGrossByCurrency,
+        currency,
+        numericValue(recordCell(row, "Valor bruto"))
+      );
+    }
+
+    if (isPaidState(state)) {
+      paidCount += 1;
+      const received = numericValue(recordCell(row, "Valor Recibido"));
+      if (received === null) paidMissingReceivedCount += 1;
+      addCurrencyAmount(receivedByCurrency, currency, received);
+      addCurrencyAmount(
+        paidFeesByCurrency,
+        currency,
+        numericValue(recordCell(row, "Impuestos / Fees"))
+      );
+      continue;
+    }
+
+    const eligibility = collectionEligibility(row);
+    if (eligibility.workflowBlocked) collectionBlockedCount += 1;
+    if (!eligibility.collectible) continue;
+
+    receivableCount += 1;
+    const netAmount = numericValue(recordCell(row, "Valor Neto"));
+    addCurrencyAmount(receivableNetByCurrency, currency, netAmount);
+
+    const agingBucket = cleanString(recordCell(row, "Rango Aging")) || "Sin rango";
+    const daysUnpaid = numericValue(recordCell(row, "Días sin pagar"));
+    const aging = agingMap.get(agingBucket) || {
+      bucket: agingBucket,
+      count: 0,
+      byCurrency: emptyCurrencyTotals(),
+      maxDays: -1
+    };
+    aging.count += 1;
+    addCurrencyAmount(aging.byCurrency, currency, netAmount);
+    if (daysUnpaid !== null) aging.maxDays = Math.max(aging.maxDays, daysUnpaid);
+    agingMap.set(agingBucket, aging);
+
+    priority.push({
+      workDate: cleanString(recordCell(row, "Fecha trabajo")),
+      client: cleanString(recordCell(row, "Cliente")),
+      project: cleanString(recordCell(row, "Proyecto / Show")),
+      currency: currency || rawCurrency || null,
+      netAmount,
+      state: cleanString(state),
+      invoiceSentDate: cleanString(recordCell(row, "Fecha cuenta enviada")),
+      daysUnpaid,
+      aging: agingBucket
+    });
+  }
+
+  priority.sort((a, b) => {
+    const daysA = a.daysUnpaid ?? -1;
+    const daysB = b.daysUnpaid ?? -1;
+    if (daysB !== daysA) return daysB - daysA;
+    return String(a.client).localeCompare(String(b.client));
+  });
+
+  const aging = [...agingMap.values()]
+    .sort((a, b) => b.maxDays - a.maxDays || a.bucket.localeCompare(b.bucket))
+    .map(({ maxDays, ...entry }) => entry);
+
+  return {
+    recordCount: records.length,
+    toInvoice: {
+      count: toInvoiceCount,
+      grossByCurrency: toInvoiceGrossByCurrency
+    },
+    receivables: {
+      count: receivableCount,
+      netByCurrency: receivableNetByCurrency,
+      workflowBlockedCount: collectionBlockedCount,
+      aging,
+      priority: priority.slice(0, 10)
+    },
+    received: {
+      paidCount,
+      amountByCurrency: receivedByCurrency,
+      feesByCurrency: paidFeesByCurrency,
+      missingReceivedAmountCount: paidMissingReceivedCount
+    },
+    dataQuality: {
+      unsupportedCurrencyCount
+    }
+  };
+}
+
+function financeUnavailableResponse(error) {
+  console.error(
+    "[SD.Live] Finance API request failed",
+    String(error?.message || error)
+  );
+
+  return jsonResponse({
+    ok: false,
+    source: "google-sheets",
+    access: "read-only",
+    error: "Finance source unavailable",
+    ...financeHealthDiagnostic(error)
+  }, 503);
+}
+
+function schemaMismatchResponse(schema) {
+  return jsonResponse({
+    ok: false,
+    source: "google-sheets",
+    access: "read-only",
+    stage: "schema_validation",
+    code: "schema_mismatch",
+    schema
+  }, 503);
 }
 
 export async function handleFinanceApi(
@@ -213,7 +449,10 @@ export async function handleFinanceApi(
     return jsonResponse({ ok: false, error: "Unauthorized" }, 403);
   }
 
-  if (path !== "/api/admin/finance/health") {
+  if (
+    path !== "/api/admin/finance/health" &&
+    path !== "/api/admin/finance/summary"
+  ) {
     return jsonResponse({ ok: false, error: "Finance API route not found" }, 404);
   }
 
@@ -221,42 +460,40 @@ export async function handleFinanceApi(
     return jsonResponse({ ok: false, error: "Method not allowed" }, 405);
   }
 
-  try {
-    const result = await readFinanceHeader(env, fetchImpl);
-    const schema = validateFinanceHeaders(result.headers);
+  if (path === "/api/admin/finance/health") {
+    try {
+      const result = await readFinanceHeader(env, fetchImpl);
+      const schema = validateFinanceHeaders(result.headers);
 
-    if (!schema.ok) {
+      if (!schema.ok) return schemaMismatchResponse(schema);
+
       return jsonResponse({
-        ok: false,
+        ok: true,
         source: "google-sheets",
         access: "read-only",
-        stage: "schema_validation",
-        code: "schema_mismatch",
+        range: result.range,
         schema
-      }, 503);
+      });
+    } catch (error) {
+      return financeUnavailableResponse(error);
     }
+  }
+
+  try {
+    const result = await readFinanceRows(env, fetchImpl);
+    const schema = validateFinanceHeaders(result.headers);
+
+    if (!schema.ok) return schemaMismatchResponse(schema);
 
     return jsonResponse({
       ok: true,
       source: "google-sheets",
       access: "read-only",
       range: result.range,
-      schema
+      schema,
+      summary: buildFinanceSummary(result.rows)
     });
   } catch (error) {
-    console.error(
-      "[SD.Live] Finance health check failed",
-      String(error?.message || error)
-    );
-
-    const diagnostic = financeHealthDiagnostic(error);
-
-    return jsonResponse({
-      ok: false,
-      source: "google-sheets",
-      access: "read-only",
-      error: "Finance source unavailable",
-      ...diagnostic
-    }, 503);
+    return financeUnavailableResponse(error);
   }
 }
