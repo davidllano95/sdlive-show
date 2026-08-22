@@ -1,9 +1,9 @@
 name: Temporary docs reconciliation
 
 on:
-  push:
+  pull_request:
     branches:
-      - docs/p3-3-closeout-roadmap
+      - main
     paths:
       - .github/workflows/docs-p3-3-closeout-temp.yml
 
