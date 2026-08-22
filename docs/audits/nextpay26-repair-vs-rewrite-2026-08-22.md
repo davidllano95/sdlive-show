@@ -2,6 +2,8 @@
 **Fecha:** 22 de agosto de 2026
 **Decisión final:** Reparar e integrar a `/admin` — no reescribir desde cero.
 
+**Roadmap status:** Control Center Step 3 evidence — CLOSED. This file preserves the completed audit decision; `docs/roadmap/sdlive-control-center.md` owns subsequent sequencing.
+
 ---
 
 ## Qué se hizo
