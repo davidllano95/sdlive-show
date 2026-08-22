@@ -1,0 +1,136 @@
+name: Finance audit closeout reconciler
+
+on:
+  push:
+    branches:
+      - docs/finance-audit-closeout
+    paths:
+      - .github/workflows/finance-audit-closeout-reconciler.yml
+
+permissions:
+  contents: write
+
+jobs:
+  reconcile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: docs/finance-audit-closeout
+          fetch-depth: 0
+
+      - name: Reconcile milestone docs
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace_once(text, old, new, label):
+              if old not in text:
+                  raise SystemExit(f"missing expected text: {label}")
+              return text.replace(old, new, 1)
+
+          # PROJECT_STATUS.md
+          p = Path("PROJECT_STATUS.md")
+          t = p.read_text()
+          t = replace_once(t,
+              "| Trabajo activo | **Control Center Step 3 — full finance-app audit / repair-vs-rewrite decision** |",
+              "| Trabajo activo | **Control Center Step 4 — brand-coherent rename** |",
+              "project active work")
+          t = replace_once(t,
+              "| Milestone actual | SD.Live as Control Center — finance-system evidence/audit before integration |",
+              "| Milestone actual | SD.Live as Control Center — preserve repaired finance system, rename before integration |",
+              "project milestone")
+          t = replace_once(t,
+              "| Estado | **P3.0–P3.4 CERRADOS; Security baseline CERRADO; Finance audit promovido a F** |",
+              "| Estado | **P3.0–P3.4 CERRADOS; Security CERRADO; Finance audit CERRADO; Rename promovido a F** |",
+              "project state")
+          t = replace_once(t,
+              "| Active Gate | **F — Full audit of finance app / explicit repair-vs-rewrite decision** |",
+              "| Active Gate | **F — Control Center Step 4: brand-coherent rename** |",
+              "project gate")
+          t = replace_once(t,
+              "| Gate posterior | **Brand-coherent rename → field/source mapping → read-only Admin insights; Availability/WhatsApp is eligible as the explicit parallel track** |",
+              "| Gate posterior | **Field/source-of-truth mapping → read-only Admin insights; Availability/WhatsApp remains eligible as the explicit parallel track** |",
+              "project next gate")
+          t = replace_once(t,
+              "| AppSheet futuro | **No decidir todavía** | integración pendiente; evitar segundo source-of-truth accidental |",
+              "| Finance system actual | Google Sheets + AppSheet, repair path retained | audit 2026-08-22: AppSheet preserves offline capture; field-level ownership mapping remains mandatory before SD.Live integration |",
+              "project finance source")
+          t = replace_once(t,
+              "| SD.Live as Control Center | Steps 1–2 prerequisites closed; Step 3 finance audit active | **F — Step 3 Active Gate** | `docs/roadmap/sdlive-control-center.md`; P3.4 + Security closed → finance audit → rename → source mapping → read-only Admin insights; Availability is the explicit parallel-track exception |",
+              "| SD.Live as Control Center | Steps 1–3 closed; repair + integrate decision recorded; Step 4 rename active | **F — Step 4 Active Gate** | `docs/audits/nextpay26-repair-vs-rewrite-2026-08-22.md` + `docs/roadmap/sdlive-control-center.md`; preserve Sheets/AppSheet logic/offline capture → rename → source mapping → read-only Admin insights |",
+              "project evidence matrix")
+          t = replace_once(t,
+              "- **F — Active Gate:** **Control Center Step 3 — full finance-app audit / repair-vs-rewrite decision.** No integrar, reparar ni reescribir hasta auditar datos, fórmulas, AppSheet sync/actions/bots y ownership/migration implications.",
+              "- **F — Active Gate:** **Control Center Step 4 — brand-coherent rename.** Finance audit closed with a repair + integrate decision; preserve the working Sheets/AppSheet logic and offline capture while choosing the SD.Live-aligned name before source mapping/integration.",
+              "project future F")
+          t = replace_once(t,
+              "| Finance app / Control Center Step 3 | sistema externo actual aún no auditado de punta a punta | auditar datos, fórmulas, AppSheet sync/actions/bots y decidir repair vs rewrite por evidencia | **F — Active Gate** | P0 prerequisite | M/L audit | muy alto | alto | `docs/roadmap/sdlive-control-center.md`; no architecture decision before audit |",
+              "| Finance app / Control Center Step 3 | auditoría completa cerrada; cero P0; correcciones menores aplicadas | conservar Google Sheets + AppSheet, incluida captura offline; integrar incrementalmente | **A — closed** | closed | — | muy alto | bajo/medio | `docs/audits/nextpay26-repair-vs-rewrite-2026-08-22.md`; repair + integrate decision |\n| Finance brand / Control Center Step 4 | nombre legacy NextPay26 aún vigente | elegir nombre coherente con SD.Live y aplicarlo sin romper referencias técnicas | **F — Active Gate** | P0 prerequisite | S/M | alto | bajo/medio | audit cerrado; rename precede field/source mapping |",
+              "project gap finance")
+          marker = "## 2026-08-22 — Availability-Aware Contact roadmap checkpoint"
+          finance_milestone = "## 2026-08-22 — NextPay26 finance audit / repair-vs-rewrite\n\n**CERRADO.** Se auditó el sistema completo Google Sheets + AppSheet: 12 pestañas, 57 registros reales, 11 Actions, 3 Bots, 11 Views y 10 Slices, además de fórmulas críticas y reglas de cobranza. Se corrigieron dos fechas de pago, paridad No Pagados USD/COP, Show If duplicado, rango REGISTRO y manejo de error/vacío en Valor Neto; `HER_PENDIENTES_PIVOT` y la regla crítica de LiventX se confirmaron correctas. Resultado: cero P0 de pérdida/corrupción. Decisión explícita: **repair + integrate; no rewrite**. AppSheet conserva captura offline; la primera integración futura en `/admin` será read-only sobre el underlying Google Sheet/API después de rename + source mapping. Evidencia: `docs/audits/nextpay26-repair-vs-rewrite-2026-08-22.md`.\n\n"
+          if finance_milestone not in t:
+              t = replace_once(t, marker, finance_milestone + marker, "project finance milestone insertion")
+          start = t.index("# Siguiente trabajo")
+          tail = "# Siguiente trabajo\n\n**F — Control Center Step 4: brand-coherent rename del sistema financiero reparado.**\n\nOrden del gate:\n\n1. evaluar el nombre contra la voz actual de SD.Live, incluyendo `SD.Live Ledger`, `SD.Live Finance` y `SD.Live Books`;\n2. elegir un nombre final;\n3. inventariar dónde aparece `NextPay26` en Google Sheets, AppSheet, documentación, iconos/labels y cualquier automatización antes de cambiarlo;\n4. distinguir labels/presentación seguros de referencias técnicas que podrían romper fórmulas, acciones, bots o sync;\n5. aplicar primero el rename no destructivo de presentación y validar AppSheet sync/offline/actions/bots;\n6. conservar `NextPay26` solo en contexto histórico/audit donde sea útil;\n7. no iniciar todavía dashboard `/admin`, write-back ni migración D1; después del rename viene el field/source-of-truth mapping;\n8. Availability/WhatsApp puede correr en paralelo solo si se promueve explícitamente.\n\nMantener además el recheck de Bing para **2026-08-28 a 2026-09-04** sin re-submissions repetidos mientras tanto.\n\n**Sound for Picture permanece inert staging en static/Admin source hasta contenido/scope real aprobado; no forma parte del response público Home desde P3.2.**\n"
+          t = t[:start] + tail
+          p.write_text(t)
+
+          # README.md
+          p = Path("README.md")
+          t = p.read_text()
+          t = replace_once(t,
+              "- **SD.Live as Control Center — reprioritized direction:** sequencing and guardrails live in `docs/roadmap/sdlive-control-center.md`. After the current gate closes, the mandatory first block is security baseline (rate limiting + baseline CSP), followed by the finance-app audit / repair-vs-rewrite decision and the remaining Control Center sequence. Availability/WhatsApp is the only explicitly allowed parallel track after gate close.",
+              "- **SD.Live as Control Center — active sequenced initiative:** P3.4, Security and the full finance audit are closed. The finance decision is **repair + integrate, not rewrite**; AppSheet keeps offline field capture. Current gate is the brand-coherent rename, followed by field/source mapping and then read-only `/admin` insights. Full evidence: `docs/audits/nextpay26-repair-vs-rewrite-2026-08-22.md`; sequence: `docs/roadmap/sdlive-control-center.md`.",
+              "readme control center")
+          t = replace_once(t,
+              "- AppSheet integration only after per-field source-of-truth is defined.",
+              "- Existing Google Sheets + AppSheet finance system is retained after audit; AppSheet remains the offline capture surface. SD.Live integration still waits for rename + per-field source-of-truth mapping.",
+              "readme appsheet")
+          t = replace_once(t,
+              "- **Availability-Aware Contact Widget — Medium-High backlog:** after the current active gate closes and is explicitly reprioritized, resolve owner availability server-side from one D1 `availability_state` source of truth using expiring manual override → travel mode → default `America/Bogota` weekly schedule. Owner WhatsApp commands must require exact `env.OWNER_WHATSAPP_NUMBER`; unavailable state may swap the existing WhatsApp bubble for a future lead-qualification AI widget. The bot must never own or invent pricing/catalog data and must write leads into the existing `leads` table. Full proposed scope and acceptance criteria: `docs/roadmap/availability-aware-contact-widget.md`.",
+              "- **Availability-Aware Contact Widget — parallel-track eligible backlog:** P3.4 and Security prerequisites are closed, so this may be promoted independently while rename/source mapping proceeds; it is not active automatically. Resolve owner availability server-side from one D1 `availability_state` source of truth using expiring manual override → travel mode → default `America/Bogota` weekly schedule. Owner WhatsApp commands require exact `env.OWNER_WHATSAPP_NUMBER`; AI may qualify leads only and must never own pricing/catalog/finance data.",
+              "readme availability")
+          t = replace_once(t,
+              "- Security hardening: verifiable rate limiting, CSP/Referrer-Policy/Permissions-Policy, abuse testing and incident/backup discipline.",
+              "- Security baseline is closed: Worker-native rate limiting + CSP/Referrer-Policy/Permissions-Policy are live. Remaining security work is future abuse testing, observability, incident/backup discipline and evidence-based Cloudflare plan evaluation.",
+              "readme security")
+          t = replace_once(t,
+              "- `docs/roadmap/sdlive-control-center.md` — required Control Center sequence; finance audit / repair-vs-rewrite is the current F Active Gate.",
+              "- `docs/audits/nextpay26-repair-vs-rewrite-2026-08-22.md` — completed finance audit and repair + integrate decision evidence.\n- `docs/roadmap/sdlive-control-center.md` — required Control Center sequence; brand-coherent rename is the current F Active Gate.",
+              "readme important files")
+          old = "The current approved gate is **F — Control Center Step 3: full audit of the finance app currently known as NextPay26, followed by an explicit repair-vs-rewrite decision before implementation.** Audit scope includes data quality, COP/USD/fees/retentions/invoicing/aging/payment-state formulas, AppSheet sync/actions/bots, the jobs/clients/payments/invoice data model, and migration/source-of-truth consequences. Do not choose repair, rewrite, D1 or permanent Sheets/AppSheet ownership before the evidence is complete.\n\nAfter the audit decision, the required sequence is brand-coherent rename → field/source-of-truth mapping → read-only Admin insights."
+          new = "**Control Center Step 3 — finance audit is CLOSED.** The 2026-08-22 audit reviewed 12 Sheets tabs, 57 real records, 11 Actions, 3 Bots, 11 Views, 10 Slices and critical formulas/business rules. It found zero P0 data-loss/corruption issues and documented the explicit decision **repair + integrate; do not rewrite**. AppSheet remains the offline field-capture surface; the eventual `/admin` view starts read-only from the underlying Google Sheet/API.\n\nThe current approved gate is **F — Control Center Step 4: brand-coherent rename**. After rename, the required sequence is field/source-of-truth mapping → read-only Admin insights."
+          t = replace_once(t, old, new, "readme current gate")
+          p.write_text(t)
+
+          # ROADMAP_MASTER_CHECKLIST.md
+          p = Path("ROADMAP_MASTER_CHECKLIST.md")
+          t = p.read_text()
+          t = replace_once(t,
+              "Runtime production baseline checked against: `4a8c425bc016acad78ef15d07dd8a7a4792bbc73`; P2.8 Home media closeout is production-smoked and closed. P3.0 public/SEO/performance audit is now closed as an evidence checkpoint. Query GitHub live for the current `main` HEAD because docs-only commits may advance HEAD without changing the runtime baseline.",
+              "Runtime production baseline checked against: `2c0fe574a0ab37ceb00cf84b31cbf1b68e1746c4`; Security B is production-smoked. The finance audit is documentation/operational evidence outside the SD.Live runtime and does not change this runtime baseline. Query GitHub live for current `main` HEAD because docs-only commits may advance HEAD without changing runtime.",
+              "roadmap runtime")
+          t = replace_once(t,
+              "🚧 **F — Control Center Step 3: full finance-app audit / repair-vs-rewrite decision.** P3.4 and the Security baseline are both closed and production-smoked. Per `docs/roadmap/sdlive-control-center.md`, the audit must finish before repair/rewrite, rename, finance integration or source-of-truth changes. Availability/WhatsApp is now eligible as the one explicit parallel track, but is not active automatically.",
+              "🚧 **F — Control Center Step 4: brand-coherent rename.** P3.4, Security and the full finance audit are closed. The audit decision is **repair + integrate; no rewrite**, preserving AppSheet offline capture. Rename now precedes field/source mapping and read-only `/admin` insights. Availability/WhatsApp remains eligible as the explicit parallel track but is not active automatically.",
+              "roadmap active gate")
+          t = replace_once(t,
+              "**Status: 🚧 F — Step 3 finance audit is active; Steps 1–2 prerequisites are closed.** Full sequencing contract: `docs/roadmap/sdlive-control-center.md`. P3.4 + security baseline are complete; required order now is full finance-app audit + repair-vs-rewrite decision → brand-coherent rename → field/source mapping → read-only Admin insights → later write-back/bidirectional phases. The Availability-Aware Contact Widget / WhatsApp qualification track is the sole explicit parallel-track exception and is eligible now, but not active automatically. Do not reorder without explicit re-approval.",
+              "**Status: 🚧 F — Step 4 brand-coherent rename is active; Steps 1–3 are closed.** Audit evidence: `docs/audits/nextpay26-repair-vs-rewrite-2026-08-22.md`. Decision: repair + integrate, preserve AppSheet offline capture. Required order now is rename → field/source mapping → read-only Admin insights → later write-back/bidirectional phases. Availability/WhatsApp remains the sole explicit parallel-track exception and is eligible, not active automatically.",
+              "roadmap 14.5")
+          t = replace_once(t,
+              "## 15. AppSheet integration\n\n**Status: ⏳ D.**\n\n- ⏳ Integrate relevant personal AppSheet data with SD.Live Admin only after ownership rules are explicit.\n- ⏳ Work/jobs, clients, events and payments where useful.\n- ⏳ Avoid unnecessary duplication.\n- ⏳ Define source of truth per datum before sync.\n- ⏳ Potential AppSheet client → CRM import.\n- ⏳ Potential confirmed Lead → event/project creation.",
+              "## 15. AppSheet / finance integration\n\n**Status: 🟡/⏳ B/D — existing finance system retained; SD.Live integration pending.**\n\n- ✅ Full 2026-08-22 audit chose repair + integrate rather than rewrite.\n- ✅ AppSheet remains the field/offline capture surface.\n- ✅ Google Sheets remains the current backing data store on the repair path; this is not a permanent architecture commitment.\n- ⏳ Rename NextPay26 before deeper integration.\n- ⏳ Define source of truth per field before any sync/read model.\n- ⏳ First SD.Live integration is read-only `/admin` insight via underlying Google Sheet/API, not an assumed AppSheet API layer.\n- ⏳ Avoid unnecessary duplication or second financial source of truth.\n- ⏳ Write-back/Lead→event/project automation only after the read-only phase is validated.",
+              "roadmap appsheet")
+          t = t.replace("- ⏳ Explicit/verifiable rate limiting.", "- ✅ Explicit/verifiable rate limiting for Contact/Rental completed in PR #54 (10 requests / 60 seconds per endpoint).")
+          p.write_text(t)
+          PY
+          git diff --check
+          rm .github/workflows/finance-audit-closeout-reconciler.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add README.md PROJECT_STATUS.md ROADMAP_MASTER_CHECKLIST.md .github/workflows/finance-audit-closeout-reconciler.yml
+          git commit -m "docs: close finance audit and activate rename [skip ci]"
+          git push origin HEAD:docs/finance-audit-closeout
