@@ -1,0 +1,80 @@
+name: Temporary P3.4 docs reconcile
+
+on:
+  push:
+    branches:
+      - docs/p3-4-closeout
+
+permissions:
+  contents: write
+
+jobs:
+  reconcile:
+    if: ${{ github.actor != 'github-actions[bot]' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: docs/p3-4-closeout
+          fetch-depth: 0
+      - name: Reconcile P3.4 closeout docs
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace_once(path, old, new):
+              p = Path(path)
+              text = p.read_text()
+              if old not in text:
+                  raise SystemExit(f"Expected block not found in {path}: {old[:80]!r}")
+              p.write_text(text.replace(old, new, 1))
+
+          replace_once(
+              "README.md",
+              "- Public reads use the custom domain/CDN directly rather than proxying every image through a Worker.\n- Upload keys are versioned for long-lived immutable caching.",
+              "- Public reads use the custom domain/CDN directly rather than proxying every image through a Worker.\n- **Responsive delivery (P3.4 CLOSED 2026-08-22):** Cloudflare Image Transformations are enabled for `sdlive.show` with Sources restricted to this zone (`sdlive.show` / `*.sdlive.show`). Public Home header fragments use responsive transformed candidates while retaining code-owned PNG masters as `src` fallback; Published Trusted client logos and About media use transformed `srcset` candidates sourced from `media.sdlive.show` while the R2 masters remain authoritative/fallback. Admin/static preview and Media Library continue to use the original source contract. Final Mobile PageSpeed smoke: Performance 90, LCP 3.1 s, `Improve image delivery` estimated savings reduced from ~1.423 MiB before P3.4 to ~58 KiB after P3.4b.\n- **Future media-payload optimization:** separately investigate lazy/deferred loading for hidden/offscreen R2 brand/reveal assets and `world-map.webp`; this is a payload-timing follow-up, not a reason to replace masters or reopen responsive sizing.\n- Upload keys are versioned for long-lived immutable caching."
+          )
+          replace_once(
+              "README.md",
+              "### Business back-office / professional identity\n\n- CRM pipeline, clients/contacts/companies, notes/history/source and Lead → Quote → Project → Invoice.",
+              "### Business back-office / professional identity\n\n- **SD.Live as Control Center — reprioritized direction:** sequencing and guardrails live in `docs/roadmap/sdlive-control-center.md`. After the current gate closes, the mandatory first block is security baseline (rate limiting + baseline CSP), followed by the finance-app audit / repair-vs-rewrite decision and the remaining Control Center sequence. Availability/WhatsApp is the only explicitly allowed parallel track after gate close.\n- CRM pipeline, clients/contacts/companies, notes/history/source and Lead → Quote → Project → Invoice."
+          )
+
+          replace_once(
+              "PROJECT_STATUS.md",
+              "| Runtime production baseline verificado | `49d09a8598d0a4c3c42de7b1dedacf763a26a91b` — P3.3 accepted runtime after PR #46/#47 production measurement |\n| Trabajo activo | **P3.4 — Responsive image/media delivery pipeline** |\n| Producción | `https://sdlive.show` |\n| Media pública | `https://media.sdlive.show` |\n| Milestone actual | P3 — integridad pública, conversión, SEO y performance basados en evidencia |\n| Estado | **P3.0–P3.3 CERRADOS; P3.4 promovido a F** |\n| Active Gate | **F — P3.4 Responsive image/media delivery pipeline** |\n| Gate posterior | **Availability-Aware Contact Widget — Medium-High backlog after current active gate; then general backlog unless reprioritized** |",
+              "| Runtime production baseline verificado | `3501169a1f5131a0adae1bf13b955d6aa78dbb28` — P3.4b responsive R2/CMS media delivery, production-smoked |\n| Trabajo activo | **Security baseline — rate limiting + baseline CSP** |\n| Producción | `https://sdlive.show` |\n| Media pública | `https://media.sdlive.show` |\n| Milestone actual | Control Center prerequisites — hardening before operational/financial-adjacent integrations |\n| Estado | **P3.0–P3.4 CERRADOS; Security baseline promovido a F** |\n| Active Gate | **F — Security baseline: rate limiting + baseline CSP** |\n| Gate posterior | **Full audit of finance app / repair-vs-rewrite decision; Availability/WhatsApp may run in parallel only after this gate closes** |"
+          )
+          replace_once(
+              "PROJECT_STATUS.md",
+              "| Responsive image delivery | ~1.4 MB estimated savings repetido | **F — P3.4 / P1-HIGH** | variants/`srcset`/`sizes` pipeline; preservar masters y ownership R2/static |",
+              "| Responsive image delivery | Producción smoke OK; P3.4 cerrado | **A — P3.4 cerrado** | PR #50 header responsive + PR #51 R2/CMS responsive; Cloudflare Transformations zone-only; Mobile final 90 / LCP 3.1 s; image-delivery savings ~1.423 MiB → ~58 KiB |"
+          )
+          marker = "| Availability-Aware Contact Widget | Propuesto; no runtime/schema | D — Medium-High backlog after active gate | `docs/roadmap/availability-aware-contact-widget.md`; future D1 `availability_state`, exact owner WhatsApp gate, existing `leads` table |"
+          replacement = marker + "\n| SD.Live as Control Center | Reprioritized direction; not yet implemented | D direction / sequenced after security gate | `docs/roadmap/sdlive-control-center.md`; security → finance audit → rename → source mapping → read-only Admin insights; Availability is the explicit parallel-track exception |\n| Hidden/offscreen media payload trimming | Future optimization; not active | D | P3.4 closeout: responsive sizing is solved; investigate lazy/deferred hidden R2 reveal/brand media + `world-map.webp` separately without deleting masters |"
+          replace_once("PROJECT_STATUS.md", marker, replacement)
+
+          old_gate = "🚧 **F — P3.1 Consent Mode parity across every public GTM page.** Reuse the existing Home `analytics-consent.js`/default-denied contract and extend it to every public HTML surface that loads GTM. The contract must be established before GTM, must not create a second consent system, and must receive automated coverage plus private-window production smoke. **P3.2** is the next P0 candidate: strip hidden staging/placeholder markup from the public Home response while preserving static/Admin preview source."
+          new_gate = "🚧 **F — Security baseline: rate limiting + baseline CSP.** P3.4 responsive image/media delivery is closed in production. Per `docs/roadmap/sdlive-control-center.md`, hardening is the next prerequisite before operational/financial-adjacent Control Center work. Availability/WhatsApp remains the one allowed parallel track only after this gate closes."
+          replace_once("ROADMAP_MASTER_CHECKLIST.md", old_gate, new_gate)
+          replace_once(
+              "ROADMAP_MASTER_CHECKLIST.md",
+              "- ⏳ **Responsive delivery pipeline:** P3.0 Lighthouse found roughly 1.4 MB image-delivery savings on Mobile. Generate appropriate variants (for example small/medium/large widths as evidence supports), use `srcset`/`sizes`, and preserve original/master media; do not optimize manually image-by-image.\n- ⏳ Modern WebP/AVIF output only if pipeline/cost/browser evidence justifies it.\n- ⏳ Static header-logo PNG optimization can be handled separately from R2 because those assets are code-owned, but preserve visual identity and Show Day variants.",
+              "- ✅ **P3.4 responsive delivery pipeline CLOSED (2026-08-22):** Cloudflare Image Transformations enabled with zone-only Sources; PR #50 added responsive transformed header candidates while preserving static masters/Admin isolation; PR #51 added responsive `srcset` for Published Trusted client logos and About R2 media while retaining R2 masters as `src` fallback. Mobile `Improve image delivery` savings fell from ~1.423 MiB to ~58 KiB; final smoke measured Performance 90 / LCP 3.1 s with Trusted/About visually normal and no CMS popping.\n- ⏳ **Future payload timing:** investigate lazy/deferred loading for hidden/offscreen R2 brand/reveal media and `world-map.webp`; keep this separate from responsive sizing and preserve masters/source-of-truth.\n- ⏳ Modern WebP/AVIF output only if pipeline/cost/browser evidence justifies it.\n- ✅ Static header-logo responsive optimization completed in P3.4a while preserving visual identity and Show Day variants."
+          )
+          replace_once(
+              "ROADMAP_MASTER_CHECKLIST.md",
+              "## 14. Basic CRM\n\n**Status: ⏳ D — dashboard module is Planned/Soon, not implemented.**",
+              "## 14.5 — SD.Live as Control Center (reprioritized 2026-08-22)\n\n**Status: ⏳ D direction queued immediately after the active security gate; not yet implemented.** Full sequencing contract: `docs/roadmap/sdlive-control-center.md`. Required order is security baseline → full finance-app audit + repair-vs-rewrite decision → brand-coherent rename → field/source mapping → read-only Admin insights → later write-back/bidirectional phases. The Availability-Aware Contact Widget / WhatsApp qualification track is the sole explicit parallel-track exception after security closes. Do not reorder without explicit re-approval.\n\n## 14. Basic CRM\n\n**Status: ⏳ D — dashboard module is Planned/Soon, not implemented.**"
+          )
+
+          Path(".github/workflows/docs-p3-4-closeout.yml").unlink()
+          PY
+      - name: Commit reconciled docs
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add README.md PROJECT_STATUS.md ROADMAP_MASTER_CHECKLIST.md .github/workflows/docs-p3-4-closeout.yml
+          git diff --cached --quiet && exit 0
+          git commit -m "docs: close P3.4 and promote security baseline"
+          git push origin HEAD:docs/p3-4-closeout
