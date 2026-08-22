@@ -29,6 +29,13 @@ jobs:
           Path('/tmp/security_closeout_reconcile.py').write_text(code)
           PY
           python /tmp/security_closeout_reconcile.py
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('ROADMAP_MASTER_CHECKLIST.md')
+          text = path.read_text()
+          text = text.replace('Last reconciliation: **2026-08-22 — America/Bogota**  \n', 'Last reconciliation: **2026-08-22 — America/Bogota**\n', 1)
+          path.write_text(text)
+          PY
           git diff --check
           rm .github/workflows/security-closeout-reconciler.yml .github/workflows/security-closeout-pr-reconciler.yml
           git config user.name "github-actions[bot]"
