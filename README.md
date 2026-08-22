@@ -233,10 +233,10 @@ These requirements are preserved but are **not active work until explicitly prio
 
 P3.0 is **closed as an evidence/audit gate**. The audit did not uncover a general routing, HTTPS, sitemap or search-engine block, but it did produce a prioritized correction queue.
 
-**P0 confirmed in production:**
+**P0 confirmed in production at audit time:**
 
-- Consent Mode/default-denied contract is present on Home but missing from other public HTML pages that load GTM directly. This is the next narrow Active Gate.
-- Hidden `#contentStaging` placeholder copy is present in the public/indexable Home HTML response despite being visually hidden. It must be stripped from the public response without removing the staging source needed by Admin/static preview.
+- Consent Mode/default-denied contract was present on Home but missing from other public HTML pages that loaded GTM directly; **closed in P3.1**.
+- Hidden `#contentStaging` placeholder copy was present in the public/indexable Home HTML response despite being visually hidden; **closed in P3.2 at the public response layer while preserving the Admin/static staging source**.
 
 **P1 / high-value findings:**
 
@@ -248,6 +248,16 @@ P3.0 is **closed as an evidence/audit gate**. The audit did not uncover a genera
 **P2 / maintenance findings:** static sitemap `lastmod`, public `deploy-test.txt`, and experimental Agentic Browsing diagnostics.
 
 Search-engine state and the Bing follow-up are recorded in the SEO/acquisition register above and in the master roadmap.
+
+## P3.1 + P3.2 production closeout — 2026-08-21 America/Bogota
+
+Both P0 corrections raised by P3.0 are **closed and production-smoked**.
+
+**P3.1 — Consent Mode parity:** PR #41 added the existing `analytics-consent.js` bootstrap before GTM on every current public GTM page that was missing it and added regression coverage for future HTML pages. Squash merge: `2d7a934d776c1af1ffcaaf847afab7c6fa55d91d`. Production smoke passed: a fresh private `/en/` visit showed the consent banner; **Necessary only** persisted after reload and across Theatre; a fresh private `/es-co/` visit showed the Spanish banner; **Permitir analítica** persisted after reload and across Rental; the 404 respected the saved choice.
+
+**P3.2 — Public staging strip:** PR #42 removes `#contentStaging` only from the transformed public Home response while leaving `index.html` staging intact for the isolated Admin preview. Squash merge/runtime baseline: `d4e3a28140664b96fc5d74578cef0442baa1a191`. Production View Source returned no `Future picture project` and no `contentStaging`; `/admin/editor/` continued loading normally and Safeguards `Run check` remained **9/9 healthy**. Sound for Picture remains unpublished/inert staging.
+
+Current runtime production baseline after these P0 closeouts: **`d4e3a28140664b96fc5d74578cef0442baa1a191`**.
 
 ## SEO / content safety rules
 
@@ -377,20 +387,13 @@ After a material milestone, update `PROJECT_STATUS.md`, this README and, when th
 
 ## Current gate status
 
-**P3.0 Public Production Integrity + Commercial/SEO Audit is CLOSED as an audit/evidence checkpoint.**
+**P3.0 Public Production Integrity + Commercial/SEO Audit is CLOSED as an audit/evidence checkpoint. P3.1 and P3.2 are also CLOSED and production-smoked.**
 
-The next narrow approved correction is **F — P3.1 Consent Mode parity across every public HTML page that loads GTM**. The goal is to preserve the existing Home default-denied consent contract and extend it to `/en/`, `/es-co/`, Theatre, service/Rental landings and 404 without weakening privacy or introducing a second consent system. Regression coverage must prove consent defaults are established before GTM on every public page in scope.
+- **P3.1 — Consent Mode parity:** CLOSED via PR #41 / `2d7a934d...`; consent default-denied/bootstrap now precedes GTM across the current public GTM page set, with private-session EN/ES/Rental/404 smoke passing.
+- **P3.2 — public Home staging strip:** CLOSED via PR #42 / runtime baseline `d4e3a281...`; public View Source no longer exposes `contentStaging`/`Future picture project`, while Admin preview remains normal and Safeguards stays 9/9 healthy.
 
-After P3.1, the next P0 is to remove hidden staging/placeholder markup from the **public Home response** while preserving the source/static Admin preview behavior intentionally used by the Editor. These P0s should remain separate narrow fixes unless evidence proves they must be coupled.
+The next approved narrow gate is **F — P3.3 Mobile critical rendering path**. Its scope is to measure and reduce render-blocking cost around the Home first paint while preserving the privacy default-denied contract, server-resolved language/anti-flash behavior and Visual Safeguards. **Responsive image/media variants remain a separate next candidate (P3.4)** unless P3.3 evidence proves a direct dependency; do not mix the two by default.
 
-P2.8 — Home CMS media-migrator retirement — remains closed on production:
+The Bing indexation recheck remains required for **2026-08-28 through 2026-09-04**. Do not repeatedly resubmit the same URLs before that window without new evidence.
 
-- PR #37 squash-merged to the runtime baseline at `4a8c425bc016acad78ef15d07dd8a7a4792bbc73`;
-- PR CI passed after stale migration-specific assertions were updated to the new permanent-state contract;
-- Editor smoke: no temporary `R2 migration` panel, normal Media Library/Upload/Replace intact;
-- Global Select and Interact mode remain normal;
-- Safeguards `Run check` reports **9/9 healthy**;
-- public About media still resolves via `media.sdlive.show` after cleanup;
-- critical static/GitHub fallbacks were not removed.
-
-The future Carrd coherence audit, editable HTML CV, Dapta.ai assistant, remove.bg upload option, Home cache optimization and Cloudflare Crawler Hints/IndexNow remain backlog/future integrations and are **not automatically part of P3.1**. Sound for Picture remains inert staging until real content/scope is explicitly approved.
+The future Carrd coherence audit, editable HTML CV, Dapta.ai assistant, remove.bg upload option, Home cache optimization and Cloudflare Crawler Hints/IndexNow remain backlog/future integrations and are **not automatically part of P3.3**. Sound for Picture remains inert staging until real content/scope is explicitly approved.
