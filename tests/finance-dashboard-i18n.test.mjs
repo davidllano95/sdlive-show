@@ -1,10 +1,19 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 
-const i18n = readFileSync(new URL("../admin/finance-dashboard-i18n.js", import.meta.url), "utf8");
-const dashboard = readFileSync(new URL("../admin/dashboard.js", import.meta.url), "utf8");
+const i18nUrl = new URL("../admin/finance-dashboard-i18n.js", import.meta.url);
+const dashboardUrl = new URL("../admin/dashboard.js", import.meta.url);
+const i18n = readFileSync(i18nUrl, "utf8");
+const dashboard = readFileSync(dashboardUrl, "utf8");
 const styles = readFileSync(new URL("../admin/finance-dashboard-i18n.css", import.meta.url), "utf8");
+
+test("finance bilingual browser scripts are syntactically valid", () => {
+  execFileSync(process.execPath, ["--check", fileURLToPath(i18nUrl)]);
+  execFileSync(process.execPath, ["--check", fileURLToPath(dashboardUrl)]);
+});
 
 test("finance dashboard bilingual layer keeps EN/ES in a centralized persisted control", () => {
   assert.match(i18n, /sdlive-finance-language/);
