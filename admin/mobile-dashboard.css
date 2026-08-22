@@ -1,4 +1,4 @@
-@media(max-width:760px){
+@media(max-width:900px){
   html,body{width:100%;min-width:0!important;overflow-x:hidden}
   .backoffice,.backoffice.is-collapsed{display:block;min-width:0;grid-template-columns:1fr}
   .app-sidebar,.backoffice.is-collapsed .app-sidebar{position:sticky;top:0;z-index:50;width:100%;height:auto;padding:8px 10px 6px;border-right:0;border-bottom:1px solid var(--border);background:rgba(11,13,20,.96);backdrop-filter:blur(18px);overflow:visible}
