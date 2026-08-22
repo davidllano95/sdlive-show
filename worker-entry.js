@@ -1,4 +1,5 @@
 import apiWorker from "./worker.js";
+import { applyBaselineSecurityHeaders } from "./security-headers.js";
 
 const HERO_KEY = {
   section: "hero",
@@ -337,6 +338,7 @@ function transformHomeResponse(assetResponse, publishedHero, lang) {
 
   const transformed = rewriter.transform(assetResponse);
   const headers = new Headers(transformed.headers);
+  applyBaselineSecurityHeaders(headers);
 
   // The root HTML contains live CMS data and request-specific language content,
   // so it must not be stored as a long-lived browser/shared-cache response.
