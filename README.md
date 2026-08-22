@@ -96,7 +96,7 @@ Hero Draft/Published is fully connected to production. Published content is rend
 
 ### Reusable Media Library
 
-**P2.5 implemented; Home legacy-media closeout verified.** The Editor has a reusable R2 Media Library and section bridges. It currently supports folder filtering, search, upload, reuse/copy-reference and delete controls. Reference-aware delete/soft-delete and orphan cleanup remain future hardening. The temporary Trusted, Testimonials, About/Work and Rental migration UIs were retained only until Draft/Published and production R2 references were verified; the current closeout gate removes those temporary migrators without removing critical GitHub fallbacks.
+**P2.5 implemented; Home legacy-media closeout completed in P2.8.** The Editor has a reusable R2 Media Library and section bridges. It currently supports folder filtering, search, upload, reuse/copy-reference and delete controls. Reference-aware delete/soft-delete and orphan cleanup remain future hardening. PR #37 retired the temporary Trusted, Testimonials, About/Work and Rental migration scripts/UI after Draft/Published and production R2 references were verified. Media Library, section bridges/controls and critical GitHub/static fallbacks remain intact.
 
 ### Rental / Contact
 
@@ -104,7 +104,7 @@ Hero Draft/Published is fully connected to production. Published content is rend
 
 ### Home media R2 closeout
 
-**Production references verified 2026-08-21.** About, Selected Work, Testimonials, Rental and Trusted/Supported Brands were checked from the public site and their managed images/logos resolve through `media.sdlive.show`. About, Testimonials, Rental and Trusted had no unpublished media change; Selected Work had a saved unpublished Draft, was visually compared with live, published deliberately and finished with the automatic Failsafe green. Critical static/GitHub fallbacks remain in place.
+**P2.8 CLOSED and production-smoked 2026-08-21.** Before cleanup, About, Selected Work, Testimonials, Rental and Trusted/Supported Brands were checked from the public site and their managed images/logos resolved through `media.sdlive.show`. About, Testimonials, Rental and Trusted had no unpublished media change; Selected Work had a saved unpublished Draft, was visually compared with live, published deliberately and finished with the automatic Failsafe green. PR #37 then removed only the four temporary migration scripts/UI and migration-only tests. Post-merge smoke confirmed: migration panels absent, normal Upload/Replace/Media Library controls intact, Global Select intact, Interact intact, Safeguards **9/9 healthy**, and the public About image still resolving through `media.sdlive.show`. Critical static/GitHub fallbacks remain in place. Production merge commit: `4a8c425bc016acad78ef15d07dd8a7a4792bbc73`.
 
 ## Global Select invariant
 
@@ -143,7 +143,7 @@ Automated tests lock guard assets, public injection, Editor controls and critica
 - Upload keys are versioned for long-lived immutable caching.
 - Visual resize/position belongs in D1/CSS metadata; moving a slider does not create a new R2 object.
 - Do not enable paid media products or extra R2 features unless explicitly approved.
-- Home legacy-media migrators are temporary migration tooling, not permanent Editor UX. Once production references are verified, retire the migrator scripts/UI rather than leaving dead migration controls loaded indefinitely.
+- The four Home legacy-media migrators were retired in P2.8 after production-reference verification; they are not permanent Editor UX and should not be restored without a new migration need.
 - **Do not equate migrator retirement with deleting fallback assets.** Duplicate/original GitHub assets may only be removed through a separate reference-aware cleanup after critical fallbacks and all consumers are proven safe.
 
 ## Back-office reality
@@ -334,23 +334,18 @@ Do not treat a feature-branch deployment as production. `sdlive.show` represents
 
 After a material milestone, update `PROJECT_STATUS.md`, this README and, when the backlog itself changes, `ROADMAP_MASTER_CHECKLIST.md`. A future improvement may be bundled into the active block's documentation update rather than causing a separate deployment, but it must not be lost.
 
-## Current active gate
+## Current gate status
 
-**Home CMS closeout cleanup — retire completed legacy-media migration tooling.**
+**No feature gate is active after P2.8 closeout.**
 
-Evidence before cleanup:
+P2.8 — Home CMS media-migrator retirement — is closed on production:
 
-- P2.7 Global Select is merged on `main` at `7d54b83b37e6e30f889eff9a41b25a18b268b8a9` and production-smoked.
-- Saved Draft media checks report R2 for About, Selected Work, Testimonials, Rental and Trusted.
-- Public production images/logos for those same areas were manually verified to resolve via `media.sdlive.show`.
-- Selected Work's one unpublished saved Draft was compared visually with live, published deliberately and passed the automatic Failsafe.
+- PR #37 squash-merged to `main` at `4a8c425bc016acad78ef15d07dd8a7a4792bbc73`;
+- PR CI passed after stale migration-specific assertions were updated to the new permanent-state contract;
+- Editor smoke: no temporary `R2 migration` panel, normal Media Library/Upload/Replace intact;
+- Global Select and Interact mode remain normal;
+- Safeguards `Run check` reports **9/9 healthy**;
+- public About media still resolves via `media.sdlive.show` after cleanup;
+- critical static/GitHub fallbacks were not removed.
 
-Active cleanup scope is deliberately narrow:
-
-- retire the four temporary Home migration scripts/UI and migration-only tests;
-- keep Media Library, media controls and CMS bridges intact;
-- preserve static/GitHub fallback assets and all public/runtime behavior;
-- add regression coverage that the retired migrators are no longer loaded;
-- run CI and then production-smoke the Editor after merge.
-
-No subsequent backlog item becomes active automatically. After this closeout is merged/smoked, review `ROADMAP_MASTER_CHECKLIST.md` and explicitly promote only the next approved item to **F — Active Gate**. Sound for Picture remains inert staging until real content/scope is explicitly approved.
+The next implementation must be chosen deliberately from `ROADMAP_MASTER_CHECKLIST.md` and explicitly promoted to **F — Active Gate** before code changes begin. Sound for Picture remains inert staging until real content/scope is explicitly approved.
