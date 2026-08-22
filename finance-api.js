@@ -68,8 +68,21 @@ function numericValue(value) {
   return Number.isFinite(number) ? number : null;
 }
 
+function roundMoney(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return 0;
+  return Math.round((number + Number.EPSILON) * 100) / 100;
+}
+
 function emptyCurrencyTotals() {
   return { COP: 0, USD: 0 };
+}
+
+function finalizedCurrencyTotals(totals) {
+  return {
+    COP: roundMoney(totals?.COP || 0),
+    USD: roundMoney(totals?.USD || 0)
+  };
 }
 
 function normalizedCurrency(value) {
@@ -291,6 +304,7 @@ export function buildFinanceSummary(rows) {
   const records = Array.isArray(rows) ? rows.filter(hasPersistedId) : [];
   const toInvoiceGrossByCurrency = emptyCurrencyTotals();
   const receivableNetByCurrency = emptyCurrencyTotals();
+  const blockedNetByCurrency = emptyCurrencyTotals();
   const receivedByCurrency = emptyCurrencyTotals();
   const paidFeesByCurrency = emptyCurrencyTotals();
   const agingMap = new Map();
@@ -333,11 +347,14 @@ export function buildFinanceSummary(rows) {
     }
 
     const eligibility = collectionEligibility(row);
-    if (eligibility.workflowBlocked) collectionBlockedCount += 1;
+    const netAmount = numericValue(recordCell(row, "Valor Neto"));
+    if (eligibility.workflowBlocked) {
+      collectionBlockedCount += 1;
+      addCurrencyAmount(blockedNetByCurrency, currency, netAmount);
+    }
     if (!eligibility.collectible) continue;
 
     receivableCount += 1;
-    const netAmount = numericValue(recordCell(row, "Valor Neto"));
     addCurrencyAmount(receivableNetByCurrency, currency, netAmount);
 
     const agingBucket = cleanString(recordCell(row, "Rango Aging")) || "Sin rango";
@@ -358,7 +375,7 @@ export function buildFinanceSummary(rows) {
       client: cleanString(recordCell(row, "Cliente")),
       project: cleanString(recordCell(row, "Proyecto / Show")),
       currency: currency || rawCurrency || null,
-      netAmount,
+      netAmount: netAmount === null ? null : roundMoney(netAmount),
       state: cleanString(state),
       invoiceSentDate: cleanString(recordCell(row, "Fecha cuenta enviada")),
       daysUnpaid,
@@ -375,25 +392,29 @@ export function buildFinanceSummary(rows) {
 
   const aging = [...agingMap.values()]
     .sort((a, b) => b.maxDays - a.maxDays || a.bucket.localeCompare(b.bucket))
-    .map(({ maxDays, ...entry }) => entry);
+    .map(({ maxDays, ...entry }) => ({
+      ...entry,
+      byCurrency: finalizedCurrencyTotals(entry.byCurrency)
+    }));
 
   return {
     recordCount: records.length,
     toInvoice: {
       count: toInvoiceCount,
-      grossByCurrency: toInvoiceGrossByCurrency
+      grossByCurrency: finalizedCurrencyTotals(toInvoiceGrossByCurrency)
     },
     receivables: {
       count: receivableCount,
-      netByCurrency: receivableNetByCurrency,
+      netByCurrency: finalizedCurrencyTotals(receivableNetByCurrency),
       workflowBlockedCount: collectionBlockedCount,
+      workflowBlockedNetByCurrency: finalizedCurrencyTotals(blockedNetByCurrency),
       aging,
       priority: priority.slice(0, 10)
     },
     received: {
       paidCount,
-      amountByCurrency: receivedByCurrency,
-      feesByCurrency: paidFeesByCurrency,
+      amountByCurrency: finalizedCurrencyTotals(receivedByCurrency),
+      feesByCurrency: finalizedCurrencyTotals(paidFeesByCurrency),
       missingReceivedAmountCount: paidMissingReceivedCount
     },
     dataQuality: {
