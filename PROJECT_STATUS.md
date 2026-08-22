@@ -8,14 +8,14 @@
 |---|---|
 | Última revisión integral | 2026-08-21 — **America/Bogota** |
 | Rama verificada | `main` al iniciar este checkpoint; consultar HEAD live al retomar |
-| Runtime production baseline verificado | `4a8c425bc016acad78ef15d07dd8a7a4792bbc73` — último cambio de runtime smokeado antes de docs-only PRs |
-| Trabajo activo | **P3.1 — Consent Mode parity on every public GTM page** |
+| Runtime production baseline verificado | `d4e3a28140664b96fc5d74578cef0442baa1a191` — P3.2 merge con smoke público/Admin/Safeguards aprobado |
+| Trabajo activo | **P3.3 — Mobile critical rendering path** |
 | Producción | `https://sdlive.show` |
 | Media pública | `https://media.sdlive.show` |
 | Milestone actual | P3 — integridad pública, conversión, SEO y performance basados en evidencia |
-| Estado | **P3.0 audit CERRADO; hallazgos clasificados; P3.1 promovido a F** |
-| Active Gate | **F — P3.1 Consent Mode parity across public HTML** |
-| Gate posterior | **P3.2 — retirar staging/placeholder del HTML público Home sin romper Admin/static preview** |
+| Estado | **P3.0 audit CERRADO; P3.1 y P3.2 CERRADOS y smokeados; P3.3 promovido a F** |
+| Active Gate | **F — P3.3 Mobile critical rendering path** |
+| Gate posterior | **P3.4 candidate — responsive image/media delivery pipeline; no mezclar por defecto con P3.3** |
 
 ### Convención temporal y de commits
 
@@ -104,7 +104,7 @@ Estas reglas se consideran permanentes salvo decisión explícita respaldada por
 | Metadata/referencias media | D1 | modelos CMS / logical refs |
 | Rental pricing / quote math | Backend | pricing/cálculo existentes; presentation CMS no lo posee |
 | Acceso Admin | Cloudflare Access | JWT server-side + `/admin/` protegido |
-| Analytics público | GA4/GTM con consentimiento | Realtime validado |
+| Analytics público | GA4/GTM con consentimiento | Consent parity + Realtime validado |
 | Future CRM | **TBD** | Admin module aún Planned/Soon |
 | Future Lead → Quote → Project → Invoice | **TBD antes de implementar** | no existe source-of-truth único todavía |
 | AppSheet futuro | **No decidir todavía** | integración pendiente; evitar segundo source-of-truth accidental |
@@ -127,14 +127,15 @@ Estas reglas se consideran permanentes salvo decisión explícita respaldada por
 | Home CMS managed-media refs | Producción verificada R2 | A | Draft/Published checks + manual public URLs through `media.sdlive.show` for Trusted/About/Work/Testimonials/Rental |
 | Temporary Home media migrator cleanup | Producción smoke OK | A | PR #37, merge `4a8c425b...`, CI verde + post-merge Editor/Safeguards/R2 smoke |
 | P3.0 public/SEO audit | Cerrado 2026-08-21 | A evidence checkpoint | GSC + Bing Webmaster/Site Scan + PageSpeed screenshots + repo/production inspection |
-| Consent Mode public-page parity | Home OK; otras páginas GTM sin bootstrap de consentimiento | **F — P3.1 / P0** | private-window production smoke + HTML repo audit |
-| Hidden Home staging in public HTML | Confirmado | P0 / next gate | public source contained `Future picture project`; `index.html#contentStaging` |
+| Consent Mode public-page parity | Producción smoke OK | A — P3.1 cerrado | PR #41 / `2d7a934d...` + regression test + private-window EN/ES/Rental/404 smoke |
+| Hidden Home staging in public HTML | Public response limpio; static/Admin staging preservado | A — P3.2 cerrado | PR #42 / `d4e3a281...` + View Source + Editor normal + Safeguards 9/9 |
 | Google index coverage at audit | 6/7 indexed; 1 live-indexable + requested | A current snapshot / follow-up | URL Inspection all seven + request on Bogotá services landing |
 | Bing discovery/index state | 7 URLs known/submitted; aggregate coverage not populated yet | A current snapshot / D follow-up | sitemap Success 7; URL submissions; Live URL pass; Site Scan 7/7 |
 | Bing missing-alt warning | Scanner false positive / no action | E | 7 intentional `alt=""`: six aria-hidden header-logo fragments + mirrored aria-hidden PA image |
-| Mobile lab performance | weak under throttled Lighthouse; Desktop strong | B/P1 | Mobile 61/66, Desktop 96; LCP Hero h1; TTFB ~10 ms |
+| Mobile lab performance | weak under throttled Lighthouse; Desktop strong | **F — P3.3 / P1-HIGH** | Mobile 61/66, Desktop 96; LCP Hero h1; TTFB ~10 ms |
+| Responsive image delivery | ~1.4 MB estimated savings in audit | P1-HIGH / P3.4 candidate | PageSpeed image opportunities; needs variants/`srcset` pipeline |
 | Home HTML cache policy | `no-store` actual; optimización pendiente | A current / D optimization | `worker-entry.js::transformHomeResponse()` fija `Cache-Control: no-store` y `Vary: Accept-Language, Cookie`; current lab TTFB is low |
-| Sound for Picture CMS | No implementado | D/UNKNOWN scope | hidden staging placeholder only |
+| Sound for Picture CMS | No implementado | D/UNKNOWN scope | static/Admin staging only; stripped from public response in P3.2 |
 | Projects | No implementado | D | Admin module disabled/planned |
 | CRM pipeline | No implementado | D | leads/forms existen; pipeline ausente |
 | Rental Admin full catalog/pricing editor | No implementado | D | public Rental existe; Admin module planned |
@@ -177,7 +178,7 @@ Puede agruparse con el PR/milestone activo para evitar deploys documentales inne
 
 # P0 — base pública estable
 
-**Estado: CERRADO el 2026-08-20 como baseline inicial. P3.0 detectó dos regresiones/inconsistencias P0 que ahora se corrigen como gates estrechos P3.1/P3.2; esto no invalida el resto de la baseline.**
+**Estado: CERRADO el 2026-08-20 como baseline inicial. Los dos P0 encontrados por P3.0 fueron cerrados posteriormente como P3.1/P3.2 y smokeados en producción.**
 
 - [x] Hosting Cloudflare Workers operativo.
 - [x] Producción sincronizada con GitHub `main`.
@@ -189,12 +190,13 @@ Puede agruparse con el PR/milestone activo para evitar deploys documentales inne
 - [x] Rental guarda solicitud + consentimiento y notifica **solo** a `rental@sdlive.show`.
 - [x] Pricing Rental calculado en backend.
 - [x] Turnstile y consentimiento implementados.
-- [~] GTM/GA4 base validada en producción; **P3.1 corrige la paridad de Consent Mode en páginas públicas no-Home**.
+- [x] GTM/GA4 base validada en producción; **P3.1 cerró la paridad de Consent Mode en todo el set actual de páginas públicas con GTM**.
 - [x] `generate_lead`, email y WhatsApp observados en GA4 Realtime.
 - [x] SEO técnico P0 publicado: canonical, hreflang, JSON-LD, Open Graph, robots y sitemap.
 - [x] WLive confirmado como contenido vigente; no retirar.
 - [x] Marca visual `SD.Live` con punto flotante en superficies dinámicas.
 - [x] Copy canónico Home: **“Creative Audio. Technical systems. Built for the show.”**
+- [x] Staging/placeholder oculto no forma parte del response público Home; static/Admin source permanece disponible para el Editor.
 
 ---
 
@@ -384,7 +386,7 @@ PR principal: #33. Cleanup final del tooling temporal: PR #37.
 - [x] Targeted edge patching preserva Rental DOM transaccional y Contact form.
 - [x] Rental Upload/Replace/Media Library + legacy media migrator durante la transición.
 - [x] Testimonials legacy-logo migrator durante la transición.
-- [x] Sound for Picture no fue promovido; sigue staging/placeholder oculto.
+- [x] Sound for Picture no fue promovido; sigue staging/placeholder oculto en static/Admin source y está retirado del response público desde P3.2.
 - [x] Smoke Rental: `Save Draft` no tocó live; Publish sí cambió live y Failsafe quedó verde.
 - [x] Smoke media: Rental + Testimonials migraron Draft-only; Published permaneció intacto.
 - [x] Limitación temporal del migrador (regresar visualmente al Home tras migrar) quedó eliminada al retirar el tooling en P2.8; no se abrió un fix paralelo.
@@ -483,8 +485,8 @@ Scope ejecutado:
 - [x] PageSpeed/Lighthouse: Mobile performance reproduciblemente pobre en lab; Desktop excelente. Hero `<h1>` es LCP; TTFB ~10 ms, por lo que el `no-store` actual no es el cuello de botella principal demostrado.
 - [x] Image delivery: ~1.4 MB de ahorro potencial; requiere pipeline/variants/`srcset`, no compresión manual asset-by-asset.
 - [x] Accessibility Lighthouse 89: banner consentimiento/role/name, Turnstile ARIA, contraste localizado y heading order footer.
-- [x] P0: Consent Mode inconsistente — Home carga `analytics-consent.js` antes de GTM; otras páginas públicas cargan GTM sin ese contrato.
-- [x] P0: `#contentStaging`/placeholder sigue incluido en el HTML público indexable del Home aunque esté hidden/aria-hidden.
+- [x] P0: Consent Mode inconsistente — cerrado posteriormente en P3.1.
+- [x] P0: `#contentStaging`/placeholder en HTML público — cerrado posteriormente en P3.2 sin borrar static/Admin staging.
 - [x] P1: EN→ES CTA, WhatsApp landings, Rental empty request + RFQ clarity, accessibility, critical render path/images y pricing-duplication drift risk.
 - [x] P2: sitemap `lastmod` estático, `deploy-test.txt`, Agentic Browsing experimental.
 - [x] Home cache `no-store` permanece D Future Optimization; medir/diseñar antes de cambiar. Crawler Hints/IndexNow se evaluará junto con cache/invalidation y no como API paralela ahora.
@@ -497,9 +499,9 @@ Scope ejecutado:
 
 ### Clasificación final P3.0
 
-**P0:**
-1. Consent Mode/default-denied no está aplicado a todas las páginas públicas con GTM.
-2. Staging/placeholder oculto forma parte del HTML público Home.
+**P0 — cerrados después del audit:**
+1. Consent Mode/default-denied no aplicado a todas las páginas públicas con GTM → **P3.1 cerrado**.
+2. Staging/placeholder oculto en HTML público Home → **P3.2 cerrado**.
 
 **P1-HIGH:** mobile critical rendering path; responsive image delivery/media optimization.
 
@@ -511,22 +513,58 @@ Scope ejecutado:
 
 ## P3.1 — Consent Mode parity across every public GTM page
 
+**Estado: CERRADO y VALIDADO EN PRODUCCIÓN el 2026-08-21.**
+
+Objetivo cumplido: extender el sistema de consentimiento **existente** del Home a todas las páginas HTML públicas que cargan GTM, sin crear un segundo banner/sistema.
+
+- [x] Inventariado el set público de HTML con GTM y la separación Static Assets/Worker.
+- [x] Reutilizado `analytics-consent.js`; no existe consent manager paralelo por landing.
+- [x] Default Consent Mode **denied** se establece antes de GTM en cada página actual en scope.
+- [x] `/`, `/en/`, `/es-co/`, Theatre, Bogotá services, Rental landings, 404 y Privacy cubiertos según su runtime real.
+- [x] Banner/preferences/Privacy behavior consistente; GTM sigue limitado a analytics/events.
+- [x] Regresión `tests/analytics-consent-public-pages.test.mjs` recorre HTML público fuera de `/admin/` y falla si GTM aparece antes del bootstrap.
+- [x] PR #41 CI verde; squash merge `2d7a934d776c1af1ffcaaf847afab7c6fa55d91d`.
+- [x] Production smoke: fresh private `/en/` mostró banner; `Necessary only` persistió después de reload y en Theatre.
+- [x] Production smoke: fresh private `/es-co/` mostró banner ES; `Permitir analítica` persistió después de reload y en Rental.
+- [x] Production smoke: 404 respetó la elección persistida y no reinició consentimiento.
+- [x] Rollback permanece estrecho: HTML/bootstrap/tests; sin schema/D1/R2.
+
+## P3.2 — Strip hidden staging from public Home response
+
+**Estado: CERRADO y VALIDADO EN PRODUCCIÓN el 2026-08-21.**
+
+Objetivo cumplido: retirar el staging/placeholder oculto del **response público** sin borrar ni publicar el source que utiliza el Admin/static preview.
+
+- [x] `index.html#contentStaging` permanece en source estático para Editor/futuro staging.
+- [x] `worker-entry.js::transformHomeResponse()` elimina `#contentStaging` únicamente en el Home público.
+- [x] `isAdminPreviewRequest()` conserva el bypass del Admin iframe y entrega asset estático intacto.
+- [x] Automatic publish failsafe se mantiene en ruta pública, por lo que verifica el response limpio.
+- [x] Regresiones en `tests/hero-edge.test.mjs` protegen source estático, public strip y failsafe/public distinction.
+- [x] PR #42 CI verde; squash merge/runtime baseline `d4e3a28140664b96fc5d74578cef0442baa1a191`.
+- [x] Production View Source: `Future picture project` = Not Found.
+- [x] Production View Source: `contentStaging` = Not Found.
+- [x] `/admin/editor/` carga normal con preview Home.
+- [x] Safeguards `Run check` = **9/9 healthy** después del cambio.
+- [x] Sound for Picture sigue no publicado/inert; P3.2 no cambió CMS, copy, layout, D1 ni R2.
+
+## P3.3 — Mobile critical rendering path
+
 **Estado: F — ACTIVE GATE / APPROVED WORK.**
 
-Objetivo: extender el sistema de consentimiento **existente** del Home a todas las páginas HTML públicas que cargan GTM, sin crear un segundo banner/sistema ni degradar privacidad/performance más de lo necesario.
+Objetivo: reducir el coste de bloqueo/render delay del first paint/LCP móvil demostrado por P3.0, sin debilitar privacidad, idioma SSR/anti-flash ni contratos visuales.
 
-Change Safety / acceptance:
+Change Safety / acceptance antes de implementar:
 
-- [ ] Inventariar exactamente qué HTML público carga GTM y si alguna ruta se transforma en Worker/edge.
-- [ ] Reutilizar `analytics-consent.js`/contrato existente; no duplicar consent logic por landing.
-- [ ] Garantizar que el default Consent Mode **denied** se establezca antes de GTM en cada página en scope.
-- [ ] `/`, `/en/`, `/es-co/`, Theatre, Bogotá service landings, Rental landings y 404 deben quedar cubiertos si cargan GTM; Privacy se revisa según su runtime real.
-- [ ] Mantener banner/preferences/Privacy behavior consistente; no abrir navegación/branding dentro de GTM.
-- [ ] Añadir regresión automatizada que falle si una página pública carga GTM sin el bootstrap de consentimiento previo.
-- [ ] Smoke en ventana privada: página no-Home debe mostrar/operar consentimiento igual que Home y analytics debe respetar elección.
-- [ ] Rollback claro: cambios limitados a HTML/bootstrap/tests; no schema/D1/R2.
-
-**P3.2 siguiente P0, no implementar dentro de P3.1 salvo dependencia técnica demostrada:** retirar `#contentStaging` del response público Home mientras se conserva source/static Admin preview y Sound for Picture permanece no publicado.
+- [ ] Reproducir/actualizar baseline móvil y separar render-blocking real de payload de imágenes; no usar un solo score como verdad absoluta.
+- [ ] Inventariar orden y dependencia de `analytics-consent.js`, `language-bootstrap.js`, CSS principal/consistency/visual safeguards, fonts y scripts del Home.
+- [ ] Preservar **Consent Mode default-denied antes de GTM** incluso si se reduce el bootstrap/UI blocking cost.
+- [ ] Preservar idioma correcto antes del first paint y evitar flash EN/ES.
+- [ ] Preservar Hero SSR/fallback, Published/Draft semantics y Admin preview isolation.
+- [ ] Preservar Visual Safeguards y estética aprobada; cualquier defer/inline debe tener tests de orden/availability.
+- [ ] Preferir cambios pequeños y reversibles; medir antes/después en Mobile y Desktop.
+- [ ] No cambiar `Cache-Control: no-store` dentro de este gate: TTFB lab ~10 ms no lo identifica como cuello principal.
+- [ ] No convertir P3.3 en pipeline de imágenes. Responsive variants/`srcset` queda como **P3.4 candidate** salvo dependencia demostrada.
+- [ ] PR + CI + production smoke EN/ES, consent fresh/persisted, Home visual/Safeguards y PageSpeed comparable.
 
 ---
 
@@ -588,7 +626,7 @@ Change Safety / acceptance:
 - [ ] **Auditoría de coherencia de `samueldavidllano.carrd.co`:** comparar posicionamiento, bio, servicios, links, visual identity y CTAs con `sdlive.show`; decidir qué actualizar, conservar, redirigir o retirar para evitar mensajes contradictorios.
 - [ ] Recuperar Insights/Journal cuando exista contenido real y capacidad editorial.
 - [ ] Technical Audio Training: backlog aprobado; definir oferta/curriculum/audiencia/capacidad/precio/evidencia antes de publicar.
-- [ ] Sound for Picture: no promover placeholder; requiere contenido real y scope aprobado.
+- [ ] Sound for Picture: no promover placeholder; requiere contenido real y scope aprobado. Su source permanece static/Admin, no público.
 - [ ] Auditar staging restante como Future Projects / Behind the Console / Field Notes antes de Template Library.
 
 ## Contacto / Rental
@@ -642,7 +680,7 @@ Change Safety / acceptance:
 
 ## Analytics / SEO / growth
 
-- [~] GTM + Consent Mode + GA4 base: Home tiene contrato de consentimiento; **P3.1 corrige paridad en las demás páginas públicas que cargan GTM**.
+- [x] GTM + Consent Mode + GA4 base: **P3.1 cerró paridad en todas las páginas públicas actuales que cargan GTM**.
 - [x] `generate_lead`, email y WhatsApp validados/observados en GA4 Realtime; no reiniciar ese troubleshooting sin evidencia de regresión.
 - [x] SEO técnico P0 base: canonical, hreflang, JSON-LD, OG, robots, sitemap y redirects relevantes.
 - [x] P3.0 Search Console/Bing/PageSpeed audit completado y hallazgos clasificados.
@@ -684,8 +722,8 @@ Antes de crear una página SEO, determinar qué servicio real representa, quién
 - [x] `/api/health` existe; ampliar observabilidad sin duplicar sistemas.
 - [ ] **Optimización de cache Home:** condición actual verificada: `transformHomeResponse()` usa `Cache-Control: no-store`, de modo que el root no obtiene shared HTML caching. P3.0 mostró TTFB lab ~10 ms, así que no tratar cache como causa principal del LCP actual. Evaluar TTL corto + `stale-while-revalidate` versus invalidación/purge en Publish solo con medición y correctness. Debe preservar `Vary: Accept-Language, Cookie`, EN/ES, COL/INT, Admin preview, failsafe, Draft/Published y frescura de Publish.
 - [ ] **IndexNow/Crawler Hints:** Cloudflare Crawler Hints está OFF y no existe integración IndexNow en repo. Evaluarlo junto con la estrategia futura de cache/invalidation; evitar una segunda API/key manual salvo necesidad probada.
-- [ ] Responsive image/media pipeline: variantes y `srcset`/`sizes` para R2/media + optimización independiente de header static logos; preservar master/original y no resolver asset-by-asset.
-- [ ] Mobile critical rendering path: reducir blocking cost de CSS/fonts/scripts preservando consent default-denied, language first-paint y Visual Safeguards.
+- [ ] Responsive image/media pipeline: variantes y `srcset`/`sizes` para R2/media + optimización independiente de header static logos; preservar master/original y no resolver asset-by-asset. **P3.4 candidate, no activo mientras P3.3 esté abierto.**
+- [ ] **F — P3.3 Mobile critical rendering path:** reducir blocking cost de CSS/fonts/scripts preservando consent default-denied, language first-paint, Hero SSR y Visual Safeguards; medir antes/después.
 - [ ] Rate limiting explícito y verificable.
 - [ ] CSP, Referrer-Policy y Permissions-Policy sin romper GTM/Turnstile/media.
 - [ ] Migraciones/versionado de esquema D1.
@@ -725,10 +763,10 @@ La visión recibida el 2026-08-21 se interpreta como una dirección estratégica
 
 ## Current State contrastado con el repo
 
-- **A — Ya existe:** frontend vanilla HTML/CSS/JS; Cloudflare Workers/Static Assets; D1; R2; Cloudflare Access; CMS Draft/Published/revisions; Hero/Trusted/Testimonials/About/Services/International/Work/Rental/Contact CMS según scope; reusable Media Library; Rental público con pricing backend; Contact/Rental forms; EN/ES; COL/INT; landings SEO actuales; canonical/hreflang/robots/sitemap/JSON-LD base; Visual Safeguards; automatic publish failsafe; Global Select cross-section production-smoked; Home managed-media production refs on R2; temporary Home media migrators retired and production-smoked in P2.8; P3.0 public/SEO/performance evidence audit completed.
-- **B — Parcial:** analytics/Consent Mode base exists but non-Home public parity is P3.1; Portfolio/Work sin case-study model profundo, Raw vs Mixed sin media real/Admin, Show Day sin calendario, Rental sin catálogo/admin completo, SEO sin sistema CMS-first para metadata de páginas futuras, analytics sin dashboard comercial/tráfico interno limpio, Insights/Journal sin sistema editorial real.
+- **A — Ya existe:** frontend vanilla HTML/CSS/JS; Cloudflare Workers/Static Assets; D1; R2; Cloudflare Access; CMS Draft/Published/revisions; Hero/Trusted/Testimonials/About/Services/International/Work/Rental/Contact CMS según scope; reusable Media Library; Rental público con pricing backend; Contact/Rental forms; EN/ES; COL/INT; landings SEO actuales; canonical/hreflang/robots/sitemap/JSON-LD base; Visual Safeguards; automatic publish failsafe; Global Select cross-section production-smoked; Home managed-media production refs on R2; temporary Home media migrators retired and production-smoked in P2.8; P3.0 evidence audit completed; **P3.1 Consent parity y P3.2 public staging strip cerrados y smokeados**.
+- **B — Parcial:** Portfolio/Work sin case-study model profundo, Raw vs Mixed sin media real/Admin, Show Day sin calendario, Rental sin catálogo/admin completo, SEO sin sistema CMS-first para metadata de páginas futuras, analytics sin dashboard comercial/tráfico interno limpio, Insights/Journal sin sistema editorial real, mobile critical render todavía por optimizar.
 - **D — Future Integration:** layout visual avanzado, header/floating controls, Projects/case studies, Rental product SEO/Admin pricing rules/compatibility guidance, Article/Journal CMS, CRM pipeline/atribución, AppSheet, Calendar, quote automation, private portfolios, analytics dashboards, SEO CMS, internal linking graph, security/observability, Training, Carrd coherence, editable HTML CV, Dapta.ai assistant, remove.bg opt-in upload processing, Home edge-cache optimization y Crawler Hints/IndexNow.
-- **F — Active Gate:** **P3.1 Consent Mode parity across every public GTM page.** Reutilizar el sistema existente; no crear implementación paralela.
+- **F — Active Gate:** **P3.3 Mobile critical rendering path.** Reducir blocking/render delay sin degradar consent, idioma first-paint, SSR ni Safeguards.
 - **Importante:** aunque una visión futura describa CRM, Projects, Rental Admin u otros módulos, el repo manda. No documentarlos ni tratarlos como implementados hasta que exista código/flujo real.
 
 ## Gap analysis / priorización futura
@@ -736,11 +774,12 @@ La visión recibida el 2026-08-21 se interpreta como una dirección estratégica
 | Funcionalidad | Estado actual | Propuesta futura | Clasificación | Priority | Effort | Impact | Risk | Dependencias / evidencia |
 |---|---|---|---|---|---|---|---|---|
 | P3.0 public production audit | completado y clasificado | conservar evidencia; ejecutar fixes estrechos | **A** | closed | — | alto | bajo | GSC/Bing/PageSpeed + repo/production smoke |
-| Consent Mode parity | Home correcto; páginas públicas no-Home cargan GTM sin bootstrap default-denied | extender `analytics-consent.js`/contract antes de GTM en cada página + tests | **F — P3.1** | P0 | S/M | alto | medio | privacy/analytics ordering |
-| Public Home hidden staging | placeholder hidden sigue en response indexable | strip público en edge conservando static/Admin preview | next F candidate | P0 | S/M | alto | medio | `index.html` + Worker transform + tests |
+| Consent Mode parity | cerrado y smokeado | conservar contrato/test; no duplicar | **A — P3.1 closed** | closed | — | alto | bajo | PR #41 + production smoke |
+| Public Home hidden staging | public strip cerrado; static/Admin source preservado | conservar edge strip y Admin isolation | **A — P3.2 closed** | closed | — | alto | bajo | PR #42 + View Source/Admin/Safeguards smoke |
 | Home media closeout | R2 refs verificadas; migradores temporales retirados; smoke post-merge OK | conservar Media Library/fallbacks; cualquier cleanup adicional requiere auditoría separada | **A** | closed | — | medio | bajo | PR #37 + `4a8c425b...` + production smoke |
 | Global Select | cross-section/page-aware implementado y smokeado | conservar/expandir el mismo contrato para futuros pages | A/B | P0 | incremental | alto | bajo/medio | PR #36 + production smoke |
-| Mobile performance | lab Mobile 61/66; Desktop 96; Hero h1 LCP; TTFB ~10ms | critical rendering + responsive images/variants; medir de nuevo | B/D | P1 | M/L | alto | medio | PageSpeed audit |
+| Mobile critical rendering | lab Mobile 61/66; Desktop 96; Hero h1 LCP; TTFB ~10ms | reducir blocking/render delay con medición y guardrails | **F — P3.3** | P1-HIGH | M | alto | medio | PageSpeed audit + first-paint contracts |
+| Responsive image delivery | ~1.4 MB estimated savings | variants/`srcset`/`sizes` pipeline; preservar masters | P3.4 candidate | P1-HIGH | M/L | alto | medio | PageSpeed audit + R2/static asset architecture |
 | Accessibility | Lighthouse 89 | dialog/Turnstile semantics, local contrast, footer heading order | D | P1 | S/M | alto | bajo | Lighthouse exact failures |
 | Home HTML edge cache | root SSR `no-store`; current TTFB lab low | medir y diseñar TTL/SWR o purge-on-Publish seguro por variantes | D | P2 optimization | M | medio | medio | `worker-entry.js`, variants/preview/failsafe |
 | Bing crawl/index follow-up | 7 known/submitted; tested Live URLs indexable; aggregate Site Explorer empty | recheck 7–14 days, then diagnose only if still stalled | D external follow-up | P1 | S | medio | bajo | Bing Webmaster audit |
@@ -792,7 +831,7 @@ La visión recibida el 2026-08-21 se interpreta como una dirección estratégica
 6. **Internal linking model.** Relaciones explícitas entre Services, Products, Projects y Articles.
 7. **CRM + attribution.** Forms actuales alimentarán pipeline real cuando source-of-truth esté definido.
 8. **Analytics integrity before marketing decisions.** Internal traffic, Key Events and downstream funnel evidence before trusting acquisition/revenue reporting.
-9. **Responsive image/media delivery + mobile critical rendering.** Variants/pipeline and careful blocking-resource reduction preserving privacy/language/safeguards.
+9. **Responsive image/media delivery + mobile critical rendering.** P3.3 toma primero critical rendering; variants/pipeline queda separado como siguiente candidate.
 
 ### P2 — crecimiento/autoridad después de modelos sólidos
 
@@ -943,20 +982,30 @@ P3.0 Public Production Integrity + Commercial/SEO Audit se promovió como gate a
 
 ## 2026-08-21 — P3.0 public production / SEO / performance audit closeout
 
-**CERRADO.** Se revisaron repo + producción, Google Search Console, Bing Webmaster/Site Scan y PageSpeed/Lighthouse. Sitemap Google/Bing conoce 7 URLs; Google tenía 6/7 indexadas y la séptima pasó Live Test y fue solicitada. Bing conoce/recibió las 7, los Live Tests probados fueron indexables, Site Scan pasó 7/7 sin errores y Site Explorer aún no tenía datos agregados. Se registró recheck Bing en 7–14 días. El único warning Bing de alt fue descartado como false positive sobre imágenes decorativas con `alt=""`. Se clasificaron dos P0: Consent Mode no uniforme y staging oculto en HTML público; P3.1 toma el primero como gate estrecho.
+**CERRADO.** Se revisaron repo + producción, Google Search Console, Bing Webmaster/Site Scan y PageSpeed/Lighthouse. Sitemap Google/Bing conoce 7 URLs; Google tenía 6/7 indexadas y la séptima pasó Live Test y fue solicitada. Bing conoce/recibió las 7, los Live Tests probados fueron indexables, Site Scan pasó 7/7 sin errores y Site Explorer aún no tenía datos agregados. Se registró recheck Bing en 7–14 días. El único warning Bing de alt fue descartado como false positive sobre imágenes decorativas con `alt=""`. Se clasificaron dos P0 que quedaron cerrados posteriormente en P3.1/P3.2.
+
+## 2026-08-21 — P3.1 Consent Mode parity
+
+**CERRADO.** PR #41 squash-merged en `2d7a934d776c1af1ffcaaf847afab7c6fa55d91d`; CI verde. El bootstrap de consentimiento existente ahora precede GTM en todas las páginas públicas actuales con GTM y una regresión recorre el set público. Production smoke fresh/private validó EN, `Necessary only`, persistencia a Theatre, ES, `Permitir analítica`, persistencia a Rental y 404.
+
+## 2026-08-21 — P3.2 public Home staging strip
+
+**CERRADO.** PR #42 squash-merged en `d4e3a28140664b96fc5d74578cef0442baa1a191`; CI verde. View Source público no contiene `Future picture project` ni `contentStaging`; Admin Editor permanece normal y Safeguards continúa 9/9. Static/Admin staging se conservó y Sound for Picture no fue publicado.
 
 ---
 
 # Siguiente trabajo
 
-**P3.1 está activo.** Orden de ejecución:
+**P3.3 está activo.** Orden de ejecución:
 
-1. aplicar Change Safety al sistema existente de `analytics-consent.js` + GTM en todas las páginas públicas;
-2. implementar la mínima extensión para que default-denied/consent exista antes de GTM en cada página aplicable;
-3. añadir tests de regresión de orden/cobertura;
-4. PR + CI;
-5. producción smoke en Home + al menos una landing EN/ES y 404/otra página representativa en ventana privada;
-6. cerrar P3.1 y promover P3.2 para retirar staging del HTML público Home conservando Admin/static preview;
-7. mantener el recheck de Bing para 2026-08-28 a 2026-09-04 sin re-submissions repetidos mientras tanto.
+1. reproducir y documentar baseline comparable de first paint/LCP móvil y Desktop control;
+2. aplicar Change Safety a consent bootstrap, language bootstrap, CSS/fonts y Visual Safeguards antes de mover/deferir/inlinear recursos;
+3. separar render-blocking del payload de imágenes; no usar P3.3 para construir todavía el pipeline responsive;
+4. implementar la mínima reducción de blocking/render delay que preserve default-denied antes de GTM, idioma correcto antes del paint, Hero SSR/fallback y Safeguards;
+5. añadir/ajustar regresiones de orden y disponibilidad de recursos críticos;
+6. PR + CI + production smoke EN/ES, consent fresh/persisted, visual/Safeguards;
+7. repetir PageSpeed móvil/desktop bajo condiciones comparables y documentar efecto real;
+8. después decidir si P3.4 responsive images se promueve como siguiente gate;
+9. mantener el recheck de Bing para 2026-08-28 a 2026-09-04 sin re-submissions repetidos mientras tanto.
 
-**Sound for Picture permanece inert staging hasta contenido/scope real aprobado.**
+**Sound for Picture permanece inert staging en static/Admin source hasta contenido/scope real aprobado; no forma parte del response público Home desde P3.2.**
