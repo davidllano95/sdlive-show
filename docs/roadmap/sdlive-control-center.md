@@ -2,7 +2,7 @@
 
 **Reprioritized:** 2026-08-22 — America/Bogota
 
-**Status:** Active sequenced initiative — Steps 1–3 are closed; **Step 4 brand-coherent rename is the current F Active Gate**. Final name selected: **SD.Live Track**. Availability/WhatsApp is eligible as the documented parallel track but is not active automatically.
+**Status:** Active sequenced initiative — Steps 1–4 are closed; **Step 5 field/source-of-truth mapping is the current F Active Gate**. The retained finance system is now branded **SD.Live Track**. Availability/WhatsApp is eligible as the documented parallel track but is not active automatically.
 
 This initiative supersedes the earlier informal Category D / future-integration framing for CRM, AppSheet integration, Automatic Show Day and Calendar. Existing detail in those sections remains valid; this document defines the required sequence and priority.
 
@@ -57,22 +57,25 @@ Decision rationale:
 
 **Architecture consequence:** AppSheet remains the field/offline capture tool. The first SD.Live integration remains read-only and Admin-only, reading the underlying Google Sheet/API rather than treating AppSheet as a second API/source of truth. This decision does **not** pre-commit Google Sheets as the permanent backing store forever; future ownership changes still require the field-level source-of-truth mapping and a deliberate migration plan.
 
-### 4. Brand-coherent rename — 🚧 F ACTIVE GATE
+### 4. Brand-coherent rename — ✅ CLOSED
 
-**Approved final name: SD.Live Track.** Naming decision evidence: `docs/decisions/sdlive-track-name-2026-08-22.md`.
+**Approved and applied final name: SD.Live Track.** Naming decision evidence: `docs/decisions/sdlive-track-name-2026-08-22.md`.
 
-The legacy name **NextPay26** must now be retired from the surviving user-facing Google Sheets + AppSheet implementation before deeper SD.Live integration so new integration code/documentation does not depend on it.
+Rename evidence on 2026-08-22:
 
-- [x] Final name chosen deliberately: **SD.Live Track**.
-- [ ] Apply **SD.Live Track** consistently to the surviving repaired Google Sheets + AppSheet system.
-- [ ] Preserve `NextPay26` only where needed for historical audit/migration context.
-- [ ] Before changing any technical AppSheet app name/deep-link identifier, identify dependencies such as `LINKTOAPP()` or URL `appName` references; presentation labels may be renamed independently when safe.
-- [ ] Do not alter formulas, sheet schema, AppSheet table/column references, actions, slices, views or automation merely to rename presentation branding.
-- [ ] Smoke the renamed app: launch, sync, offline-capable capture path, core views/actions and existing bots remain operational.
+- [x] AppSheet user-facing Short Name changed to **SD.Live Track** and saved successfully.
+- [x] Google Sheets backing-file title changed to **SD.Live Track** without renaming tabs, columns or formulas.
+- [x] AppSheet sync after the Sheet-file rename completed normally.
+- [x] AppSheet configuration search returned no user-configurable `NextPay26` references.
+- [x] Technical/internal AppSheet identity and default app folder were intentionally left unchanged; the rename did not attempt to mutate deep-link identifiers or storage paths.
+- [x] Mobile launch smoke passed: **SD.Live Track** is visible in the app menu, core calendar/navigation loads normally and AppSheet reports **Offline ready**.
+- [x] `NextPay26` remains only where historical audit/migration context or an internal AppSheet identifier requires it.
 
-### 5. Finance integration Phase 1 — source-of-truth mapping
+No formulas, Sheet tab names/schema, AppSheet table/column references, actions, slices, views or bots were renamed as part of this branding change. Their business logic remains the audited system from Step 3; the rename itself changed presentation/file labeling only.
 
-Before integration code, document a field-by-field ownership table.
+### 5. Finance integration Phase 1 — source-of-truth mapping — 🚧 F ACTIVE GATE
+
+Before integration code, document a field-by-field ownership table for the data SD.Live may read or later write.
 
 Required columns:
 
@@ -80,7 +83,16 @@ Required columns:
 |---|---|---|---|---|---|---|
 | Example only | TBD | TBD | TBD | TBD | TBD | Audit decision is repair + integrate; ownership still must be mapped |
 
-No integration is allowed until the real table is completed for the fields SD.Live may touch.
+Mapping rules:
+
+- Start from the **current real SD.Live Track Google Sheet/AppSheet implementation**, not stale documentation.
+- Distinguish user-entered fields, Sheets-calculated fields, AppSheet virtual/calculated fields and action/bot-maintained fields.
+- Record which data may be exposed to the future `/admin` read-only view and which must remain private/internal.
+- Google Sheets remains the current underlying finance data store during this phase; AppSheet remains the capture/workflow surface.
+- Do not create D1 finance copies, write-back, bidirectional sync or parallel financial ownership during mapping.
+- Do not infer ownership from a column name alone; formulas, actions, slices/bots and current data flow are evidence.
+
+No integration code is allowed until the real mapping is completed for the fields SD.Live may touch.
 
 ### 6. Finance integration Phase 2 — read-only, Admin-only insights
 
@@ -156,7 +168,7 @@ Potential later scope:
 - AI qualification has no access to pricing, rental catalog or finance data.
 - Read-only or write-once comes before bidirectional sync.
 - "As soon as possible" applies to moving through the sequence, not bypassing prerequisites.
-- Steps 1–4 are prerequisites for the finance/control-center integration track.
+- Steps 1–4 are prerequisites for the finance/control-center integration track and are now closed.
 - Step 7 is the explicit parallel-track exception.
 - Repair vs rewrite is **DECIDED: repair + integrate** based on the 2026-08-22 full audit; do not reopen it without new evidence of material architectural failure.
 - AppSheet's current offline capture behavior is an asset to preserve unless a future replacement proves equivalent reliability before migration.
@@ -181,4 +193,4 @@ Existing sections remain valid detail and should not be deleted or recreated:
 - **16 — Automatic Show Day Mode**
 - **17 — Calendar**
 
-This **14.5 Control Center** initiative owns their sequencing and reprioritization. README, `PROJECT_STATUS.md` and the master checklist point here; Step 4 brand-coherent rename remains the active gate until **SD.Live Track** is applied and smoke-tested in the surviving Sheets/AppSheet system.
+This **14.5 Control Center** initiative owns their sequencing and reprioritization. Step 4 rename is closed with **SD.Live Track** applied and mobile/offline smoke passed; **Step 5 field/source-of-truth mapping is the current active gate**.
