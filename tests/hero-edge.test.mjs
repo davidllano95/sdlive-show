@@ -168,6 +168,34 @@ test("Admin iframe preview is isolated from public Published rendering", () => {
   assert.equal(isAdminPreviewRequest(publicIframe), false);
 });
 
+test("public Home strips staging while static Admin preview keeps the staging source", async () => {
+  const [workerSource, staticHome] = await Promise.all([
+    readFile(new URL("../worker-entry.js", import.meta.url), "utf8"),
+    readFile(new URL("../index.html", import.meta.url), "utf8")
+  ]);
+
+  assert.match(staticHome, /id="contentStaging"/);
+  assert.match(staticHome, /Future picture project/);
+  assert.match(
+    workerSource,
+    /\.on\("#contentStaging",\s*\{[\s\S]*?element\.remove\(\);[\s\S]*?\}\)/
+  );
+});
+
+test("publish failsafe iframe uses the public Home path, not the Admin preview bypass", () => {
+  const failsafeRequest = new Request(
+    "https://sdlive.show/?failsafe_verify=1",
+    {
+      headers: {
+        "Sec-Fetch-Dest": "iframe",
+        Referer: "https://sdlive.show/admin/editor/"
+      }
+    }
+  );
+
+  assert.equal(isAdminPreviewRequest(failsafeRequest), false);
+});
+
 test("client Hero binding preserves the server-rendered fast path", async () => {
   const source = await readFile(
     new URL("../hero-content.js", import.meta.url),
