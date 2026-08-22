@@ -1,0 +1,31 @@
+export const CONTENT_SECURITY_POLICY = [
+  "default-src 'self'",
+  "base-uri 'self'",
+  "object-src 'none'",
+  "frame-ancestors 'self'",
+  "form-action 'self'",
+  "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://static.cloudflareinsights.com https://challenges.cloudflare.com",
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+  "font-src 'self' data: https://fonts.gstatic.com",
+  "img-src 'self' data: blob: https://media.sdlive.show https://www.googletagmanager.com https://*.google-analytics.com",
+  "connect-src 'self' https://www.googletagmanager.com https://*.googletagmanager.com https://*.google-analytics.com https://*.analytics.google.com https://challenges.cloudflare.com https://cloudflareinsights.com https://static.cloudflareinsights.com",
+  "frame-src 'self' https://www.googletagmanager.com https://challenges.cloudflare.com",
+  "media-src 'self' blob: https://media.sdlive.show",
+  "manifest-src 'self'",
+  "upgrade-insecure-requests"
+].join("; ");
+
+export const BASELINE_SECURITY_HEADERS = Object.freeze({
+  "Content-Security-Policy": CONTENT_SECURITY_POLICY,
+  "X-Content-Type-Options": "nosniff",
+  "X-Frame-Options": "SAMEORIGIN",
+  "Referrer-Policy": "strict-origin-when-cross-origin",
+  "Permissions-Policy": "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+});
+
+export function applyBaselineSecurityHeaders(headers) {
+  for (const [name, value] of Object.entries(BASELINE_SECURITY_HEADERS)) {
+    headers.set(name, value);
+  }
+  return headers;
+}
