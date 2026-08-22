@@ -4,6 +4,8 @@
 
 **Status:** Backlog / Proposed — not yet scoped into a numbered phase and not authorized for implementation by this document alone.
 
+**Roadmap placement:** recorded during the P3.3 closeout; it must not interrupt P3.4 or any other currently active F gate unless explicitly reprioritized.
+
 ## Problem
 
 The site currently shows a single WhatsApp bubble regardless of whether Samuel is actually reachable. Visitors during off-hours, while he is traveling across time zones, or while he is on a flight/at a live event can get no response for hours, with no signal that a delay is expected. This can cost qualified leads, especially because WhatsApp is a dominant contact channel for the Colombian events market.
