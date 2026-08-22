@@ -19,7 +19,7 @@ Runtime production baseline checked against: `2c0fe574a0ab37ceb00cf84b31cbf1b68e
 
 ## Current Active Gate
 
-🚧 **F — Control Center Step 4: brand-coherent rename.** P3.4, Security and the full finance audit are closed. The audit decision is **repair + integrate; no rewrite**, preserving AppSheet offline capture. Rename now precedes field/source mapping and read-only `/admin` insights. Availability/WhatsApp remains eligible as the explicit parallel track but is not active automatically.
+🚧 **F — Control Center Step 6: read-only, Admin-only finance insights.** P3.4, Security, the finance audit, SD.Live Track rename and field/source-of-truth mapping are closed. The decision remains **repair + integrate; no rewrite**, preserving AppSheet offline capture and Google Sheets persistence/formulas. Availability/WhatsApp remains eligible as the explicit parallel track but is not active automatically.
 
 ---
 
@@ -299,7 +299,7 @@ Pending:
 
 ## 14.5 — SD.Live as Control Center (reprioritized 2026-08-22)
 
-**Status: 🚧 F — Step 4 brand-coherent rename is active; Steps 1–3 are closed.** Audit evidence: `docs/audits/nextpay26-repair-vs-rewrite-2026-08-22.md`. Decision: repair + integrate, preserve AppSheet offline capture. Required order now is rename → field/source mapping → read-only Admin insights → later write-back/bidirectional phases. Availability/WhatsApp remains the sole explicit parallel-track exception and is eligible, not active automatically.
+**Status: 🚧 F — Step 6 read-only, Admin-only finance insights is active; Steps 1–5 are closed.** Audit evidence: `docs/audits/nextpay26-repair-vs-rewrite-2026-08-22.md`; field map evidence: `docs/checkpoints/sdlive-track-source-of-truth-2026-08-22.md`. Decision: repair + integrate, preserve AppSheet offline capture and Sheets ownership. Required order now is read-only Admin insights → validated later write-back/bidirectional phases. Availability/WhatsApp remains the sole explicit parallel-track exception and is eligible, not active automatically.
 
 ## 14. Basic CRM
 
@@ -321,10 +321,11 @@ Pending:
 - ✅ Full 2026-08-22 audit chose repair + integrate rather than rewrite.
 - ✅ AppSheet remains the field/offline capture surface.
 - ✅ Google Sheets remains the current backing data store on the repair path; this is not a permanent architecture commitment.
-- ⏳ Rename NextPay26 before deeper integration.
-- ⏳ Define source of truth per field before any sync/read model.
-- ⏳ First SD.Live integration is read-only `/admin` insight via underlying Google Sheet/API, not an assumed AppSheet API layer.
+- ✅ Renamed the surviving user-facing system to **SD.Live Track**; technical/internal AppSheet identity intentionally preserved where needed.
+- ✅ Field/source-of-truth mapping closed; see `docs/checkpoints/sdlive-track-source-of-truth-2026-08-22.md`.
+- 🚧 **F active:** First SD.Live integration is read-only `/admin` insight via underlying Google Sheet/API, not an assumed AppSheet API layer.
 - ⏳ Avoid unnecessary duplication or second financial source of truth.
+- ⏳ **Finance reminder delivery hardening:** diagnose why current AppSheet push reminders have not been received; optionally add email + WhatsApp delivery using the same approved reminder conditions. Notification channels remain read-only and must not fork finance logic.
 - ⏳ Write-back/Lead→event/project automation only after the read-only phase is validated.
 
 ## 16. Automatic Show Day Mode
