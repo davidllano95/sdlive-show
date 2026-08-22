@@ -1,4 +1,5 @@
 import appWorker from "./worker-router.js";
+import { handleFinanceApi } from "./finance-api.js";
 
 const PUBLIC_FORM_LIMITS = {
   "/api/contact": {
@@ -16,6 +17,27 @@ function normalizedPath(request) {
   return url.pathname.length > 1
     ? url.pathname.replace(/\/+$/, "")
     : url.pathname;
+}
+
+async function verifyAdminViaExistingApi(request, env) {
+  const url = new URL(request.url);
+  url.pathname = "/api/admin/whoami";
+  url.search = "";
+
+  const verificationRequest = new Request(url.toString(), {
+    method: "GET",
+    headers: request.headers
+  });
+
+  const response = await appWorker.fetch(verificationRequest, env);
+  if (!response.ok) return null;
+
+  const data = await response.json().catch(() => null);
+  if (!data?.authenticated || !data?.email) return null;
+
+  return {
+    email: String(data.email).toLowerCase()
+  };
 }
 
 export function publicFormRateLimitConfig(request) {
@@ -74,6 +96,13 @@ export async function enforcePublicFormRateLimit(request, env) {
 
 export default {
   async fetch(request, env) {
+    if (normalizedPath(request).startsWith("/api/admin/finance")) {
+      const response = await handleFinanceApi(request, env, {
+        verifyAdmin: verifyAdminViaExistingApi
+      });
+      if (response) return response;
+    }
+
     const limited = await enforcePublicFormRateLimit(request, env);
     if (limited) return limited;
     return appWorker.fetch(request, env);
