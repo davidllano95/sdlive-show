@@ -7,7 +7,7 @@
 > **Rule:** a checked item here means evidence exists elsewhere in the repo/production. A pending item remains backlog/future work unless `PROJECT_STATUS.md` explicitly promotes it to **F — Active Gate / Approved Work**.
 
 Last reconciliation: **2026-08-22 — America/Bogota**
-Runtime production baseline checked against: `4a8c425bc016acad78ef15d07dd8a7a4792bbc73`; P2.8 Home media closeout is production-smoked and closed. P3.0 public/SEO/performance audit is now closed as an evidence checkpoint. Query GitHub live for the current `main` HEAD because docs-only commits may advance HEAD without changing the runtime baseline.
+Runtime production baseline checked against: `2c0fe574a0ab37ceb00cf84b31cbf1b68e1746c4`; Security B is production-smoked. The finance audit is documentation/operational evidence outside the SD.Live runtime and does not change this runtime baseline. Query GitHub live for current `main` HEAD because docs-only commits may advance HEAD without changing runtime.
 
 ## Legend
 
@@ -19,7 +19,7 @@ Runtime production baseline checked against: `4a8c425bc016acad78ef15d07dd8a7a479
 
 ## Current Active Gate
 
-🚧 **F — Control Center Step 3: full finance-app audit / repair-vs-rewrite decision.** P3.4 and the Security baseline are both closed and production-smoked. Per `docs/roadmap/sdlive-control-center.md`, the audit must finish before repair/rewrite, rename, finance integration or source-of-truth changes. Availability/WhatsApp is now eligible as the one explicit parallel track, but is not active automatically.
+🚧 **F — Control Center Step 4: brand-coherent rename.** P3.4, Security and the full finance audit are closed. The audit decision is **repair + integrate; no rewrite**, preserving AppSheet offline capture. Rename now precedes field/source mapping and read-only `/admin` insights. Availability/WhatsApp remains eligible as the explicit parallel track but is not active automatically.
 
 ---
 
@@ -299,7 +299,7 @@ Pending:
 
 ## 14.5 — SD.Live as Control Center (reprioritized 2026-08-22)
 
-**Status: 🚧 F — Step 3 finance audit is active; Steps 1–2 prerequisites are closed.** Full sequencing contract: `docs/roadmap/sdlive-control-center.md`. P3.4 + security baseline are complete; required order now is full finance-app audit + repair-vs-rewrite decision → brand-coherent rename → field/source mapping → read-only Admin insights → later write-back/bidirectional phases. The Availability-Aware Contact Widget / WhatsApp qualification track is the sole explicit parallel-track exception and is eligible now, but not active automatically. Do not reorder without explicit re-approval.
+**Status: 🚧 F — Step 4 brand-coherent rename is active; Steps 1–3 are closed.** Audit evidence: `docs/audits/nextpay26-repair-vs-rewrite-2026-08-22.md`. Decision: repair + integrate, preserve AppSheet offline capture. Required order now is rename → field/source mapping → read-only Admin insights → later write-back/bidirectional phases. Availability/WhatsApp remains the sole explicit parallel-track exception and is eligible, not active automatically.
 
 ## 14. Basic CRM
 
@@ -314,16 +314,18 @@ Pending:
 - ⏳ Follow-up reminders.
 - ⏳ Kanban pipeline.
 
-## 15. AppSheet integration
+## 15. AppSheet / finance integration
 
-**Status: ⏳ D.**
+**Status: 🟡/⏳ B/D — existing finance system retained; SD.Live integration pending.**
 
-- ⏳ Integrate relevant personal AppSheet data with SD.Live Admin only after ownership rules are explicit.
-- ⏳ Work/jobs, clients, events and payments where useful.
-- ⏳ Avoid unnecessary duplication.
-- ⏳ Define source of truth per datum before sync.
-- ⏳ Potential AppSheet client → CRM import.
-- ⏳ Potential confirmed Lead → event/project creation.
+- ✅ Full 2026-08-22 audit chose repair + integrate rather than rewrite.
+- ✅ AppSheet remains the field/offline capture surface.
+- ✅ Google Sheets remains the current backing data store on the repair path; this is not a permanent architecture commitment.
+- ⏳ Rename NextPay26 before deeper integration.
+- ⏳ Define source of truth per field before any sync/read model.
+- ⏳ First SD.Live integration is read-only `/admin` insight via underlying Google Sheet/API, not an assumed AppSheet API layer.
+- ⏳ Avoid unnecessary duplication or second financial source of truth.
+- ⏳ Write-back/Lead→event/project automation only after the read-only phase is validated.
 
 ## 16. Automatic Show Day Mode
 

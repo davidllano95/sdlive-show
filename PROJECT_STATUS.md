@@ -9,13 +9,13 @@
 | Última revisión integral | 2026-08-22 — **America/Bogota** |
 | Rama verificada | `main` al iniciar este checkpoint; consultar HEAD live al retomar |
 | Runtime production baseline verificado | `2c0fe574a0ab37ceb00cf84b31cbf1b68e1746c4` — Security B public-form rate limiting, production-smoked |
-| Trabajo activo | **Control Center Step 3 — full finance-app audit / repair-vs-rewrite decision** |
+| Trabajo activo | **Control Center Step 4 — brand-coherent rename** |
 | Producción | `https://sdlive.show` |
 | Media pública | `https://media.sdlive.show` |
-| Milestone actual | SD.Live as Control Center — finance-system evidence/audit before integration |
-| Estado | **P3.0–P3.4 CERRADOS; Security baseline CERRADO; Finance audit promovido a F** |
-| Active Gate | **F — Full audit of finance app / explicit repair-vs-rewrite decision** |
-| Gate posterior | **Brand-coherent rename → field/source mapping → read-only Admin insights; Availability/WhatsApp is eligible as the explicit parallel track** |
+| Milestone actual | SD.Live as Control Center — preserve repaired finance system, rename before integration |
+| Estado | **P3.0–P3.4 CERRADOS; Security CERRADO; Finance audit CERRADO; Rename promovido a F** |
+| Active Gate | **F — Control Center Step 4: brand-coherent rename** |
+| Gate posterior | **Field/source-of-truth mapping → read-only Admin insights; Availability/WhatsApp remains eligible as the explicit parallel track** |
 
 ### Convención temporal y de commits
 
@@ -108,7 +108,7 @@ Estas reglas se consideran permanentes salvo decisión explícita respaldada por
 | Analytics público | GA4/GTM con consentimiento | Consent parity + Realtime validado |
 | Future CRM | **TBD** | Admin module aún Planned/Soon |
 | Future Lead → Quote → Project → Invoice | **TBD antes de implementar** | no existe source-of-truth único todavía |
-| AppSheet futuro | **No decidir todavía** | integración pendiente; evitar segundo source-of-truth accidental |
+| Finance system actual | Google Sheets + AppSheet, repair path retained | audit 2026-08-22: AppSheet preserves offline capture; field-level ownership mapping remains mandatory before SD.Live integration |
 | Future owner availability | D1 `availability_state` **solo si se implementa** | proposed in `docs/roadmap/availability-aware-contact-widget.md`; no schema/runtime aún |
 
 ## Evidence matrix — sistemas de alto riesgo
@@ -137,7 +137,7 @@ Estas reglas se consideran permanentes salvo decisión explícita respaldada por
 | Mobile lab performance | P3.3 cerrado con mejora material en lab; field CWV sigue sin CrUX suficiente | A — P3.3 cerrado | baseline Mobile 61/66 con LCP 14.8/10.2 s; final post-#47 75/73 con LCP 5.4/6.0 s; TTFB ~10 ms |
 | Responsive image delivery | Producción smoke OK; P3.4 cerrado | **A — P3.4 cerrado** | PR #50 header responsive + PR #51 R2/CMS responsive; Cloudflare Transformations zone-only; Mobile final 90 / LCP 3.1 s; image-delivery savings ~1.423 MiB → ~58 KiB |
 | Availability-Aware Contact Widget | Propuesto; no runtime/schema | D — eligible parallel track after Security closeout; not active automatically | `docs/roadmap/availability-aware-contact-widget.md`; future D1 `availability_state`, exact owner WhatsApp gate, existing `leads` table |
-| SD.Live as Control Center | Steps 1–2 prerequisites closed; Step 3 finance audit active | **F — Step 3 Active Gate** | `docs/roadmap/sdlive-control-center.md`; P3.4 + Security closed → finance audit → rename → source mapping → read-only Admin insights; Availability is the explicit parallel-track exception |
+| SD.Live as Control Center | Steps 1–3 closed; repair + integrate decision recorded; Step 4 rename active | **F — Step 4 Active Gate** | `docs/audits/nextpay26-repair-vs-rewrite-2026-08-22.md` + `docs/roadmap/sdlive-control-center.md`; preserve Sheets/AppSheet logic/offline capture → rename → source mapping → read-only Admin insights |
 | Hidden/offscreen media payload trimming | Future optimization; not active | D | P3.4 closeout: responsive sizing is solved; investigate lazy/deferred hidden R2 reveal/brand media + `world-map.webp` separately without deleting masters |
 | Home HTML cache policy | `no-store` actual; optimización pendiente | A current / D optimization | `worker-entry.js::transformHomeResponse()` fija `Cache-Control: no-store` y `Vary: Accept-Language, Cookie`; current lab TTFB es bajo |
 | Sound for Picture CMS | No implementado | D/UNKNOWN scope | static/Admin staging only; stripped from public response in P3.2 |
@@ -791,7 +791,7 @@ La visión recibida el 2026-08-21 se interpreta como una dirección estratégica
 - **A — Ya existe:** frontend vanilla HTML/CSS/JS; Cloudflare Workers/Static Assets; D1; R2; Cloudflare Access; CMS Draft/Published/revisions; Hero/Trusted/Testimonials/About/Services/International/Work/Rental/Contact CMS según scope; reusable Media Library; Rental público con pricing backend; Contact/Rental forms; EN/ES; COL/INT; landings SEO actuales; canonical/hreflang/robots/sitemap/JSON-LD base; Visual Safeguards; automatic publish failsafe; Global Select cross-section production-smoked; Home managed-media production refs on R2; temporary Home media migrators retired and production-smoked in P2.8; P3.0 evidence audit completed; **P3.1 Consent parity, P3.2 public staging strip y P3.3 critical rendering cerrados y smokeados/evidenciados**.
 - **B — Parcial:** Portfolio/Work sin case-study model profundo, Raw vs Mixed sin media real/Admin, Show Day sin calendario, Rental sin catálogo/admin completo, SEO sin sistema CMS-first para metadata de páginas futuras, analytics sin dashboard comercial/tráfico interno limpio, Insights/Journal sin sistema editorial real.
 - **D — Future Integration:** layout visual avanzado, header/floating controls, Projects/case studies, Rental product SEO/Admin pricing rules/compatibility guidance, Article/Journal CMS, CRM pipeline/atribución, AppSheet, Calendar, quote automation, private portfolios, analytics dashboards, SEO CMS, internal linking graph, security/observability, Training, Carrd coherence, editable HTML CV, Dapta.ai assistant, remove.bg opt-in upload processing, Home edge-cache optimization, Crawler Hints/IndexNow, Availability-Aware Contact Widget y hash/scroll-restoration polish.
-- **F — Active Gate:** **Control Center Step 3 — full finance-app audit / repair-vs-rewrite decision.** No integrar, reparar ni reescribir hasta auditar datos, fórmulas, AppSheet sync/actions/bots y ownership/migration implications.
+- **F — Active Gate:** **Control Center Step 4 — brand-coherent rename.** Finance audit closed with a repair + integrate decision; preserve the working Sheets/AppSheet logic and offline capture while choosing the SD.Live-aligned name before source mapping/integration.
 - **Importante:** aunque una visión futura describa CRM, Projects, Rental Admin u otros módulos, el repo manda. No documentarlos ni tratarlos como implementados hasta que exista código/flujo real.
 
 ## Gap analysis / priorización futura
@@ -805,7 +805,8 @@ La visión recibida el 2026-08-21 se interpreta como una dirección estratégica
 | Global Select | cross-section/page-aware implementado y smokeado | conservar/expandir el mismo contrato para futuros pages | A/B | P0 | incremental | alto | bajo/medio | PR #36 + production smoke |
 | Mobile critical rendering | P3.3 cerrado; final lab 75/73, LCP 5.4/6.0 s | conservar accepted changes + anti-popping/privacy invariants | **A — P3.3 closed** | closed | — | alto | bajo | PR #46/#47 + production smoke + PageSpeed |
 | Responsive image delivery | cerrado y production-smoked | conservar pipeline responsive y masters; payload timing queda separado | **A — P3.4 closed** | closed | — | alto | bajo | PR #50/#51 + Mobile 90/LCP 3.1 s + ~58 KiB residual |
-| Finance app / Control Center Step 3 | sistema externo actual aún no auditado de punta a punta | auditar datos, fórmulas, AppSheet sync/actions/bots y decidir repair vs rewrite por evidencia | **F — Active Gate** | P0 prerequisite | M/L audit | muy alto | alto | `docs/roadmap/sdlive-control-center.md`; no architecture decision before audit |
+| Finance app / Control Center Step 3 | auditoría completa cerrada; cero P0; correcciones menores aplicadas | conservar Google Sheets + AppSheet, incluida captura offline; integrar incrementalmente | **A — closed** | closed | — | muy alto | bajo/medio | `docs/audits/nextpay26-repair-vs-rewrite-2026-08-22.md`; repair + integrate decision |
+| Finance brand / Control Center Step 4 | nombre legacy NextPay26 aún vigente | elegir nombre coherente con SD.Live y aplicarlo sin romper referencias técnicas | **F — Active Gate** | P0 prerequisite | S/M | alto | bajo/medio | audit cerrado; rename precede field/source mapping |
 | Availability-aware contact | no existe runtime/schema todavía | D1 availability state + owner commands + WhatsApp/AI surface switching | **D — parallel-track eligible, not auto-active** | parallel option | L | alto conversión | alto | Security prerequisite closed; exact owner auth + existing `leads` + provider/webhook validation |
 | Accessibility | Lighthouse 89 | dialog/Turnstile semantics, local contrast, footer heading order | D | P1 | S/M | alto | bajo | Lighthouse exact failures |
 | Home HTML edge cache | root SSR `no-store`; current TTFB lab low | medir y diseñar TTL/SWR o purge-on-Publish seguro por variantes | D | P2 optimization | M | medio | medio | `worker-entry.js`, variants/preview/failsafe |
@@ -1035,6 +1036,10 @@ P3.0 Public Production Integrity + Commercial/SEO Audit se promovió como gate a
 
 **CERRADO y VALIDADO EN PRODUCCIÓN.** PR #53 (`2710c0c0...`) añadió CSP/browser headers compartidos sin romper Home, `/en/`, Cloudflare Access ni el preview same-origin del Site Editor. PR #54 (`2c0fe574...`) añadió rate limiting Worker-native independiente para Contact y Rental, 10 requests/60s por endpoint antes de Turnstile/D1/Resend. Contact y Rental normal submissions fueron enviados en producción y sus emails llegaron correctamente; Rental continuó notificando únicamente a `rental@sdlive.show`.
 
+## 2026-08-22 — NextPay26 finance audit / repair-vs-rewrite
+
+**CERRADO.** Se auditó el sistema completo Google Sheets + AppSheet: 12 pestañas, 57 registros reales, 11 Actions, 3 Bots, 11 Views y 10 Slices, además de fórmulas críticas y reglas de cobranza. Se corrigieron dos fechas de pago, paridad No Pagados USD/COP, Show If duplicado, rango REGISTRO y manejo de error/vacío en Valor Neto; `HER_PENDIENTES_PIVOT` y la regla crítica de LiventX se confirmaron correctas. Resultado: cero P0 de pérdida/corrupción. Decisión explícita: **repair + integrate; no rewrite**. AppSheet conserva captura offline; la primera integración futura en `/admin` será read-only sobre el underlying Google Sheet/API después de rename + source mapping. Evidencia: `docs/audits/nextpay26-repair-vs-rewrite-2026-08-22.md`.
+
 ## 2026-08-22 — Availability-Aware Contact roadmap checkpoint
 
 **BACKLOG D / parallel-track eligible.** Se preservó `docs/roadmap/availability-aware-contact-widget.md`. P3.4 y Security ya cerraron, así que puede promocionarse como track paralelo al finance audit si se aprueba explícitamente; no existe todavía D1 schema/API/webhook/widget y no debe tratarse como implementado.
@@ -1043,20 +1048,18 @@ P3.0 Public Production Integrity + Commercial/SEO Audit se promovió como gate a
 
 # Siguiente trabajo
 
-**F — Control Center Step 3: auditoría completa del sistema financiero actual (NextPay26) y decisión explícita repair vs rewrite.**
+**F — Control Center Step 4: brand-coherent rename del sistema financiero reparado.**
 
 Orden del gate:
 
-1. inventariar el sistema real actual: Google Sheets, AppSheet, tablas/slices/views/actions/bots, archivos/documentación y cualquier automatización externa relevante;
-2. auditar calidad de datos sin limitarse a problemas ya conocidos: duplicados/ghost rows, tipos, llaves, fechas, monedas, estados y consistencia histórica;
-3. revisar fórmulas y reglas de negocio: COP/USD, fees, retenciones, facturación/cuenta de cobro, aging, fechas/estado de pago y campos derivados;
-4. revisar confiabilidad de sync AppSheet↔Sheet, acciones y bots/recordatorios, incluyendo qué ocurre offline/retry/conflict cuando aplique;
-5. mapear modelo y ownership actual de jobs/events, clientes, pagos, invoice lifecycle y relaciones;
-6. documentar riesgos de continuar reparando versus reescribir, incluyendo costo de migración, rollback, operación y source-of-truth;
-7. emitir una decisión escrita **repair vs full rewrite** con evidencia. Si rewrite gana, diseñar target architecture/migration/rollback antes de código; si repair gana, definir el repair plan y qué sigue siendo authoritative;
-8. **no** renombrar, integrar con `/admin`, mover a D1 ni crear sync bidireccional antes de cerrar esta decisión;
-9. después de la decisión: brand-coherent rename → field/source-of-truth mapping → read-only Admin insights;
-10. Availability/WhatsApp puede correr en paralelo solo si se promueve explícitamente; Security ya no lo bloquea.
+1. evaluar el nombre contra la voz actual de SD.Live, incluyendo `SD.Live Ledger`, `SD.Live Finance` y `SD.Live Books`;
+2. elegir un nombre final;
+3. inventariar dónde aparece `NextPay26` en Google Sheets, AppSheet, documentación, iconos/labels y cualquier automatización antes de cambiarlo;
+4. distinguir labels/presentación seguros de referencias técnicas que podrían romper fórmulas, acciones, bots o sync;
+5. aplicar primero el rename no destructivo de presentación y validar AppSheet sync/offline/actions/bots;
+6. conservar `NextPay26` solo en contexto histórico/audit donde sea útil;
+7. no iniciar todavía dashboard `/admin`, write-back ni migración D1; después del rename viene el field/source-of-truth mapping;
+8. Availability/WhatsApp puede correr en paralelo solo si se promueve explícitamente.
 
 Mantener además el recheck de Bing para **2026-08-28 a 2026-09-04** sin re-submissions repetidos mientras tanto.
 
