@@ -53,9 +53,10 @@
     }).format(date);
   }
 
-  function loadFinanceModule() {
+  function loadFinanceDashboardScript() {
     if (window.SDLiveFinanceDashboard?.load) {
       window.SDLiveFinanceDashboard.load();
+      window.SDLiveFinanceI18n?.refresh?.();
       return;
     }
 
@@ -66,11 +67,38 @@
     script.src = "./finance-dashboard.js";
     script.defer = true;
     script.dataset.sdliveFinanceDashboard = "true";
-    script.addEventListener("load", () => window.SDLiveFinanceDashboard?.load());
+    script.addEventListener("load", () => {
+      window.SDLiveFinanceDashboard?.load();
+      window.SDLiveFinanceI18n?.refresh?.();
+    });
     script.addEventListener("error", () => {
       console.error("[SD.Live] Could not load Finance Dashboard module");
     });
     document.body.appendChild(script);
+  }
+
+  function loadFinanceModule() {
+    if (window.SDLiveFinanceI18n) {
+      loadFinanceDashboardScript();
+      return;
+    }
+
+    const existingI18n = document.querySelector('script[data-sdlive-finance-i18n]');
+    if (existingI18n) {
+      existingI18n.addEventListener("load", loadFinanceDashboardScript, { once: true });
+      return;
+    }
+
+    const i18n = document.createElement("script");
+    i18n.src = "./finance-dashboard-i18n.js";
+    i18n.defer = true;
+    i18n.dataset.sdliveFinanceI18n = "true";
+    i18n.addEventListener("load", loadFinanceDashboardScript, { once: true });
+    i18n.addEventListener("error", () => {
+      console.error("[SD.Live] Could not load Finance Dashboard translations; continuing in English");
+      loadFinanceDashboardScript();
+    }, { once: true });
+    document.body.appendChild(i18n);
   }
 
   async function load() {
