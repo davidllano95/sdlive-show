@@ -27,6 +27,8 @@ import {
 
 const TRUSTED_RUNTIME_VERSION = "20260821-1";
 const VISUAL_SAFEGUARDS_VERSION = "20260821-2";
+const HEADER_LOGO_WIDTHS = [192, 384];
+const HEADER_LOGO_SIZES = "(max-width: 700px) 148px, 178px";
 const CONSENT_DEFAULT_BOOTSTRAP = `<script data-sdlive-consent-default>
 window.dataLayer=window.dataLayer||[];
 window.gtag=window.gtag||function(){window.dataLayer.push(arguments);};
@@ -45,6 +47,33 @@ function normalizedPath(request) {
   return url.pathname.length > 1
     ? url.pathname.replace(/\/+$/, "")
     : url.pathname;
+}
+
+function sameZoneImageTransformUrl(source, width) {
+  const value = String(source || "").trim();
+  const normalizedWidth = Number(width);
+
+  if (
+    !value ||
+    !Number.isInteger(normalizedWidth) ||
+    normalizedWidth <= 0 ||
+    /^(?:data:|https?:\/\/)/i.test(value)
+  ) {
+    return null;
+  }
+
+  const sourcePath = value.startsWith("/") ? value : `/${value}`;
+  return `/cdn-cgi/image/width=${normalizedWidth},format=auto,fit=scale-down${sourcePath}`;
+}
+
+export function headerLogoSrcset(source) {
+  return HEADER_LOGO_WIDTHS
+    .map((width) => {
+      const url = sameZoneImageTransformUrl(source, width);
+      return url ? `${url} ${width}w` : null;
+    })
+    .filter(Boolean)
+    .join(", ");
 }
 
 async function verifyAdminViaExistingApi(request, env) {
@@ -100,6 +129,15 @@ function transformCmsHomeResponse(response, publishedTrusted, publishedTestimoni
         // default inline and let the existing manager run after HTML parsing.
         element.before(CONSENT_DEFAULT_BOOTSTRAP, { html: true });
         element.setAttribute("defer", "");
+      }
+    })
+    .on(".brand-logo img", {
+      element(element) {
+        const src = element.getAttribute("src");
+        const srcset = headerLogoSrcset(src);
+        if (!srcset) return;
+        element.setAttribute("srcset", srcset);
+        element.setAttribute("sizes", HEADER_LOGO_SIZES);
       }
     })
     .on(".trusted-wrap", {
