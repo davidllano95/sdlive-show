@@ -2,7 +2,7 @@
 
 **Reprioritized:** 2026-08-22 — America/Bogota
 
-**Status:** Active sequenced initiative — Steps 1–5 are closed; **Step 6 read-only, Admin-only finance insights is the current F Active Gate**. The retained finance system is branded **SD.Live Track** and its field-level ownership map is closed. Availability/WhatsApp remains eligible as the documented parallel track but is not active automatically.
+**Status:** Active sequenced initiative — Steps 1–6 are closed. **Finance Phase 2 read-only Admin insights is production-validated and now enters real-use observation.** Finance Phase 3 write-back remains blocked until that read-only surface is trusted in real use. Availability/WhatsApp and finance reminder-delivery hardening remain eligible documented tracks but are not activated automatically.
 
 This initiative supersedes the earlier informal Category D / future-integration framing for CRM, AppSheet integration, Automatic Show Day and Calendar. Existing detail in those sections remains valid; this document defines the required sequence and priority.
 
@@ -92,29 +92,48 @@ Key decisions:
 
 No D1 finance copy, write-back, bidirectional sync or parallel financial ownership was introduced.
 
-### 6. Finance integration Phase 2 — read-only, Admin-only insights — 🚧 F ACTIVE GATE
+### 6. Finance integration Phase 2 — read-only, Admin-only insights — ✅ CLOSED
 
-First useful integration is read-only and private.
+**CLOSED / PASS on 2026-08-22.** Evidence: PRs #60–#63 and `docs/checkpoints/sdlive-track-admin-finance-readonly-2026-08-22.md`.
 
-- Worker reads the **underlying Google Sheet/API**, not AppSheet as an assumed authoritative API layer.
-- AppSheet continues to handle field/offline capture.
-- `/admin` becomes the consolidated consultation/control surface without changing finance write logic in this phase.
+The first useful integration is live, read-only and private.
 
-Admin-only view should surface useful operational insights such as:
+- [x] Worker reads the **underlying Google Sheet/API**, not AppSheet as an assumed authoritative API layer.
+- [x] OAuth 2.0 refresh-token flow is server-side; Cloudflare Secrets hold the client secret and refresh token.
+- [x] `/api/admin/finance/health` validates the fixed finance source and exact 27-column `REGISTRO` schema without returning finance values.
+- [x] `/api/admin/finance/summary` reads the bounded `REGISTRO!A1:AA3000` range and returns only approved aggregates/detail.
+- [x] AppSheet continues to handle field/offline capture and existing workflow writes.
+- [x] `/admin` now has a live **SD.Live Track · Read-only — Finance overview**.
+- [x] Pending invoices / accounts receivable surfaced.
+- [x] Recorded fees/deductions surfaced from authoritative Sheet values.
+- [x] COP / USD split preserved in API and UI.
+- [x] Aging / priority collection signals surfaced.
+- [x] Relevant finance-table jobs are shown in the collection-priority queue.
+- [x] LiventX workflow blocking remains enforced before a record enters collectible totals.
+- [x] Finance loading is isolated from CMS dashboard health so a finance outage does not take down the rest of Admin.
+- [x] Production smoke reconciled all 57 records: 44 paid + 3 pending invoice + 4 collectible + 6 workflow-blocked.
+- [x] Production UI smoke matched API values and normalized the USD fee floating-point artifact to `$5.99`.
 
-- [ ] Pending invoices / accounts receivable.
-- [ ] Outstanding retentions / deductions where applicable.
-- [ ] COP / USD split.
-- [ ] Aging / priority collection signals.
-- [ ] Relevant jobs/events if they remain outside the finance table after source mapping.
+Production closeout snapshot:
 
-Guardrails:
+- To invoice: 3 — COP 5,600,000 gross.
+- Collectible now: 4 — COP 1,150,000 net.
+- Workflow blocked: 6 — COP 2,490,000 net.
+- Paid records: 44.
+- Received: COP 19,822,164 + USD 23,922.27.
+- Recorded fees: COP 52,014 + USD 5.99.
+- Unsupported currencies: 0.
+- Current collectible aging: 0–30 days, 4 accounts.
 
-- `/admin` only.
-- Behind the existing Cloudflare Access barrier.
-- No public route exposing finance data.
-- Read-only in this phase.
-- No second financial source of truth.
+Guardrails verified:
+
+- `/admin` only and behind existing Cloudflare Access.
+- No public finance route.
+- Read-only Google Sheets scope and no finance write endpoint.
+- No D1 finance mirror or second financial source of truth.
+- `NUM CONTACTO`, Notes, internal row IDs and OAuth credentials/tokens are omitted from the browser-facing summary.
+
+**Sequencing consequence:** Phase 2 now enters real-use observation. Do not activate Phase 3 write-back merely because the read path works; it still requires trust from real use plus the draft-first/idempotent contract in Step 8.
 
 #### Finance reminder delivery hardening — ⏳ D FUTURE BACKLOG
 
@@ -127,7 +146,7 @@ The current AppSheet finance Bots are notification-only and do not write data. T
 
 ### 7. Availability-aware contact widget + WhatsApp AI qualification
 
-This is an **independent sub-track**. P3.4 and the Security baseline are closed, so it may be promoted to run in parallel with steps 4–6; it neither blocks nor is blocked by the finance integration track. Eligibility does not make it active automatically.
+This is an **independent sub-track**. P3.4, Security and Finance Phase 2 are closed, so it remains eligible for explicit promotion without waiting for Finance Phase 3. Eligibility does not make it active automatically.
 
 The detailed contract is preserved in `docs/roadmap/availability-aware-contact-widget.md`.
 
@@ -175,8 +194,9 @@ Potential later scope:
 - AI qualification has no access to pricing, rental catalog or finance data.
 - Read-only or write-once comes before bidirectional sync.
 - "As soon as possible" applies to moving through the sequence, not bypassing prerequisites.
-- Steps 1–5 are prerequisites for the finance/control-center integration track and are now closed; Step 6 is the current read-only integration gate.
-- Step 7 is the explicit parallel-track exception.
+- Steps 1–6 are now closed for the finance/control-center integration track.
+- Finance Phase 3 remains blocked until Phase 2 earns real-use trust and its write contract is explicitly approved.
+- Step 7 is the explicit eligible parallel-track exception but still requires promotion before implementation.
 - Repair vs rewrite is **DECIDED: repair + integrate** based on the 2026-08-22 full audit; do not reopen it without new evidence of material architectural failure.
 - AppSheet's current offline capture behavior is an asset to preserve unless a future replacement proves equivalent reliability before migration.
 
@@ -200,4 +220,4 @@ Existing sections remain valid detail and should not be deleted or recreated:
 - **16 — Automatic Show Day Mode**
 - **17 — Calendar**
 
-This **14.5 Control Center** initiative owns their sequencing and reprioritization. Steps 4–5 are closed with **SD.Live Track** applied, mobile/offline smoke passed and the field/source-of-truth map documented; **Step 6 read-only Admin finance insights is the current active gate**.
+This **14.5 Control Center** initiative owns their sequencing and reprioritization. Steps 4–6 are closed with **SD.Live Track** applied, mobile/offline smoke passed, the field/source-of-truth map documented and the read-only Admin finance surface production-validated. Phase 2 is now in real-use observation; Phase 3 remains gated.
