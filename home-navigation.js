@@ -7,9 +7,15 @@
   ).matches;
 
   function loadHeroContentBinding() {
-    import("/hero-content.js?v=20260820-4").catch((error) => {
-      const hero = document.getElementById("hero");
+    const hero = document.getElementById("hero");
 
+    // The public Home already receives Published Hero content (or the deliberate
+    // static fallback) from the edge. Keep the client module only as resilience
+    // for shells that were not server-rendered, including the isolated Admin
+    // preview path. Avoid downloading a module that would immediately no-op.
+    if (hero?.dataset.serverRendered === "true") return;
+
+    import("/hero-content.js?v=20260820-4").catch((error) => {
       if (hero) {
         hero.dataset.cmsState = "ready";
       }
