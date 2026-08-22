@@ -6,16 +6,23 @@
 
 | Campo | Valor |
 |---|---|
-| Última revisión integral | 2026-08-21 |
-| Rama verificada | `main` |
-| Commit de producción verificado | `4a8c425bc016acad78ef15d07dd8a7a4792bbc73` |
-| Trabajo activo | **Ningún feature gate activo; siguiente F pendiente de decisión explícita** |
+| Última revisión integral | 2026-08-21 — **America/Bogota** |
+| Rama verificada | `main` al iniciar este checkpoint; consultar HEAD live al retomar |
+| Runtime production baseline verificado | `4a8c425bc016acad78ef15d07dd8a7a4792bbc73` — último cambio de runtime smokeado antes de docs-only PRs |
+| Trabajo activo | **P3.0 — Public Production Integrity + Commercial/SEO Audit** |
 | Producción | `https://sdlive.show` |
 | Media pública | `https://media.sdlive.show` |
-| Milestone actual | P2 — ampliar y cerrar el Editor/CMS de forma incremental |
-| Estado | **P2.8 Home CMS closeout CERRADO y smokeado en producción; media Home R2 y tooling temporal cerrados** |
-| Active Gate | **Ninguno. No implementar backlog hasta promover explícitamente el siguiente trabajo a F.** |
-| Gate posterior | **Revisar roadmap y promover explícitamente solo el siguiente trabajo aprobado a F** |
+| Milestone actual | P3 — integridad pública, conversión, SEO y performance basados en evidencia |
+| Estado | **P2.8 CERRADO; P3.0 audit gate PROMOVIDO a F** |
+| Active Gate | **F — P3.0 Public Production Integrity + Commercial/SEO Audit** |
+| Gate posterior | **Clasificar hallazgos P0/P1/P2 y abrir fixes pequeños; no implementar backlog no relacionado automáticamente** |
+
+### Convención temporal y de commits
+
+- Las fechas operativas del proyecto se interpretan en **America/Bogota** salvo que un timestamp esté marcado explícitamente como UTC.
+- GitHub puede mostrar `created_at` / `merged_at` en UTC y por ello aparentar el día calendario siguiente.
+- **`main` HEAD y runtime production baseline no son sinónimos.** Un PR únicamente documental puede mover `main` sin cambiar el runtime desplegado. Al retomar el proyecto, consultar el HEAD live y revisar los diffs desde el runtime baseline; no tratar un docs-only commit como cambio funcional.
+- Evitar fijar un supuesto “HEAD perpetuo” dentro de la documentación. El SHA de runtime se conserva como evidencia de la última superficie funcional smokeada y el HEAD real se consulta en GitHub.
 
 ## Regla de precedencia
 
@@ -43,8 +50,8 @@ Ningún agente debe convertir `BACKLOG`, `FUTURE INTEGRATION` o `VISION` en trab
 ## Cómo retomar el proyecto en una conversación nueva
 
 1. Leer `README.md`, este archivo y luego `ROADMAP_MASTER_CHECKLIST.md` si la tarea toca backlog/futuro.
-2. Consultar el `HEAD` actual de `main` y compararlo con el commit de producción verificado arriba.
-3. Si cambió, revisar solamente los diffs posteriores y actualizar los estados afectados.
+2. Consultar el `HEAD` actual de `main`; compararlo con el **runtime production baseline** documentado y distinguir cambios funcionales de docs-only commits.
+3. Si cambió el runtime, revisar solamente los diffs funcionales posteriores y actualizar los estados afectados. Si solo cambió documentación, no declarar drift de producción.
 4. Aplicar la **Regla de precedencia** y el **Change Safety Gate** antes de modificar arquitectura existente.
 5. No rehacer trabajo marcado `[x]` salvo evidencia concreta de regresión.
 6. Continuar por el primer gate **F — Active Gate** abierto. Si no hay ninguno, revisar roadmap y pedir/registrar una priorización explícita antes de implementar.
@@ -119,6 +126,7 @@ Estas reglas se consideran permanentes salvo decisión explícita respaldada por
 | Global Select cross-section | Producción smoke OK | A | PR #36, merge `7d54b83...`, `editor-resilience.js`, regression tests + manual smoke |
 | Home CMS managed-media refs | Producción verificada R2 | A | Draft/Published checks + manual public URLs through `media.sdlive.show` for Trusted/About/Work/Testimonials/Rental |
 | Temporary Home media migrator cleanup | Producción smoke OK | A | PR #37, merge `4a8c425b...`, CI verde + post-merge Editor/Safeguards/R2 smoke |
+| Home HTML cache policy | `no-store` actual; optimización pendiente | A current / D optimization | `worker-entry.js::transformHomeResponse()` fija `Cache-Control: no-store` y `Vary: Accept-Language, Cookie` |
 | Sound for Picture CMS | No implementado | D/UNKNOWN scope | hidden staging placeholder only |
 | Projects | No implementado | D | Admin module disabled/planned |
 | CRM pipeline | No implementado | D | leads/forms existen; pipeline ausente |
@@ -442,6 +450,35 @@ Scope ejecutado y cierre:
 
 ---
 
+# P3 — public production integrity, commercial/SEO and performance evidence
+
+## P3.0 — Public Production Integrity + Commercial/SEO Audit
+
+**Estado: F — ACTIVE GATE / APPROVED WORK.**
+
+Objetivo: auditar la superficie pública real de SD.Live después del cierre del CMS Home y producir evidencia/prioridades antes de abrir nuevos sistemas grandes. **P3.0 empieza como auditoría; no autoriza un PR de fixes masivos.**
+
+Scope aprobado de auditoría:
+
+- [ ] Inventariar rutas públicas reales desde repo/redirects/sitemap y distinguir canonical, aliases y páginas de staging/noindex.
+- [ ] Verificar disponibilidad/status/redirects/404 y enlaces internos relevantes.
+- [ ] Auditar COL vs INT end-to-end: detección/comportamiento, CTAs, Rental, contenido y rutas aplicables.
+- [ ] Auditar EN/ES: first paint, copy, enlaces, canonical/hreflang y consistencia de idioma.
+- [ ] Revisar Desktop/Mobile y consistencia visual con el Home sin rediseñar por defecto.
+- [ ] Revisar CTAs, WhatsApp, Contact y Rental como flujos comerciales; confirmar que no haya dead ends.
+- [ ] Auditar emails públicos/legacy para evitar referencias personales o routing incorrecto.
+- [ ] Revisar Rental quote clarity: debe entenderse como solicitud de cotización, no checkout.
+- [ ] Auditar canonical, hreflang, robots, sitemap, meta robots, indexabilidad, páginas huérfanas/duplicadas y estructura de landings actuales.
+- [ ] Revisar Search Console/Bing/indexación cuando el acceso/evidencia esté disponible; no inferir cobertura únicamente desde HTML.
+- [ ] Medir performance/Core Web Vitals/TTFB de forma reproducible antes de optimizar.
+- [ ] Incluir en performance el hallazgo verificado de `worker-entry.js::transformHomeResponse()`: el root HTML fija `Cache-Control: no-store`, por lo que evaluar cache seguro es una oportunidad de alto impacto, pero **no cambiarlo durante la auditoría sin diseño de variantes/invalidation**.
+- [ ] Clasificar cada hallazgo como P0/P1/P2, evidencia, riesgo, impacto, esfuerzo, fix propuesto y smoke requerido.
+- [ ] Abrir/implementar solo fixes estrechos explícitamente aprobados después de la clasificación.
+
+No forma parte de P3.0 automáticamente: CRM, Projects, Rental Admin completo, visual layout engine, Carrd rewrite, CV HTML, Dapta.ai, remove.bg o un cambio de cache. Esos bloques quedan documentados como Future Integration hasta promoción explícita.
+
+---
+
 # Backlog maestro por área
 
 > El inventario histórico/futuro detallado vive en `ROADMAP_MASTER_CHECKLIST.md`. Este bloque mantiene los temas operativos de alto nivel para no duplicar cientos de subtareas en el Current State.
@@ -483,7 +520,7 @@ Scope ejecutado y cierre:
 - [ ] Posición independiente Mobile de WhatsApp, cart, Show Day/Live controls y Back to Top.
 - [ ] Presets contextuales de header y preview de safe areas Mobile si se aprueba.
 
-## Contenido público
+## Contenido público / identidad profesional
 
 - [x] Hero CMS real en producción.
 - [x] Trusted By CMS real en producción.
@@ -496,6 +533,8 @@ Scope ejecutado y cierre:
 - [~] Raw vs Mixed: UI existe; faltan audios reales + Admin.
 - [~] Show Day: manual existe; falta integración con calendario y cobertura deliberada de páginas públicas.
 - [ ] Portfolio/CV privado no indexado con variantes profesionales/share controls.
+- [ ] **CV canónico en HTML:** editable, coherente visual/editorialmente con SD.Live, responsive/print-friendly y preparado para exportar PDF/variantes por postulación; no publicarlo/indexarlo por defecto sin decisión explícita.
+- [ ] **Auditoría de coherencia de `samueldavidllano.carrd.co`:** comparar posicionamiento, bio, servicios, links, visual identity y CTAs con `sdlive.show`; decidir qué actualizar, conservar, redirigir o retirar para evitar mensajes contradictorios.
 - [ ] Recuperar Insights/Journal cuando exista contenido real y capacidad editorial.
 - [ ] Technical Audio Training: backlog aprobado; definir oferta/curriculum/audiencia/capacidad/precio/evidencia antes de publicar.
 - [ ] Sound for Picture: no promover placeholder; requiere contenido real y scope aprobado.
@@ -544,6 +583,11 @@ Scope ejecutado y cierre:
 - [ ] Verificar aliases operativos antes de automatizar (`hello@`, `info@`, `rental@`, `projects@`, `billing@`, `facturas@`); `noreply@`/`quotes@` solo si aportan valor real.
 - [ ] Revisar DMARC cuando Workspace esté estable.
 
+## AI / media processing integrations
+
+- [ ] **Dapta.ai website assistant — D Future Integration:** evaluar `https://dapta.ai` como bot/asistente del sitio. Revalidar en el momento de implementación si el plan gratuito sigue existiendo y sus límites; revisar embed/API, privacidad/data processing, branding, analytics/consent, reliability y handoff humano. Nunca puede inventar precio, disponibilidad, proyectos o capacidades; Services/Contact/Rental/backend siguen siendo authoritative.
+- [ ] **remove.bg opt-in desde CMS — D Future Integration:** integrar `https://www.remove.bg/api#remove-background` solo si se aprueba un flujo en el que cada upload pregunte si se desea remover background. API key exclusivamente server-side; conservar/identificar original, versionar resultado en R2, manejar errores/fallback, y revisar pricing/credits, límites y tratamiento de imágenes antes de implementar. Nunca procesar silenciosamente.
+
 ## Analytics / SEO / growth
 
 - [x] GTM + Consent Mode + GA4 base.
@@ -584,6 +628,7 @@ Antes de crear una página SEO, determinar qué servicio real representa, quién
 - [x] Visual regression contracts para sistemas protegidos por Safeguards.
 - [x] Automatic publish verification base.
 - [x] `/api/health` existe; ampliar observabilidad sin duplicar sistemas.
+- [ ] **Optimización de cache Home:** condición actual verificada: `transformHomeResponse()` usa `Cache-Control: no-store`, de modo que el root no obtiene shared HTML caching. Evaluar TTL corto + `stale-while-revalidate` versus invalidación/purge en Publish. Debe preservar `Vary: Accept-Language, Cookie`, EN/ES, COL/INT, Admin preview, failsafe, Draft/Published y frescura de Publish. Medir TTFB/D1 antes/después; no cambiar header a ciegas.
 - [ ] Rate limiting explícito y verificable.
 - [ ] CSP, Referrer-Policy y Permissions-Policy sin romper GTM/Turnstile/media.
 - [ ] Migraciones/versionado de esquema D1.
@@ -625,16 +670,22 @@ La visión recibida el 2026-08-21 se interpreta como una dirección estratégica
 
 - **A — Ya existe:** frontend vanilla HTML/CSS/JS; Cloudflare Workers/Static Assets; D1; R2; Cloudflare Access; CMS Draft/Published/revisions; Hero/Trusted/Testimonials/About/Services/International/Work/Rental/Contact CMS según scope; reusable Media Library; Rental público con pricing backend; Contact/Rental forms; GTM/GA4/Consent; EN/ES; COL/INT; landings SEO actuales; canonical/hreflang/robots/sitemap/JSON-LD base; Visual Safeguards; automatic publish failsafe; Global Select cross-section production-smoked; Home managed-media production refs on R2; temporary Home media migrators retired and production-smoked in P2.8.
 - **B — Parcial:** Portfolio/Work sin case-study model profundo, Raw vs Mixed sin media real/Admin, Show Day sin calendario, Rental sin catálogo/admin completo, SEO sin sistema CMS-first para metadata de páginas futuras, analytics sin dashboard comercial/tráfico interno limpio, Insights/Journal sin sistema editorial real.
-- **D — Future Integration:** layout visual avanzado, header/floating controls, Projects/case studies, Rental product SEO/Admin pricing rules/compatibility guidance, Article/Journal CMS, CRM pipeline/atribución, AppSheet, Calendar, quote automation, private portfolios, analytics dashboards, SEO CMS, internal linking graph, security/observability, Training y expansión audiovisual.
-- **F — Active Gate:** **ninguno actualmente.** El siguiente gate requiere promoción explícita después de revisar valor/riesgo/dependencias.
+- **D — Future Integration:** layout visual avanzado, header/floating controls, Projects/case studies, Rental product SEO/Admin pricing rules/compatibility guidance, Article/Journal CMS, CRM pipeline/atribución, AppSheet, Calendar, quote automation, private portfolios, analytics dashboards, SEO CMS, internal linking graph, security/observability, Training, Carrd coherence, editable HTML CV, Dapta.ai assistant, remove.bg opt-in upload processing y Home edge-cache optimization.
+- **F — Active Gate:** **P3.0 Public Production Integrity + Commercial/SEO Audit.** Audit-first; no broad fix implementation until findings are classified.
 - **Importante:** aunque una visión futura describa CRM, Projects, Rental Admin u otros módulos, el repo manda. No documentarlos ni tratarlos como implementados hasta que exista código/flujo real.
 
 ## Gap analysis / priorización futura
 
 | Funcionalidad | Estado actual | Propuesta futura | Clasificación | Priority | Effort | Impact | Risk | Dependencias / evidencia |
 |---|---|---|---|---|---|---|---|---|
+| Public production integrity | base funcional cerrada tras P2.8; falta auditoría transversal final | inventario + COL/INT + EN/ES + CTAs/forms + SEO/indexability + visual/performance evidence | **F** | P0 | M | alto | bajo | P2.8 closed + current public surface |
 | Home media closeout | R2 refs verificadas; migradores temporales retirados; smoke post-merge OK | conservar Media Library/fallbacks; cualquier cleanup adicional requiere auditoría separada | **A** | closed | — | medio | bajo | PR #37 + `4a8c425b...` + production smoke |
 | Global Select | cross-section/page-aware implementado y smokeado | conservar/expandir el mismo contrato para futuros pages | A/B | P0 | incremental | alto | bajo/medio | PR #36 + production smoke |
+| Home HTML edge cache | root SSR explícitamente `no-store`; CMS/HTMLRewriter por request | medir y diseñar TTL/SWR o purge-on-Publish seguro por variantes | D | P1 | M | alto | medio | `worker-entry.js`, Vary/language/cookie/market/preview/failsafe |
+| Legacy Carrd coherence | `samueldavidllano.carrd.co` existe fuera del repo; no auditado contra nuevo sitio | alinear/retirar/redirigir contenido para evitar identidad contradictoria | D externo | P2 | S/M | medio/alto | revisión live del Carrd + posicionamiento SD.Live |
+| Editable HTML CV | no existe como deliverable canónico en este repo | HTML editable, branded, print/PDF-friendly, variantes controladas | D | P2 | M | alto profesional | bajo | copy/portfolio real + privacidad/indexability |
+| Dapta.ai assistant | no integrado | evaluar bot web con sources/guardrails/handoff; revalidar plan gratis | D externo | P3 | M | medio | medio | provider current terms/privacy/API + owned content |
+| remove.bg CMS option | no integrado | prompt opt-in al subir imagen, procesamiento server-side y resultado versionado R2 | D externo | P2 | M | medio | medio | provider API/cost/privacy + Media Library upload pipeline |
 | Visual layout Editor | CMS content editing exists; no freeform layout engine | drag/drop, grid, resize, spacing, device/market controls | D | P2 | XL | alto | alto | define data model + rollback; preserve safeguards |
 | Services CMS | implementado en P2.4 | profundizar modelo solo cuando haya necesidad real | A/B | P1 | M | alto | medio | `core-sections-*`, PR #27 |
 | Arquitectura de páginas de servicio | landings puntuales, no sistema completo | páginas profundas por servicio/intención real | D | P1 | L | alto | medio | Services model + keyword research + IA aprobada |
@@ -680,6 +731,7 @@ La visión recibida el 2026-08-21 se interpreta como una dirección estratégica
 6. **Internal linking model.** Relaciones explícitas entre Services, Products, Projects y Articles.
 7. **CRM + attribution.** Forms actuales alimentarán pipeline real cuando source-of-truth esté definido.
 8. **Analytics integrity before marketing decisions.** Internal traffic, Key Events and downstream funnel evidence before trusting acquisition/revenue reporting.
+9. **Home edge-cache optimization.** Diseñar a partir de mediciones y variantes reales; preferir una estrategia que pueda invalidarse al Publish si Cloudflare/coste/operación lo permiten, sin romper preview/failsafe/language/market.
 
 ### P2 — crecimiento/autoridad después de modelos sólidos
 
@@ -687,6 +739,9 @@ La visión recibida el 2026-08-21 se interpreta como una dirección estratégica
 - Technical Audio Training only after real offer definition.
 - Dashboard SEO/comercial con GSC/GA4/CRM cuando exista volumen suficiente.
 - About/professional profile más profundo.
+- **Editable HTML CV** coherente con SD.Live y privado/noindex por defecto.
+- **Carrd coherence audit** para `samueldavidllano.carrd.co` y decisión update/redirect/retire.
+- **remove.bg opt-in** dentro del pipeline de upload CMS solo con credenciales server-side, original/fallback y revisión de coste/privacidad.
 - Video contextual optimizado con poster/lazy/CDN/performance budget.
 - Local SEO adicional solo para servicios y ciudades reales.
 - Packages Rental útiles/indexables cuando representen configuraciones comerciales reales.
@@ -696,7 +751,7 @@ La visión recibida el 2026-08-21 se interpreta como una dirección estratégica
 
 - Press/mentions page si existe corpus real suficiente.
 - Programas de backlinks/partnerships como operación comercial externa, no automatización.
-- Chatbot/AI only if free/practically free or with demonstrated ROI; owned FAQ first, no invented price/availability.
+- **Dapta.ai assistant** u otro chatbot only if current cost/privacy/reliability/ROI checks pass; owned deterministic content first, no invented price/availability.
 - Premium Admin capabilities from `ROADMAP_MASTER_CHECKLIST.md` only when individually promoted.
 
 ## Deferred / no autorizado por ahora
@@ -708,6 +763,7 @@ La visión recibida el 2026-08-21 se interpreta como una dirección estratégica
 - Cambiar framework, lenguaje, base de datos, hosting, CMS, auth o infraestructura por moda tecnológica.
 - Hacer un rediseño global mientras el sistema actual funciona.
 - Comprar/activar Cloudflare/media/security products sin evidencia de necesidad/ROI y aprobación.
+- Cambiar `no-store` del Home solo por intuición sin medir variantes, cache correctness, Publish freshness y rollback.
 
 ## Not Applicable / no recomendado
 
@@ -734,6 +790,7 @@ La visión recibida el 2026-08-21 se interpreta como una dirección estratégica
 11. Validar **Global Select misma sección + otra sección/page + exact item** para todo nuevo CMS.
 12. Si una funcionalidad no puede verificarse, marcar **UNKNOWN** en vez de inventar.
 13. Revisar `ROADMAP_MASTER_CHECKLIST.md` para requisitos históricos relacionados y evitar pérdida/duplicación.
+14. Para proveedores externos/IA/image-processing, revalidar pricing/free tier, términos, privacidad, API limits, failure mode y secret handling en el momento de implementación.
 
 ---
 
@@ -762,6 +819,7 @@ La visión recibida el 2026-08-21 se interpreta como una dirección estratégica
 - **Mejoras futuras se documentan, pero no se implementan automáticamente.**
 - **Estabilidad > novedad.** Si no hay evidencia suficiente para modificar una implementación funcional, conservarla.
 - **Migrador retirado ≠ fallback borrado.** Los assets críticos/versionados permanecen hasta una revisión de referencias separada y explícita.
+- **Proveedor externo ≠ source-of-truth.** Dapta/remove.bg u otros servicios futuros deben integrarse como capas opcionales sobre datos/sistemas propios, no asumir ownership silencioso.
 
 ---
 
@@ -815,17 +873,21 @@ Rental/Contact presentation CMS + migration paths; smoke completo correcto despu
 
 **CERRADO.** PR #37 squash-merged en `4a8c425bc016acad78ef15d07dd8a7a4792bbc73`. Se retiraron únicamente los cuatro migradores temporales y tests migration-only. CI final verde. Production smoke confirmó: no panel `R2 migration`; Media Library/Upload/Replace intactos; Global Select e Interact normales; Safeguards 9/9; About público sigue resolviendo media por `media.sdlive.show`. Fallbacks GitHub/static permanecen.
 
+## 2026-08-21 — P3.0 promoted + future integrations checkpoint
+
+**ACTIVE F.** Se promovió P3.0 Public Production Integrity + Commercial/SEO Audit como siguiente gate audit-first. Se registró el hallazgo verificado `Cache-Control: no-store` del Home como futura optimización de performance sujeta a diseño/medición. También quedaron preservados como Future Integration: coherencia de `samueldavidllano.carrd.co`, CV canónico HTML, evaluación de Dapta.ai y opción remove.bg en upload CMS. Ninguno de estos cuatro se implementa automáticamente dentro de P3.0.
+
 ---
 
-# Siguiente decisión después de P2.8
+# Siguiente trabajo
 
-**No hay un F — Active Gate abierto automáticamente.** Antes de cualquier nueva implementación:
+**P3.0 está activo.** Orden de ejecución:
 
-1. revisar `ROADMAP_MASTER_CHECKLIST.md` completo;
-2. escoger el siguiente trabajo por valor, riesgo y dependencias;
-3. comprobar qué ya existe con evidencia y aplicar Change Safety Gate;
-4. promover **solo** ese trabajo a F — Active Gate;
-5. registrar el alcance en README + roadmap antes de implementar;
-6. no mezclar el próximo gate con cleanup adicional no autorizado.
+1. inventario real de rutas/superficie pública;
+2. auditoría técnica/comercial/SEO/performance sin modificar producción;
+3. evidencia y clasificación P0/P1/P2;
+4. propuesta de fixes estrechos con Change Safety/rollback/smoke;
+5. implementar únicamente los fixes que se aprueben explícitamente;
+6. cerrar P3.0 con README + roadmap sincronizados y solo entonces escoger el siguiente F.
 
 **Sound for Picture permanece inert staging hasta contenido/scope real aprobado.**

@@ -5,6 +5,8 @@ Production website and back-office for **SD.Live — Creative Audio**.
 Production: `https://sdlive.show`  
 Public media: `https://media.sdlive.show`
 
+Operational documentation dates use **America/Bogota** unless a timestamp is explicitly labelled UTC. GitHub API timestamps may cross the calendar-day boundary relative to Bogotá. Do not conflate the live `main` HEAD with the **runtime production baseline**: documentation-only commits may advance `main` without changing deployed runtime behavior. Query GitHub for the current HEAD when resuming work instead of treating a hard-coded docs SHA as perpetual HEAD.
+
 The public site is a vanilla HTML/CSS/JS frontend served by Cloudflare Workers Static Assets. Dynamic APIs, CMS publishing, forms and edge rendering run in Cloudflare Workers. D1 stores structured CMS content and R2 stores editor-managed media.
 
 For current progress, active gates, evidence, architectural invariants and the classified roadmap, read **`PROJECT_STATUS.md` first**. For the reconciled historical/future feature inventory, then read **`ROADMAP_MASTER_CHECKLIST.md`**. The repository and production behavior remain authoritative over planning prose.
@@ -28,7 +30,7 @@ The project distinguishes planning levels:
 - **ROADMAP / ACTIVE GATES** — approved and prioritized work.
 - **BACKLOG** — wanted work preserved for later prioritization.
 - **FUTURE INTEGRATION** — documented possibility; not authorized by its presence alone.
-- **VISION** — strategic direction; not an implementation commitment.
+- **VISION** — strategic direction, not an implementation commitment.
 
 `PROJECT_STATUS.md` uses classifications **A–F**. `F` means **Active Gate / Approved Work** and is distinct from `D` Future Integration.
 
@@ -104,7 +106,7 @@ Hero Draft/Published is fully connected to production. Published content is rend
 
 ### Home media R2 closeout
 
-**P2.8 CLOSED and production-smoked 2026-08-21.** Before cleanup, About, Selected Work, Testimonials, Rental and Trusted/Supported Brands were checked from the public site and their managed images/logos resolved through `media.sdlive.show`. About, Testimonials, Rental and Trusted had no unpublished media change; Selected Work had a saved unpublished Draft, was visually compared with live, published deliberately and finished with the automatic Failsafe green. PR #37 then removed only the four temporary migration scripts/UI and migration-only tests. Post-merge smoke confirmed: migration panels absent, normal Upload/Replace/Media Library controls intact, Global Select intact, Interact intact, Safeguards **9/9 healthy**, and the public About image still resolving through `media.sdlive.show`. Critical static/GitHub fallbacks remain in place. Production merge commit: `4a8c425bc016acad78ef15d07dd8a7a4792bbc73`.
+**P2.8 CLOSED and production-smoked 2026-08-21.** Before cleanup, About, Selected Work, Testimonials, Rental and Trusted/Supported Brands were checked from the public site and their managed images/logos resolved through `media.sdlive.show`. About, Testimonials, Rental and Trusted had no unpublished media change; Selected Work had a saved unpublished Draft, was visually compared with live, published deliberately and finished with the automatic Failsafe green. PR #37 then removed only the four temporary migration scripts/UI and migration-only tests. Post-merge smoke confirmed: migration panels absent, normal Upload/Replace/Media Library controls intact, Global Select intact, Interact intact, Safeguards **9/9 healthy**, and the public About image still resolving through `media.sdlive.show`. Critical static/GitHub fallbacks remain in place. Runtime production baseline commit after P2.8: `4a8c425bc016acad78ef15d07dd8a7a4792bbc73`.
 
 ## Global Select invariant
 
@@ -168,6 +170,7 @@ These requirements are preserved but are **not active work until explicitly prio
 - Portfolio/Selected Work deeper model: Highlight Projects, credits, role, client, year, tags, featured/hidden, video, filters, case studies, before/after and authorized QLab/audio/video examples.
 - Raw vs Mixed: real audio pairs, Admin management, waveform, sample-accurate switching if justified and multiple examples.
 - Remaining hidden/staging content should be audited and moved into real CMS/templates only when content/scope is approved; Testimonials are already a real CMS and Sound for Picture must not be published merely because placeholder markup exists.
+- **Optional background removal during CMS upload:** evaluate `remove.bg` API integration (`https://www.remove.bg/api#remove-background`) so an authenticated Editor upload can ask whether to remove the background. This must be opt-in per image, keep API credentials server-side, preserve/identify the original, respect R2 versioning/fallbacks, surface third-party failure cleanly and verify current pricing/credits/privacy/file limits before implementation. Never remove a background silently.
 
 ### Rental / Contact
 
@@ -178,15 +181,28 @@ These requirements are preserved but are **not active work until explicitly prio
 - Inventory/calendar availability and double-booking prevention, PDF quote/validity/approval, delivery/logistics and future CRM relationship.
 - Contact automatic visitor confirmation email is optional future work; Turnstile/D1/direct backend/email notification already exist. Explicit rate limiting remains security backlog.
 
-### Business back-office
+### Business back-office / professional identity
 
 - CRM pipeline, clients/contacts/companies, notes/history/source and Lead → Quote → Project → Invoice.
 - AppSheet integration only after per-field source-of-truth is defined.
 - Automatic Show Day from Calendar/AppSheet with configurable window and manual override.
 - Admin Calendar, Projects, quote automation, native Workspace Inbox and correct-alias replies.
 - Private recruiter/client Portfolio/CV variants with noindex/share controls.
+- **Editable HTML CV:** create a canonical CV/resume in HTML that is visually and editorially coherent with SD.Live, easy to maintain, responsive/print-friendly and suitable for controlled PDF export or application-specific variants. Do not make it public/indexable by default without a deliberate publishing decision.
+- **Legacy personal-site coherence audit:** review `https://samueldavidllano.carrd.co` against current SD.Live positioning, bio, services, links, visual identity and calls to action; decide deliberately what should remain, be updated, redirect, or be retired so both public identities do not contradict each other.
 - Business analytics/Data Studio/Looker or hybrid only when reliable source data exists.
 - Settings module, Admin audit log, backups/export, rollback, activity/automation center, Client Portal, generic share links, role-based access, Admin PWA, QR generator and UTM/link builder are future/optional capabilities.
+
+### AI / conversational integrations
+
+- **Dapta.ai candidate assistant:** evaluate a future SD.Live website assistant using `https://dapta.ai`. Before implementation, re-verify the provider's current free/paid limits, embed/API capabilities, privacy/data processing, branding constraints and operational reliability. The assistant may guide visitors toward Services, Contact and Rental, but must never invent pricing, availability, project claims or technical capability; deterministic site/backend sources remain authoritative and human handoff must stay available.
+
+### Performance / edge caching
+
+- **Verified current condition:** `worker-entry.js::transformHomeResponse()` explicitly sets `Cache-Control: no-store` on the public root HTML while the Home performs CMS reads and HTMLRewriter rendering per request. This is a legitimate future performance opportunity, not an instruction to change headers blindly.
+- Evaluate a short shared-cache strategy (for example a bounded TTL with `stale-while-revalidate`) versus publish-triggered selective invalidation/purge. Measure real TTFB/D1 impact before and after.
+- Any cache design must preserve correct EN/ES behavior, the existing `Vary: Accept-Language, Cookie` contract, COL/INT behavior, Admin preview isolation, automatic publish failsafe semantics, Draft ≠ Published, and immediate-enough Publish behavior. Do not cache authenticated/admin responses or create a stale-content correctness regression.
+- Treat active Publish invalidation as the more robust long-term option only after the exact Cloudflare cache/purge mechanism, cost, keys/variants and rollback path are proven. `no-store` remains the safe baseline until that design is approved.
 
 ### Analytics / SEO / acquisition
 
@@ -336,11 +352,11 @@ After a material milestone, update `PROJECT_STATUS.md`, this README and, when th
 
 ## Current gate status
 
-**No feature gate is active after P2.8 closeout.**
+**F — P3.0 Public Production Integrity + Commercial/SEO Audit is ACTIVE and approved.**
 
-P2.8 — Home CMS media-migrator retirement — is closed on production:
+P2.8 — Home CMS media-migrator retirement — remains closed on production:
 
-- PR #37 squash-merged to `main` at `4a8c425bc016acad78ef15d07dd8a7a4792bbc73`;
+- PR #37 squash-merged to the runtime baseline at `4a8c425bc016acad78ef15d07dd8a7a4792bbc73`;
 - PR CI passed after stale migration-specific assertions were updated to the new permanent-state contract;
 - Editor smoke: no temporary `R2 migration` panel, normal Media Library/Upload/Replace intact;
 - Global Select and Interact mode remain normal;
@@ -348,4 +364,6 @@ P2.8 — Home CMS media-migrator retirement — is closed on production:
 - public About media still resolves via `media.sdlive.show` after cleanup;
 - critical static/GitHub fallbacks were not removed.
 
-The next implementation must be chosen deliberately from `ROADMAP_MASTER_CHECKLIST.md` and explicitly promoted to **F — Active Gate** before code changes begin. Sound for Picture remains inert staging until real content/scope is explicitly approved.
+P3.0 starts as an **audit/evidence gate, not a broad fix PR**. It will inventory and verify the real public surface across current routes, then classify findings before code changes. Scope includes COL/INT, EN/ES, Desktop/Mobile, CTAs/WhatsApp/forms, stale email references, links/404/redirects, canonical/hreflang/robots/sitemap/indexability, public-page visual consistency, Rental quote clarity, and a measured performance baseline including the verified Home `no-store` cache condition. Findings become separate narrow fixes only after evidence and priority classification.
+
+The future Carrd coherence audit, editable HTML CV, Dapta.ai assistant and remove.bg upload option are recorded backlog/future integrations and are **not automatically part of P3.0 implementation** unless explicitly promoted later. Sound for Picture remains inert staging until real content/scope is explicitly approved.
