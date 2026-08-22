@@ -1,0 +1,228 @@
+name: Security closeout docs reconciler
+
+on:
+  push:
+    branches:
+      - docs/security-closeout-finance-audit
+    paths:
+      - .github/workflows/security-closeout-reconciler.yml
+
+permissions:
+  contents: write
+
+jobs:
+  reconcile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: docs/security-closeout-finance-audit
+          fetch-depth: 0
+
+      - name: Reconcile milestone docs
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace_once(text, old, new, label):
+              if old not in text:
+                  raise SystemExit(f"missing expected text: {label}")
+              return text.replace(old, new, 1)
+
+          # README
+          path = Path("README.md")
+          text = path.read_text()
+          text = replace_once(
+              text,
+              "- Contact automatic visitor confirmation email is optional future work; Turnstile/D1/direct backend/email notification already exist. Explicit rate limiting remains security backlog.",
+              "- Contact automatic visitor confirmation email is optional future work; Turnstile/D1/direct backend/email notification already exist. Public `POST /api/contact` and `POST /api/rental` are now protected by independent Worker-native rate limits (10 requests / 60 seconds per endpoint) in addition to Turnstile.",
+              "README contact security bullet",
+          )
+
+          marker = "## SEO / content safety rules\n"
+          security_closeout = """## Security baseline production closeout — 2026-08-22 America/Bogota
+
+**CLOSED and production-smoked.** The Control Center hardening prerequisite is complete.
+
+- **Security A — CSP + browser headers:** PR #53, squash merge `2710c0c006e82ee2c04942db7fd7ef1f4fcaa0bd`. Static pages/Admin receive the shared `_headers` contract and the Worker-generated Home applies the same contract through `security-headers.js`. CSP keeps current GTM/GA, Google Fonts, Turnstile, Cloudflare Insights and `media.sdlive.show` integrations working, blocks `unsafe-eval`, uses `frame-ancestors 'self'` / `SAMEORIGIN` so the Admin preview remains functional, and adds `nosniff`, Referrer-Policy and Permissions-Policy.
+- **Security B — public form rate limiting:** PR #54, squash merge/runtime baseline `2c0fe574a0ab37ceb00cf84b31cbf1b68e1746c4`. `public-form-rate-limit.js` is the Worker entrypoint and uses two independent bindings from `wrangler.jsonc`: Contact 10/60s and Rental 10/60s, keyed by Cloudflare client IP. Limits run before Turnstile Siteverify, D1 writes and Resend; exceeded requests return `429` + `Retry-After: 60`.
+- **Production smoke PASS:** Home normal; cold-cache Rental imagery resolved as expected lazy loading and became immediate on reload; `/en/` normal; `/admin/` + Site Editor + same-origin preview normal; normal Contact submission succeeded and notification arrived; normal Rental submission succeeded and notification arrived at `rental@sdlive.show`.
+- Turnstile remains the primary bot-verification layer; rate limiting is an additional abuse-control layer, not a replacement.
+
+**Next F — Active Gate:** full audit of the finance system currently known as NextPay26 before any repair/rewrite or SD.Live integration decision. Required sequence remains in `docs/roadmap/sdlive-control-center.md`. Availability/WhatsApp is now eligible to run as the documented parallel track, but is not automatically active.
+
+"""
+          if security_closeout not in text:
+              if marker not in text:
+                  raise SystemExit("missing README SEO marker")
+              text = text.replace(marker, security_closeout + marker, 1)
+
+          text = replace_once(
+              text,
+              "- `worker.js` — base CMS/admin APIs, Contact, Rental, D1 and email logic.\n",
+              "- `worker.js` — base CMS/admin APIs, Contact, Rental, D1 and email logic.\n- `public-form-rate-limit.js` — top-level abuse-control wrapper for the two public POST form endpoints.\n- `security-headers.js` / `_headers` — shared CSP/browser-header contract for Worker-generated Home and Static Assets/Admin.\n",
+              "README important security files",
+          )
+          text = replace_once(
+              text,
+              "- `docs/roadmap/availability-aware-contact-widget.md` — proposed Medium-High availability-aware WhatsApp/AI contact roadmap item; backlog, not active by existence alone.\n",
+              "- `docs/roadmap/availability-aware-contact-widget.md` — proposed availability-aware WhatsApp/AI parallel track; eligible after the security closeout, not active by existence alone.\n- `docs/roadmap/sdlive-control-center.md` — required Control Center sequence; finance audit / repair-vs-rewrite is the current F Active Gate.\n",
+              "README roadmap pointers",
+          )
+
+          gate_marker = "## Current gate status\n"
+          if gate_marker not in text:
+              raise SystemExit("missing README current gate marker")
+          text = text.split(gate_marker, 1)[0] + """## Current gate status
+
+**P3.0–P3.4 are CLOSED. The Security baseline is also CLOSED and production-smoked.**
+
+- **P3.4 — Responsive image/media delivery:** CLOSED via PR #50/#51. Final Mobile lab smoke measured Performance 90 / LCP 3.1 s and reduced `Improve image delivery` estimated savings from ~1.423 MiB to ~58 KiB while preserving masters, R2 ownership, Trusted/About appearance and anti-popping behavior.
+- **Security A — CSP/browser headers:** CLOSED via PR #53 / `2710c0c0...`; Home, `/en/`, Admin and the embedded Site Editor preview passed production smoke.
+- **Security B — public form rate limiting:** CLOSED via PR #54 / `2c0fe574...`; Contact and Rental normal submissions both passed production smoke and their notifications arrived at the intended mailboxes.
+
+The current approved gate is **F — Control Center Step 3: full audit of the finance app currently known as NextPay26, followed by an explicit repair-vs-rewrite decision before implementation.** Audit scope includes data quality, COP/USD/fees/retentions/invoicing/aging/payment-state formulas, AppSheet sync/actions/bots, the jobs/clients/payments/invoice data model, and migration/source-of-truth consequences. Do not choose repair, rewrite, D1 or permanent Sheets/AppSheet ownership before the evidence is complete.
+
+After the audit decision, the required sequence is brand-coherent rename → field/source-of-truth mapping → read-only Admin insights. The **Availability-Aware Contact Widget** is now eligible as the one explicit parallel track, but remains unimplemented and must not be treated as active unless separately promoted.
+
+The Bing indexation recheck remains required for **2026-08-28 through 2026-09-04**. Do not repeatedly resubmit the same URLs before that window without new evidence.
+
+Carrd coherence, editable HTML CV, Dapta.ai, remove.bg, Home cache optimization, Crawler Hints/IndexNow and hidden/offscreen payload trimming remain backlog/future integrations unless separately promoted. Sound for Picture remains inert staging until real content/scope is explicitly approved.
+"""
+          path.write_text(text)
+
+          # PROJECT_STATUS
+          path = Path("PROJECT_STATUS.md")
+          text = path.read_text()
+          replacements = [
+              ("| Runtime production baseline verificado | `3501169a1f5131a0adae1bf13b955d6aa78dbb28` — P3.4b responsive R2/CMS media delivery, production-smoked |", "| Runtime production baseline verificado | `2c0fe574a0ab37ceb00cf84b31cbf1b68e1746c4` — Security B public-form rate limiting, production-smoked |", "status runtime baseline"),
+              ("| Trabajo activo | **Security baseline — rate limiting + baseline CSP** |", "| Trabajo activo | **Control Center Step 3 — full finance-app audit / repair-vs-rewrite decision** |", "status active work"),
+              ("| Milestone actual | Control Center prerequisites — hardening before operational/financial-adjacent integrations |", "| Milestone actual | SD.Live as Control Center — finance-system evidence/audit before integration |", "status milestone"),
+              ("| Estado | **P3.0–P3.4 CERRADOS; Security baseline promovido a F** |", "| Estado | **P3.0–P3.4 CERRADOS; Security baseline CERRADO; Finance audit promovido a F** |", "status state"),
+              ("| Active Gate | **F — Security baseline: rate limiting + baseline CSP** |", "| Active Gate | **F — Full audit of finance app / explicit repair-vs-rewrite decision** |", "status active gate"),
+              ("| Gate posterior | **Full audit of finance app / repair-vs-rewrite decision; Availability/WhatsApp may run in parallel only after this gate closes** |", "| Gate posterior | **Brand-coherent rename → field/source mapping → read-only Admin insights; Availability/WhatsApp is eligible as the explicit parallel track** |", "status next gate"),
+              ("| Availability-Aware Contact Widget | Propuesto; no runtime/schema | D — Medium-High backlog after active gate |", "| Availability-Aware Contact Widget | Propuesto; no runtime/schema | D — eligible parallel track after Security closeout; not active automatically |", "evidence availability"),
+              ("| SD.Live as Control Center | Reprioritized direction; not yet implemented | D direction / sequenced after security gate | `docs/roadmap/sdlive-control-center.md`; security → finance audit → rename → source mapping → read-only Admin insights; Availability is the explicit parallel-track exception |", "| SD.Live as Control Center | Steps 1–2 prerequisites closed; Step 3 finance audit active | **F — Step 3 Active Gate** | `docs/roadmap/sdlive-control-center.md`; P3.4 + Security closed → finance audit → rename → source mapping → read-only Admin insights; Availability is the explicit parallel-track exception |", "evidence control center"),
+              ("- [ ] **F — P3.4 Responsive image/media delivery pipeline:** variantes y `srcset`/`sizes` para R2/media + optimización separada de header/static assets; preservar master/original y no resolver asset-by-asset.", "- [x] **P3.4 Responsive image/media delivery pipeline:** cerrado 2026-08-22; PR #50/#51, Cloudflare Transformations zone-only, final Mobile 90 / LCP 3.1 s y ahorro estimado de image delivery ~1.423 MiB → ~58 KiB.", "platform P3.4"),
+              ("- [ ] Rate limiting explícito y verificable.", "- [x] **Rate limiting explícito/verificable:** PR #54 / `2c0fe574...`; `POST /api/contact` y `POST /api/rental` usan bindings independientes 10/60s antes de Turnstile/D1/Resend; normal submissions smokeados en producción.", "platform rate limit"),
+              ("- [ ] CSP, Referrer-Policy y Permissions-Policy sin romper GTM/Turnstile/media.", "- [x] **CSP + browser headers baseline:** PR #53 / `2710c0c0...`; shared CSP para Static Assets + SSR Home, sin `unsafe-eval`, con GTM/GA/Fonts/Turnstile/Insights/R2 permitidos; Home/EN/Admin/Editor preview smokeados.", "platform CSP"),
+              ("- **F — Active Gate:** **P3.4 Responsive image/media delivery pipeline.** Reducir bytes/imágenes responsive sin degradar masters, CMS/R2 ownership, layout ni branding.", "- **F — Active Gate:** **Control Center Step 3 — full finance-app audit / repair-vs-rewrite decision.** No integrar, reparar ni reescribir hasta auditar datos, fórmulas, AppSheet sync/actions/bots y ownership/migration implications.", "future evolution active gate"),
+              ("| Responsive image delivery | ~1.4 MB estimated savings repetido | variants/`srcset`/`sizes` pipeline; preservar masters | **F — P3.4** | P1-HIGH | M/L | alto | medio | PageSpeed audit + R2/static asset architecture |", "| Responsive image delivery | cerrado y production-smoked | conservar pipeline responsive y masters; payload timing queda separado | **A — P3.4 closed** | closed | — | alto | bajo | PR #50/#51 + Mobile 90/LCP 3.1 s + ~58 KiB residual |\n| Finance app / Control Center Step 3 | sistema externo actual aún no auditado de punta a punta | auditar datos, fórmulas, AppSheet sync/actions/bots y decidir repair vs rewrite por evidencia | **F — Active Gate** | P0 prerequisite | M/L audit | muy alto | alto | `docs/roadmap/sdlive-control-center.md`; no architecture decision before audit |", "gap responsive + finance"),
+              ("| Availability-aware contact | no existe runtime/schema todavía | D1 availability state + owner commands + WhatsApp/AI surface switching | **D — Medium-High after active gate** | next backlog | L | alto conversión | alto | exact owner auth + existing `leads` + provider/webhook validation |", "| Availability-aware contact | no existe runtime/schema todavía | D1 availability state + owner commands + WhatsApp/AI surface switching | **D — parallel-track eligible, not auto-active** | parallel option | L | alto conversión | alto | Security prerequisite closed; exact owner auth + existing `leads` + provider/webhook validation |", "gap availability"),
+              ("9. **Responsive image/media delivery.** P3.4 es el gate activo tras cerrar P3.3; variants/`srcset`/`sizes` deben preservar masters y ownership.\n10. **Availability-Aware Contact Widget.** Medium-High inmediatamente después del active gate salvo repriorización explícita; D1 availability source-of-truth, owner WhatsApp hard gate y existing `leads` table.", "9. **Finance-app audit / repair-vs-rewrite.** Active Control Center Step 3: auditar el sistema completo antes de decidir arquitectura, migración o integración.\n10. **Responsive image/media delivery.** P3.4 está cerrado; conservar variants/`srcset`/`sizes`, masters y ownership sin reabrir el gate por optimizaciones de payload timing.\n11. **Availability-Aware Contact Widget.** Security ya cerró, por lo que este track es elegible en paralelo; sigue D hasta promoción explícita. D1 availability source-of-truth, owner WhatsApp hard gate y existing `leads` table.", "P1 priorities"),
+              ("**BACKLOG D / Medium-High.** Se preservó `docs/roadmap/availability-aware-contact-widget.md`. Debe ir después del active gate y por encima del backlog general CRM/Calendar/quote automation salvo repriorización. No existe todavía D1 schema/API/webhook/widget; no tratar como implementado.", "**BACKLOG D / parallel-track eligible.** Se preservó `docs/roadmap/availability-aware-contact-widget.md`. P3.4 y Security ya cerraron, así que puede promocionarse como track paralelo al finance audit si se aprueba explícitamente; no existe todavía D1 schema/API/webhook/widget y no debe tratarse como implementado.", "availability milestone"),
+          ]
+          for old, new, label in replacements:
+              text = replace_once(text, old, new, label)
+
+          milestone_marker = "## 2026-08-22 — Availability-Aware Contact roadmap checkpoint\n"
+          inserted = """## 2026-08-22 — P3.4 Responsive image/media delivery
+
+**CERRADO.** PR #50 introdujo variantes responsive del header manteniendo masters/static Admin; PR #51 extendió `srcset` a Trusted client logos y About desde R2. Production smoke confirmó header, Trusted y About visualmente normales sin popping. PageSpeed Mobile final: Performance 90, LCP 3.1 s y `Improve image delivery` ~58 KiB residual frente a ~1.423 MiB inicial.
+
+## 2026-08-22 — Security baseline
+
+**CERRADO y VALIDADO EN PRODUCCIÓN.** PR #53 (`2710c0c0...`) añadió CSP/browser headers compartidos sin romper Home, `/en/`, Cloudflare Access ni el preview same-origin del Site Editor. PR #54 (`2c0fe574...`) añadió rate limiting Worker-native independiente para Contact y Rental, 10 requests/60s por endpoint antes de Turnstile/D1/Resend. Contact y Rental normal submissions fueron enviados en producción y sus emails llegaron correctamente; Rental continuó notificando únicamente a `rental@sdlive.show`.
+
+"""
+          if inserted not in text:
+              if milestone_marker not in text:
+                  raise SystemExit("missing project milestone insertion point")
+              text = text.replace(milestone_marker, inserted + milestone_marker, 1)
+
+          next_marker = "# Siguiente trabajo\n"
+          if next_marker not in text:
+              raise SystemExit("missing project next-work marker")
+          text = text.split(next_marker, 1)[0] + """# Siguiente trabajo
+
+**F — Control Center Step 3: auditoría completa del sistema financiero actual (NextPay26) y decisión explícita repair vs rewrite.**
+
+Orden del gate:
+
+1. inventariar el sistema real actual: Google Sheets, AppSheet, tablas/slices/views/actions/bots, archivos/documentación y cualquier automatización externa relevante;
+2. auditar calidad de datos sin limitarse a problemas ya conocidos: duplicados/ghost rows, tipos, llaves, fechas, monedas, estados y consistencia histórica;
+3. revisar fórmulas y reglas de negocio: COP/USD, fees, retenciones, facturación/cuenta de cobro, aging, fechas/estado de pago y campos derivados;
+4. revisar confiabilidad de sync AppSheet↔Sheet, acciones y bots/recordatorios, incluyendo qué ocurre offline/retry/conflict cuando aplique;
+5. mapear modelo y ownership actual de jobs/events, clientes, pagos, invoice lifecycle y relaciones;
+6. documentar riesgos de continuar reparando versus reescribir, incluyendo costo de migración, rollback, operación y source-of-truth;
+7. emitir una decisión escrita **repair vs full rewrite** con evidencia. Si rewrite gana, diseñar target architecture/migration/rollback antes de código; si repair gana, definir el repair plan y qué sigue siendo authoritative;
+8. **no** renombrar, integrar con `/admin`, mover a D1 ni crear sync bidireccional antes de cerrar esta decisión;
+9. después de la decisión: brand-coherent rename → field/source-of-truth mapping → read-only Admin insights;
+10. Availability/WhatsApp puede correr en paralelo solo si se promueve explícitamente; Security ya no lo bloquea.
+
+Mantener además el recheck de Bing para **2026-08-28 a 2026-09-04** sin re-submissions repetidos mientras tanto.
+
+**Sound for Picture permanece inert staging en static/Admin source hasta contenido/scope real aprobado; no forma parte del response público Home desde P3.2.**
+"""
+          path.write_text(text)
+
+          # ROADMAP_MASTER_CHECKLIST
+          path = Path("ROADMAP_MASTER_CHECKLIST.md")
+          text = path.read_text()
+          text = replace_once(text, "Last reconciliation: **2026-08-21 — America/Bogota**", "Last reconciliation: **2026-08-22 — America/Bogota**", "master date")
+          text = replace_once(
+              text,
+              "🚧 **F — Security baseline: rate limiting + baseline CSP.** P3.4 responsive image/media delivery is closed in production. Per `docs/roadmap/sdlive-control-center.md`, hardening is the next prerequisite before operational/financial-adjacent Control Center work. Availability/WhatsApp remains the one allowed parallel track only after this gate closes.",
+              "🚧 **F — Control Center Step 3: full finance-app audit / repair-vs-rewrite decision.** P3.4 and the Security baseline are both closed and production-smoked. Per `docs/roadmap/sdlive-control-center.md`, the audit must finish before repair/rewrite, rename, finance integration or source-of-truth changes. Availability/WhatsApp is now eligible as the one explicit parallel track, but is not active automatically.",
+              "master active gate",
+          )
+          text = replace_once(
+              text,
+              "- ✅ Contact presentation CMS edits copy without owning submission logic.\n\nPending:\n\n- 🚧 **P3.1:** ensure every public page that loads GTM establishes the same Consent Mode/default-denied contract before GTM; this is analytics/privacy shell work, not Contact submission logic.\n- ⏳ P3.0 accessibility finding: correct Turnstile container semantics/ARIA compatibility without breaking widget render/action.\n- ⏳ Explicit/verifiable rate limiting.",
+              "- ✅ Contact presentation CMS edits copy without owning submission logic.\n- ✅ P3.1 Consent Mode parity is closed across the current public GTM page set.\n- ✅ Explicit/verifiable Worker-native rate limiting is live for `POST /api/contact` (10/60s, independent from Rental) and production smoke confirmed a normal submission still succeeds and notifies `hello@sdlive.show`.\n\nPending:\n\n- ⏳ P3.0 accessibility finding: correct Turnstile container semantics/ARIA compatibility without breaking widget render/action.",
+              "master contact closeout",
+          )
+          text = replace_once(
+              text,
+              "- ✅ Rental managed media migration completed and public R2 reference verified.\n\nPending:",
+              "- ✅ Rental managed media migration completed and public R2 reference verified.\n- ✅ Explicit/verifiable Worker-native rate limiting is live for `POST /api/rental` (10/60s, independent from Contact) and production smoke confirmed a normal request still succeeds and notifies only `rental@sdlive.show`.\n\nPending:",
+              "master rental closeout",
+          )
+          text = replace_once(
+              text,
+              "**Status: ⏳ D direction queued immediately after the active security gate; not yet implemented.** Full sequencing contract: `docs/roadmap/sdlive-control-center.md`. Required order is security baseline → full finance-app audit + repair-vs-rewrite decision → brand-coherent rename → field/source mapping → read-only Admin insights → later write-back/bidirectional phases. The Availability-Aware Contact Widget / WhatsApp qualification track is the sole explicit parallel-track exception after security closes. Do not reorder without explicit re-approval.",
+              "**Status: 🚧 F — Step 3 finance audit is active; Steps 1–2 prerequisites are closed.** Full sequencing contract: `docs/roadmap/sdlive-control-center.md`. P3.4 + security baseline are complete; required order now is full finance-app audit + repair-vs-rewrite decision → brand-coherent rename → field/source mapping → read-only Admin insights → later write-back/bidirectional phases. The Availability-Aware Contact Widget / WhatsApp qualification track is the sole explicit parallel-track exception and is eligible now, but not active automatically. Do not reorder without explicit re-approval.",
+              "master control center status",
+          )
+          path.write_text(text)
+
+          # Dedicated Control Center spec
+          path = Path("docs/roadmap/sdlive-control-center.md")
+          text = path.read_text()
+          text = replace_once(
+              text,
+              "**Status:** Reprioritized roadmap direction — queued immediately after the current active gate closes; not current runtime work while P3.4 is open.",
+              "**Status:** Active sequenced initiative — Steps 1–2 are closed; **Step 3 finance-app audit / repair-vs-rewrite decision is the current F Active Gate**. Availability/WhatsApp is eligible as the documented parallel track but is not active automatically.",
+              "control status",
+          )
+          text = replace_once(
+              text,
+              "### 1. Close the current active gate\n\nNo Control Center implementation starts before the current active gate closes and its production smoke passes.\n\nCurrent active gate at the time of this reprioritization: **P3.4 — Responsive image/media delivery pipeline**.",
+              "### 1. Close the current active gate — ✅ CLOSED\n\nP3.4 — Responsive image/media delivery closed on 2026-08-22 with production smoke. Responsive header + R2/CMS delivery is live; final Mobile PageSpeed smoke measured Performance 90 / LCP 3.1 s and ~58 KiB residual `Improve image delivery` savings.",
+              "control step1",
+          )
+          text = replace_once(text, "### 2. Security backlog — rate limiting + baseline CSP", "### 2. Security backlog — rate limiting + baseline CSP — ✅ CLOSED", "control step2 heading")
+          text = replace_once(text, "- [ ] Explicit, verifiable rate limiting for relevant public APIs/forms.\n- [ ] Baseline CSP compatible with GTM, Turnstile, R2/media, Workers and current public behavior.\n- [ ] Preserve Referrer-Policy / Permissions-Policy follow-up where appropriate.\n- [ ] CI + production smoke + rollback plan.", "- [x] Explicit, verifiable rate limiting for the two public write endpoints: independent Contact/Rental Worker bindings at 10 requests / 60 seconds.\n- [x] Baseline CSP compatible with GTM/GA, Turnstile, R2/media, Google Fonts, Cloudflare Insights, Workers and current public behavior.\n- [x] `X-Content-Type-Options`, `SAMEORIGIN`, Referrer-Policy and Permissions-Policy baseline applied without breaking the same-origin Admin preview.\n- [x] CI + production smoke completed: Home, `/en/`, Admin/Editor preview, Contact submit/email and Rental submit/email all PASS.\n\nEvidence: PR #53 / `2710c0c0...` (headers/CSP) and PR #54 / `2c0fe574...` (rate limiting).", "control step2 checklist")
+          text = replace_once(text, "### 3. Full audit of the finance app currently known as NextPay26", "### 3. Full audit of the finance app currently known as NextPay26 — 🚧 F ACTIVE GATE", "control step3 heading")
+          text = replace_once(
+              text,
+              "This is an **independent sub-track**. It may run in parallel with steps 3–6 once the current active gate is closed; it neither blocks nor is blocked by the finance-app audit/integration track.",
+              "This is an **independent sub-track**. P3.4 and the Security baseline are now closed, so it may be promoted to run in parallel with steps 3–6; it neither blocks nor is blocked by the finance-app audit/integration track. Eligibility does not make it active automatically.",
+              "control step7 eligibility",
+          )
+          text = replace_once(
+              text,
+              "This **14.5 Control Center** initiative owns their sequencing and reprioritization. When P3.4 closes, the root README and `PROJECT_STATUS.md` must point here before the checkpoint is considered fully closed.",
+              "This **14.5 Control Center** initiative owns their sequencing and reprioritization. README, `PROJECT_STATUS.md` and the master checklist now point here; Step 3 finance audit is the active gate after the production-smoked P3.4 + Security prerequisites.",
+              "control relationship closeout",
+          )
+          path.write_text(text)
+          PY
+
+          git diff --check
+          rm .github/workflows/security-closeout-reconciler.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add README.md PROJECT_STATUS.md ROADMAP_MASTER_CHECKLIST.md docs/roadmap/sdlive-control-center.md .github/workflows/security-closeout-reconciler.yml
+          git commit -m "docs: close security and activate finance audit [skip ci]"
+          git push origin HEAD:docs/security-closeout-finance-audit
