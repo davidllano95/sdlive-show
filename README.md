@@ -184,7 +184,7 @@ These requirements are preserved but are **not active work until explicitly prio
 - Make Rental unmistakably a **request for quotation, not checkout**, to reduce lead abandonment.
 - Equipment Rental service card → `#rental` with a deliberate INT fallback/behavior.
 - Inventory/calendar availability and double-booking prevention, PDF quote/validity/approval, delivery/logistics and future CRM relationship.
-- Contact automatic visitor confirmation email is optional future work; Turnstile/D1/direct backend/email notification already exist. Explicit rate limiting remains security backlog.
+- Contact automatic visitor confirmation email is optional future work; Turnstile/D1/direct backend/email notification already exist. Public `POST /api/contact` and `POST /api/rental` are now protected by independent Worker-native rate limits (10 requests / 60 seconds per endpoint) in addition to Turnstile.
 
 ### Business back-office / professional identity
 
@@ -281,6 +281,17 @@ Current runtime production baseline after these P0 closeouts: **`d4e3a28140664b9
 
 Runtime production baseline after the accepted P3.3 changes: **`49d09a8598d0a4c3c42de7b1dedacf763a26a91b`**.
 
+## Security baseline production closeout — 2026-08-22 America/Bogota
+
+**CLOSED and production-smoked.** The Control Center hardening prerequisite is complete.
+
+- **Security A — CSP + browser headers:** PR #53, squash merge `2710c0c006e82ee2c04942db7fd7ef1f4fcaa0bd`. Static pages/Admin receive the shared `_headers` contract and the Worker-generated Home applies the same contract through `security-headers.js`. CSP keeps current GTM/GA, Google Fonts, Turnstile, Cloudflare Insights and `media.sdlive.show` integrations working, blocks `unsafe-eval`, uses `frame-ancestors 'self'` / `SAMEORIGIN` so the Admin preview remains functional, and adds `nosniff`, Referrer-Policy and Permissions-Policy.
+- **Security B — public form rate limiting:** PR #54, squash merge/runtime baseline `2c0fe574a0ab37ceb00cf84b31cbf1b68e1746c4`. `public-form-rate-limit.js` is the Worker entrypoint and uses two independent bindings from `wrangler.jsonc`: Contact 10/60s and Rental 10/60s, keyed by Cloudflare client IP. Limits run before Turnstile Siteverify, D1 writes and Resend; exceeded requests return `429` + `Retry-After: 60`.
+- **Production smoke PASS:** Home normal; cold-cache Rental imagery resolved as expected lazy loading and became immediate on reload; `/en/` normal; `/admin/` + Site Editor + same-origin preview normal; normal Contact submission succeeded and notification arrived; normal Rental submission succeeded and notification arrived at `rental@sdlive.show`.
+- Turnstile remains the primary bot-verification layer; rate limiting is an additional abuse-control layer, not a replacement.
+
+**Next F — Active Gate:** full audit of the finance system currently known as NextPay26 before any repair/rewrite or SD.Live integration decision. Required sequence remains in `docs/roadmap/sdlive-control-center.md`. Availability/WhatsApp is now eligible to run as the documented parallel track, but is not automatically active.
+
 ## SEO / content safety rules
 
 The intended sequence is:
@@ -322,6 +333,8 @@ Those items are **future integrations/backlog, not immediate instructions**, unl
 - `worker-router.js` — top-level Worker router and section SSR/API routing.
 - `worker-entry.js` — Hero edge rendering and base routing.
 - `worker.js` — base CMS/admin APIs, Contact, Rental, D1 and email logic.
+- `public-form-rate-limit.js` — top-level abuse-control wrapper for the two public POST form endpoints.
+- `security-headers.js` / `_headers` — shared CSP/browser-header contract for Worker-generated Home and Static Assets/Admin.
 - `core-sections-content.js` / `core-sections-api.js` / `core-sections-edge.js` — About/Services/Work/International CMS.
 - `home-presentation-content.js` / `home-presentation-api.js` / `home-presentation-edge.js` — Rental/Contact presentation CMS.
 - `trusted-edge.js`, `trusted-api.js`, `trusted-content.js` — Trusted CMS.
@@ -330,7 +343,8 @@ Those items are **future integrations/backlog, not immediate instructions**, unl
 - `admin/editor/editor-resilience.js` — global Select routing/resilience layer.
 - `admin/editor/automatic-failsafe.js` — automatic publish verification.
 - `admin/editor/visual-safeguards-editor.js` — visual diagnostics/restore panel.
-- `docs/roadmap/availability-aware-contact-widget.md` — proposed Medium-High availability-aware WhatsApp/AI contact roadmap item; backlog, not active by existence alone.
+- `docs/roadmap/availability-aware-contact-widget.md` — proposed availability-aware WhatsApp/AI parallel track; eligible after the security closeout, not active by existence alone.
+- `docs/roadmap/sdlive-control-center.md` — required Control Center sequence; finance audit / repair-vs-rewrite is the current F Active Gate.
 - `PROJECT_STATUS.md` — operational current state, active gate, evidence and roadmap policy.
 - `ROADMAP_MASTER_CHECKLIST.md` — reconciled historical/future feature inventory; preservation layer, not automatic work authorization.
 
@@ -411,16 +425,16 @@ After a material milestone, update `PROJECT_STATUS.md`, this README and, when th
 
 ## Current gate status
 
-**P3.0 Public Production Integrity + Commercial/SEO Audit, P3.1 Consent Mode parity, P3.2 public staging strip and P3.3 Mobile critical rendering path are CLOSED and production-smoked/evidenced.**
+**P3.0–P3.4 are CLOSED. The Security baseline is also CLOSED and production-smoked.**
 
-- **P3.1 — Consent Mode parity:** CLOSED via PR #41 / `2d7a934d...`; consent default-denied/bootstrap precedes GTM across the current public GTM page set, with private-session EN/ES/Rental/404 smoke passing.
-- **P3.2 — public Home staging strip:** CLOSED via PR #42 / `d4e3a281...`; public View Source no longer exposes `contentStaging`/`Future picture project`, while Admin preview remains normal and Safeguards stays 9/9 healthy.
-- **P3.3 — Mobile critical rendering path:** CLOSED via measured/reversible experiments. PR #46 skips redundant Hero hydration only when SSR is already authoritative; PR #47 defers the full Home consent UI after a synchronous default-denied bootstrap. Final post-#47 Mobile runs were 75/LCP 5.4 s and 73/LCP 6.0 s with no CMS content popping.
+- **P3.4 — Responsive image/media delivery:** CLOSED via PR #50/#51. Final Mobile lab smoke measured Performance 90 / LCP 3.1 s and reduced `Improve image delivery` estimated savings from ~1.423 MiB to ~58 KiB while preserving masters, R2 ownership, Trusted/About appearance and anti-popping behavior.
+- **Security A — CSP/browser headers:** CLOSED via PR #53 / `2710c0c0...`; Home, `/en/`, Admin and the embedded Site Editor preview passed production smoke.
+- **Security B — public form rate limiting:** CLOSED via PR #54 / `2c0fe574...`; Contact and Rental normal submissions both passed production smoke and their notifications arrived at the intended mailboxes.
 
-The next narrow gate is **F — P3.4 Responsive image/media delivery pipeline**, focused on the repeated ~1.4 MB Mobile image-delivery opportunity through variants/`srcset`/`sizes` while preserving masters and current CMS/R2 ownership. Do not solve it by manually compressing assets one by one.
+The current approved gate is **F — Control Center Step 3: full audit of the finance app currently known as NextPay26, followed by an explicit repair-vs-rewrite decision before implementation.** Audit scope includes data quality, COP/USD/fees/retentions/invoicing/aging/payment-state formulas, AppSheet sync/actions/bots, the jobs/clients/payments/invoice data model, and migration/source-of-truth consequences. Do not choose repair, rewrite, D1 or permanent Sheets/AppSheet ownership before the evidence is complete.
 
-The **Availability-Aware Contact Widget** is a **Medium-High backlog item after the current active gate**, above general CRM/calendar/quote-automation backlog work, and is not part of P3.4. See `docs/roadmap/availability-aware-contact-widget.md`.
+After the audit decision, the required sequence is brand-coherent rename → field/source-of-truth mapping → read-only Admin insights. The **Availability-Aware Contact Widget** is now eligible as the one explicit parallel track, but remains unimplemented and must not be treated as active unless separately promoted.
 
 The Bing indexation recheck remains required for **2026-08-28 through 2026-09-04**. Do not repeatedly resubmit the same URLs before that window without new evidence.
 
-The future Carrd coherence audit, editable HTML CV, Dapta.ai assistant, remove.bg upload option, Home cache optimization and Cloudflare Crawler Hints/IndexNow remain backlog/future integrations and are **not automatically part of P3.4**. Sound for Picture remains inert staging until real content/scope is explicitly approved.
+Carrd coherence, editable HTML CV, Dapta.ai, remove.bg, Home cache optimization, Crawler Hints/IndexNow and hidden/offscreen payload trimming remain backlog/future integrations unless separately promoted. Sound for Picture remains inert staging until real content/scope is explicitly approved.

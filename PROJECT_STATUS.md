@@ -8,14 +8,14 @@
 |---|---|
 | Última revisión integral | 2026-08-22 — **America/Bogota** |
 | Rama verificada | `main` al iniciar este checkpoint; consultar HEAD live al retomar |
-| Runtime production baseline verificado | `3501169a1f5131a0adae1bf13b955d6aa78dbb28` — P3.4b responsive R2/CMS media delivery, production-smoked |
-| Trabajo activo | **Security baseline — rate limiting + baseline CSP** |
+| Runtime production baseline verificado | `2c0fe574a0ab37ceb00cf84b31cbf1b68e1746c4` — Security B public-form rate limiting, production-smoked |
+| Trabajo activo | **Control Center Step 3 — full finance-app audit / repair-vs-rewrite decision** |
 | Producción | `https://sdlive.show` |
 | Media pública | `https://media.sdlive.show` |
-| Milestone actual | Control Center prerequisites — hardening before operational/financial-adjacent integrations |
-| Estado | **P3.0–P3.4 CERRADOS; Security baseline promovido a F** |
-| Active Gate | **F — Security baseline: rate limiting + baseline CSP** |
-| Gate posterior | **Full audit of finance app / repair-vs-rewrite decision; Availability/WhatsApp may run in parallel only after this gate closes** |
+| Milestone actual | SD.Live as Control Center — finance-system evidence/audit before integration |
+| Estado | **P3.0–P3.4 CERRADOS; Security baseline CERRADO; Finance audit promovido a F** |
+| Active Gate | **F — Full audit of finance app / explicit repair-vs-rewrite decision** |
+| Gate posterior | **Brand-coherent rename → field/source mapping → read-only Admin insights; Availability/WhatsApp is eligible as the explicit parallel track** |
 
 ### Convención temporal y de commits
 
@@ -136,8 +136,8 @@ Estas reglas se consideran permanentes salvo decisión explícita respaldada por
 | Bing missing-alt warning | Scanner false positive / no action | E | 7 intentional `alt=""`: six aria-hidden header-logo fragments + mirrored aria-hidden PA image |
 | Mobile lab performance | P3.3 cerrado con mejora material en lab; field CWV sigue sin CrUX suficiente | A — P3.3 cerrado | baseline Mobile 61/66 con LCP 14.8/10.2 s; final post-#47 75/73 con LCP 5.4/6.0 s; TTFB ~10 ms |
 | Responsive image delivery | Producción smoke OK; P3.4 cerrado | **A — P3.4 cerrado** | PR #50 header responsive + PR #51 R2/CMS responsive; Cloudflare Transformations zone-only; Mobile final 90 / LCP 3.1 s; image-delivery savings ~1.423 MiB → ~58 KiB |
-| Availability-Aware Contact Widget | Propuesto; no runtime/schema | D — Medium-High backlog after active gate | `docs/roadmap/availability-aware-contact-widget.md`; future D1 `availability_state`, exact owner WhatsApp gate, existing `leads` table |
-| SD.Live as Control Center | Reprioritized direction; not yet implemented | D direction / sequenced after security gate | `docs/roadmap/sdlive-control-center.md`; security → finance audit → rename → source mapping → read-only Admin insights; Availability is the explicit parallel-track exception |
+| Availability-Aware Contact Widget | Propuesto; no runtime/schema | D — eligible parallel track after Security closeout; not active automatically | `docs/roadmap/availability-aware-contact-widget.md`; future D1 `availability_state`, exact owner WhatsApp gate, existing `leads` table |
+| SD.Live as Control Center | Steps 1–2 prerequisites closed; Step 3 finance audit active | **F — Step 3 Active Gate** | `docs/roadmap/sdlive-control-center.md`; P3.4 + Security closed → finance audit → rename → source mapping → read-only Admin insights; Availability is the explicit parallel-track exception |
 | Hidden/offscreen media payload trimming | Future optimization; not active | D | P3.4 closeout: responsive sizing is solved; investigate lazy/deferred hidden R2 reveal/brand media + `world-map.webp` separately without deleting masters |
 | Home HTML cache policy | `no-store` actual; optimización pendiente | A current / D optimization | `worker-entry.js::transformHomeResponse()` fija `Cache-Control: no-store` y `Vary: Accept-Language, Cookie`; current lab TTFB es bajo |
 | Sound for Picture CMS | No implementado | D/UNKNOWN scope | static/Admin staging only; stripped from public response in P3.2 |
@@ -747,10 +747,10 @@ Antes de crear una página SEO, determinar qué servicio real representa, quién
 - [x] `/api/health` existe; ampliar observabilidad sin duplicar sistemas.
 - [ ] **Optimización de cache Home:** condición actual verificada: `transformHomeResponse()` usa `Cache-Control: no-store`, de modo que el root no obtiene shared HTML caching. P3.0/P3.3 mostraron TTFB lab ~10 ms, así que no tratar cache como causa principal del LCP actual. Evaluar TTL corto + `stale-while-revalidate` versus invalidación/purge en Publish solo con medición y correctness. Debe preservar `Vary: Accept-Language, Cookie`, EN/ES, COL/INT, Admin preview, failsafe, Draft/Published y frescura de Publish.
 - [ ] **IndexNow/Crawler Hints:** Cloudflare Crawler Hints está OFF y no existe integración IndexNow en repo. Evaluarlo junto con la estrategia futura de cache/invalidation; evitar una segunda API/key manual salvo necesidad probada.
-- [ ] **F — P3.4 Responsive image/media delivery pipeline:** variantes y `srcset`/`sizes` para R2/media + optimización separada de header/static assets; preservar master/original y no resolver asset-by-asset.
+- [x] **P3.4 Responsive image/media delivery pipeline:** cerrado 2026-08-22; PR #50/#51, Cloudflare Transformations zone-only, final Mobile 90 / LCP 3.1 s y ahorro estimado de image delivery ~1.423 MiB → ~58 KiB.
 - [x] **P3.3 Mobile critical rendering path:** cerrado 2026-08-22; PR #46/#47 aceptados por medición, anti-popping preservado y render blocking reducido.
-- [ ] Rate limiting explícito y verificable.
-- [ ] CSP, Referrer-Policy y Permissions-Policy sin romper GTM/Turnstile/media.
+- [x] **Rate limiting explícito/verificable:** PR #54 / `2c0fe574...`; `POST /api/contact` y `POST /api/rental` usan bindings independientes 10/60s antes de Turnstile/D1/Resend; normal submissions smokeados en producción.
+- [x] **CSP + browser headers baseline:** PR #53 / `2710c0c0...`; shared CSP para Static Assets + SSR Home, sin `unsafe-eval`, con GTM/GA/Fonts/Turnstile/Insights/R2 permitidos; Home/EN/Admin/Editor preview smokeados.
 - [ ] Migraciones/versionado de esquema D1.
 - [ ] Observabilidad Admin de Worker/D1/R2, publish/deploy y errores.
 - [ ] Alertar antes de límites relevantes de R2/Workers.
@@ -791,7 +791,7 @@ La visión recibida el 2026-08-21 se interpreta como una dirección estratégica
 - **A — Ya existe:** frontend vanilla HTML/CSS/JS; Cloudflare Workers/Static Assets; D1; R2; Cloudflare Access; CMS Draft/Published/revisions; Hero/Trusted/Testimonials/About/Services/International/Work/Rental/Contact CMS según scope; reusable Media Library; Rental público con pricing backend; Contact/Rental forms; EN/ES; COL/INT; landings SEO actuales; canonical/hreflang/robots/sitemap/JSON-LD base; Visual Safeguards; automatic publish failsafe; Global Select cross-section production-smoked; Home managed-media production refs on R2; temporary Home media migrators retired and production-smoked in P2.8; P3.0 evidence audit completed; **P3.1 Consent parity, P3.2 public staging strip y P3.3 critical rendering cerrados y smokeados/evidenciados**.
 - **B — Parcial:** Portfolio/Work sin case-study model profundo, Raw vs Mixed sin media real/Admin, Show Day sin calendario, Rental sin catálogo/admin completo, SEO sin sistema CMS-first para metadata de páginas futuras, analytics sin dashboard comercial/tráfico interno limpio, Insights/Journal sin sistema editorial real.
 - **D — Future Integration:** layout visual avanzado, header/floating controls, Projects/case studies, Rental product SEO/Admin pricing rules/compatibility guidance, Article/Journal CMS, CRM pipeline/atribución, AppSheet, Calendar, quote automation, private portfolios, analytics dashboards, SEO CMS, internal linking graph, security/observability, Training, Carrd coherence, editable HTML CV, Dapta.ai assistant, remove.bg opt-in upload processing, Home edge-cache optimization, Crawler Hints/IndexNow, Availability-Aware Contact Widget y hash/scroll-restoration polish.
-- **F — Active Gate:** **P3.4 Responsive image/media delivery pipeline.** Reducir bytes/imágenes responsive sin degradar masters, CMS/R2 ownership, layout ni branding.
+- **F — Active Gate:** **Control Center Step 3 — full finance-app audit / repair-vs-rewrite decision.** No integrar, reparar ni reescribir hasta auditar datos, fórmulas, AppSheet sync/actions/bots y ownership/migration implications.
 - **Importante:** aunque una visión futura describa CRM, Projects, Rental Admin u otros módulos, el repo manda. No documentarlos ni tratarlos como implementados hasta que exista código/flujo real.
 
 ## Gap analysis / priorización futura
@@ -804,8 +804,9 @@ La visión recibida el 2026-08-21 se interpreta como una dirección estratégica
 | Home media closeout | R2 refs verificadas; migradores temporales retirados; smoke post-merge OK | conservar Media Library/fallbacks; cualquier cleanup adicional requiere auditoría separada | **A** | closed | — | medio | bajo | PR #37 + `4a8c425b...` + production smoke |
 | Global Select | cross-section/page-aware implementado y smokeado | conservar/expandir el mismo contrato para futuros pages | A/B | P0 | incremental | alto | bajo/medio | PR #36 + production smoke |
 | Mobile critical rendering | P3.3 cerrado; final lab 75/73, LCP 5.4/6.0 s | conservar accepted changes + anti-popping/privacy invariants | **A — P3.3 closed** | closed | — | alto | bajo | PR #46/#47 + production smoke + PageSpeed |
-| Responsive image delivery | ~1.4 MB estimated savings repetido | variants/`srcset`/`sizes` pipeline; preservar masters | **F — P3.4** | P1-HIGH | M/L | alto | medio | PageSpeed audit + R2/static asset architecture |
-| Availability-aware contact | no existe runtime/schema todavía | D1 availability state + owner commands + WhatsApp/AI surface switching | **D — Medium-High after active gate** | next backlog | L | alto conversión | alto | exact owner auth + existing `leads` + provider/webhook validation |
+| Responsive image delivery | cerrado y production-smoked | conservar pipeline responsive y masters; payload timing queda separado | **A — P3.4 closed** | closed | — | alto | bajo | PR #50/#51 + Mobile 90/LCP 3.1 s + ~58 KiB residual |
+| Finance app / Control Center Step 3 | sistema externo actual aún no auditado de punta a punta | auditar datos, fórmulas, AppSheet sync/actions/bots y decidir repair vs rewrite por evidencia | **F — Active Gate** | P0 prerequisite | M/L audit | muy alto | alto | `docs/roadmap/sdlive-control-center.md`; no architecture decision before audit |
+| Availability-aware contact | no existe runtime/schema todavía | D1 availability state + owner commands + WhatsApp/AI surface switching | **D — parallel-track eligible, not auto-active** | parallel option | L | alto conversión | alto | Security prerequisite closed; exact owner auth + existing `leads` + provider/webhook validation |
 | Accessibility | Lighthouse 89 | dialog/Turnstile semantics, local contrast, footer heading order | D | P1 | S/M | alto | bajo | Lighthouse exact failures |
 | Home HTML edge cache | root SSR `no-store`; current TTFB lab low | medir y diseñar TTL/SWR o purge-on-Publish seguro por variantes | D | P2 optimization | M | medio | medio | `worker-entry.js`, variants/preview/failsafe |
 | Bing crawl/index follow-up | 7 known/submitted; tested Live URLs indexable; aggregate Site Explorer empty | recheck 7–14 days, then diagnose only if still stalled | D external follow-up | P1 | S | medio | bajo | Bing Webmaster audit |
@@ -857,8 +858,9 @@ La visión recibida el 2026-08-21 se interpreta como una dirección estratégica
 6. **Internal linking model.** Relaciones explícitas entre Services, Products, Projects y Articles.
 7. **CRM + attribution.** Forms actuales alimentarán pipeline real cuando source-of-truth esté definido.
 8. **Analytics integrity before marketing decisions.** Internal traffic, Key Events and downstream funnel evidence before trusting acquisition/revenue reporting.
-9. **Responsive image/media delivery.** P3.4 es el gate activo tras cerrar P3.3; variants/`srcset`/`sizes` deben preservar masters y ownership.
-10. **Availability-Aware Contact Widget.** Medium-High inmediatamente después del active gate salvo repriorización explícita; D1 availability source-of-truth, owner WhatsApp hard gate y existing `leads` table.
+9. **Finance-app audit / repair-vs-rewrite.** Active Control Center Step 3: auditar el sistema completo antes de decidir arquitectura, migración o integración.
+10. **Responsive image/media delivery.** P3.4 está cerrado; conservar variants/`srcset`/`sizes`, masters y ownership sin reabrir el gate por optimizaciones de payload timing.
+11. **Availability-Aware Contact Widget.** Security ya cerró, por lo que este track es elegible en paralelo; sigue D hasta promoción explícita. D1 availability source-of-truth, owner WhatsApp hard gate y existing `leads` table.
 
 ### P2 — crecimiento/autoridad después de modelos sólidos
 
@@ -1025,25 +1027,37 @@ P3.0 Public Production Integrity + Commercial/SEO Audit se promovió como gate a
 
 **CERRADO.** El experimento CSS #44 se revirtió en #45 por falta de beneficio medible. PR #46 (`d52ca8d8...`) eliminó la descarga redundante `hero-content.js`→`cms-hydration.js` solo cuando SSR ya era authoritative, conservando el fallback anti-popping. PR #47 (`49d09a85...`) separó el Consent Mode default-denied síncrono del gestor/UI diferido en Home. Smoke confirmó banner/persistencia y ausencia de CMS popping. Dos corridas finales Mobile: 75/LCP 5.4 s y 73/LCP 6.0 s.
 
+## 2026-08-22 — P3.4 Responsive image/media delivery
+
+**CERRADO.** PR #50 introdujo variantes responsive del header manteniendo masters/static Admin; PR #51 extendió `srcset` a Trusted client logos y About desde R2. Production smoke confirmó header, Trusted y About visualmente normales sin popping. PageSpeed Mobile final: Performance 90, LCP 3.1 s y `Improve image delivery` ~58 KiB residual frente a ~1.423 MiB inicial.
+
+## 2026-08-22 — Security baseline
+
+**CERRADO y VALIDADO EN PRODUCCIÓN.** PR #53 (`2710c0c0...`) añadió CSP/browser headers compartidos sin romper Home, `/en/`, Cloudflare Access ni el preview same-origin del Site Editor. PR #54 (`2c0fe574...`) añadió rate limiting Worker-native independiente para Contact y Rental, 10 requests/60s por endpoint antes de Turnstile/D1/Resend. Contact y Rental normal submissions fueron enviados en producción y sus emails llegaron correctamente; Rental continuó notificando únicamente a `rental@sdlive.show`.
+
 ## 2026-08-22 — Availability-Aware Contact roadmap checkpoint
 
-**BACKLOG D / Medium-High.** Se preservó `docs/roadmap/availability-aware-contact-widget.md`. Debe ir después del active gate y por encima del backlog general CRM/Calendar/quote automation salvo repriorización. No existe todavía D1 schema/API/webhook/widget; no tratar como implementado.
+**BACKLOG D / parallel-track eligible.** Se preservó `docs/roadmap/availability-aware-contact-widget.md`. P3.4 y Security ya cerraron, así que puede promocionarse como track paralelo al finance audit si se aprueba explícitamente; no existe todavía D1 schema/API/webhook/widget y no debe tratarse como implementado.
 
 ---
 
 # Siguiente trabajo
 
-**P3.4 está activo.** Orden de ejecución:
+**F — Control Center Step 3: auditoría completa del sistema financiero actual (NextPay26) y decisión explícita repair vs rewrite.**
 
-1. inventariar assets que explican el ~1.4 MB estimado: media R2/CMS vs branding/header/static;
-2. medir dimensiones reales de render y consumidores antes de definir variantes;
-3. diseñar el mínimo pipeline de variants + `srcset`/`sizes` preservando masters/originales y fallbacks;
-4. mantener R2 como owner de media CMS y GitHub como owner de branding/static critical assets;
-5. no activar Cloudflare Images ni producto pago sin evidencia/approval;
-6. añadir tests de resolución/markup/dimensiones y evitar CLS;
-7. PR + CI + smoke Desktop/Mobile, EN/ES, COL/INT, Editor/Media Library/Safeguards;
-8. repetir PageSpeed Mobile al menos dos veces y comparar bytes/FCP/LCP además del score;
-9. después del cierre de P3.4, el **Availability-Aware Contact Widget** queda como backlog Medium-High siguiente por encima de CRM/Calendar/quote automation, salvo repriorización explícita;
-10. mantener el recheck de Bing para 2026-08-28 a 2026-09-04 sin re-submissions repetidos mientras tanto.
+Orden del gate:
+
+1. inventariar el sistema real actual: Google Sheets, AppSheet, tablas/slices/views/actions/bots, archivos/documentación y cualquier automatización externa relevante;
+2. auditar calidad de datos sin limitarse a problemas ya conocidos: duplicados/ghost rows, tipos, llaves, fechas, monedas, estados y consistencia histórica;
+3. revisar fórmulas y reglas de negocio: COP/USD, fees, retenciones, facturación/cuenta de cobro, aging, fechas/estado de pago y campos derivados;
+4. revisar confiabilidad de sync AppSheet↔Sheet, acciones y bots/recordatorios, incluyendo qué ocurre offline/retry/conflict cuando aplique;
+5. mapear modelo y ownership actual de jobs/events, clientes, pagos, invoice lifecycle y relaciones;
+6. documentar riesgos de continuar reparando versus reescribir, incluyendo costo de migración, rollback, operación y source-of-truth;
+7. emitir una decisión escrita **repair vs full rewrite** con evidencia. Si rewrite gana, diseñar target architecture/migration/rollback antes de código; si repair gana, definir el repair plan y qué sigue siendo authoritative;
+8. **no** renombrar, integrar con `/admin`, mover a D1 ni crear sync bidireccional antes de cerrar esta decisión;
+9. después de la decisión: brand-coherent rename → field/source-of-truth mapping → read-only Admin insights;
+10. Availability/WhatsApp puede correr en paralelo solo si se promueve explícitamente; Security ya no lo bloquea.
+
+Mantener además el recheck de Bing para **2026-08-28 a 2026-09-04** sin re-submissions repetidos mientras tanto.
 
 **Sound for Picture permanece inert staging en static/Admin source hasta contenido/scope real aprobado; no forma parte del response público Home desde P3.2.**
