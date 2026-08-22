@@ -7,14 +7,14 @@
 | Campo | Valor |
 |---|---|
 | Última revisión integral | 2026-08-21 |
-| Rama verificada | `main` + active cleanup branch |
-| Commit de producción verificado | `7d54b83b37e6e30f889eff9a41b25a18b268b8a9` |
-| Trabajo activo | `chore/home-cms-closeout-cleanup` |
+| Rama verificada | `main` |
+| Commit de producción verificado | `4a8c425bc016acad78ef15d07dd8a7a4792bbc73` |
+| Trabajo activo | **Ningún feature gate activo; siguiente F pendiente de decisión explícita** |
 | Producción | `https://sdlive.show` |
 | Media pública | `https://media.sdlive.show` |
 | Milestone actual | P2 — ampliar y cerrar el Editor/CMS de forma incremental |
-| Estado | **P2.7 Global Select CERRADO, merged y smokeado en producción; Home R2 refs verificadas** |
-| Active Gate | **P2.8 — Home CMS closeout cleanup: retirar migradores temporales sin borrar fallbacks** |
+| Estado | **P2.8 Home CMS closeout CERRADO y smokeado en producción; media Home R2 y tooling temporal cerrados** |
+| Active Gate | **Ninguno. No implementar backlog hasta promover explícitamente el siguiente trabajo a F.** |
 | Gate posterior | **Revisar roadmap y promover explícitamente solo el siguiente trabajo aprobado a F** |
 
 ## Regla de precedencia
@@ -47,7 +47,7 @@ Ningún agente debe convertir `BACKLOG`, `FUTURE INTEGRATION` o `VISION` en trab
 3. Si cambió, revisar solamente los diffs posteriores y actualizar los estados afectados.
 4. Aplicar la **Regla de precedencia** y el **Change Safety Gate** antes de modificar arquitectura existente.
 5. No rehacer trabajo marcado `[x]` salvo evidencia concreta de regresión.
-6. Continuar por el primer gate **F — Active Gate** abierto.
+6. Continuar por el primer gate **F — Active Gate** abierto. Si no hay ninguno, revisar roadmap y pedir/registrar una priorización explícita antes de implementar.
 7. Las secciones **Backlog / Future Integrations / Vision** preservan dirección futura; **no autorizan implementación inmediata**.
 8. Al cerrar un milestone material, actualizar este archivo y `README.md` con evidencia real de producción; si cambió el backlog, actualizar también `ROADMAP_MASTER_CHECKLIST.md`.
 
@@ -118,7 +118,7 @@ Estas reglas se consideran permanentes salvo decisión explícita respaldada por
 | Rental cart/pricing | Producción | A | runtime/backend + production cart smoke |
 | Global Select cross-section | Producción smoke OK | A | PR #36, merge `7d54b83...`, `editor-resilience.js`, regression tests + manual smoke |
 | Home CMS managed-media refs | Producción verificada R2 | A | Draft/Published checks + manual public URLs through `media.sdlive.show` for Trusted/About/Work/Testimonials/Rental |
-| Temporary Home media migrator cleanup | Active Gate | F | branch `chore/home-cms-closeout-cleanup`; retire only migrators/tests, preserve fallbacks |
+| Temporary Home media migrator cleanup | Producción smoke OK | A | PR #37, merge `4a8c425b...`, CI verde + post-merge Editor/Safeguards/R2 smoke |
 | Sound for Picture CMS | No implementado | D/UNKNOWN scope | hidden staging placeholder only |
 | Projects | No implementado | D | Admin module disabled/planned |
 | CRM pipeline | No implementado | D | leads/forms existen; pipeline ausente |
@@ -345,7 +345,7 @@ PRs principales: #27–#32.
 
 ## P2.5 — Reusable Media Library + section migrators
 
-**Estado: CERRADO en implementación; tooling migratorio temporal entra a retiro en P2.8.**
+**Estado: CERRADO; tooling migratorio temporal retirado en P2.8.**
 
 - [x] Reusable R2 Media Library API.
 - [x] Reusable Media Library panel.
@@ -354,8 +354,9 @@ PRs principales: #27–#32.
 - [x] Migrator observers protegidos contra loops durante la transición.
 - [x] Regla de transición: cada sección CMS con media editable obtiene un camino legacy→R2 cuando realmente lo necesita.
 - [x] Home media actual verificada en R2 antes de retirar el tooling temporal.
+- [x] PR #37 retiró los cuatro migradores temporales tras verificación y smoke, preservando Media Library y fallbacks.
 
-PR principal: #33.
+PR principal: #33. Cleanup final del tooling temporal: PR #37.
 
 ## P2.6 — Rental + Contact CMS + R2 migration
 
@@ -366,12 +367,12 @@ PR principal: #33.
 - [x] Pricing, availability, preset composition, cart IDs y quote math siguen system/backend-owned.
 - [x] Contact CMS edita copy/labels; email, Turnstile y lógica de envío siguen fuera del CMS.
 - [x] Targeted edge patching preserva Rental DOM transaccional y Contact form.
-- [x] Rental Upload/Replace/Media Library + legacy media migrator.
-- [x] Testimonials legacy-logo migrator añadido.
+- [x] Rental Upload/Replace/Media Library + legacy media migrator durante la transición.
+- [x] Testimonials legacy-logo migrator durante la transición.
 - [x] Sound for Picture no fue promovido; sigue staging/placeholder oculto.
 - [x] Smoke Rental: `Save Draft` no tocó live; Publish sí cambió live y Failsafe quedó verde.
 - [x] Smoke media: Rental + Testimonials migraron Draft-only; Published permaneció intacto.
-- [x] Limitación temporal del migrador (regresar visualmente al Home tras migrar) queda sin relevancia una vez retirado el tooling temporal; no se abrió un fix paralelo.
+- [x] Limitación temporal del migrador (regresar visualmente al Home tras migrar) quedó eliminada al retirar el tooling en P2.8; no se abrió un fix paralelo.
 - [x] Smoke cart: items/cantidades/totales/form operativos.
 - [x] Smoke Contact: `Save Draft ≠ live`, Publish correcto, form + Turnstile visibles.
 - [x] Primer smoke detectó `market: "colombia"` incompatible con D1 `CHECK market IN ('all','col','int')`; PR #35 corrigió Rental a `col` y añadió test de regresión.
@@ -402,9 +403,9 @@ Objetivo cumplido: reforzar el Select existente y convertir autoridad/evidencia/
 
 ## P2.8 — Home CMS closeout cleanup
 
-**Estado: F — ACTIVE GATE / APPROVED WORK.**
+**Estado: CERRADO y VALIDADO EN PRODUCCIÓN el 2026-08-21.**
 
-Objetivo: retirar únicamente el tooling temporal de migración legacy→R2 que ya cumplió su función, sin tocar contenido, D1, R2, pricing, renderers ni fallbacks.
+Objetivo cumplido: retirar únicamente el tooling temporal de migración legacy→R2 que ya cumplió su función, sin tocar contenido, D1, R2, pricing, renderers ni fallbacks.
 
 Evidencia previa al cleanup:
 
@@ -420,19 +421,24 @@ Evidencia previa al cleanup:
 - [x] Trusted Published/producción: logo público resuelve vía `media.sdlive.show`.
 - [x] Selected Work tenía Publish habilitado; preview vs live se comparó visualmente como idéntico, se publicó y Failsafe terminó verde.
 
-Scope autorizado:
+Scope ejecutado y cierre:
 
-- [x] Crear branch corta `chore/home-cms-closeout-cleanup` desde `main` verificado.
-- [x] Retirar loaders de `trusted-media-migration.js`, `testimonials-media-migration.js`, `core-media-migration.js`, `rental-media-migration.js` del Editor shell.
-- [x] Retirar esos cuatro scripts temporales.
-- [x] Retirar tests dedicados únicamente al comportamiento de migración ya eliminado.
-- [x] Añadir regresión que asegure que los cuatro migradores retirados no vuelvan a cargarse y que Media Library/bridges/controls permanentes sigan presentes.
-- [x] **Conservar** Media Library, section bridges, Trusted media controls, CMS/APIs/edge renderers y static/GitHub fallbacks.
-- [ ] CI verde en PR.
-- [ ] Merge a `main`.
-- [ ] Production smoke del Editor post-merge: Home sections cargan sin panel `R2 migration`; Media Library/Upload/Replace siguen operativos; Select/Interact/Safeguards sin regresión.
+- [x] Branch corta `chore/home-cms-closeout-cleanup` desde `main` verificado.
+- [x] Retirados loaders de `trusted-media-migration.js`, `testimonials-media-migration.js`, `core-media-migration.js`, `rental-media-migration.js` del Editor shell.
+- [x] Retirados esos cuatro scripts temporales.
+- [x] Retirados tests dedicados únicamente al comportamiento de migración eliminado.
+- [x] Añadida regresión que asegura que los cuatro migradores retirados no vuelvan a cargarse y que Media Library/bridges/controls permanentes sigan presentes.
+- [x] **Conservados** Media Library, section bridges, Trusted media controls, CMS/APIs/edge renderers y static/GitHub fallbacks.
+- [x] CI verde en PR #37; el primer run detectó tres asserts históricos que todavía exigían los migradores, se actualizaron al contrato permanente y el siguiente run pasó.
+- [x] PR #37 squash-merged a `main`; commit `4a8c425bc016acad78ef15d07dd8a7a4792bbc73`.
+- [x] Production smoke: Home Editor sin panel temporal `R2 migration`.
+- [x] Production smoke: Media Library / Upload / Replace normales intactos.
+- [x] Production smoke: Global Select cross-section PASS.
+- [x] Production smoke: Interact mode PASS.
+- [x] Production smoke: Safeguards `Run check` **9/9 healthy**.
+- [x] Production smoke: About público continúa resolviendo imagen vía `media.sdlive.show`.
 
-**No forma parte de P2.8:** borrar originales/fallbacks de GitHub, limpiar R2 huérfano, cambiar schemas, cambiar URLs públicas, cambiar pricing o promover otro backlog item.
+**No formó parte de P2.8:** borrar originales/fallbacks de GitHub, limpiar R2 huérfano, cambiar schemas, cambiar URLs públicas, cambiar pricing o promover otro backlog item.
 
 ---
 
@@ -454,7 +460,7 @@ Scope autorizado:
 - [x] Automatic publish failsafe + publish progress.
 - [x] Media Library reusable sobre R2.
 - [x] **Global Select cross-section/page-aware contract — P2.7 cerrado y smokeado.**
-- [~] **Cleanup de migradores temporales — P2.8 activo; R2 refs ya verificadas, código/CI/merge/smoke en curso.**
+- [x] **Cleanup de migradores temporales — P2.8 cerrado, CI/merge/smoke completos; fallbacks conservados.**
 - [ ] Drag/drop, snap-to-grid, resize y layout visual genérico.
 - [ ] Reorder genérico de otras cards/bloques.
 - [ ] Show/hide por mercado y dispositivo desde Admin.
@@ -617,17 +623,17 @@ La visión recibida el 2026-08-21 se interpreta como una dirección estratégica
 
 ## Current State contrastado con el repo
 
-- **A — Ya existe:** frontend vanilla HTML/CSS/JS; Cloudflare Workers/Static Assets; D1; R2; Cloudflare Access; CMS Draft/Published/revisions; Hero/Trusted/Testimonials/About/Services/International/Work/Rental/Contact CMS según scope; reusable Media Library; Rental público con pricing backend; Contact/Rental forms; GTM/GA4/Consent; EN/ES; COL/INT; landings SEO actuales; canonical/hreflang/robots/sitemap/JSON-LD base; Visual Safeguards; automatic publish failsafe; Global Select cross-section production-smoked; Home managed-media production refs on R2.
+- **A — Ya existe:** frontend vanilla HTML/CSS/JS; Cloudflare Workers/Static Assets; D1; R2; Cloudflare Access; CMS Draft/Published/revisions; Hero/Trusted/Testimonials/About/Services/International/Work/Rental/Contact CMS según scope; reusable Media Library; Rental público con pricing backend; Contact/Rental forms; GTM/GA4/Consent; EN/ES; COL/INT; landings SEO actuales; canonical/hreflang/robots/sitemap/JSON-LD base; Visual Safeguards; automatic publish failsafe; Global Select cross-section production-smoked; Home managed-media production refs on R2; temporary Home media migrators retired and production-smoked in P2.8.
 - **B — Parcial:** Portfolio/Work sin case-study model profundo, Raw vs Mixed sin media real/Admin, Show Day sin calendario, Rental sin catálogo/admin completo, SEO sin sistema CMS-first para metadata de páginas futuras, analytics sin dashboard comercial/tráfico interno limpio, Insights/Journal sin sistema editorial real.
 - **D — Future Integration:** layout visual avanzado, header/floating controls, Projects/case studies, Rental product SEO/Admin pricing rules/compatibility guidance, Article/Journal CMS, CRM pipeline/atribución, AppSheet, Calendar, quote automation, private portfolios, analytics dashboards, SEO CMS, internal linking graph, security/observability, Training y expansión audiovisual.
-- **F — Active Gate:** Home CMS closeout cleanup: retirar únicamente migradores temporales ya cumplidos; fallbacks permanecen.
+- **F — Active Gate:** **ninguno actualmente.** El siguiente gate requiere promoción explícita después de revisar valor/riesgo/dependencias.
 - **Importante:** aunque una visión futura describa CRM, Projects, Rental Admin u otros módulos, el repo manda. No documentarlos ni tratarlos como implementados hasta que exista código/flujo real.
 
 ## Gap analysis / priorización futura
 
 | Funcionalidad | Estado actual | Propuesta futura | Clasificación | Priority | Effort | Impact | Risk | Dependencias / evidencia |
 |---|---|---|---|---|---|---|---|---|
-| Home media closeout | R2 refs verificadas; migradores temporales aún cargados en `main` | retirar tooling temporal, mantener fallbacks | **F** | P0 | S | medio | bajo | production refs + branch cleanup + CI/smoke |
+| Home media closeout | R2 refs verificadas; migradores temporales retirados; smoke post-merge OK | conservar Media Library/fallbacks; cualquier cleanup adicional requiere auditoría separada | **A** | closed | — | medio | bajo | PR #37 + `4a8c425b...` + production smoke |
 | Global Select | cross-section/page-aware implementado y smokeado | conservar/expandir el mismo contrato para futuros pages | A/B | P0 | incremental | alto | bajo/medio | PR #36 + production smoke |
 | Visual layout Editor | CMS content editing exists; no freeform layout engine | drag/drop, grid, resize, spacing, device/market controls | D | P2 | XL | alto | alto | define data model + rollback; preserve safeguards |
 | Services CMS | implementado en P2.4 | profundizar modelo solo cuando haya necesidad real | A/B | P1 | M | alto | medio | `core-sections-*`, PR #27 |
@@ -807,18 +813,19 @@ Rental/Contact presentation CMS + migration paths; smoke completo correcto despu
 
 ## 2026-08-21 — P2.8 Home CMS closeout cleanup
 
-**ACTIVE.** Branch `chore/home-cms-closeout-cleanup`: retirar loaders/scripts de los cuatro migradores temporales y tests migration-only; conservar Media Library, bridges/controls y fallbacks; añadir regresión del retiro. Falta CI, merge y production smoke.
+**CERRADO.** PR #37 squash-merged en `4a8c425bc016acad78ef15d07dd8a7a4792bbc73`. Se retiraron únicamente los cuatro migradores temporales y tests migration-only. CI final verde. Production smoke confirmó: no panel `R2 migration`; Media Library/Upload/Replace intactos; Global Select e Interact normales; Safeguards 9/9; About público sigue resolviendo media por `media.sdlive.show`. Fallbacks GitHub/static permanecen.
 
 ---
 
 # Siguiente decisión después de P2.8
 
-Cuando P2.8 tenga CI verde, merge y smoke post-merge:
+**No hay un F — Active Gate abierto automáticamente.** Antes de cualquier nueva implementación:
 
-1. marcar el Home CMS closeout como cerrado;
-2. revisar `ROADMAP_MASTER_CHECKLIST.md` completo;
-3. escoger el siguiente trabajo por valor, riesgo y dependencias;
+1. revisar `ROADMAP_MASTER_CHECKLIST.md` completo;
+2. escoger el siguiente trabajo por valor, riesgo y dependencias;
+3. comprobar qué ya existe con evidencia y aplicar Change Safety Gate;
 4. promover **solo** ese trabajo a F — Active Gate;
-5. no aprovechar el cleanup para implementar features adicionales.
+5. registrar el alcance en README + roadmap antes de implementar;
+6. no mezclar el próximo gate con cleanup adicional no autorizado.
 
 **Sound for Picture permanece inert staging hasta contenido/scope real aprobado.**
