@@ -1,0 +1,97 @@
+name: Temporary master roadmap reconciliation
+
+on:
+  push:
+    branches:
+      - docs/p3-3-closeout-roadmap
+
+permissions:
+  contents: write
+
+jobs:
+  reconcile:
+    if: ${{ !contains(github.event.head_commit.message, '[skip docs-reconcile]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: docs/p3-3-closeout-roadmap
+          fetch-depth: 0
+
+      - name: Reconcile master roadmap only
+        shell: python
+        run: |
+          from pathlib import Path
+          import re
+
+          p = Path('ROADMAP_MASTER_CHECKLIST.md')
+          s = p.read_text()
+
+          s = s.replace('Last reconciliation: **2026-08-21 — America/Bogota**', 'Last reconciliation: **2026-08-22 — America/Bogota**', 1)
+          s = s.replace(
+              'Runtime production baseline checked against: `4a8c425bc016acad78ef15d07dd8a7a4792bbc73`; P2.8 Home media closeout is production-smoked and closed. P3.0 public/SEO/performance audit is now closed as an evidence checkpoint.',
+              'Runtime production baseline checked against: `49d09a8598d0a4c3c42de7b1dedacf763a26a91b`; P2.8 and P3.0–P3.3 closeouts are production-smoked/evidenced. P3.4 is the active responsive-image gate.',
+              1,
+          )
+
+          pattern = re.compile(r'## Current Active Gate\n\n.*?\n\n---', re.S)
+          replacement = '''## Current Active Gate
+
+🚧 **F — P3.4 Responsive image/media delivery pipeline.** P3.0 audit, P3.1 Consent Mode parity, P3.2 public staging strip and P3.3 Mobile critical rendering path are closed. P3.4 targets the repeated ~1.4 MB Mobile image-delivery opportunity with variants/`srcset`/`sizes`, preserving original/master media, R2/GitHub ownership, layout stability and current Editor/fallback behavior.
+
+**Next Medium-High backlog after this gate:** Availability-Aware Contact Widget (`docs/roadmap/availability-aware-contact-widget.md`), above general CRM/calendar/quote-automation backlog unless explicitly reprioritized. Its presence here does not authorize implementation during P3.4.
+
+---'''
+          s, count = pattern.subn(replacement, s, count=1)
+          if count != 1:
+              raise SystemExit('Current Active Gate block not found')
+
+          s = s.replace(
+              '- ⏳ **Responsive delivery pipeline:** P3.0 Lighthouse found roughly 1.4 MB image-delivery savings on Mobile. Generate appropriate variants (for example small/medium/large widths as evidence supports), use `srcset`/`sizes`, and preserve original/master media; do not optimize manually image-by-image.',
+              '- 🚧 **P3.4 Active Gate — Responsive delivery pipeline:** P3.0/P3.3 Lighthouse evidence repeatedly shows roughly 1.4 MB image-delivery savings on Mobile. Generate evidence-based variants, use `srcset`/`sizes`, preserve original/master media and current R2/static ownership; do not optimize manually image-by-image.',
+              1,
+          )
+
+          s = s.replace(
+              '- 🚧 **P3.1:** ensure every public page that loads GTM establishes the same Consent Mode/default-denied contract before GTM; this is analytics/privacy shell work, not Contact submission logic.',
+              '- ✅ **P3.1 closed:** every current public page that loads GTM establishes the Consent Mode/default-denied contract before GTM; Home P3.3 later kept the denied bootstrap synchronous while deferring only the full consent UI.',
+              1,
+          )
+
+          anchor = '## 14. Basic CRM\n'
+          if '## 13.5 Availability-Aware Contact Widget' not in s:
+              block = '''## 13.5 Availability-Aware Contact Widget
+
+**Status: ⏳ D — Medium-High backlog; sequence immediately after the current active gate and above general CRM/calendar/quote automation unless reprioritized.**
+
+- ⏳ One D1 `availability_state` source of truth; no browser/chatbot-owned availability state.
+- ⏳ Resolution priority: expiring manual override → travel mode/timezone+end date → default weekly schedule in `America/Bogota`.
+- ⏳ Owner WhatsApp commands such as `away 2h`, `away 4h`, `away tomorrow`, `back`, `status` require an exact sender match against `env.OWNER_WHATSAPP_NUMBER` before any AI/customer routing.
+- ⏳ `GET /api/availability` returns only the availability result needed by the frontend and should use a bounded short cache TTL.
+- ⏳ Frontend swaps existing WhatsApp bubble vs future AI lead-qualification surface from the server result.
+- ⏳ AI scope is qualification only; no pricing/catalog/preset authority and no invented quotes.
+- ⏳ AI-captured leads must land in the existing `leads` table; no parallel third-party lead store.
+- ⏳ Manual/travel states self-expire; stale overrides must fall through safely.
+- ⏳ Before implementation verify real WhatsApp provider/webhook architecture, signatures/auth, credentials, D1 migration, cache freshness and AI-provider privacy/retention.
+
+Full proposed data model/API/guardrails/acceptance criteria: `docs/roadmap/availability-aware-contact-widget.md`.
+
+'''
+              if anchor not in s:
+                  raise SystemExit('Basic CRM anchor not found')
+              s = s.replace(anchor, block + anchor, 1)
+
+          p.write_text(s)
+
+      - name: Commit master roadmap
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add ROADMAP_MASTER_CHECKLIST.md
+          git diff --cached --check
+          if git diff --cached --quiet; then
+            echo 'No master-roadmap changes needed.'
+            exit 0
+          fi
+          git commit -m 'docs: reconcile master roadmap [skip docs-reconcile]'
+          git push origin HEAD:docs/p3-3-closeout-roadmap
