@@ -56,16 +56,24 @@ test("finance summary rounds money and reports workflow-blocked amounts", () => 
   });
 });
 
-test("admin dashboard loads finance summary independently and keeps sensitive fields out of client code", () => {
+test("admin dashboard loads modular finance analytics without sensitive fields", () => {
   const dashboard = readFileSync(new URL("../admin/dashboard.js", import.meta.url), "utf8");
+  const finance = readFileSync(new URL("../admin/finance-dashboard.js", import.meta.url), "utf8");
   const styles = readFileSync(new URL("../admin/finance-dashboard.css", import.meta.url), "utf8");
+  const mobile = readFileSync(new URL("../admin/mobile-dashboard.css", import.meta.url), "utf8");
 
-  assert.match(dashboard, /\/api\/admin\/finance\/summary/);
-  assert.match(dashboard, /loadFinance\(\)/);
-  assert.match(dashboard, /workflowBlockedNetByCurrency/);
-  assert.match(dashboard, /finance-dashboard\.css/);
-  assert.doesNotMatch(dashboard, /NUM CONTACTO/);
-  assert.doesNotMatch(dashboard, /\bNotas\b/);
+  assert.match(dashboard, /finance-dashboard\.js/);
+  assert.match(finance, /\/api\/admin\/finance\/dashboard/);
+  assert.match(finance, /\/api\/admin\/finance\/settings/);
+  assert.match(finance, /workflowBlockedNetByCurrency/);
+  assert.match(finance, /generatedVsReceived/);
+  assert.match(finance, /Top clients/);
+  assert.match(finance, /Tax reserve/);
+  assert.doesNotMatch(finance, /NUM CONTACTO/);
+  assert.doesNotMatch(finance, /\bNotas\b/);
   assert.ok(styles.includes(".finance-overview"));
-  assert.ok(styles.includes(".finance-priority-row"));
+  assert.ok(styles.includes(".finance-chart-line"));
+  assert.ok(styles.includes(".finance-tax-panel"));
+  assert.match(mobile, /min-width:0!important/);
+  assert.match(mobile, /\.app-sidebar/);
 });
