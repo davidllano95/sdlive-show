@@ -2,7 +2,7 @@
 
 **Reprioritized:** 2026-08-22 — America/Bogota
 
-**Status:** Active sequenced initiative — Steps 1–4 are closed; **Step 5 field/source-of-truth mapping is the current F Active Gate**. The retained finance system is now branded **SD.Live Track**. Availability/WhatsApp is eligible as the documented parallel track but is not active automatically.
+**Status:** Active sequenced initiative — Steps 1–5 are closed; **Step 6 read-only, Admin-only finance insights is the current F Active Gate**. The retained finance system is branded **SD.Live Track** and its field-level ownership map is closed. Availability/WhatsApp remains eligible as the documented parallel track but is not active automatically.
 
 This initiative supersedes the earlier informal Category D / future-integration framing for CRM, AppSheet integration, Automatic Show Day and Calendar. Existing detail in those sections remains valid; this document defines the required sequence and priority.
 
@@ -73,28 +73,26 @@ Rename evidence on 2026-08-22:
 
 No formulas, Sheet tab names/schema, AppSheet table/column references, actions, slices, views or bots were renamed as part of this branding change. Their business logic remains the audited system from Step 3; the rename itself changed presentation/file labeling only.
 
-### 5. Finance integration Phase 1 — source-of-truth mapping — 🚧 F ACTIVE GATE
+### 5. Finance integration Phase 1 — source-of-truth mapping — ✅ CLOSED
 
-Before integration code, document a field-by-field ownership table for the data SD.Live may read or later write.
+**CLOSED / PASS on 2026-08-22.** Evidence: `docs/checkpoints/sdlive-track-source-of-truth-2026-08-22.md`.
 
-Required columns:
+The real `SD.Live Track.xlsx` backing workbook and current AppSheet configuration were cross-checked field-by-field. The mapping now distinguishes persisted user/AppSheet fields, Google-Sheets-calculated fields, AppSheet-generated identity, AppSheet virtual fields, workflow Actions and notification-only Bots.
 
-| Field / datum | Current owner | Future owner | Sync direction | Read/write scope | Sensitive? | Notes |
-|---|---|---|---|---|---|---|
-| Example only | TBD | TBD | TBD | TBD | TBD | Audit decision is repair + integrate; ownership still must be mapped |
+Key decisions:
 
-Mapping rules:
+- [x] `REGISTRO` remains the persistent finance table in Google Sheets for Phase 2.
+- [x] AppSheet remains the offline field-capture and workflow surface.
+- [x] `ID` is the durable AppSheet-generated Key (`UNIQUEID()`); `_RowNumber` is not an integration identity.
+- [x] The 11 Sheets-calculated physical columns remain owned by Sheets and read-only to future Admin integration.
+- [x] `Fee Monto` / `Fee %` are AppSheet virtual fields; a future Worker may recompute them read-only if needed, but must not persist a parallel owner merely for display.
+- [x] `Estado`, billing/evaluation/signature/payment dates and payment capture workflows were traced through the current Actions/forms.
+- [x] All three Bots were confirmed notification-only; none mutates `REGISTRO`.
+- [x] Phase 2 read scope and privacy boundaries are documented.
 
-- Start from the **current real SD.Live Track Google Sheet/AppSheet implementation**, not stale documentation.
-- Distinguish user-entered fields, Sheets-calculated fields, AppSheet virtual/calculated fields and action/bot-maintained fields.
-- Record which data may be exposed to the future `/admin` read-only view and which must remain private/internal.
-- Google Sheets remains the current underlying finance data store during this phase; AppSheet remains the capture/workflow surface.
-- Do not create D1 finance copies, write-back, bidirectional sync or parallel financial ownership during mapping.
-- Do not infer ownership from a column name alone; formulas, actions, slices/bots and current data flow are evidence.
+No D1 finance copy, write-back, bidirectional sync or parallel financial ownership was introduced.
 
-No integration code is allowed until the real mapping is completed for the fields SD.Live may touch.
-
-### 6. Finance integration Phase 2 — read-only, Admin-only insights
+### 6. Finance integration Phase 2 — read-only, Admin-only insights — 🚧 F ACTIVE GATE
 
 First useful integration is read-only and private.
 
@@ -117,6 +115,15 @@ Guardrails:
 - No public route exposing finance data.
 - Read-only in this phase.
 - No second financial source of truth.
+
+#### Finance reminder delivery hardening — ⏳ D FUTURE BACKLOG
+
+The current AppSheet finance Bots are notification-only and do not write data. The owner reports the push reminders have not been received in practice. Preserve this as a separate delivery/reliability backlog item rather than changing collection logic during the read-only integration.
+
+- [ ] Diagnose current AppSheet push notification delivery, recipients and runtime history.
+- [ ] Add email delivery for the same approved reminder conditions if useful.
+- [ ] Add WhatsApp delivery for the same approved reminder conditions if useful.
+- [ ] Keep these channels notification-only; reuse one business-rule source and do not fork finance state/ownership.
 
 ### 7. Availability-aware contact widget + WhatsApp AI qualification
 
@@ -168,7 +175,7 @@ Potential later scope:
 - AI qualification has no access to pricing, rental catalog or finance data.
 - Read-only or write-once comes before bidirectional sync.
 - "As soon as possible" applies to moving through the sequence, not bypassing prerequisites.
-- Steps 1–4 are prerequisites for the finance/control-center integration track and are now closed.
+- Steps 1–5 are prerequisites for the finance/control-center integration track and are now closed; Step 6 is the current read-only integration gate.
 - Step 7 is the explicit parallel-track exception.
 - Repair vs rewrite is **DECIDED: repair + integrate** based on the 2026-08-22 full audit; do not reopen it without new evidence of material architectural failure.
 - AppSheet's current offline capture behavior is an asset to preserve unless a future replacement proves equivalent reliability before migration.
@@ -193,4 +200,4 @@ Existing sections remain valid detail and should not be deleted or recreated:
 - **16 — Automatic Show Day Mode**
 - **17 — Calendar**
 
-This **14.5 Control Center** initiative owns their sequencing and reprioritization. Step 4 rename is closed with **SD.Live Track** applied and mobile/offline smoke passed; **Step 5 field/source-of-truth mapping is the current active gate**.
+This **14.5 Control Center** initiative owns their sequencing and reprioritization. Steps 4–5 are closed with **SD.Live Track** applied, mobile/offline smoke passed and the field/source-of-truth map documented; **Step 6 read-only Admin finance insights is the current active gate**.

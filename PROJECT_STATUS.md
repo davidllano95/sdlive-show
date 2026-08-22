@@ -9,13 +9,13 @@
 | Última revisión integral | 2026-08-22 — **America/Bogota** |
 | Rama verificada | `main` al iniciar este checkpoint; consultar HEAD live al retomar |
 | Runtime production baseline verificado | `2c0fe574a0ab37ceb00cf84b31cbf1b68e1746c4` — Security B public-form rate limiting, production-smoked |
-| Trabajo activo | **Control Center Step 4 — brand-coherent rename** |
+| Trabajo activo | **Control Center Step 6 — read-only Admin finance insights** |
 | Producción | `https://sdlive.show` |
 | Media pública | `https://media.sdlive.show` |
-| Milestone actual | SD.Live as Control Center — preserve repaired finance system, rename before integration |
-| Estado | **P3.0–P3.4 CERRADOS; Security CERRADO; Finance audit CERRADO; Rename promovido a F** |
-| Active Gate | **F — Control Center Step 4: brand-coherent rename** |
-| Gate posterior | **Field/source-of-truth mapping → read-only Admin insights; Availability/WhatsApp remains eligible as the explicit parallel track** |
+| Milestone actual | SD.Live as Control Center — field ownership closed; begin read-only finance integration |
+| Estado | **P3.0–P3.4 CERRADOS; Security CERRADO; Finance audit CERRADO; Rename CERRADO; Source mapping CERRADO** |
+| Active Gate | **F — Control Center Step 6: read-only, Admin-only finance insights** |
+| Gate posterior | **After read-only validation: later write-back phase; Availability/WhatsApp remains eligible as the explicit parallel track** |
 
 ### Convención temporal y de commits
 
@@ -108,7 +108,7 @@ Estas reglas se consideran permanentes salvo decisión explícita respaldada por
 | Analytics público | GA4/GTM con consentimiento | Consent parity + Realtime validado |
 | Future CRM | **TBD** | Admin module aún Planned/Soon |
 | Future Lead → Quote → Project → Invoice | **TBD antes de implementar** | no existe source-of-truth único todavía |
-| Finance system actual | Google Sheets + AppSheet, repair path retained | audit 2026-08-22: AppSheet preserves offline capture; field-level ownership mapping remains mandatory before SD.Live integration |
+| Finance system actual | Google Sheets `REGISTRO` + AppSheet, repair path retained | field/source mapping CLOSED 2026-08-22; AppSheet owns offline capture/workflows, Sheets owns persistence/formulas; checkpoint `docs/checkpoints/sdlive-track-source-of-truth-2026-08-22.md` |
 | Future owner availability | D1 `availability_state` **solo si se implementa** | proposed in `docs/roadmap/availability-aware-contact-widget.md`; no schema/runtime aún |
 
 ## Evidence matrix — sistemas de alto riesgo
@@ -137,7 +137,8 @@ Estas reglas se consideran permanentes salvo decisión explícita respaldada por
 | Mobile lab performance | P3.3 cerrado con mejora material en lab; field CWV sigue sin CrUX suficiente | A — P3.3 cerrado | baseline Mobile 61/66 con LCP 14.8/10.2 s; final post-#47 75/73 con LCP 5.4/6.0 s; TTFB ~10 ms |
 | Responsive image delivery | Producción smoke OK; P3.4 cerrado | **A — P3.4 cerrado** | PR #50 header responsive + PR #51 R2/CMS responsive; Cloudflare Transformations zone-only; Mobile final 90 / LCP 3.1 s; image-delivery savings ~1.423 MiB → ~58 KiB |
 | Availability-Aware Contact Widget | Propuesto; no runtime/schema | D — eligible parallel track after Security closeout; not active automatically | `docs/roadmap/availability-aware-contact-widget.md`; future D1 `availability_state`, exact owner WhatsApp gate, existing `leads` table |
-| SD.Live as Control Center | Steps 1–3 closed; repair + integrate decision recorded; Step 4 rename active | **F — Step 4 Active Gate** | `docs/audits/nextpay26-repair-vs-rewrite-2026-08-22.md` + `docs/roadmap/sdlive-control-center.md`; preserve Sheets/AppSheet logic/offline capture → rename → source mapping → read-only Admin insights |
+| SD.Live as Control Center | Steps 1–5 closed; repair + integrate, rename and field mapping recorded; Step 6 read-only Admin insights active | **F — Step 6 Active Gate** | `docs/checkpoints/sdlive-track-source-of-truth-2026-08-22.md` + `docs/roadmap/sdlive-control-center.md`; Sheets/AppSheet ownership preserved → read-only Admin insights next |
+| SD.Live Track reminder delivery | Current 3 AppSheet Bots verified notification-only; owner reports push reminders not received | D — future delivery hardening | Diagnose AppSheet push delivery; optional email + WhatsApp using same reminder conditions; no finance data writes/duplicate state logic |
 | Hidden/offscreen media payload trimming | Future optimization; not active | D | P3.4 closeout: responsive sizing is solved; investigate lazy/deferred hidden R2 reveal/brand media + `world-map.webp` separately without deleting masters |
 | Home HTML cache policy | `no-store` actual; optimización pendiente | A current / D optimization | `worker-entry.js::transformHomeResponse()` fija `Cache-Control: no-store` y `Vary: Accept-Language, Cookie`; current lab TTFB es bajo |
 | Sound for Picture CMS | No implementado | D/UNKNOWN scope | static/Admin staging only; stripped from public response in P3.2 |

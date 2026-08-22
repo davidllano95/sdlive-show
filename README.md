@@ -74,6 +74,8 @@ When a future improvement is approved or requested during work on SD.Live, recor
 | Rental pricing and quote calculation | Backend pricing logic; never presentation CMS copy |
 | Public analytics | GA4/GTM after consent |
 | Admin access | Cloudflare Access |
+| Current finance persistence / workflow | Google Sheets `REGISTRO` + AppSheet; field map closed in `docs/checkpoints/sdlive-track-source-of-truth-2026-08-22.md` |
+| Finance `/admin` Phase 2 | Read-only Worker view over the underlying Google Sheet/API; no D1 finance mirror or write-back |
 | Future CRM / Lead→Quote→Project→Invoice ownership | **TBD until explicitly designed; do not duplicate sources** |
 
 Critical branding such as the primary SD.Live logo, favicon/app icons and essential fallbacks remain versioned with the code. Home CMS-managed media has completed its R2 migration/production-reference verification; intentional GitHub fallback originals remain versioned unless a later reference-aware cleanup explicitly proves they are safe to remove.
@@ -188,9 +190,10 @@ These requirements are preserved but are **not active work until explicitly prio
 
 ### Business back-office / professional identity
 
-- **SD.Live as Control Center — active sequenced initiative:** P3.4, Security and the full finance audit are closed. The finance decision is **repair + integrate, not rewrite**; AppSheet keeps offline field capture. Current gate is the brand-coherent rename, followed by field/source mapping and then read-only `/admin` insights. Full evidence: `docs/audits/nextpay26-repair-vs-rewrite-2026-08-22.md`; sequence: `docs/roadmap/sdlive-control-center.md`.
+- **SD.Live as Control Center — active sequenced initiative:** P3.4, Security, finance audit, SD.Live Track rename and field/source-of-truth mapping are closed. The finance decision remains **repair + integrate, not rewrite**; AppSheet keeps offline field capture. **Current F gate is Step 6: read-only `/admin` finance insights** over the underlying Google Sheet/API. Evidence: `docs/checkpoints/sdlive-track-source-of-truth-2026-08-22.md`; sequence: `docs/roadmap/sdlive-control-center.md`.
 - CRM pipeline, clients/contacts/companies, notes/history/source and Lead → Quote → Project → Invoice.
-- Existing Google Sheets + AppSheet finance system is retained after audit; AppSheet remains the offline capture surface. SD.Live integration still waits for rename + per-field source-of-truth mapping.
+- Existing Google Sheets + AppSheet finance system is retained after audit; AppSheet remains the offline capture/workflow surface and Google Sheets `REGISTRO` remains Phase 2 persistence. Field ownership is mapped; the next integration is read-only `/admin`, with no D1 finance mirror/write-back.
+- **Finance reminder delivery — future backlog:** current AppSheet Bots are notification-only; diagnose why owner push reminders have not been received, then optionally add email and WhatsApp delivery using the same approved reminder rules. Do not create finance writes or duplicate collection logic in the notification layer.
 - Automatic Show Day from Calendar/AppSheet with configurable window and manual override.
 - Admin Calendar, Projects, quote automation, native Workspace Inbox and correct-alias replies.
 - Private recruiter/client Portfolio/CV variants with noindex/share controls.
