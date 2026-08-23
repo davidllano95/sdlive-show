@@ -130,6 +130,42 @@
     document.body.appendChild(i18n);
   }
 
+  function isCompactAdmin() {
+    if (typeof window.matchMedia === "function") {
+      return window.matchMedia("(max-width: 900px)").matches;
+    }
+    return window.innerWidth <= 900;
+  }
+
+  function showFinanceLauncher() {
+    if (document.getElementById("financeMobileLauncher")) return;
+
+    const launcher = document.createElement("section");
+    launcher.className = "section panel";
+    launcher.id = "financeMobileLauncher";
+    launcher.innerHTML = `
+      <div class="section-head">
+        <div>
+          <span class="eyebrow">SD.Live Track · Finance</span>
+          <h3>Finance dashboard</h3>
+        </div>
+      </div>
+      <p class="panel-note">Finance is paused on compact screens so the Admin shell can become interactive first.</p>
+      <button class="button" type="button">Load Finance Dashboard</button>
+    `;
+
+    const metrics = document.querySelector(".metrics");
+    if (metrics) metrics.insertAdjacentElement("afterend", launcher);
+    else document.querySelector(".content")?.prepend(launcher);
+
+    const button = launcher.querySelector("button");
+    button?.addEventListener("click", () => {
+      button.disabled = true;
+      button.textContent = "Loading Finance…";
+      loadFinanceModule();
+    }, { once: true });
+  }
+
   async function load() {
     try {
       const [health, whoami, hero, revisions] = await Promise.all([
@@ -207,5 +243,9 @@
   }
 
   load();
-  loadFinanceModule();
+  if (isCompactAdmin()) {
+    showFinanceLauncher();
+  } else {
+    loadFinanceModule();
+  }
 })();
