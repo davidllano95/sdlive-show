@@ -15,6 +15,7 @@
       partyName: "Name / reference",
       partyAmount: "Gross amount",
       addParty: "+ Add third party",
+      clear: "Clear",
       remove: "Remove",
       totalRetention: "Total retentions",
       retentionRate: "Effective retention rate",
@@ -45,6 +46,7 @@
       partyName: "Nombre / referencia",
       partyAmount: "Valor bruto",
       addParty: "+ Agregar tercero",
+      clear: "Limpiar",
       remove: "Quitar",
       totalRetention: "Retenciones totales",
       retentionRate: "Tasa efectiva de retención",
@@ -188,6 +190,24 @@
     calculate(root);
   }
 
+  function resetCalculator(root) {
+    const currency = root.querySelector("[data-currency]");
+    const invoiced = root.querySelector("[data-invoiced]");
+    const received = root.querySelector("[data-received]");
+    const partiesRoot = root.querySelector("[data-parties]");
+    if (currency) currency.value = "COP";
+    if (invoiced) invoiced.value = "";
+    if (received) received.value = "";
+    if (partiesRoot) {
+      partiesRoot.innerHTML = "";
+      partiesRoot.appendChild(partyRow(1));
+    }
+    nextPartyId = 2;
+    clearMetrics(root);
+    refreshCopy(root);
+    invoiced?.focus?.();
+  }
+
   function build() {
     if (document.getElementById(ROOT_ID)) return;
     const finance = document.getElementById("financeOverview");
@@ -208,7 +228,13 @@
           <label><span data-copy="invoiced"></span><input type="number" min="0" step="0.01" inputmode="decimal" data-invoiced /></label>
           <label><span data-copy="received"></span><input type="number" min="0" step="0.01" inputmode="decimal" data-received /></label>
         </div>
-        <div class="finance-pass-through__parties-head"><strong data-copy="parties"></strong><button type="button" data-add-party data-copy="addParty"></button></div>
+        <div class="finance-pass-through__parties-head">
+          <strong data-copy="parties"></strong>
+          <div class="finance-pass-through__party-actions">
+            <button type="button" data-add-party data-copy="addParty"></button>
+            <button type="button" class="finance-pass-through__clear" data-clear-calculator data-copy="clear"></button>
+          </div>
+        </div>
         <div class="finance-pass-through__parties" data-parties></div>
         <div class="finance-pass-through__status" data-status></div>
         <div class="finance-pass-through__results">
@@ -237,6 +263,10 @@
     section.addEventListener("input", () => calculate(section));
     section.addEventListener("change", () => calculate(section));
     section.addEventListener("click", (event) => {
+      if (event.target.closest("[data-clear-calculator]")) {
+        resetCalculator(section);
+        return;
+      }
       if (event.target.closest("[data-add-party]")) {
         if (partyRows(section).length < MAX_PARTIES) {
           partiesRoot.appendChild(partyRow(nextPartyId++));

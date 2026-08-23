@@ -104,15 +104,15 @@ test("finance summary exposes read-only action queues with exact blockers", () =
   assert.equal(serialized.includes("+57-secret"), false);
 });
 
-test("dedicated Finance workspace loads branded interactive worklists lazily", async () => {
+test("dedicated Finance workspace loads branded card and aging worklists lazily", async () => {
   const [html, script, styles] = await Promise.all([
     readFile(new URL("../admin/finance/index.html", import.meta.url), "utf8"),
     readFile(new URL("../admin/finance-action-worklists.js", import.meta.url), "utf8"),
     readFile(new URL("../admin/finance-action-worklists.css", import.meta.url), "utf8")
   ]);
 
-  assert.match(html, /finance-action-worklists\.css\?v=20260823-2/);
-  assert.match(html, /finance-action-worklists\.js\?v=20260823-2/);
+  assert.match(html, /finance-action-worklists\.css\?v=20260823-3/);
+  assert.match(html, /finance-action-worklists\.js\?v=20260823-3/);
   assert.match(script, /financeToInvoiceCount/);
   assert.match(script, /financeReceivableCount/);
   assert.match(script, /financeBlockedCount/);
@@ -124,8 +124,23 @@ test("dedicated Finance workspace loads branded interactive worklists lazily", a
   assert.match(script, /work_date_today/);
   assert.match(script, /work_date_future/);
   assert.match(script, /credentials: "same-origin"/);
+
+  assert.match(script, /const AGING_BUCKETS/);
+  assert.match(script, /financeAgingCop/);
+  assert.match(script, /financeAgingUsd/);
+  assert.match(script, /function agingKeyFromDays/);
+  assert.match(script, /queues\.collectible/);
+  assert.match(script, /queues\.blocked/);
+  assert.match(script, /workflowType: "collectible"/);
+  assert.match(script, /workflowType: "blocked"/);
+  assert.match(script, /finance-aging-bar--interactive/);
+  assert.match(script, /value === null \|\| value === undefined \|\| value === ""/);
+
   assert.match(styles, /var\(--accent\)/);
   assert.match(styles, /rgba\(var\(--accent-rgb\)/);
+  assert.match(styles, /finance-aging-bar--interactive/);
+  assert.match(styles, /finance-action-item__workflow\.is-collectible/);
+  assert.match(styles, /finance-action-item__workflow\.is-blocked/);
   assert.doesNotMatch(styles, /#dfff69/i);
   assert.doesNotMatch(styles, /223,\s*255,\s*105/);
   assert.match(styles, /@media \(max-width: 640px\)/);

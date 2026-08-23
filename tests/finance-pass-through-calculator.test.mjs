@@ -57,7 +57,7 @@ test("pass-through calculator rejects impossible allocations", () => {
   assert.equal(calculate({ invoiced: 0, received: 0 }).code, "missing_totals");
 });
 
-test("Finance workspace loads the calculator locally without adding a write-back path", () => {
+test("Finance workspace loads the local calculator with a bilingual clear reset and no write-back path", () => {
   const html = readFileSync(new URL("../admin/finance/index.html", import.meta.url), "utf8");
   const ui = readFileSync(new URL("../admin/finance-pass-through-calculator.js", import.meta.url), "utf8");
   const css = readFileSync(new URL("../admin/finance-pass-through-calculator.css", import.meta.url), "utf8");
@@ -65,11 +65,22 @@ test("Finance workspace loads the calculator locally without adding a write-back
   const mathIndex = html.indexOf("finance-pass-through-math.js");
   const uiIndex = html.indexOf("finance-pass-through-calculator.js");
   assert.ok(mathIndex > -1 && uiIndex > mathIndex);
-  assert.match(html, /finance-pass-through-calculator\.css/);
+  assert.match(html, /finance-pass-through-calculator\.css\?v=20260823-2/);
+  assert.match(html, /finance-pass-through-calculator\.js\?v=20260823-2/);
   assert.match(ui, /Calculador de retenciones y pagos a terceros/);
   assert.match(ui, /nothing is saved or sent to Google Sheets/);
+  assert.match(ui, /clear: "Clear"/);
+  assert.match(ui, /clear: "Limpiar"/);
+  assert.match(ui, /data-clear-calculator/);
+  assert.match(ui, /function resetCalculator/);
+  assert.match(ui, /currency\.value = "COP"/);
+  assert.match(ui, /partiesRoot\.innerHTML = ""/);
+  assert.match(ui, /partiesRoot\.appendChild\(partyRow\(1\)\)/);
+  assert.match(ui, /nextPartyId = 2/);
   assert.doesNotMatch(ui, /\/api\/admin\/finance/);
   assert.doesNotMatch(ui, /fetch\s*\(/);
   assert.ok(css.includes(".finance-pass-through__results"));
+  assert.ok(css.includes(".finance-pass-through__party-actions"));
+  assert.ok(css.includes(".finance-pass-through__clear"));
   assert.ok(css.includes("@media(max-width:560px)"));
 });
