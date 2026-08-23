@@ -96,15 +96,22 @@ Guardrails:
 - no automatic parsing/exposure of free-form `Notas`;
 - allocation is an internal management reconciliation and does not determine the legal/tax owner of a withholding certificate.
 
-### Current UX hardening — action-card worklists
+### PR #73 — action-card worklists
 
-Real-use testing showed that the top status cards need to answer not only “how much?” but “what exactly do I do next?”. The current UX hardening adds read-only drilldowns for:
+Real-use testing showed that the top status cards need to answer not only “how much?” but “what exactly do I do next?”. Read-only drilldowns now exist for:
 
 - **Por facturar / To invoice** → exact records ready for invoice/account submission and the action to send the account;
 - **Cobrable ahora / Collectible now** → exact collectible records and the action to follow up/collect;
 - **Flujo bloqueado / Workflow blocked** → exact records plus explicit reason codes/actions, including work date today/future/invalid and missing LiventX evaluation/signature.
 
 The drilldown is intentionally lazy-loaded only when a card is opened so the dedicated Finance workspace keeps the lightweight startup behavior validated after PRs #68–#70. It remains read-only and does not expose `Notas`, `NUM CONTACTO` or internal row IDs.
+
+Production real-use QA passed for all three cards. Workflow wording was then refined to match the actual operating steps:
+
+- evaluation blocker → **Enviar evaluación / Send evaluation**;
+- signature blocker → **Firmar factura / Sign invoice**.
+
+The worklist UI also uses the Admin/SD.Live brand accent variables (`--accent`, `--accent-rgb`) instead of an unrelated standalone highlight color.
 
 ## Current validation still worth doing
 
@@ -114,12 +121,19 @@ The drilldown is intentionally lazy-loaded only when a card is opened so the ded
 - [x] Verify ES/EN toggle after the dedicated-workspace changes.
 - [ ] Test the pass-through calculator with at least one real payment case from SD.Live Track and confirm the reconciliation matches the bank receipt and intended third-party transfer.
 - [x] Confirm the new invoice-date rule moves real future/today events out of Por facturar and into Flujo bloqueado as expected.
-- [ ] After the action-card worklists deploy, verify one card at a time on production (desktop first, then iPhone) and confirm the listed records/actions match SD.Live Track.
+- [x] Verify **Por facturar** worklist against real production data.
+- [x] Verify **Cobrable ahora** worklist against real production data.
+- [x] Verify **Flujo bloqueado** worklist and blocker reasons against real production data.
+- [ ] Smoke the refined workflow wording and branded worklist styling after deployment.
 
 ## Near-term Finance UX backlog
 
 These are eligible improvements, not automatic authorization:
 
+- [ ] Make **Aging 0–30 / 31–60 / 61+** interactive so each bucket opens the exact accounts inside it. This is the highest-value next drilldown.
+- [ ] Make **Data quality** warnings interactive so each warning opens the exact rows that need correction. This is the second priority.
+- [ ] Make **Received all-time** interactive to inspect already-paid records, payment date, gross, fees and received amount without turning Admin into a write owner.
+- [ ] Make **Top debtors** interactive so a client opens the individual outstanding accounts that make up the balance.
 - [ ] Consider making third-party result wording more operational, e.g. `No pagar más de / Pay no more than`, if useful after real-use testing.
 - [ ] If pass-through money becomes common, design **structured fields** for third-party ownership instead of parsing `Notas`. Do not expose free-form notes to the browser merely to automate this calculator.
 - [ ] AppSheet mobile deep-link integration may be added later once the correct App Link is obtained.
@@ -135,9 +149,9 @@ These are eligible improvements, not automatic authorization:
 
 ## Next recommended sequence
 
-1. Deploy and production-smoke the read-only action-card worklists, one card at a time.
+1. Smoke the refined worklist wording and branded worklist styling in production.
 2. Test PR #72 calculator with a real third-party payment.
-3. Fix only observed Finance UX/data-semantics issues.
+3. If Finance drilldowns continue, implement **Aging** first and **Data quality** second.
 4. Keep Phase 2 in real-use observation.
 5. Only after enough trust, explicitly decide whether to design Phase 3 draft-first/idempotent write-back or pivot to another Control Center module.
 
