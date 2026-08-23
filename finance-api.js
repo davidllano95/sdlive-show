@@ -168,6 +168,16 @@ function sheetDateKey(value) {
   );
 }
 
+function dateKeyUtcDay(key) {
+  if (!Number.isInteger(key)) return null;
+  const year = Math.floor(key / 10000);
+  const month = Math.floor((key % 10000) / 100);
+  const day = key % 100;
+  const date = new Date(Date.UTC(year, month - 1, day));
+  if (Number.isNaN(date.getTime())) return null;
+  return Math.floor(date.getTime() / 86400000);
+}
+
 function currentBogotaDateKey(now) {
   const formatter = new Intl.DateTimeFormat("en-CA", {
     timeZone: "America/Bogota",
@@ -224,6 +234,23 @@ function publicWorkItem(row, currency, rawCurrency) {
     project: cleanString(recordCell(row, "Proyecto / Show")),
     currency: currency || rawCurrency || null,
     state: cleanString(recordCell(row, "Estado"))
+  };
+}
+
+function publicQualityItem(row, currency, rawCurrency) {
+  const grossAmount = numericValue(recordCell(row, "Valor bruto"));
+  const netAmount = numericValue(recordCell(row, "Valor Neto"));
+  const receivedAmount = numericValue(recordCell(row, "Valor Recibido"));
+  const daysUnpaid = numericValue(recordCell(row, "Días sin pagar"));
+
+  return {
+    ...publicWorkItem(row, currency, rawCurrency),
+    grossAmount: grossAmount === null ? null : roundMoney(grossAmount),
+    netAmount: netAmount === null ? null : roundMoney(netAmount),
+    receivedAmount: receivedAmount === null ? null : roundMoney(receivedAmount),
+    invoiceSentDate: cleanString(recordCell(row, "Fecha cuenta enviada")),
+    paymentDate: cleanString(recordCell(row, "Fecha pago")),
+    daysUnpaid
   };
 }
 
@@ -421,6 +448,13 @@ export function buildFinanceSummary(rows, { now = new Date() } = {}) {
   const priority = [];
   const toInvoiceQueue = [];
   const blockedQueue = [];
+  const qualityQueues = {
+    missingReceivedAmount: [],
+    unsupportedCurrency: [],
+    missingAging: [],
+    missingPaymentDate: [],
+    invalidPaymentDuration: []
+  };
 
   let toInvoiceCount = 0;
   let receivableCount = 0;
@@ -432,7 +466,10 @@ export function buildFinanceSummary(rows, { now = new Date() } = {}) {
   for (const row of records) {
     const currency = normalizedCurrency(recordCell(row, "Moneda"));
     const rawCurrency = cleanString(recordCell(row, "Moneda"));
-    if (rawCurrency && !currency) unsupportedCurrencyCount += 1;
+    if (rawCurrency && !currency) {
+      unsupportedCurrencyCount += 1;
+      qualityQueues.unsupportedCurrency.push(publicQualityItem(row, currency, rawCurrency));
+    }
 
     const state = recordCell(row, "Estado");
     const netAmount = numericValue(recordCell(row, "Valor Neto"));
@@ -469,7 +506,29 @@ export function buildFinanceSummary(rows, { now = new Date() } = {}) {
     if (isPaidState(state)) {
       paidCount += 1;
       const received = numericValue(recordCell(row, "Valor Recibido"));
-      if (received === null) paidMissingReceivedCount += 1;
+      if (received === null) {
+        paidMissingReceivedCount += 1;
+        qualityQueues.missingReceivedAmount.push(publicQualityItem(row, currency, rawCurrency));
+      }
+
+      const paymentDateKey = sheetDateKey(recordCell(row, "Fecha pago"));
+      if (paymentDateKey === null) {
+        qualityQueues.missingPaymentDate.push(publicQualityItem(row, currency, rawCurrency));
+      } else {
+        const sentDateKey = sheetDateKey(recordCell(row, "Fecha cuenta enviada"));
+        const sentDay = dateKeyUtcDay(sentDateKey);
+        const paidDay = dateKeyUtcDay(paymentDateKey);
+        if (sentDay !== null && paidDay !== null) {
+          const paymentDurationDays = paidDay - sentDay;
+          if (paymentDurationDays < 0 || paymentDurationDays >= 3650) {
+            qualityQueues.invalidPaymentDuration.push({
+              ...publicQualityItem(row, currency, rawCurrency),
+              paymentDurationDays
+            });
+          }
+        }
+      }
+
       addCurrencyAmount(receivedByCurrency, currency, received);
       addCurrencyAmount(
         paidFeesByCurrency,
@@ -479,15 +538,20 @@ export function buildFinanceSummary(rows, { now = new Date() } = {}) {
       continue;
     }
 
-    const eligibility = collectionEligibility(row);
+    const sentAt = cleanString(recordCell(row, "Fecha cuenta enviada"));
     const daysUnpaid = numericValue(recordCell(row, "Días sin pagar"));
+    if (sentAt && daysUnpaid === null) {
+      qualityQueues.missingAging.push(publicQualityItem(row, currency, rawCurrency));
+    }
+
+    const eligibility = collectionEligibility(row);
     if (eligibility.workflowBlocked) {
       collectionBlockedCount += 1;
       addCurrencyAmount(blockedNetByCurrency, currency, netAmount);
       blockedQueue.push({
         ...publicWorkItem(row, currency, rawCurrency),
         netAmount: netAmount === null ? null : roundMoney(netAmount),
-        invoiceSentDate: cleanString(recordCell(row, "Fecha cuenta enviada")),
+        invoiceSentDate: sentAt,
         daysUnpaid,
         reasonCodes: blockedReasonCodes(row, { todayKey })
       });
@@ -516,7 +580,7 @@ export function buildFinanceSummary(rows, { now = new Date() } = {}) {
       currency: currency || rawCurrency || null,
       netAmount: netAmount === null ? null : roundMoney(netAmount),
       state: cleanString(state),
-      invoiceSentDate: cleanString(recordCell(row, "Fecha cuenta enviada")),
+      invoiceSentDate: sentAt,
       daysUnpaid,
       aging: agingBucket
     });
@@ -544,6 +608,15 @@ export function buildFinanceSummary(rows, { now = new Date() } = {}) {
     const dateB = sheetDateKey(b.workDate) ?? Number.MAX_SAFE_INTEGER;
     if (dateA !== dateB) return dateA - dateB;
     return String(a.client).localeCompare(String(b.client));
+  });
+
+  Object.values(qualityQueues).forEach((queue) => {
+    queue.sort((a, b) => {
+      const dateA = sheetDateKey(a.workDate) ?? Number.MAX_SAFE_INTEGER;
+      const dateB = sheetDateKey(b.workDate) ?? Number.MAX_SAFE_INTEGER;
+      if (dateA !== dateB) return dateA - dateB;
+      return String(a.client).localeCompare(String(b.client));
+    });
   });
 
   const aging = [...agingMap.values()]
@@ -579,7 +652,12 @@ export function buildFinanceSummary(rows, { now = new Date() } = {}) {
       missingReceivedAmountCount: paidMissingReceivedCount
     },
     dataQuality: {
-      unsupportedCurrencyCount
+      paidMissingReceivedAmountCount: qualityQueues.missingReceivedAmount.length,
+      unsupportedCurrencyCount,
+      unpaidMissingAgingCount: qualityQueues.missingAging.length,
+      paidMissingPaymentDateCount: qualityQueues.missingPaymentDate.length,
+      invalidPaymentDurationCount: qualityQueues.invalidPaymentDuration.length,
+      queues: qualityQueues
     }
   };
 }
