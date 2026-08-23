@@ -3,9 +3,9 @@ import { handleFinanceApi } from "./finance-api.js";
 import { handleFinanceDashboardApi } from "./finance-dashboard-api.js";
 import { handleCalendarApi } from "./calendar-api.js";
 import {
-  decorateCalendarResponse,
-  handleSiteScheduleApi
+  decorateCalendarResponse
 } from "./site-schedule-api.js";
+import { handleSiteScheduleApiCompat } from "./site-schedule-write-compat.js";
 import { applyShowDayRuntime } from "./showday-edge.js";
 
 const PUBLIC_FORM_LIMITS = {
@@ -111,7 +111,7 @@ export default {
       path === "/api/admin/site-schedule" ||
       path.startsWith("/api/admin/site-schedule/events/")
     ) {
-      const response = await handleSiteScheduleApi(request, env, {
+      const response = await handleSiteScheduleApiCompat(request, env, {
         verifyAdmin: verifyAdminViaExistingApi
       });
       if (response) return response;
