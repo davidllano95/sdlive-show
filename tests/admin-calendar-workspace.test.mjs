@@ -14,8 +14,9 @@ const router = readFileSync(new URL("../public-form-rate-limit.js", import.meta.
 test("Calendar is a dedicated authenticated Admin operations workspace", () => {
   assert.ok(calendarPage.includes("Calendar · SD.Live Admin"));
   assert.ok(calendarPage.includes('href="/admin/calendar/"'));
-  assert.ok(calendarPage.includes("SD.Live Track · REGISTRO"));
-  assert.ok(calendarPage.includes("controlled source-field form"));
+  assert.ok(calendarPage.includes("SD.Live Track · REGISTRO + Site Schedule"));
+  assert.ok(calendarPage.includes('href="/admin/calendar/site-schedule/"'));
+  assert.ok(calendarPage.includes("REGISTRO stays the Google Sheets/AppSheet source of truth"));
   assert.ok(calendarPage.includes('id="calendarGrid"'));
   assert.ok(calendarPage.includes('id="calendarAgenda"'));
 });
@@ -75,7 +76,7 @@ test("Calendar and create UI reuse the shared Admin brand palette", () => {
   assert.equal(mobileMonthStyles.includes("#dfff69"), false);
 });
 
-test("Next metric ignores already-started multi-day work and uses the next start date", () => {
+test("Next metric prioritizes tomorrow for ongoing displayed work then falls back to the next start", () => {
+  assert.ok(calendarScript.includes("event.startDate <= todayIso && event.endDate >= tomorrowIso"));
   assert.ok(calendarScript.includes('events.find((event) => event.startDate >= todayIso)'));
-  assert.equal(calendarScript.includes('events.find((event) => event.endDate >= todayIso)'), false);
 });
