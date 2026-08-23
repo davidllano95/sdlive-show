@@ -39,6 +39,27 @@ test("Show Day is automatic, public-safe and removes the manual toggle at the ed
   assert.equal(runtime.includes("sessionStorage"), false);
 });
 
+test("Secondary public pages receive the same Home header structure", () => {
+  assert.ok(edge.includes('on(".seo-header"'));
+  assert.ok(edge.includes('class="site-header" id="siteHeader"'));
+  assert.ok(edge.includes('class="brand-location" id="workLocation"'));
+  assert.ok(edge.includes('class="on-air-badge"'));
+  assert.ok(edge.includes('class="main-nav"'));
+  assert.ok(edge.includes('class="lang-toggle"'));
+  assert.ok(edge.includes('class="btn btn-primary header-project-cta header-project-cta--desktop"'));
+  assert.ok(edge.includes('href="/#about"'));
+  assert.ok(edge.includes('href="/#work"'));
+  assert.ok(edge.includes('href="/#services"'));
+  assert.ok(edge.includes('href="/#international"'));
+  assert.ok(edge.includes('href="/#rental"'));
+  assert.ok(edge.includes('href="/theatre-sound-design-audio-post"'));
+  assert.ok(edge.includes('href="/#contact"'));
+  assert.ok(runtime.includes("initSharedHeaderControls"));
+  assert.ok(runtime.includes('sharedHeader.classList.toggle("nav-open", open)'));
+  assert.ok(runtime.includes('window.location.assign("/en/")'));
+  assert.ok(runtime.includes('window.location.assign("/es-co/")'));
+});
+
 test("Show Day runtime reaches the main page and six public landing routes", () => {
   for (const route of [
     '"/"',
