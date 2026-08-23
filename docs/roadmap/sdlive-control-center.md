@@ -3,7 +3,7 @@
 **Reprioritized:** 2026-08-22 — America/Bogota  
 **Architecture checkpoint:** 2026-08-23 — America/Bogota
 
-**Status:** Active sequenced initiative. Finance audit/rename/source mapping and Finance Phase 2 are closed. Dedicated Finance workspace is closed/PASS. AppSheet multi-day + Admin Calendar read-only are closed/PASS. Site Schedule + automatic Show Day + Location are closed/PASS. **Current gate: controlled Calendar create is implemented but blocked on Google OAuth Sheets write authorization.** Generic Finance Phase 3 remains blocked.
+**Status:** Active sequenced initiative. Finance audit/rename/source mapping and Finance Phase 2 are closed. Dedicated Finance workspace is closed/PASS. AppSheet multi-day + Admin Calendar read-only are closed/PASS. Site Schedule + automatic Show Day + Location are closed/PASS. **Current gate: controlled Calendar create is implemented but blocked on Google OAuth Sheets write authorization.** Generic Finance Phase 3 remains blocked. After create PASS, a required stabilization milestone will filter Site Schedule Split Work to ongoing/future work and run a detailed desktop/mobile visual audit before broader UI expansion.
 
 This document owns sequence. Detailed evidence lives in checkpoints/specs under `docs/` and historical/future detail remains in `ROADMAP_MASTER_CHECKLIST.md`.
 
@@ -181,9 +181,40 @@ PR #96 then unified secondary/SEO page headers with Home so public pages use the
 
 Evidence: `docs/checkpoints/site-schedule-showday-2026-08-23.md`.
 
-### 10. Controlled Calendar edit + explicit workflow actions — ⏳ NEXT AFTER CREATE PASS
+### 9.1. Post-create stabilization — ⏳ REQUIRED AFTER CREATE PASS
 
-Do not begin this until the OAuth gate and one end-to-end create smoke pass.
+This milestone was explicitly added after recent cross-surface changes exposed visually strange states. It does **not** interrupt the current OAuth gate.
+
+#### Site Schedule source-list cleanup
+
+Split Work/source selection must only show **ongoing or future** source jobs in `America/Bogota`:
+
+- ongoing: `sourceStartDate <= today <= sourceEndDate`;
+- future: `sourceStartDate > today`;
+- past: `sourceEndDate < today` → hidden from the editor list.
+
+Historical overrides and historical Calendar data remain preserved; this is only an editor usability filter and must not mutate Sheets/AppSheet.
+
+#### Detailed visual audit
+
+Run a dedicated visual audit across **desktop and mobile as separate first-class layouts**:
+
+- Home plus every current public landing route family;
+- normal + automatic Show Day states;
+- shared headers, logo, Location, ON AIR, nav, CTA, EN/ES and COL/INT branches;
+- typography, spacing, overflow, anchors, Rental cart, WhatsApp, footer and transitions;
+- `/admin/`, Finance, Calendar, Site Schedule and Editor;
+- mobile safe areas, menus, modals, date inputs, touch targets and horizontal overflow;
+- desktop hover/focus/keyboard states;
+- current Show Day violet→red startup popping and dynamic favicon backlog severity.
+
+Findings use P0–P3 severity. Close all P0/P1 regressions before this stabilization milestone passes; retain P2/P3 explicitly in backlog.
+
+Full audit matrix and exit criteria: `docs/roadmap/post-integration-visual-audit-2026-08-23.md`.
+
+### 10. Controlled Calendar edit + explicit workflow actions — ⏳ NEXT AFTER CREATE + STABILIZATION PASS
+
+Do not begin this until the OAuth gate, one end-to-end create smoke and the required post-create stabilization pass.
 
 Expected direction:
 
@@ -255,6 +286,9 @@ Not blockers for the OAuth/create gate:
 3. Verify Google Sheets.
 4. Sync and verify AppSheet.
 5. Close create PASS.
-6. Then consider controlled edit/workflow actions.
+6. Implement Site Schedule ongoing/future-only Split Work source filtering.
+7. Run the required detailed desktop/mobile visual audit; fix P0/P1 regressions.
+8. Close stabilization PASS.
+9. Then consider controlled edit/workflow actions.
 
-Generic Finance Phase 3 stays blocked. Site Schedule/Show Day is already closed and should not be reopened without a regression.
+Generic Finance Phase 3 stays blocked. Site Schedule/Show Day functional milestone is already closed and should not be reopened without a regression.
