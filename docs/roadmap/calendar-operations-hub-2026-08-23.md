@@ -1,7 +1,7 @@
 # SD.Live Control Center — Calendar / Operations Hub handoff
 
 **Updated:** 2026-08-23 — America/Bogota  
-**Status:** Calendar schema gate **PASS**. AppSheet multi-day setup **PASS**. Admin read-only Calendar desktop production QA **PASS**. Mobile Calendar smoke is the active gate before Admin create/write.  
+**Status:** Calendar schema gate **PASS**. AppSheet multi-day setup **PASS**. Admin read-only Calendar desktop production QA **PASS**. Mobile month/agenda structure **PASS** after PR #86; brand-palette visual QA is the active final read-only gate before Admin create/write.  
 **Continuation point:** this document supersedes older Finance Phase 2 handoffs for deciding what to build next.
 
 ## Finance Phase 2 closure checkpoint
@@ -11,6 +11,23 @@ Finance Phase 2 core real-use QA is complete in production, including the dedica
 Finance-wide generic Phase 3 write-back remains blocked. Calendar / Operations has a separately authorized, tightly scoped future write path to the same `REGISTRO` table after read-only Calendar is proven in production.
 
 A medium-priority integration follow-up is tracked in GitHub issue #83: billing eligibility, `Por facturar` / `Flujo bloqueado`, and relevant AppSheet invoice reminders must use the day after `Fecha fin` rather than the day after `Fecha trabajo`. Single-day behavior remains equivalent because `Fecha fin = Fecha trabajo`. This must be completed before the AppSheet/Finance integration is closed, but it is not part of the Calendar read-only gate.
+
+## Permanent visual / brand rule
+
+From this milestone forward, every new or modified SD.Live surface must preserve the established brand palette of the surface it belongs to instead of introducing a one-off palette.
+
+For the private Admin / Control Center:
+
+- shared Admin tokens in `admin/dashboard.css` are authoritative;
+- primary accent = `--accent: #a089e5` / `--accent-rgb: 160,137,229` unless the global Admin design system is deliberately changed;
+- new modules must use `var(--accent)` / `rgba(var(--accent-rgb), …)` rather than inventing hard-coded primary colors;
+- `--green`, `--amber` and `--danger` are semantic status colors, not alternate decorative brand palettes;
+- existing neutral background/text/border tokens should be reused where possible;
+- desktop and mobile production smoke must include a brand-palette check before a visual milestone is closed.
+
+The same principle applies to public-site work: reuse the established public brand tokens/approved visual language for that surface rather than copying arbitrary colors from another module.
+
+Calendar PR #87 removes the temporary blue/lime Calendar accents and reuses the shared violet Admin accent for today, event bars, multi-day emphasis, focus and the mobile Calendar/Agenda selector.
 
 ## Operational source of truth
 
@@ -64,7 +81,7 @@ Manual production QA passed:
 3. new jobs automatically receive `Fecha fin = Fecha trabajo`;
 4. setting `Fecha fin` earlier than `Fecha trabajo` is rejected.
 
-## Read-only Admin Calendar — desktop production PASS
+## Read-only Admin Calendar — production status
 
 The first Admin Calendar milestone remains deliberately read-only.
 
@@ -115,6 +132,13 @@ Desktop Calendar QA passed one check at a time:
 4. **N. Jade** renders continuously from **2026-09-06 through 2026-09-21**;
 5. a one-day **Coca-Cola** event on **2026-08-13** renders only on that day.
 
+Mobile QA:
+
+1. the original agenda-only fallback was usable but insufficient because the user wanted the actual month Calendar on phone;
+2. PR #86 added **Calendar / Agenda** on mobile with Calendar as the default while preserving continuous multi-day spans;
+3. production smoke confirmed the month Calendar and Agenda selector are usable on iPhone;
+4. brand-palette alignment is now the remaining visual check before closing read-only Calendar.
+
 The initial production failure was a Calendar schema mismatch at column AB. It was corrected in PR #84 by decoupling Calendar from the complete A:AB exact-header contract and mapping only the fields Calendar actually needs.
 
 ## Authorized future write boundary
@@ -125,7 +149,7 @@ That future authorization covers authenticated operations rows in the same `REGI
 
 ### Planned create sequence after read-only production PASS
 
-1. Complete the mobile Calendar smoke.
+1. Complete the brand-palette visual smoke on mobile/Calendar.
 2. Define exact create form fields from the verified ownership map.
 3. Validate auth, dates (`end >= start`), currencies/enums and required values server-side.
 4. Generate/persist an AppSheet-compatible unique `ID` with idempotent retry behavior.
@@ -140,8 +164,8 @@ Still required. The exact real AppSheet **App Link / app URL / app ID** is not s
 
 ## Current next action
 
-Perform exactly one remaining read-only smoke on a phone:
+After the brand-palette change reaches production, perform exactly one visual smoke on the phone:
 
-- open `/admin/calendar/` on mobile and confirm the Calendar/agenda is usable and real events are readable without desktop-only layout problems.
+- reload `/admin/calendar/` and confirm Calendar/Agenda selection, today marker and event bars use the shared SD.Live Admin violet palette consistently and remain readable.
 
-If mobile passes, the read-only Calendar milestone is closed and the next implementation gate becomes **controlled Admin create → same Google Sheets `REGISTRO` → AppSheet sync**, with no generic Finance write-back.
+If that passes, the read-only Calendar milestone is closed and the next implementation gate becomes **controlled Admin create → same Google Sheets `REGISTRO` → AppSheet sync**, with no generic Finance write-back.
