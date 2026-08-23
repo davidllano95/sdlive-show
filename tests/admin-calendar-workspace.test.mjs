@@ -74,3 +74,8 @@ test("Calendar and create UI reuse the shared Admin brand palette", () => {
   assert.equal(calendarStyles.includes("136, 162, 255"), false);
   assert.equal(mobileMonthStyles.includes("#dfff69"), false);
 });
+
+test("Next metric ignores already-started multi-day work and uses the next start date", () => {
+  assert.ok(calendarScript.includes('events.find((event) => event.startDate >= todayIso)'));
+  assert.equal(calendarScript.includes('events.find((event) => event.endDate >= todayIso)'), false);
+});
