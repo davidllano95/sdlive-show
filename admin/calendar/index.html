@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex,nofollow,noarchive" />
+  <meta name="color-scheme" content="dark" />
+  <base href="/admin/" />
+  <title>Calendar · SD.Live Admin</title>
+  <link rel="icon" href="../assets/icons/favicon.ico" />
+  <link rel="stylesheet" href="./dashboard.css" />
+  <link rel="stylesheet" href="./mobile-dashboard.css" />
+  <link rel="stylesheet" href="./calendar/calendar.css?v=20260823-1" />
+</head>
+<body>
+  <div class="backoffice">
+    <aside class="app-sidebar" id="appSidebar">
+      <div class="brand">
+        <img class="brand-full" src="../assets/logos/sd-live-header-normal.png" alt="SD.Live" />
+        <img class="brand-symbol" src="../assets/logos/sd-live-header-normal-symbol.png" alt="" aria-hidden="true" />
+        <span>Admin</span>
+      </div>
+
+      <nav class="app-nav" aria-label="Back office">
+        <a class="app-nav__item" href="/admin/">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 3 10.1V21h7v-6h4v6h7V10.1L12 3Zm0 2.1 7 5.6v8.8h-3.5v-6h-7v6H5v-8.8l7-5.6Z"/></svg>
+          <span>Dashboard</span>
+        </a>
+        <a class="app-nav__item" href="/admin/finance/">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4V5Zm2 2v10h12V7H6Zm1.5 7.5h2V16h-2v-1.5Zm3.5-3h2V16h-2v-4.5Zm3.5-3h2V16h-2V8.5Z"/></svg>
+          <span>Finance</span><small>SD.Live Track</small>
+        </a>
+        <a class="app-nav__item" href="/admin/editor/">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 3 13.2 8-6.1 1.3 3.8 6-2.1 1.3-3.8-6.1L6 18 5 3Z"/></svg>
+          <span>Site Editor</span>
+        </a>
+        <a class="app-nav__item" href="https://mail.google.com/" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18v14H3V5Zm2.2 2 6.8 5.1L18.8 7H5.2ZM5 17h14V9.4l-7 5.2-7-5.2V17Z"/></svg>
+          <span>Inbox</span><small>Gmail ↗</small>
+        </a>
+
+        <p class="nav-label">Business</p>
+        <button class="app-nav__item is-disabled" type="button" disabled>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v16H4V4Zm2 3v2h12V7H6Zm0 4v2h8v-2H6Zm0 4v2h10v-2H6Z"/></svg>
+          <span>Leads</span><small>Soon</small>
+        </button>
+        <button class="app-nav__item is-disabled" type="button" disabled>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16v12H4V7Zm3-3h10v3h-1.5V5.5h-7V7H7V4Zm-.5 6v6h11v-6h-11Z"/></svg>
+          <span>Rental</span><small>Soon</small>
+        </button>
+        <button class="app-nav__item is-disabled" type="button" disabled>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h7l2 2h9v12H3V5Zm2 2v10h14V9h-7.8l-2-2H5Z"/></svg>
+          <span>Projects</span><small>Soon</small>
+        </button>
+        <a class="app-nav__item is-active" href="/admin/calendar/">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h1.5v2H17V3h1.5v2H21v16H3V5h2V3Zm-0.5 7v9h15v-9h-15Z"/></svg>
+          <span>Calendar</span><small>Read-only</small>
+        </a>
+
+        <p class="nav-label">Content & system</p>
+        <button class="app-nav__item is-disabled" type="button" disabled>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v16H4V4Zm2 2v7l3-3 3 3 2-2 4 4V6H6Zm0 11v1h12v-1l-4-4-2 2-3-3-3 3v2Z"/></svg>
+          <span>Media</span><small>R2</small>
+        </button>
+        <button class="app-nav__item is-disabled" type="button" disabled>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19V9h3v10H5Zm5 0V4h3v15h-3Zm5 0v-7h3v7h-3Z"/></svg>
+          <span>Analytics</span><small>Soon</small>
+        </button>
+        <button class="app-nav__item is-disabled" type="button" disabled>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h14v14H5V5Zm2 2v10h10V7H7Zm2 2h6v2H9V9Zm0 4h4v2H9v-2Z"/></svg>
+          <span>SEO</span><small>Soon</small>
+        </button>
+        <button class="app-nav__item is-disabled" type="button" disabled>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 1 0 18 9 9 0 0 1 0-18Zm0 1.5A7.5 7.5 0 1 0 12 19.5 7.5 7.5 0 0 0 12 4.5Zm-.75 3h1.5v5h-1.5v-5Zm0 6.5h1.5v1.5h-1.5V14Z"/></svg>
+          <span>System</span><small>Partial</small>
+        </button>
+      </nav>
+
+      <div class="sidebar-bottom">
+        <span class="secure"><i></i> Cloudflare Access</span>
+        <button id="collapseSidebar" type="button">Collapse</button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <span class="eyebrow"><span class="inline-wordmark" aria-label="SD.Live"><span>SD</span><i aria-hidden="true">.</i><span>Live</span></span> Back Office</span>
+          <h1>Calendar</h1>
+        </div>
+        <div class="top-actions">
+          <span class="identity" id="identity">Checking access…</span>
+          <a class="button button--ghost" href="/admin/">Dashboard</a>
+          <a class="button" href="/admin/finance/">Finance</a>
+        </div>
+      </header>
+
+      <section class="content calendar-content">
+        <div class="welcome calendar-welcome">
+          <div>
+            <span class="eyebrow">SD.Live Track · REGISTRO</span>
+            <h2>Operations calendar</h2>
+            <p>Jobs and events from the same Google Sheets source used by AppSheet. Multi-day work is shown as a continuous span. This first Admin milestone is intentionally read-only.</p>
+          </div>
+          <div class="system-pill" id="calendarStatus">
+            <i></i><span>Connecting to Calendar…</span>
+          </div>
+        </div>
+
+        <div class="calendar-metrics" aria-label="Calendar summary">
+          <article class="calendar-metric"><span>This month</span><strong id="monthCount">—</strong><small>jobs / events</small></article>
+          <article class="calendar-metric"><span>Multi-day</span><strong id="multiDayCount">—</strong><small>in visible month</small></article>
+          <article class="calendar-metric"><span>Next</span><strong id="nextDate">—</strong><small id="nextLabel">No event loaded</small></article>
+        </div>
+
+        <section class="calendar-panel" aria-labelledby="calendarMonthTitle">
+          <div class="calendar-toolbar">
+            <div>
+              <span class="eyebrow">Month view</span>
+              <h3 id="calendarMonthTitle">Loading…</h3>
+            </div>
+            <div class="calendar-controls" aria-label="Calendar navigation">
+              <button class="button button--ghost" id="calendarPrev" type="button" aria-label="Previous month">←</button>
+              <button class="button button--ghost" id="calendarToday" type="button">Today</button>
+              <button class="button button--ghost" id="calendarNext" type="button" aria-label="Next month">→</button>
+            </div>
+          </div>
+
+          <div class="calendar-weekdays" aria-hidden="true">
+            <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
+          </div>
+          <div class="calendar-grid" id="calendarGrid" aria-live="polite"></div>
+          <div class="calendar-agenda" id="calendarAgenda" aria-live="polite"></div>
+          <div class="calendar-empty" id="calendarEmpty" hidden>No jobs or events in this month.</div>
+        </section>
+
+        <p class="calendar-footnote">Source: Google Sheets <strong>REGISTRO</strong>. Start = <strong>Fecha trabajo</strong>. End = <strong>Fecha fin</strong>. Formula-owned finance columns are not modified by this workspace.</p>
+      </section>
+    </main>
+  </div>
+
+  <script src="./calendar/calendar.js?v=20260823-1"></script>
+</body>
+</html>

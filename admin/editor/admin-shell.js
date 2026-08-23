@@ -36,7 +36,24 @@
     nav.insertBefore(finance, editorLink);
   }
 
+  function ensureCalendarNav() {
+    const nav = shell.querySelector(".app-nav");
+    const editorLink = nav?.querySelector('a[href="./"]');
+    if (!nav || !editorLink || nav.querySelector('a[href="../calendar/"]')) return;
+
+    const calendar = document.createElement("a");
+    calendar.className = "app-nav__item";
+    calendar.href = "../calendar/";
+    calendar.innerHTML = `
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h1.5v2H17V3h1.5v2H21v16H3V5h2V3Zm-0.5 7v9h15v-9h-15Z"/></svg>
+      <span>Calendar</span>
+      <small>Read-only</small>
+    `;
+    nav.insertBefore(calendar, editorLink);
+  }
+
   ensureFinanceNav();
+  ensureCalendarNav();
 
   const collapsed =
     safeStorageGet("sdlive-admin-dashboard-collapsed") === "true";

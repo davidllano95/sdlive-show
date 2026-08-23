@@ -1,151 +1,132 @@
 # SD.Live Control Center — Calendar / Operations Hub handoff
 
 **Updated:** 2026-08-23 — America/Bogota  
-**Status:** Active gate after Finance Phase 2 production QA.  
-**Supersedes as continuation point:** the older Finance Phase 2 handoff for deciding what to build next. Finance remains a valid historical/operational reference, but Calendar / Operations Hub is now the active development track.
+**Status:** Calendar schema gate **PASS**. AppSheet multi-day setup **PASS**. Admin read-only Calendar is the active implementation milestone.  
+**Continuation point:** this document supersedes older Finance Phase 2 handoffs for deciding what to build next.
 
 ## Finance Phase 2 closure checkpoint
 
-Finance Phase 2 core real-use QA is complete in production.
+Finance Phase 2 core real-use QA is complete in production, including the dedicated `/admin/finance/` workspace, year/language controls, invoice eligibility, actionable worklists, LiventX workflow wording, pass-through calculator, Aging drilldowns and all five Data Quality drilldowns. Final Data Quality visual QA also passed.
 
-Validated milestones include:
+Finance-wide generic Phase 3 write-back remains blocked. Calendar / Operations has a separately authorized, tightly scoped future write path to the same `REGISTRO` table after read-only Calendar is proven in production.
 
-- dedicated `/admin/finance/` workspace on desktop and iPhone;
-- year selector and ES/EN toggle;
-- invoice eligibility by work date;
-- actionable `Por facturar`, `Cobrable ahora` and `Flujo bloqueado` drilldowns;
-- LiventX action wording aligned to the real workflow: **Enviar evaluación** and **Firmar factura**;
-- SD.Live-branded worklist styling;
-- pass-through / third-party retention calculator with a real-use reconciliation case;
-- calculator **Limpiar / Clear** behavior;
-- Aging `0–30 / 31–60 / 61+` drilldowns;
-- Data quality drilldowns for all five existing warnings;
-- final Data quality row visual cleanup: clean `label | count badge` layout, no standalone arrow, whole warning row remains clickable.
+## Operational source of truth
 
-Production QA for Data quality confirmed that a non-zero warning opens the correct affected records and corrective action, and the final simplified warning-row layout was accepted by the user.
+- Google Sheets `REGISTRO` remains persistence + formula owner.
+- AppSheet **SD.Live Track** remains the primary mobile/offline workflow client.
+- Admin is an additional authenticated operations client, not a competing database.
+- No D1 mirror for operational/finance rows.
+- COP and USD remain strictly separated in Finance.
+- Cloudflare Access remains the Admin security boundary.
 
-Finance-wide generic Phase 3 write-back remains blocked unless separately authorized. The Calendar / Operations Hub write-path below is a specifically authorized exception after its schema gate is completed.
+## Verified REGISTRO schema
 
-## Active objective
+The workbook was inspected from the real `SD.Live Track.xlsx` source. `REGISTRO` originally contained A:AA (27 physical columns) and had no end-date field.
 
-Turn the SD.Live Admin into a practical operational command center that remains useful when AppSheet is unavailable or inconvenient, while preserving the existing Google Sheets + AppSheet workflow and source of truth.
+A new physical source column has now been added:
 
-The Calendar / Operations Hub must provide:
+- **AB — `Fecha fin`**
 
-1. a Calendar view inside Admin using SD.Live Track jobs/events;
-2. correct multi-day event rendering in Admin;
-3. correct multi-day event rendering in AppSheet;
-4. the ability to create jobs/events from Admin;
-5. later, the ability to edit existing jobs/events from Admin;
-6. an Admin form covering all genuine human-editable/source fields required by the workflow;
-7. formula/derived fields continuing to be owned by Google Sheets/AppSheet logic rather than being manually overwritten;
-8. compatibility with existing Finance calculations, COP/USD separation and LiventX workflow semantics;
-9. a direct Dashboard → SD.Live Track/AppSheet mobile launcher.
+`Fecha trabajo` remains the canonical **start date**. It was deliberately not renamed or moved because existing finance formulas and invoice eligibility depend on it.
 
-## Source-of-truth rules
+### Ownership map
 
-- Google Sheets `REGISTRO` remains the persistence/formula owner.
-- AppSheet **SD.Live Track** remains the primary mobile/offline capture and workflow client.
-- Admin becomes an additional authenticated operations client, not a competing database.
-- Do not create a D1 mirror for operational/finance rows.
-- Do not move formula ownership from Sheets into Admin merely to support Calendar.
-- Do not create duplicate business rules in AppSheet and Admin when a shared source-of-truth rule can be used instead.
+| Fields | Owner / behavior | Admin write direction |
+| --- | --- | --- |
+| `Fecha trabajo`, `Cliente`, `Proyecto / Show`, `Rol`, `Moneda`, `Valor bruto`, `Método de pago`, `Notas`, `NUM CONTACTO`, `Fecha fin` | Human/source fields | Eligible for controlled create/edit where relevant |
+| `Estado` | Human-selectable + workflow-managed | Controlled; preserve AppSheet semantics |
+| `Valor Recibido` | Human input at payment stage | Controlled payment workflow, not generic create |
+| `Fecha cuenta enviada`, `Fecha evaluación`, `Fecha firma`, `Fecha pago` | Workflow-managed dates | Set by explicit workflow actions, not generic raw editing by default |
+| `ID` | Persisted AppSheet key (`UNIQUEID()`) | System identity; future Admin create must generate/persist a compatible unique value idempotently |
+| `Mes`, `Año`, `Impuestos / Fees`, `Valor Neto`, `Días sin pagar`, `Month Number`, `Año Pago`, `Month Number (pago)`, `Mes de pago`, `Rango Aging`, `MES PAGO KEY` | Google Sheets array-formula columns | **Never write from Admin/AppSheet forms** |
 
-## Calendar schema gate — must complete before write implementation
+The existing Finance API intentionally still reads `REGISTRO!A:AA`; therefore adding AB does not change the Finance browser payload or formula behavior. Calendar reads A:AB separately.
 
-The currently verified `REGISTRO` schema contains `Fecha trabajo` but no verified explicit event-end date field.
+## AppSheet multi-day configuration — PASS
 
-Before adding any Admin write endpoint:
+Production AppSheet was updated and manually verified:
 
-1. Inspect the current Google Sheets workbook and AppSheet field mapping.
-2. Classify every `REGISTRO` field as one of:
-   - **User input** — entered by AppSheet/Admin;
-   - **Formula/derived** — owned by Sheets;
-   - **Workflow-managed** — set by AppSheet actions/bots or controlled workflow actions;
-   - **Read-only/system** — key/helper/internal fields not typed by the user.
-3. Define a shared start/end date model for single-day and multi-day events.
-4. Do not overload an unrelated existing column as an end date.
-5. If a new field is required, add it deliberately to Sheets and AppSheet, then regenerate/resync AppSheet columns before configuring Calendar.
-6. Define the AppSheet Calendar Start/End mapping against that shared model.
-7. Define Admin Calendar serialization against the same model.
-8. Preserve existing invoice eligibility semantics that depend on `Fecha trabajo`; explicitly decide whether that field remains start date or whether finance logic should use another source field.
-9. Define validation for `end >= start` and a deterministic single-day fallback.
-10. Define idempotent create behavior around the persisted `ID` so retries cannot create duplicate events.
+- `Fecha fin` regenerated into AppSheet and typed as **Date**.
+- `Fecha fin` Initial value: `[Fecha trabajo]`.
+- `Fecha fin` validation prevents end-before-start.
+- `Fecha fin` was added immediately after `Fecha trabajo` in **Nuevo Trabajo**.
+- Calendar Start date = `Fecha trabajo`.
+- Calendar End date = `Fecha fin`.
+- Existing rows with blank `Fecha fin` were backfilled from `Fecha trabajo` using a one-time Apps Script that only filled blank end dates; existing explicit multi-day ends were preserved.
+- AppSheet Sync completed successfully after backfill.
 
-## Initial date-model hypothesis — not yet authorized as schema
+Manual production QA passed:
 
-Preferred direction to validate against the real workbook/AppSheet setup:
+1. existing one-day jobs remained visible;
+2. a real multi-day RENT record rendered as one continuous Calendar span;
+3. new jobs automatically receive `Fecha fin = Fecha trabajo`;
+4. setting `Fecha fin` earlier than `Fecha trabajo` is rejected.
 
-- `Fecha trabajo` remains the canonical **start date** for backward compatibility with existing finance formulas/rules.
-- Add a dedicated **end date** field only if the current workbook truly lacks one.
-- For single-day work, end date should resolve to the same calendar day as start date, either explicitly or via a safe AppSheet/Admin fallback.
-- For multi-day work, end date must be later than or equal to start date.
+## Read-only Admin Calendar contract
 
-This is a hypothesis only until the workbook and AppSheet configuration are inspected. Do not modify production schema based only on this paragraph.
+The first Admin Calendar milestone is deliberately read-only.
 
-## Admin write authorization boundary
+Server source:
 
-The user explicitly authorized creating/editing Calendar/operations rows from Admin so the system can be used as a command center even without AppSheet.
+- authenticated `GET /api/admin/calendar/events`;
+- reads `REGISTRO!A1:AB3000` from the same Google Sheet;
+- requires the verified A:AB header contract;
+- converts Sheets dates to ISO dates server-side;
+- falls back blank `Fecha fin` to `Fecha trabajo` defensively;
+- prevents malformed/backwards date data from generating backwards spans;
+- returns date-quality counts for diagnostics.
 
-That authorization covers:
+Browser payload is sanitized to Calendar-relevant fields only:
 
-- authenticated Admin create for operational/job records;
-- authenticated Admin edit for those same records after create is proven safe;
-- writing legitimate source/input fields into the same Google Sheets `REGISTRO` used by AppSheet;
-- assigning/using a persisted unique ID in an idempotent way.
+- `startDate`
+- `endDate`
+- `client`
+- `project`
+- `role`
+- `currency`
+- `state`
+- `multiDay`
+- date-issue marker when applicable
 
-It does **not** automatically authorize:
+It does **not** expose `Notas`, `NUM CONTACTO`, persisted `ID`, spreadsheet row numbers, OAuth secrets or formula-only Finance fields.
 
-- arbitrary spreadsheet cell editing;
-- generic Finance Phase 3 write-back;
-- moving persistence to D1;
-- overwriting formula columns;
-- exposing `Notas`, phone/contact data or internal IDs to unrelated browser surfaces;
-- bypassing AppSheet/Sheets workflow semantics.
+Admin workspace target:
 
-## AppSheet multi-day requirement
+- `/admin/calendar/`
+- desktop month grid with continuous multi-day spans split correctly across week boundaries;
+- mobile agenda fallback;
+- previous / today / next navigation;
+- current-month and multi-day counts plus next-event summary;
+- links from Dashboard, Finance and Site Editor sidebars.
 
-AppSheet must be corrected so multi-day jobs display as multi-day Calendar events rather than as a one-day item.
+## Authorized future write boundary
 
-Implementation sequence after schema is decided:
+The user explicitly authorized creating/editing Calendar/operations records from Admin so the Control Center can function without AppSheet when needed.
 
-1. add/regenerate the end-date column in AppSheet if required;
-2. verify AppSheet types are Date (not accidental Text/DateTime unless intentionally needed);
-3. configure the Calendar view Start date and End date fields;
-4. confirm single-day rows still render once;
-5. confirm a real multi-day test row spans all intended days;
-6. confirm existing slices/actions/bots still work.
+That future authorization covers authenticated operations rows in the same `REGISTRO`, using mapped source fields and persisted unique identity. It does **not** authorize arbitrary cells, formula overwrites, a D1 finance mirror, generic Finance Phase 3 writes or broad exposure of private Notes/contact fields.
 
-## Admin Calendar implementation sequence
+### Planned create sequence after read-only production PASS
 
-After the schema gate is complete:
-
-1. **Read-only Calendar first** — month/week/list as appropriate, using authenticated server-side read data.
-2. Verify single-day and multi-day rendering against real records.
-3. Add **Create event** form using only mapped user-input/source fields.
-4. Create endpoint must validate schema, auth, dates, enums/currency and required fields server-side.
-5. Create endpoint must use idempotent persisted ID handling.
-6. Smoke new row in Google Sheets.
-7. Sync AppSheet and verify the same newly created Admin row appears correctly there.
-8. Only then add **Edit event**.
-9. Verify edits made in Admin remain compatible with AppSheet and finance calculations.
+1. Define exact create form fields from the verified ownership map.
+2. Validate auth, dates (`end >= start`), currencies/enums and required values server-side.
+3. Generate/persist an AppSheet-compatible unique `ID` with idempotent retry behavior.
+4. Append only source/workflow-safe columns; never formula columns.
+5. Smoke the created row in Google Sheets.
+6. Sync AppSheet and verify the same row appears correctly there.
+7. Only then add edit + explicit workflow actions.
 
 ## Dashboard → AppSheet launcher
 
-Required: a clear mobile-friendly button/link from Admin Dashboard to SD.Live Track/AppSheet.
-
-Dependency: the exact real **App Link / app URL / app ID** is not currently stored in the repository. Do not guess it. Recover it from AppSheet or user-provided configuration before wiring the launcher.
+Still required. The exact real AppSheet **App Link / app URL / app ID** is not stored in the repository and must not be guessed. Obtain the actual link from AppSheet before wiring the launcher.
 
 ## Current next action
 
-Complete the Calendar schema/source-of-truth mapping from the real workbook and current AppSheet setup before making any production data-model change.
+Ship the **read-only Admin Calendar** through CI, merge it, then perform production smoke one manual check at a time:
 
-Expected output of the schema gate:
+1. Calendar route opens under Cloudflare Access and reports online/read-only.
+2. Existing single-day records appear.
+3. The verified multi-day RENT record renders continuously across its date range.
+4. Desktop month navigation works.
+5. Mobile agenda remains usable.
 
-| Field | Current owner | Admin create? | Admin edit? | AppSheet editable? | Formula/workflow rule | Calendar relevance |
-| --- | --- | --- | --- | --- | --- | --- |
-| `Fecha trabajo` | To verify | To verify | To verify | To verify | Existing finance eligibility dependency | Start-date candidate |
-| Event end date | Missing/unverified | To design | To design | To design | Must not break formulas | Required for multi-day |
-| Remaining `REGISTRO` fields | To map | To map | To map | To map | To document | As applicable |
-
-Do not implement Calendar write-back until this table is based on the actual workbook/AppSheet configuration rather than assumptions.
+Only after those checks pass should Admin create/write implementation begin.

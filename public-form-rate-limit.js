@@ -1,6 +1,7 @@
 import appWorker from "./worker-router.js";
 import { handleFinanceApi } from "./finance-api.js";
 import { handleFinanceDashboardApi } from "./finance-dashboard-api.js";
+import { handleCalendarApi } from "./calendar-api.js";
 
 const PUBLIC_FORM_LIMITS = {
   "/api/contact": {
@@ -98,6 +99,13 @@ export async function enforcePublicFormRateLimit(request, env) {
 export default {
   async fetch(request, env) {
     const path = normalizedPath(request);
+
+    if (path === "/api/admin/calendar/events") {
+      const response = await handleCalendarApi(request, env, {
+        verifyAdmin: verifyAdminViaExistingApi
+      });
+      if (response) return response;
+    }
 
     if (
       path === "/api/admin/finance/dashboard" ||
