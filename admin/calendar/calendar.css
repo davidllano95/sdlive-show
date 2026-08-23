@@ -6,6 +6,17 @@
   align-items: center;
 }
 
+.calendar-welcome__actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.calendar-welcome__actions .button {
+  justify-content: center;
+}
+
 .calendar-metrics {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -284,6 +295,179 @@
   font-size: 0.79rem;
 }
 
+.work-dialog {
+  width: min(780px, calc(100vw - 32px));
+  max-height: min(86vh, 900px);
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: var(--bg2);
+  color: var(--text);
+  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.48);
+  overflow: hidden;
+}
+
+.work-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(5px);
+}
+
+.work-form {
+  max-height: min(86vh, 900px);
+  padding: 22px;
+  overflow: auto;
+}
+
+.work-dialog__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--border);
+}
+
+.work-dialog__head h2 {
+  margin: 5px 0 7px;
+  font-size: 24px;
+  font-weight: 650;
+}
+
+.work-dialog__head p {
+  max-width: 580px;
+  margin: 0;
+  color: var(--soft);
+  font-size: 0.78rem;
+  line-height: 1.55;
+}
+
+.work-dialog__close {
+  appearance: none;
+  width: 34px;
+  height: 34px;
+  flex: none;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--panel2);
+  color: var(--soft);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.work-dialog__close:hover {
+  color: var(--text);
+  border-color: rgba(var(--accent-rgb), 0.38);
+}
+
+.work-form__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  padding: 20px 0 8px;
+}
+
+.work-field {
+  display: grid;
+  align-content: start;
+  gap: 7px;
+  min-width: 0;
+}
+
+.work-field > span {
+  color: var(--soft);
+  font-size: 0.72rem;
+  font-weight: 750;
+}
+
+.work-field small {
+  color: var(--muted);
+  font-size: 0.68rem;
+  line-height: 1.4;
+}
+
+.work-field--wide {
+  grid-column: 1 / -1;
+}
+
+.work-field input,
+.work-field select,
+.work-field textarea {
+  width: 100%;
+  min-height: 42px;
+  padding: 10px 11px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  outline: none;
+  background: var(--panel);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.82rem;
+  color-scheme: dark;
+}
+
+.work-field textarea {
+  min-height: 88px;
+  resize: vertical;
+}
+
+.work-field input:focus,
+.work-field select:focus,
+.work-field textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.12);
+}
+
+.work-field input:invalid:not(:placeholder-shown),
+.work-field select:invalid {
+  border-color: rgba(232, 121, 121, 0.56);
+}
+
+.work-field--state {
+  padding: 10px 12px;
+  border: 1px solid rgba(var(--accent-rgb), 0.25);
+  border-radius: 10px;
+  background: rgba(var(--accent-rgb), 0.07);
+}
+
+.work-field--state strong {
+  color: var(--accent);
+  font-size: 0.88rem;
+}
+
+.work-form__message {
+  min-height: 20px;
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.work-form__message.is-error {
+  color: var(--danger);
+}
+
+.work-form__message.is-success {
+  color: var(--green);
+}
+
+.work-dialog__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 9px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+}
+
+.work-dialog__actions .button {
+  justify-content: center;
+}
+
+.work-dialog__actions .button:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
 @media (max-width: 900px) {
   .calendar-metrics {
     grid-template-columns: 1fr;
@@ -295,6 +479,15 @@
 }
 
 @media (max-width: 720px) {
+  .calendar-welcome__actions {
+    width: 100%;
+    align-items: stretch;
+  }
+
+  .calendar-welcome__actions .system-pill {
+    justify-content: center;
+  }
+
   .calendar-toolbar {
     align-items: stretch;
     flex-direction: column;
@@ -312,5 +505,30 @@
 
   .calendar-agenda {
     display: block;
+  }
+
+  .work-dialog {
+    width: calc(100vw - 20px);
+    max-height: 92vh;
+    border-radius: 16px;
+  }
+
+  .work-form {
+    max-height: 92vh;
+    padding: 17px;
+  }
+
+  .work-form__grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .work-field--wide {
+    grid-column: auto;
+  }
+
+  .work-dialog__actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
   }
 }

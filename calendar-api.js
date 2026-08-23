@@ -1,7 +1,17 @@
 import { fetchGoogleAccessToken } from "./finance-api.js";
 
 const GOOGLE_SHEETS_API_BASE = "https://sheets.googleapis.com/v4/spreadsheets";
-const CALENDAR_RANGE = "REGISTRO!A1:AB3000";
+const CALENDAR_SHEET = "REGISTRO";
+const CALENDAR_RANGE = `${CALENDAR_SHEET}!A1:AB3000`;
+const CREATE_INITIAL_STATE = "Pendiente Envio";
+const SUPPORTED_CURRENCIES = Object.freeze(["COP", "USD"]);
+const SUPPORTED_PAYMENT_METHODS = Object.freeze([
+  "Transferencia",
+  "Wise",
+  "PayPal",
+  "Efectivo",
+  "Otro"
+]);
 
 export const EXPECTED_CALENDAR_HEADERS = Object.freeze([
   "Fecha trabajo",
@@ -45,6 +55,21 @@ const REQUIRED_CALENDAR_FIELDS = Object.freeze([
   "ID"
 ]);
 
+const CREATE_WRITE_FIELDS = Object.freeze([
+  "Fecha trabajo",
+  "Cliente",
+  "Proyecto / Show",
+  "Rol",
+  "Moneda",
+  "Valor bruto",
+  "Estado",
+  "Método de pago",
+  "Notas",
+  "ID",
+  "NUM CONTACTO",
+  "Fecha fin"
+]);
+
 const DEFAULT_FIELD_INDEX = Object.freeze(
   Object.fromEntries(
     EXPECTED_CALENDAR_HEADERS.map((header, index) => [header, index])
@@ -80,7 +105,7 @@ function normalizeHeader(value) {
     .toLowerCase();
 }
 
-function calendarFieldIndex(headers) {
+function fieldIndexFor(headers, fields) {
   if (!Array.isArray(headers)) return null;
 
   const byNormalizedHeader = new Map();
@@ -92,11 +117,19 @@ function calendarFieldIndex(headers) {
   });
 
   return Object.fromEntries(
-    REQUIRED_CALENDAR_FIELDS.map((field) => [
+    fields.map((field) => [
       field,
       byNormalizedHeader.get(normalizeHeader(field))
     ])
   );
+}
+
+function calendarFieldIndex(headers) {
+  return fieldIndexFor(headers, REQUIRED_CALENDAR_FIELDS);
+}
+
+function createFieldIndex(headers) {
+  return fieldIndexFor(headers, CREATE_WRITE_FIELDS);
 }
 
 function recordCell(row, field, fieldIndex = DEFAULT_FIELD_INDEX) {
@@ -120,6 +153,53 @@ function isoDate(year, month, day) {
   }
 
   return `${String(year).padStart(4, "0")}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+
+function inputIsoDate(value) {
+  const text = cleanString(value);
+  const match = text.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return null;
+  const normalized = isoDate(Number(match[1]), Number(match[2]), Number(match[3]));
+  return normalized === text ? normalized : null;
+}
+
+function sheetSerialFromIso(value) {
+  const parsed = inputIsoDate(value);
+  if (!parsed) return null;
+  const [year, month, day] = parsed.split("-").map(Number);
+  const epoch = Date.UTC(1899, 11, 30);
+  return (Date.UTC(year, month - 1, day) - epoch) / 86400000;
+}
+
+function canonicalPaymentMethod(value) {
+  const normalized = cleanString(value).toLowerCase();
+  if (!normalized) return "";
+  return SUPPORTED_PAYMENT_METHODS.find(
+    (method) => method.toLowerCase() === normalized
+  ) || null;
+}
+
+function columnLetter(index) {
+  if (!Number.isInteger(index) || index < 0) return null;
+  let value = index + 1;
+  let result = "";
+  while (value > 0) {
+    const remainder = (value - 1) % 26;
+    result = String.fromCharCode(65 + remainder) + result;
+    value = Math.floor((value - 1) / 26);
+  }
+  return result;
+}
+
+function parseAppendedRow(updatedRange) {
+  const match = cleanString(updatedRange).match(/![A-Z]+(\d+)/i);
+  return match ? Number(match[1]) : null;
+}
+
+function sheetsWriteError(stage, status) {
+  const error = new Error(`Google Sheets calendar ${stage} failed with status ${status}`);
+  error.code = `sheets_write_http_${status}`;
+  return error;
 }
 
 export function sheetDateToIso(value) {
@@ -184,6 +264,101 @@ export function validateCalendarHeaders(headers) {
   };
 }
 
+export function validateCalendarCreateHeaders(headers) {
+  if (!Array.isArray(headers)) {
+    return {
+      ok: false,
+      columnCount: 0,
+      missingFields: [...CREATE_WRITE_FIELDS],
+      fieldIndex: null
+    };
+  }
+
+  const fieldIndex = createFieldIndex(headers);
+  const missingFields = CREATE_WRITE_FIELDS.filter(
+    (field) => !Number.isInteger(fieldIndex?.[field])
+  );
+
+  return {
+    ok: missingFields.length === 0,
+    columnCount: headers.length,
+    missingFields,
+    fieldIndex
+  };
+}
+
+export function normalizeCreateWorkPayload(payload) {
+  const body = payload && typeof payload === "object" ? payload : {};
+  const errors = {};
+
+  const requestId = cleanString(body.requestId).toLowerCase();
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(requestId)) {
+    errors.requestId = "invalid";
+  }
+
+  const startDate = inputIsoDate(body.startDate);
+  if (!startDate) errors.startDate = "invalid";
+
+  const rawEnd = cleanString(body.endDate);
+  const endDate = rawEnd ? inputIsoDate(rawEnd) : startDate;
+  if (!endDate) errors.endDate = "invalid";
+  if (startDate && endDate && endDate < startDate) errors.endDate = "before_start";
+
+  const client = cleanString(body.client);
+  if (!client || client.length > 160) errors.client = !client ? "required" : "too_long";
+
+  const project = cleanString(body.project);
+  if (!project || project.length > 200) errors.project = !project ? "required" : "too_long";
+
+  const role = cleanString(body.role);
+  if (role.length > 160) errors.role = "too_long";
+
+  const currency = cleanString(body.currency).toUpperCase();
+  if (!SUPPORTED_CURRENCIES.includes(currency)) errors.currency = "unsupported";
+
+  const grossAmount = body.grossAmount === "" || body.grossAmount === null || body.grossAmount === undefined
+    ? null
+    : Number(body.grossAmount);
+  if (grossAmount === null || !Number.isFinite(grossAmount) || grossAmount < 0) {
+    errors.grossAmount = "invalid";
+  }
+
+  const paymentMethod = canonicalPaymentMethod(body.paymentMethod);
+  if (paymentMethod === null) errors.paymentMethod = "unsupported";
+
+  const notes = cleanString(body.notes);
+  if (notes.length > 3000) errors.notes = "too_long";
+
+  const contactNumber = cleanString(body.contactNumber);
+  if (contactNumber && !/^\d{7,20}$/.test(contactNumber)) {
+    errors.contactNumber = "digits_only";
+  }
+
+  if (Object.keys(errors).length) {
+    return { ok: false, errors, value: null };
+  }
+
+  return {
+    ok: true,
+    errors: {},
+    value: {
+      requestId,
+      recordId: `adm_${requestId.replace(/-/g, "")}`,
+      startDate,
+      endDate,
+      client,
+      project,
+      role,
+      currency,
+      grossAmount,
+      paymentMethod,
+      notes,
+      contactNumber,
+      state: CREATE_INITIAL_STATE
+    }
+  };
+}
+
 export function normalizeCalendarRows(rows, fieldIndex = DEFAULT_FIELD_INDEX) {
   const sourceRows = Array.isArray(rows)
     ? rows.filter((row) => hasPersistedId(row, fieldIndex))
@@ -241,9 +416,9 @@ export function normalizeCalendarRows(rows, fieldIndex = DEFAULT_FIELD_INDEX) {
   return { events, quality };
 }
 
-async function readCalendarValues(env, fetchImpl = fetch) {
+async function readCalendarValues(env, fetchImpl = fetch, accessToken = null) {
   const spreadsheetId = requiredEnv(env, "GOOGLE_FINANCE_SPREADSHEET_ID");
-  const accessToken = await fetchGoogleAccessToken(env, fetchImpl);
+  const token = accessToken || await fetchGoogleAccessToken(env, fetchImpl);
   const spreadsheet = encodeURIComponent(spreadsheetId);
   const range = encodeURIComponent(CALENDAR_RANGE);
   const params = new URLSearchParams({
@@ -257,7 +432,7 @@ async function readCalendarValues(env, fetchImpl = fetch) {
     {
       method: "GET",
       headers: {
-        Authorization: `Bearer ${accessToken}`,
+        Authorization: `Bearer ${token}`,
         Accept: "application/json"
       }
     }
@@ -279,6 +454,225 @@ async function readCalendarValues(env, fetchImpl = fetch) {
   };
 }
 
+function expectedCreateValues(input) {
+  return {
+    "Fecha trabajo": input.startDate,
+    "Cliente": input.client,
+    "Proyecto / Show": input.project,
+    "Rol": input.role,
+    "Moneda": input.currency,
+    "Valor bruto": input.grossAmount,
+    "Estado": input.state,
+    "Método de pago": input.paymentMethod,
+    "Notas": input.notes,
+    "ID": input.recordId,
+    "NUM CONTACTO": input.contactNumber,
+    "Fecha fin": input.endDate
+  };
+}
+
+function comparableCreateValue(field, rawValue) {
+  if (field === "Fecha trabajo" || field === "Fecha fin") {
+    return sheetDateToIso(rawValue) || "";
+  }
+  if (field === "Valor bruto") {
+    if (rawValue === "" || rawValue === null || rawValue === undefined) return "";
+    const number = Number(rawValue);
+    return Number.isFinite(number) ? number : cleanString(rawValue);
+  }
+  if (field === "Moneda") return cleanString(rawValue).toUpperCase();
+  return cleanString(rawValue);
+}
+
+function createRowConflicts(row, input, fieldIndex) {
+  const expected = expectedCreateValues(input);
+  const conflicts = [];
+
+  for (const field of CREATE_WRITE_FIELDS) {
+    const raw = recordCell(row, field, fieldIndex);
+    const actualBlank = raw === "" || raw === null || raw === undefined;
+    if (actualBlank) continue;
+
+    const actual = comparableCreateValue(field, raw);
+    const wanted = comparableCreateValue(field, expected[field]);
+    if (actual !== wanted) conflicts.push(field);
+  }
+
+  return conflicts;
+}
+
+async function appendRecordId(env, accessToken, recordId, idIndex, fetchImpl) {
+  const spreadsheetId = requiredEnv(env, "GOOGLE_FINANCE_SPREADSHEET_ID");
+  const spreadsheet = encodeURIComponent(spreadsheetId);
+  const idColumn = columnLetter(idIndex);
+  if (!idColumn) throw new Error("Could not resolve REGISTRO ID column");
+  const range = encodeURIComponent(`${CALENDAR_SHEET}!${idColumn}2:${idColumn}`);
+  const params = new URLSearchParams({
+    valueInputOption: "RAW",
+    insertDataOption: "OVERWRITE"
+  });
+
+  const response = await fetchImpl(
+    `${GOOGLE_SHEETS_API_BASE}/${spreadsheet}/values/${range}:append?${params}`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        Accept: "application/json",
+        "Content-Type": "application/json; charset=utf-8"
+      },
+      body: JSON.stringify({
+        majorDimension: "ROWS",
+        values: [[recordId]]
+      })
+    }
+  );
+
+  if (!response.ok) throw sheetsWriteError("append", response.status);
+  const data = await response.json().catch(() => null);
+  const rowNumber = parseAppendedRow(data?.updates?.updatedRange);
+  if (!Number.isInteger(rowNumber) || rowNumber < 2) {
+    throw new Error("Google Sheets calendar append returned no row number");
+  }
+  return rowNumber;
+}
+
+async function writeCreateValues(env, accessToken, rowNumber, input, fieldIndex, fetchImpl) {
+  const spreadsheetId = requiredEnv(env, "GOOGLE_FINANCE_SPREADSHEET_ID");
+  const spreadsheet = encodeURIComponent(spreadsheetId);
+  const expected = expectedCreateValues(input);
+  const data = [];
+
+  for (const field of CREATE_WRITE_FIELDS) {
+    const value = expected[field];
+    if ((value === "" || value === null || value === undefined) && field !== "ID") continue;
+    const index = fieldIndex[field];
+    const column = columnLetter(index);
+    if (!column) throw new Error(`Could not resolve REGISTRO column: ${field}`);
+
+    let writeValue = value;
+    if (field === "Fecha trabajo" || field === "Fecha fin") {
+      writeValue = sheetSerialFromIso(value);
+    }
+
+    data.push({
+      range: `${CALENDAR_SHEET}!${column}${rowNumber}`,
+      majorDimension: "ROWS",
+      values: [[writeValue]]
+    });
+  }
+
+  const response = await fetchImpl(
+    `${GOOGLE_SHEETS_API_BASE}/${spreadsheet}/values:batchUpdate`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        Accept: "application/json",
+        "Content-Type": "application/json; charset=utf-8"
+      },
+      body: JSON.stringify({
+        valueInputOption: "RAW",
+        includeValuesInResponse: false,
+        data
+      })
+    }
+  );
+
+  if (!response.ok) throw sheetsWriteError("batch update", response.status);
+}
+
+async function handleCalendarCreate(request, env, fetchImpl) {
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return jsonResponse({ ok: false, error: "Invalid JSON body" }, 400);
+  }
+
+  const normalized = normalizeCreateWorkPayload(body);
+  if (!normalized.ok) {
+    return jsonResponse(
+      {
+        ok: false,
+        error: "Invalid work entry",
+        fields: normalized.errors
+      },
+      400
+    );
+  }
+
+  const input = normalized.value;
+  const accessToken = await fetchGoogleAccessToken(env, fetchImpl);
+  const { headers, rows } = await readCalendarValues(env, fetchImpl, accessToken);
+  const headerCheck = validateCalendarCreateHeaders(headers);
+
+  if (!headerCheck.ok) {
+    return jsonResponse(
+      {
+        ok: false,
+        error: "Calendar create schema mismatch",
+        schema: {
+          ok: false,
+          columnCount: headerCheck.columnCount,
+          missingFields: headerCheck.missingFields
+        }
+      },
+      503
+    );
+  }
+
+  const existingIndex = rows.findIndex(
+    (row) => cleanString(recordCell(row, "ID", headerCheck.fieldIndex)) === input.recordId
+  );
+
+  let rowNumber;
+  let created = false;
+
+  if (existingIndex >= 0) {
+    const conflicts = createRowConflicts(rows[existingIndex], input, headerCheck.fieldIndex);
+    if (conflicts.length) {
+      return jsonResponse(
+        {
+          ok: false,
+          error: "Idempotency key conflict",
+          fields: conflicts
+        },
+        409
+      );
+    }
+    rowNumber = existingIndex + 2;
+  } else {
+    rowNumber = await appendRecordId(
+      env,
+      accessToken,
+      input.recordId,
+      headerCheck.fieldIndex.ID,
+      fetchImpl
+    );
+    created = true;
+  }
+
+  await writeCreateValues(
+    env,
+    accessToken,
+    rowNumber,
+    input,
+    headerCheck.fieldIndex,
+    fetchImpl
+  );
+
+  return jsonResponse({
+    ok: true,
+    created,
+    idempotentReplay: !created,
+    source: CALENDAR_SHEET,
+    startDate: input.startDate,
+    endDate: input.endDate,
+    state: input.state
+  }, created ? 201 : 200);
+}
+
 export async function handleCalendarApi(
   request,
   env,
@@ -287,7 +681,7 @@ export async function handleCalendarApi(
   const path = new URL(request.url).pathname.replace(/\/+$/, "") || "/";
   if (path !== "/api/admin/calendar/events") return null;
 
-  if (request.method !== "GET") {
+  if (request.method !== "GET" && request.method !== "POST") {
     return jsonResponse({ ok: false, error: "Method not allowed" }, 405);
   }
 
@@ -301,6 +695,10 @@ export async function handleCalendarApi(
   }
 
   try {
+    if (request.method === "POST") {
+      return await handleCalendarCreate(request, env, fetchImpl);
+    }
+
     const { headers, rows } = await readCalendarValues(env, fetchImpl);
     const headerCheck = validateCalendarHeaders(headers);
 
@@ -327,7 +725,7 @@ export async function handleCalendarApi(
     return jsonResponse({
       ok: true,
       readOnly: true,
-      source: "REGISTRO",
+      source: CALENDAR_SHEET,
       timeZone: "America/Bogota",
       generatedAt: new Date().toISOString(),
       count: events.length,
@@ -335,11 +733,25 @@ export async function handleCalendarApi(
       events
     });
   } catch (error) {
-    console.error("Calendar read failed", error);
+    console.error("Calendar operation failed", error);
+
+    if (error?.code?.startsWith("sheets_write_http_")) {
+      return jsonResponse(
+        {
+          ok: false,
+          error: "Could not create work entry",
+          code: error.code
+        },
+        503
+      );
+    }
+
     return jsonResponse(
       {
         ok: false,
-        error: "Could not read Calendar data"
+        error: request.method === "POST"
+          ? "Could not create work entry"
+          : "Could not read Calendar data"
       },
       503
     );

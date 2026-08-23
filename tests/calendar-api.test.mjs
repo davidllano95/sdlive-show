@@ -3,8 +3,11 @@ import assert from "node:assert/strict";
 
 import {
   EXPECTED_CALENDAR_HEADERS,
+  handleCalendarApi,
   normalizeCalendarRows,
+  normalizeCreateWorkPayload,
   sheetDateToIso,
+  validateCalendarCreateHeaders,
   validateCalendarHeaders
 } from "../calendar-api.js";
 
@@ -17,6 +20,34 @@ function row(overrides = {}) {
   }
   return values;
 }
+
+function jsonResponse(data, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: { "Content-Type": "application/json" }
+  });
+}
+
+const env = {
+  GOOGLE_OAUTH_CLIENT_ID: "client",
+  GOOGLE_OAUTH_CLIENT_SECRET: "secret",
+  GOOGLE_OAUTH_REFRESH_TOKEN: "refresh",
+  GOOGLE_FINANCE_SPREADSHEET_ID: "sheet-id"
+};
+
+const validCreatePayload = {
+  requestId: "123e4567-e89b-42d3-a456-426614174000",
+  startDate: "2026-08-25",
+  endDate: "2026-08-27",
+  client: "Client A",
+  project: "Admin smoke",
+  role: "A1",
+  currency: "COP",
+  grossAmount: "1250000",
+  paymentMethod: "Transferencia",
+  notes: "Controlled create",
+  contactNumber: "3001234567"
+};
 
 test("Calendar requires only its operational fields and normalizes header text", () => {
   const exact = validateCalendarHeaders([...EXPECTED_CALENDAR_HEADERS]);
@@ -133,4 +164,163 @@ test("Invalid end-before-start data cannot create a backwards Calendar span", ()
   assert.equal(events[0].endDate, "2026-08-23");
   assert.equal(events[0].dateIssue, "end_before_start");
   assert.equal(quality.endBeforeStart, 1);
+});
+
+test("Controlled create validates source fields and defaults one-day end date", () => {
+  const normalized = normalizeCreateWorkPayload({
+    ...validCreatePayload,
+    endDate: "",
+    currency: "cop",
+    paymentMethod: "wise"
+  });
+
+  assert.equal(normalized.ok, true);
+  assert.equal(normalized.value.endDate, "2026-08-25");
+  assert.equal(normalized.value.currency, "COP");
+  assert.equal(normalized.value.paymentMethod, "Wise");
+  assert.equal(normalized.value.state, "Pendiente Envio");
+  assert.match(normalized.value.recordId, /^adm_[0-9a-f]{32}$/);
+
+  const invalid = normalizeCreateWorkPayload({
+    ...validCreatePayload,
+    endDate: "2026-08-20",
+    currency: "EUR",
+    contactNumber: "+57 300 123 4567"
+  });
+  assert.equal(invalid.ok, false);
+  assert.equal(invalid.errors.endDate, "before_start");
+  assert.equal(invalid.errors.currency, "unsupported");
+  assert.equal(invalid.errors.contactNumber, "digits_only");
+});
+
+test("Controlled create requires every mapped source column but not formula columns", () => {
+  const exact = validateCalendarCreateHeaders([...EXPECTED_CALENDAR_HEADERS]);
+  assert.equal(exact.ok, true);
+  assert.deepEqual(exact.missingFields, []);
+
+  const headers = [...EXPECTED_CALENDAR_HEADERS];
+  headers[8] = "Different formula helper";
+  assert.equal(validateCalendarCreateHeaders(headers).ok, true);
+
+  headers[17] = "Private notes moved away";
+  const missingNotes = validateCalendarCreateHeaders(headers);
+  assert.equal(missingNotes.ok, false);
+  assert.deepEqual(missingNotes.missingFields, ["Notas"]);
+});
+
+test("POST create writes only mapped source columns and never formula-owned columns", async () => {
+  const calls = [];
+  let batchBody = null;
+
+  const fetchImpl = async (url, options = {}) => {
+    calls.push({ url: String(url), method: options.method || "GET" });
+
+    if (String(url).includes("oauth2.googleapis.com/token")) {
+      return jsonResponse({ access_token: "token" });
+    }
+
+    if ((options.method || "GET") === "GET" && String(url).includes("sheets.googleapis.com")) {
+      return jsonResponse({ values: [[...EXPECTED_CALENDAR_HEADERS]] });
+    }
+
+    if (String(url).includes(":append")) {
+      return jsonResponse({ updates: { updatedRange: "REGISTRO!X2" } });
+    }
+
+    if (String(url).endsWith("/values:batchUpdate")) {
+      batchBody = JSON.parse(options.body);
+      return jsonResponse({ totalUpdatedCells: batchBody.data.length });
+    }
+
+    throw new Error(`Unexpected fetch: ${url}`);
+  };
+
+  const request = new Request("https://sdlive.show/api/admin/calendar/events", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(validCreatePayload)
+  });
+
+  const response = await handleCalendarApi(request, env, {
+    verifyAdmin: async () => ({ email: "admin@sdlive.show" }),
+    fetchImpl
+  });
+  const data = await response.json();
+
+  assert.equal(response.status, 201);
+  assert.equal(data.ok, true);
+  assert.equal(data.created, true);
+  assert.equal(data.state, "Pendiente Envio");
+  assert.ok(batchBody);
+
+  const ranges = batchBody.data.map((entry) => entry.range);
+  for (const expectedRange of ["REGISTRO!A2", "REGISTRO!D2", "REGISTRO!E2", "REGISTRO!F2", "REGISTRO!G2", "REGISTRO!H2", "REGISTRO!K2", "REGISTRO!P2", "REGISTRO!R2", "REGISTRO!X2", "REGISTRO!AA2", "REGISTRO!AB2"]) {
+    assert.ok(ranges.includes(expectedRange), `missing ${expectedRange}`);
+  }
+
+  for (const forbidden of ["B", "C", "I", "J", "Q", "S", "T", "U", "V", "W", "Z"]) {
+    assert.equal(ranges.some((range) => range === `REGISTRO!${forbidden}2`), false, `formula column ${forbidden} was written`);
+  }
+
+  const stateWrite = batchBody.data.find((entry) => entry.range === "REGISTRO!K2");
+  assert.deepEqual(stateWrite.values, [["Pendiente Envio"]]);
+  assert.equal(calls.filter((call) => call.url.includes(":append")).length, 1);
+});
+
+test("POST create reuses an existing idempotent row instead of appending a duplicate", async () => {
+  const normalized = normalizeCreateWorkPayload(validCreatePayload);
+  assert.equal(normalized.ok, true);
+
+  const existing = row({
+    "Fecha trabajo": "2026-08-25",
+    "Fecha fin": "2026-08-27",
+    Cliente: "Client A",
+    "Proyecto / Show": "Admin smoke",
+    Rol: "A1",
+    Moneda: "COP",
+    "Valor bruto": 1250000,
+    Estado: "Pendiente Envio",
+    "Método de pago": "Transferencia",
+    Notas: "Controlled create",
+    ID: normalized.value.recordId,
+    "NUM CONTACTO": "3001234567"
+  });
+
+  let appendCalls = 0;
+  let batchCalls = 0;
+  const fetchImpl = async (url, options = {}) => {
+    if (String(url).includes("oauth2.googleapis.com/token")) {
+      return jsonResponse({ access_token: "token" });
+    }
+    if ((options.method || "GET") === "GET" && String(url).includes("sheets.googleapis.com")) {
+      return jsonResponse({ values: [[...EXPECTED_CALENDAR_HEADERS], existing] });
+    }
+    if (String(url).includes(":append")) {
+      appendCalls += 1;
+      return jsonResponse({ updates: { updatedRange: "REGISTRO!X3" } });
+    }
+    if (String(url).endsWith("/values:batchUpdate")) {
+      batchCalls += 1;
+      return jsonResponse({});
+    }
+    throw new Error(`Unexpected fetch: ${url}`);
+  };
+
+  const request = new Request("https://sdlive.show/api/admin/calendar/events", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(validCreatePayload)
+  });
+
+  const response = await handleCalendarApi(request, env, {
+    verifyAdmin: async () => ({ email: "admin@sdlive.show" }),
+    fetchImpl
+  });
+  const data = await response.json();
+
+  assert.equal(response.status, 200);
+  assert.equal(data.created, false);
+  assert.equal(data.idempotentReplay, true);
+  assert.equal(appendCalls, 0);
+  assert.equal(batchCalls, 1);
 });
