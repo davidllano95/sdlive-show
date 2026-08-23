@@ -6,9 +6,9 @@
 
 ## Current active gate
 
-**Finance Phase 2 remains read-only and in real-use observation / UX hardening. Finance Phase 3 write-back remains BLOCKED.**
+**Finance Phase 2 remains read-only and is now through its core production QA checkpoint. Finance Phase 3 write-back remains BLOCKED.**
 
-The immediate objective is to make `/admin/finance/` trustworthy and useful in real work without changing the finance source of truth.
+The immediate objective is to keep `/admin/finance/` useful in real work, improve only observed UX gaps, and preserve Google Sheets + AppSheet as the finance source/workflow owners.
 
 ## Architecture now in production code
 
@@ -113,18 +113,27 @@ Production real-use QA passed for all three cards. Workflow wording was then ref
 
 The worklist UI also uses the Admin/SD.Live brand accent variables (`--accent`, `--accent-rgb`) instead of an unrelated standalone highlight color.
 
-## Current validation still worth doing
+### PR #74 — worklist copy + SD.Live branding
 
-- [x] Fresh production smoke of `/admin/finance/` on desktop after the latest deploy.
-- [x] Fresh production smoke of `/admin/finance/` on iPhone after the latest deploy.
-- [x] Verify year selector still behaves correctly.
-- [x] Verify ES/EN toggle after the dedicated-workspace changes.
-- [ ] Test the pass-through calculator with at least one real payment case from SD.Live Track and confirm the reconciliation matches the bank receipt and intended third-party transfer.
-- [x] Confirm the new invoice-date rule moves real future/today events out of Por facturar and into Flujo bloqueado as expected.
-- [x] Verify **Por facturar** worklist against real production data.
-- [x] Verify **Cobrable ahora** worklist against real production data.
-- [x] Verify **Flujo bloqueado** worklist and blocker reasons against real production data.
-- [ ] Smoke the refined workflow wording and branded worklist styling after deployment.
+- Updated LiventX blocker actions to the real operating language: **Enviar evaluación / Send evaluation** and **Firmar factura / Sign invoice**.
+- Restyled worklist drilldowns using the existing Admin/SD.Live accent variables.
+- Preserved lazy loading, read-only behavior, COP/USD separation and browser privacy guardrails.
+- Production smoke of the refined wording and branded worklist styling passed.
+
+## Production QA checkpoint completed
+
+The following real-use validation is complete on production:
+
+- [x] Fresh production smoke of `/admin/finance/` on desktop.
+- [x] Fresh production smoke of `/admin/finance/` on iPhone.
+- [x] Year selector.
+- [x] ES/EN toggle.
+- [x] Invoice-date rule with real current/future records.
+- [x] **Por facturar** worklist against real production data.
+- [x] **Cobrable ahora** worklist against real production data.
+- [x] **Flujo bloqueado** worklist and blocker reasons against real production data.
+- [x] Refined workflow wording and SD.Live-branded worklist styling.
+- [x] Pass-through calculator with a real-use case: COP 1,000,000 invoiced, COP 900,000 received, COP 300,000 third-party gross → 10% effective retention, COP 630,000 own net, COP 270,000 third-party payout, COP 900,000 reconciliation.
 
 ## Near-term Finance UX backlog
 
@@ -149,10 +158,9 @@ These are eligible improvements, not automatic authorization:
 
 ## Next recommended sequence
 
-1. Smoke the refined worklist wording and branded worklist styling in production.
-2. Test PR #72 calculator with a real third-party payment.
-3. If Finance drilldowns continue, implement **Aging** first and **Data quality** second.
-4. Keep Phase 2 in real-use observation.
-5. Only after enough trust, explicitly decide whether to design Phase 3 draft-first/idempotent write-back or pivot to another Control Center module.
+1. If continuing Finance UX, implement **Aging** drilldowns first.
+2. Then implement **Data quality** drilldowns.
+3. Keep Phase 2 in real-use observation and only fix observed data/UX semantics issues.
+4. Only after enough trust, explicitly decide whether to design Phase 3 draft-first/idempotent write-back or pivot to another Control Center module.
 
 Availability/WhatsApp remains an independently eligible track, but it is not activated by this handoff.
