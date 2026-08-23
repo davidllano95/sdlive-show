@@ -3,245 +3,258 @@
 **Reprioritized:** 2026-08-22 — America/Bogota  
 **Architecture checkpoint:** 2026-08-23 — America/Bogota
 
-**Status:** Active sequenced initiative — Steps 1–6 are closed. **Finance Phase 2 read-only Admin insights is production-validated and in real-use observation.** The Finance UI is now being separated into the dedicated `/admin/finance/` workspace so the main `/admin/` Dashboard remains lightweight and scalable. Finance Phase 3 write-back remains blocked until the read-only surface is trusted in real use. Availability/WhatsApp and finance reminder-delivery hardening remain eligible documented tracks but are not activated automatically.
+**Status:** Active sequenced initiative. Finance audit/rename/source mapping and Finance Phase 2 are closed. Dedicated Finance workspace is closed/PASS. AppSheet multi-day + Admin Calendar read-only are closed/PASS. Site Schedule + automatic Show Day + Location are closed/PASS. **Current gate: controlled Calendar create is implemented but blocked on Google OAuth Sheets write authorization.** Generic Finance Phase 3 remains blocked.
 
-This initiative supersedes the earlier informal Category D / future-integration framing for CRM, AppSheet integration, Automatic Show Day and Calendar. Existing detail in those sections remains valid; this document defines the required sequence and priority.
+This document owns sequence. Detailed evidence lives in checkpoints/specs under `docs/` and historical/future detail remains in `ROADMAP_MASTER_CHECKLIST.md`.
 
-## Why this changed
+## Why this initiative exists
 
-SD.Live is intended to become Samuel's single operational control center, including the freelance finance system historically known as NextPay26 (Google Sheets + AppSheet), rather than remaining only a marketing/CMS site.
+SD.Live is becoming a single operational control center rather than only a marketing/CMS site. The goal is to unify useful operations while preserving the systems that already work:
 
-That direction must preserve the source-of-truth discipline already established for CMS content, pricing, leads and media. Moving quickly means following the dependency order below, not skipping it.
+- Google Sheets `REGISTRO` for operations/finance persistence and formulas;
+- AppSheet **SD.Live Track** for reliable mobile/offline capture and workflow;
+- D1/R2 for CMS/application state and managed media;
+- Cloudflare Access for Admin security;
+- backend-owned pricing/transactional logic.
 
-The Admin shell is also expected to scale by **workspace**, not by making the root Dashboard execute every subsystem. Dashboard, Finance and Site Editor are sibling surfaces behind the same Access boundary; future operational modules should follow the same isolation principle when their runtime/data weight justifies it.
+Moving quickly means following dependency order without creating parallel sources of truth.
 
-## Required sequence — do not reorder without explicit re-approval
+## Workspace architecture
 
-### 1. Close the current active gate — ✅ CLOSED
+The Admin scales by **workspace**, not by making `/admin/` execute every subsystem.
 
-P3.4 — Responsive image/media delivery closed on 2026-08-22 with production smoke. Responsive header + R2/CMS delivery is live; final Mobile PageSpeed smoke measured Performance 90 / LCP 3.1 s and ~58 KiB residual `Improve image delivery` savings.
+- `/admin/` — lightweight Control Center Dashboard.
+- `/admin/finance/` — dedicated Finance analytics workspace.
+- `/admin/calendar/` — Calendar / Operations.
+- `/admin/calendar/site-schedule/` — website-only schedule presentation + Show Day controls.
+- `/admin/editor/` — Site Editor / CMS.
 
-### 2. Security backlog — rate limiting + baseline CSP — ✅ CLOSED
+All remain behind the same Cloudflare Access boundary.
 
-- [x] Explicit, verifiable rate limiting for the two public write endpoints: independent Contact/Rental Worker bindings at 10 requests / 60 seconds.
-- [x] Baseline CSP compatible with GTM/GA, Turnstile, R2/media, Google Fonts, Cloudflare Insights, Workers and current public behavior.
-- [x] `X-Content-Type-Options`, `SAMEORIGIN`, Referrer-Policy and Permissions-Policy baseline applied without breaking the same-origin Admin preview.
-- [x] CI + production smoke completed: Home, `/en/`, Admin/Editor preview, Contact submit/email and Rental submit/email all PASS.
+## Required sequence
 
-Evidence: PR #53 / `2710c0c0...` (headers/CSP) and PR #54 / `2c0fe574...` (rate limiting).
+### 1. Public performance/media baseline — ✅ CLOSED
 
-### 3. Full audit of the finance app historically known as NextPay26 — ✅ CLOSED
+P3.4 responsive image/media delivery closed with production smoke.
 
-**Decision: repair + integrate; do not rewrite from zero.**
+### 2. Security baseline — ✅ CLOSED
 
-Audit evidence is preserved in `docs/audits/nextpay26-repair-vs-rewrite-2026-08-22.md`.
+Public Contact/Rental rate limiting + baseline CSP/browser headers are live without breaking Admin/public flows.
 
-Verified scope/results:
+### 3. Full finance audit — ✅ CLOSED
 
-- [x] 12 Google Sheets tabs and 57 real work records reviewed.
-- [x] 11 Actions, 3 Bots, 11 Views and 10 Slices in AppSheet reviewed.
-- [x] Critical formulas and collection rules reviewed, including Net Value, COP/USD collection logic and the LiventX workflow.
-- [x] Two missing payment dates completed so monthly income summaries reflect them.
-- [x] `No Pagados USD` aligned with the COP rule so `Fecha cuenta enviada` is required before counting as outstanding.
-- [x] `No Pagados` view Show If simplified to reuse its own Slice rather than duplicate business logic.
-- [x] `REGISTRO` range reduced from 21,040 to 3,000 rows.
-- [x] Net Value formula improved so blank cells and genuine errors are not silently conflated.
-- [x] `HER_PENDIENTES_PIVOT` verified as functioning correctly; no unnecessary repair performed.
-- [x] High-risk LiventX rule confirmed already correct: entries do not enter collection until evaluation and signature are both complete.
-- [x] Audit found zero P0 data-loss/corruption issues.
-- [x] Explicit repair-vs-rewrite decision documented: retain the existing Google Sheets + AppSheet finance system and integrate it incrementally.
+Decision: **repair + integrate; do not rewrite**.
 
-Decision rationale:
+The audit verified the real Google Sheets + AppSheet implementation and found no P0 corruption/data-loss reason to replace it. AppSheet offline capture is explicitly preserved as an asset.
 
-- Existing business logic already represents real operational edge cases and should not be rediscovered in a rewrite.
-- AppSheet's reliable offline field capture remains valuable and expensive to reproduce correctly in a new web application.
-- Current volume does not demonstrate a scaling problem requiring a new backing architecture.
-- The actual problem to solve is operational fragmentation, not a failed finance architecture.
-
-**Architecture consequence:** AppSheet remains the field/offline capture tool. The first SD.Live integration remains read-only and Admin-only, reading the underlying Google Sheet/API rather than treating AppSheet as a second API/source of truth. This decision does **not** pre-commit Google Sheets as the permanent backing store forever; future ownership changes still require the field-level source-of-truth mapping and a deliberate migration plan.
+Evidence: `docs/audits/nextpay26-repair-vs-rewrite-2026-08-22.md`.
 
 ### 4. Brand-coherent rename — ✅ CLOSED
 
-**Approved and applied final name: SD.Live Track.** Naming decision evidence: `docs/decisions/sdlive-track-name-2026-08-22.md`.
+Final name: **SD.Live Track**.
 
-Rename evidence on 2026-08-22:
+The AppSheet user-facing name and Google Sheets file title changed without altering schema/formulas/internal identifiers unnecessarily. Mobile/offline launch smoke passed.
 
-- [x] AppSheet user-facing Short Name changed to **SD.Live Track** and saved successfully.
-- [x] Google Sheets backing-file title changed to **SD.Live Track** without renaming tabs, columns or formulas.
-- [x] AppSheet sync after the Sheet-file rename completed normally.
-- [x] AppSheet configuration search returned no user-configurable `NextPay26` references.
-- [x] Technical/internal AppSheet identity and default app folder were intentionally left unchanged; the rename did not attempt to mutate deep-link identifiers or storage paths.
-- [x] Mobile launch smoke passed: **SD.Live Track** is visible in the app menu, core calendar/navigation loads normally and AppSheet reports **Offline ready**.
-- [x] `NextPay26` remains only where historical audit/migration context or an internal AppSheet identifier requires it.
+### 5. Finance Phase 1 — source-of-truth mapping — ✅ CLOSED
 
-No formulas, Sheet tab names/schema, AppSheet table/column references, actions, slices, views or bots were renamed as part of this branding change. Their business logic remains the audited system from Step 3; the rename itself changed presentation/file labeling only.
+Field ownership was mapped against the real workbook/AppSheet configuration.
 
-### 5. Finance integration Phase 1 — source-of-truth mapping — ✅ CLOSED
+Locked decisions:
 
-**CLOSED / PASS on 2026-08-22.** Evidence: `docs/checkpoints/sdlive-track-source-of-truth-2026-08-22.md`.
+- `REGISTRO` remains persistence/formula owner;
+- AppSheet remains offline workflow client;
+- `ID` is the durable key; `_RowNumber` is not;
+- formula-owned physical columns remain non-writable;
+- notification Bots do not become state owners;
+- no D1 finance mirror.
 
-The real `SD.Live Track.xlsx` backing workbook and current AppSheet configuration were cross-checked field-by-field. The mapping now distinguishes persisted user/AppSheet fields, Google-Sheets-calculated fields, AppSheet-generated identity, AppSheet virtual fields, workflow Actions and notification-only Bots.
+Evidence: `docs/checkpoints/sdlive-track-source-of-truth-2026-08-22.md`.
 
-Key decisions:
+### 6. Finance Phase 2 — read-only Admin insights — ✅ CLOSED/PASS
 
-- [x] `REGISTRO` remains the persistent finance table in Google Sheets for Phase 2.
-- [x] AppSheet remains the offline field-capture and workflow surface.
-- [x] `ID` is the durable AppSheet-generated Key (`UNIQUEID()`); `_RowNumber` is not an integration identity.
-- [x] The 11 Sheets-calculated physical columns remain owned by Sheets and read-only to future Admin integration.
-- [x] `Fee Monto` / `Fee %` are AppSheet virtual fields; a future Worker may recompute them read-only if needed, but must not persist a parallel owner merely for display.
-- [x] `Estado`, billing/evaluation/signature/payment dates and payment capture workflows were traced through the current Actions/forms.
-- [x] All three Bots were confirmed notification-only; none mutates `REGISTRO`.
-- [x] Phase 2 read scope and privacy boundaries are documented.
+The first Control Center integration is live, private and read-only over the underlying Sheet/API.
 
-No D1 finance copy, write-back, bidirectional sync or parallel financial ownership was introduced.
+It preserves:
 
-### 6. Finance integration Phase 2 — read-only, Admin-only insights — ✅ CLOSED
+- COP/USD separation;
+- receivables/aging/collection logic;
+- LiventX blocking semantics;
+- privacy boundaries;
+- server-side OAuth;
+- no generic write endpoint;
+- no D1 finance copy.
 
-**CLOSED / PASS on 2026-08-22.** Evidence: PRs #60–#63 and `docs/checkpoints/sdlive-track-admin-finance-readonly-2026-08-22.md`.
+Evidence: `docs/checkpoints/sdlive-track-admin-finance-readonly-2026-08-22.md`.
 
-The first useful integration is live, read-only and private.
+### 6.1. Dedicated Finance workspace — ✅ CLOSED/PASS
 
-- [x] Worker reads the **underlying Google Sheet/API**, not AppSheet as an assumed authoritative API layer.
-- [x] OAuth 2.0 refresh-token flow is server-side; Cloudflare Secrets hold the client secret and refresh token.
-- [x] `/api/admin/finance/health` validates the fixed finance source and exact 27-column `REGISTRO` schema without returning finance values.
-- [x] `/api/admin/finance/summary` reads the bounded `REGISTRO!A1:AA3000` range and returns only approved aggregates/detail.
-- [x] AppSheet continues to handle field/offline capture and existing workflow writes.
-- [x] Admin has a live **SD.Live Track · read-only Finance** surface.
-- [x] Pending invoices / accounts receivable surfaced.
-- [x] Recorded fees/deductions surfaced from authoritative Sheet values.
-- [x] COP / USD split preserved in API and UI.
-- [x] Aging / priority collection signals surfaced.
-- [x] Relevant finance-table jobs are shown in the collection-priority queue.
-- [x] LiventX workflow blocking remains enforced before a record enters collectible totals.
-- [x] Finance loading is isolated from CMS dashboard health so a finance outage does not take down the rest of Admin.
-- [x] Production smoke reconciled all 57 records: 44 paid + 3 pending invoice + 4 collectible + 6 workflow-blocked.
-- [x] Production UI smoke matched API values and normalized the USD fee floating-point artifact to `$5.99`.
+Finance was separated from Dashboard startup after production QA showed that colocating both runtimes created mobile/desktop contention.
 
-Production closeout snapshot:
+Permanent architecture:
 
-- To invoice: 3 — COP 5,600,000 gross.
-- Collectible now: 4 — COP 1,150,000 net.
-- Workflow blocked: 6 — COP 2,490,000 net.
-- Paid records: 44.
-- Received: COP 19,822,164 + USD 23,922.27.
-- Recorded fees: COP 52,014 + USD 5.99.
-- Unsupported currencies: 0.
-- Current collectible aging: 0–30 days, 4 accounts.
+- Dashboard remains lightweight;
+- Finance owns `/admin/finance/`;
+- Site Editor remains a sibling workspace;
+- no finance ownership/data behavior changed.
 
-Guardrails verified:
+Evidence: `docs/checkpoints/admin-finance-workspace-separation-2026-08-23.md`.
 
-- Admin-only and behind existing Cloudflare Access.
-- No public finance route.
-- Read-only Google Sheets scope and no finance write endpoint.
-- No D1 finance mirror or second financial source of truth.
-- `NUM CONTACTO`, Notes, internal row IDs and OAuth credentials/tokens are omitted from the browser-facing summary.
+### 7. AppSheet multi-day + Admin Calendar read-only — ✅ CLOSED/PASS
 
-**Sequencing consequence:** Phase 2 remains in real-use observation. Do not activate Phase 3 write-back merely because the read path works; it still requires trust from real use plus the draft-first/idempotent contract in Step 8.
+Canonical dates:
 
-### 6.1. Admin Finance workspace separation — 🚧 ACTIVE HARDENING / SMOKE
+- `Fecha trabajo` = start;
+- `Fecha fin` = end.
 
-**Decision approved 2026-08-23.** Evidence: `docs/checkpoints/admin-finance-workspace-separation-2026-08-23.md`.
+AppSheet setup, historical backfill, validation, Calendar start/end mapping and sync all passed.
 
-Finance is promoted from an embedded Dashboard section into a sibling Admin workspace:
+Admin Calendar now reads the same `REGISTRO`, supports real multi-day spans, has mobile Calendar/Agenda and uses shared Admin brand tokens.
 
-- [x] Target route: **`/admin/finance/`**.
-- [x] `/admin/` remains the lightweight control-center overview and CMS/system health surface.
-- [x] `/admin/editor/` remains the Site Editor/CMS surface.
-- [x] Finance runtime/analytics is removed from Dashboard startup.
-- [x] Dashboard keeps navigation/quick access to Finance without executing Finance code.
-- [x] Site Editor navigation exposes the Finance sibling workspace.
-- [x] Existing Finance APIs, calculations, EN/ES, COP/USD separation and Tax Reserve semantics stay unchanged.
-- [x] No source-of-truth, D1 finance persistence or write behavior changes.
-- [ ] Post-merge desktop + iPhone production smoke of `/admin/`, `/admin/finance/` and `/admin/editor/`.
+Evidence: `docs/roadmap/calendar-operations-hub-2026-08-23.md`.
 
-Why: after PR #68 fixed the Finance translation observer freeze, desktop passed. PR #69 then proved on iPhone that the core Admin loaded quickly when Finance startup was deferred, and that Finance itself loaded and remained fluid when started afterward. The permanent scalable solution is therefore **workspace isolation**, not keeping a temporary mobile-only launcher inside Dashboard.
+### 8. Controlled Calendar create — 🚧 IMPLEMENTED / ACTIVE OAUTH GATE
 
-This 6.1 hardening does **not** reopen Step 6 and does **not** advance Phase 3. After smoke, return to Phase 2 real-use observation.
+PR #89 implemented authenticated controlled create against the same `REGISTRO`.
 
-#### Finance reminder delivery hardening — ⏳ D FUTURE BACKLOG
+The endpoint:
 
-The current AppSheet finance Bots are notification-only and do not write data. Preserve this as a separate delivery/reliability backlog item rather than changing collection logic during the read-only integration.
+- writes only mapped safe source fields;
+- validates server-side;
+- persists an AppSheet-compatible durable ID;
+- is idempotent for retry protection;
+- never writes formula-owned columns;
+- does not expose private data in Calendar read payloads;
+- has no D1 fallback.
 
-- [ ] Diagnose current AppSheet push notification delivery, recipients and runtime history if delivery regresses.
-- [ ] Add email delivery for the same approved reminder conditions if useful.
-- [ ] Add WhatsApp delivery for the same approved reminder conditions if useful.
-- [ ] Keep these channels notification-only; reuse one business-rule source and do not fork finance state/ownership.
+Production smoke reached the Google Sheets write boundary and correctly stopped because the existing OAuth refresh token lacks write permission.
 
-### 7. Availability-aware contact widget + WhatsApp AI qualification
+**Current required action:** re-authorize the existing Google OAuth client with:
 
-This is an **independent sub-track**. P3.4, Security and Finance Phase 2 are closed, so it remains eligible for explicit promotion without waiting for Finance Phase 3. Eligibility does not make it active automatically.
+`https://www.googleapis.com/auth/spreadsheets`
 
-The detailed contract is preserved in `docs/roadmap/availability-aware-contact-widget.md`.
+Then run exactly one create → Google Sheet → AppSheet smoke.
 
-Core contract:
+Evidence: `docs/checkpoints/calendar-create-oauth-write-gate-2026-08-23.md`.
 
-- Server-side availability only; never infer owner availability from the visitor browser timezone.
-- Layer 1: expiring manual override via owner WhatsApp command.
-- Layer 2: travel mode with timezone + end date.
-- Layer 3: default weekly schedule in `America/Bogota`.
-- D1 `availability_state` is the single source of truth for this feature.
-- `GET /api/availability` returns a minimal read-only availability result and may use a short cache TTL.
-- Owner commands require an **exact** match to `env.OWNER_WHATSAPP_NUMBER` before any customer/AI routing.
-- AI scope is lead qualification only: event type, date, headcount/scale and contact information.
-- AI never receives or invents pricing, presets, rental catalog or financial data.
-- AI-captured leads write to the same existing `leads` table as the web contact form.
-- Existing WhatsApp bubble is shown when available; AI chat may replace it when unavailable.
+### 9. Site Schedule + automatic Show Day — ✅ CLOSED/PASS
 
-### 8. Finance integration Phase 3 — write-back automation
+This is now implemented and no longer a future concept.
 
-Only after Phase 2 has been validated in real use and finance data quality is trusted:
+#### Site Schedule
 
-- [ ] Confirmed `rental_requests` may create a **draft** finance-system row.
-- [ ] Write-once / draft-first behavior before bidirectional sync.
-- [ ] Idempotency / duplicate protection required.
-- [ ] Explicit mapping and rollback required.
+- website-only D1 layer;
+- own `site_schedule_state` table;
+- canonical `REGISTRO` dates remain untouched;
+- source events can be split into non-overlapping effective website blocks;
+- Calendar + `Next` use effective blocks;
+- `?view=source` preserves canonical source ranges.
 
-### 9. Phase 4 — full control-center dashboard and automation
+Each block owns:
 
-Explicitly remains backlog until steps 1–8 are complete.
+- start/end;
+- Show Day boolean;
+- Location.
 
-Potential later scope:
+Location is required when Show Day is enabled and never writes to AppSheet/Sheets.
 
-- [ ] Full operational dashboard.
-- [ ] Bidirectional sync only after trust is established.
-- [ ] Automatic Show Day from approved Calendar/AppSheet/project source.
-- [ ] Native Admin Calendar.
-- [ ] Project / CRM / Rental relationships where source-of-truth is defined.
-- [ ] No committed timeline yet.
+#### Automatic Show Day
+
+- public status: `GET /api/site/showday-status`;
+- evaluated in America/Bogota;
+- active only inside opted-in Site Schedule blocks;
+- failure fails closed to normal mode;
+- legacy visitor manual toggle removed;
+- public Location shown only while active.
+
+#### Production evidence
+
+Real RENT Aug 4–28 source span was split into four website blocks:
+
+- Aug 4–9;
+- Aug 14–17;
+- Aug 20–24;
+- Aug 27–28.
+
+D1 persistence, Calendar gaps, `Next`, normal-mode behavior, automatic Show Day and Location all passed production QA.
+
+PR #96 then unified secondary/SEO page headers with Home so public pages use the same logo/navigation/EN-ES/CTA/ON AIR/Location system. Theatre landing QA passed.
+
+Evidence: `docs/checkpoints/site-schedule-showday-2026-08-23.md`.
+
+### 10. Controlled Calendar edit + explicit workflow actions — ⏳ NEXT AFTER CREATE PASS
+
+Do not begin this until the OAuth gate and one end-to-end create smoke pass.
+
+Expected direction:
+
+- controlled source-field edits only;
+- explicit workflow actions for billing/evaluation/signature/payment state;
+- idempotent server writes;
+- formula ownership preserved;
+- no generic Sheet editor;
+- no generic Finance Phase 3 expansion.
+
+### 11. Finance Phase 3 — ⛔ BLOCKED
+
+Only after Finance Phase 2 earns real-use trust and a separate write contract is approved.
+
+Potential future direction remains draft-first/write-once with explicit mapping, idempotency, duplicate protection and rollback.
+
+Calendar/Operations controlled writes do **not** constitute approval for this phase.
+
+### 12. Availability-aware Contact / WhatsApp AI — eligible parallel track, not active
+
+Detailed spec: `docs/roadmap/availability-aware-contact-widget.md`.
+
+If promoted later:
+
+- D1 availability state is authoritative;
+- owner commands require exact authorization;
+- AI qualifies leads only;
+- AI never owns/invents pricing, rental catalog, availability or finance data;
+- existing lead ownership is preserved.
+
+### 13. Later Control Center modules — backlog
+
+CRM, Projects, Rental Admin, deeper automation and consolidated operational reporting remain future work until their source-of-truth contracts are explicit.
+
+## Billing/reminder integration follow-up — Issue #83 OPEN
+
+Billing eligibility, `Por facturar` / `Flujo bloqueado` and relevant AppSheet reminders must use the day after **canonical Sheets `Fecha fin`**.
+
+Site Schedule split dates do not affect Finance timing.
+
+This must close before the overall AppSheet/Finance integration is declared complete.
+
+## Approved low-priority Show Day polish
+
+Not blockers for the OAuth/create gate:
+
+- automatic Show Day favicon variant;
+- remove startup normal-violet → Show Day red popping by resolving authoritative Show Day state before visible first paint, ideally at the edge;
+- favicon and page visual state should share the same prepaint decision.
 
 ## Non-negotiable guardrails
 
 - No second source of truth for pricing, leads or financial data.
-- Financial data is more sensitive than rental pricing and remains behind Cloudflare Access.
-- No public finance route regardless of obscurity or unlinked URL state.
-- **The root `/admin/` Dashboard must not auto-boot the full Finance analytics runtime. Finance owns `/admin/finance/`.**
-- AI qualification has no access to pricing, rental catalog or finance data.
-- Read-only or write-once comes before bidirectional sync.
-- "As soon as possible" applies to moving through the sequence, not bypassing prerequisites.
-- Steps 1–6 are closed for the finance/control-center integration track; 6.1 is runtime/UI hardening, not a new finance ownership phase.
-- Finance Phase 3 remains blocked until Phase 2 earns real-use trust and its write contract is explicitly approved.
-- Step 7 is the explicit eligible parallel-track exception but still requires promotion before implementation.
-- Repair vs rewrite is **DECIDED: repair + integrate** based on the 2026-08-22 full audit; do not reopen it without new evidence of material architectural failure.
-- AppSheet's current offline capture behavior is an asset to preserve unless a future replacement proves equivalent reliability before migration.
+- Financial data remains behind Cloudflare Access.
+- Root `/admin/` must not auto-boot full Finance analytics.
+- Google Sheets formula-owned columns are not writable from generic forms.
+- Site Schedule is website presentation state only.
+- AI qualification has no pricing/catalog/finance authority.
+- Read-only/write-once comes before bidirectional sync.
+- **Stability > novelty.**
+- Brand palette/tokens are reused on every new/modified surface.
 
-## Explicit non-goals for now
+## Current continuation
 
-- No public-facing financial data without separate explicit approval.
-- No two-way realtime sync in a first version.
-- No rewrite merely to move the current finance workflow into SD.Live.
-- No pre-commitment to Google Sheets/AppSheet as the permanent backing store beyond the current repair/integration path.
-- No D1 finance rewrite without a future evidence-based migration decision.
-- No AI quoting or pricing.
-- No parallel chatbot-owned lead database.
-- No automatic promotion of old backlog items merely because they are related to this initiative.
+**Do not reorder:**
 
-## Relationship to existing roadmap sections
+1. Finish Google OAuth Playground re-authorization for Sheets write scope.
+2. Retry one controlled Admin create.
+3. Verify Google Sheets.
+4. Sync and verify AppSheet.
+5. Close create PASS.
+6. Then consider controlled edit/workflow actions.
 
-Existing sections remain valid detail and should not be deleted or recreated:
-
-- **14 — Basic CRM**
-- **15 — AppSheet integration**
-- **16 — Automatic Show Day Mode**
-- **17 — Calendar**
-
-This **14.5 Control Center** initiative owns their sequencing and reprioritization. Steps 4–6 are closed with **SD.Live Track** applied, mobile/offline smoke passed, the field/source-of-truth map documented and the read-only Admin finance surface production-validated. Finance is now isolated as the dedicated `/admin/finance/` workspace while `/admin/` remains lightweight. Phase 2 stays in real-use observation; Phase 3 remains gated.
+Generic Finance Phase 3 stays blocked. Site Schedule/Show Day is already closed and should not be reopened without a regression.
