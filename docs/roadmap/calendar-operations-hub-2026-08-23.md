@@ -1,7 +1,7 @@
 # SD.Live Control Center — Calendar / Operations Hub handoff
 
 **Updated:** 2026-08-23 — America/Bogota  
-**Status:** Calendar schema gate **PASS**. AppSheet multi-day setup **PASS**. Admin read-only Calendar is the active implementation milestone.  
+**Status:** Calendar schema gate **PASS**. AppSheet multi-day setup **PASS**. Admin read-only Calendar desktop production QA **PASS**. Mobile Calendar smoke is the active gate before Admin create/write.  
 **Continuation point:** this document supersedes older Finance Phase 2 handoffs for deciding what to build next.
 
 ## Finance Phase 2 closure checkpoint
@@ -9,6 +9,8 @@
 Finance Phase 2 core real-use QA is complete in production, including the dedicated `/admin/finance/` workspace, year/language controls, invoice eligibility, actionable worklists, LiventX workflow wording, pass-through calculator, Aging drilldowns and all five Data Quality drilldowns. Final Data Quality visual QA also passed.
 
 Finance-wide generic Phase 3 write-back remains blocked. Calendar / Operations has a separately authorized, tightly scoped future write path to the same `REGISTRO` table after read-only Calendar is proven in production.
+
+A medium-priority integration follow-up is tracked in GitHub issue #83: billing eligibility, `Por facturar` / `Flujo bloqueado`, and relevant AppSheet invoice reminders must use the day after `Fecha fin` rather than the day after `Fecha trabajo`. Single-day behavior remains equivalent because `Fecha fin = Fecha trabajo`. This must be completed before the AppSheet/Finance integration is closed, but it is not part of the Calendar read-only gate.
 
 ## Operational source of truth
 
@@ -27,7 +29,7 @@ A new physical source column has now been added:
 
 - **AB — `Fecha fin`**
 
-`Fecha trabajo` remains the canonical **start date**. It was deliberately not renamed or moved because existing finance formulas and invoice eligibility depend on it.
+`Fecha trabajo` remains the canonical **start date**. It was deliberately not renamed or moved because existing finance formulas and historical workflow rules depend on it.
 
 ### Ownership map
 
@@ -62,15 +64,17 @@ Manual production QA passed:
 3. new jobs automatically receive `Fecha fin = Fecha trabajo`;
 4. setting `Fecha fin` earlier than `Fecha trabajo` is rejected.
 
-## Read-only Admin Calendar contract
+## Read-only Admin Calendar — desktop production PASS
 
-The first Admin Calendar milestone is deliberately read-only.
+The first Admin Calendar milestone remains deliberately read-only.
 
 Server source:
 
 - authenticated `GET /api/admin/calendar/events`;
 - reads `REGISTRO!A1:AB3000` from the same Google Sheet;
-- requires the verified A:AB header contract;
+- resolves only Calendar-required columns by normalized header name rather than coupling Calendar to every Finance/helper header character-for-character;
+- tolerates harmless header casing/spacing differences and unrelated helper-column changes;
+- still requires `Fecha trabajo`, `Fecha fin`, `Cliente`, `Proyecto / Show`, `Rol`, `Moneda`, `Estado` and persisted `ID`;
 - converts Sheets dates to ISO dates server-side;
 - falls back blank `Fecha fin` to `Fecha trabajo` defensively;
 - prevents malformed/backwards date data from generating backwards spans;
@@ -90,14 +94,28 @@ Browser payload is sanitized to Calendar-relevant fields only:
 
 It does **not** expose `Notas`, `NUM CONTACTO`, persisted `ID`, spreadsheet row numbers, OAuth secrets or formula-only Finance fields.
 
-Admin workspace target:
+### Production evidence
 
-- `/admin/calendar/`
-- desktop month grid with continuous multi-day spans split correctly across week boundaries;
-- mobile agenda fallback;
-- previous / today / next navigation;
-- current-month and multi-day counts plus next-event summary;
-- links from Dashboard, Finance and Site Editor sidebars.
+The production API returned:
+
+- `ok: true`;
+- `readOnly: true`;
+- `source: REGISTRO`;
+- `timeZone: America/Bogota`;
+- **57 events**;
+- `missingStartDate: 0`;
+- `invalidEndDate: 0`;
+- `endBeforeStart: 0`.
+
+Desktop Calendar QA passed one check at a time:
+
+1. `/admin/calendar/` loads real events and reports online/read-only;
+2. **RENT** renders continuously from **2026-08-04 through 2026-08-28**;
+3. month navigation to September works;
+4. **N. Jade** renders continuously from **2026-09-06 through 2026-09-21**;
+5. a one-day **Coca-Cola** event on **2026-08-13** renders only on that day.
+
+The initial production failure was a Calendar schema mismatch at column AB. It was corrected in PR #84 by decoupling Calendar from the complete A:AB exact-header contract and mapping only the fields Calendar actually needs.
 
 ## Authorized future write boundary
 
@@ -107,13 +125,14 @@ That future authorization covers authenticated operations rows in the same `REGI
 
 ### Planned create sequence after read-only production PASS
 
-1. Define exact create form fields from the verified ownership map.
-2. Validate auth, dates (`end >= start`), currencies/enums and required values server-side.
-3. Generate/persist an AppSheet-compatible unique `ID` with idempotent retry behavior.
-4. Append only source/workflow-safe columns; never formula columns.
-5. Smoke the created row in Google Sheets.
-6. Sync AppSheet and verify the same row appears correctly there.
-7. Only then add edit + explicit workflow actions.
+1. Complete the mobile Calendar smoke.
+2. Define exact create form fields from the verified ownership map.
+3. Validate auth, dates (`end >= start`), currencies/enums and required values server-side.
+4. Generate/persist an AppSheet-compatible unique `ID` with idempotent retry behavior.
+5. Append only source/workflow-safe columns; never formula columns.
+6. Smoke the created row in Google Sheets.
+7. Sync AppSheet and verify the same row appears correctly there.
+8. Only then add edit + explicit workflow actions.
 
 ## Dashboard → AppSheet launcher
 
@@ -121,12 +140,8 @@ Still required. The exact real AppSheet **App Link / app URL / app ID** is not s
 
 ## Current next action
 
-Ship the **read-only Admin Calendar** through CI, merge it, then perform production smoke one manual check at a time:
+Perform exactly one remaining read-only smoke on a phone:
 
-1. Calendar route opens under Cloudflare Access and reports online/read-only.
-2. Existing single-day records appear.
-3. The verified multi-day RENT record renders continuously across its date range.
-4. Desktop month navigation works.
-5. Mobile agenda remains usable.
+- open `/admin/calendar/` on mobile and confirm the Calendar/agenda is usable and real events are readable without desktop-only layout problems.
 
-Only after those checks pass should Admin create/write implementation begin.
+If mobile passes, the read-only Calendar milestone is closed and the next implementation gate becomes **controlled Admin create → same Google Sheets `REGISTRO` → AppSheet sync**, with no generic Finance write-back.
