@@ -34,7 +34,18 @@ export const EXPECTED_CALENDAR_HEADERS = Object.freeze([
   "Fecha fin"
 ]);
 
-const FIELD_INDEX = Object.freeze(
+const REQUIRED_CALENDAR_FIELDS = Object.freeze([
+  "Fecha trabajo",
+  "Fecha fin",
+  "Cliente",
+  "Proyecto / Show",
+  "Rol",
+  "Moneda",
+  "Estado",
+  "ID"
+]);
+
+const DEFAULT_FIELD_INDEX = Object.freeze(
   Object.fromEntries(
     EXPECTED_CALENDAR_HEADERS.map((header, index) => [header, index])
   )
@@ -61,12 +72,41 @@ function cleanString(value) {
   return String(value).trim();
 }
 
-function recordCell(row, field) {
-  return row?.[FIELD_INDEX[field]];
+function normalizeHeader(value) {
+  return cleanString(value)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ")
+    .toLowerCase();
 }
 
-function hasPersistedId(row) {
-  return Boolean(cleanString(recordCell(row, "ID")));
+function calendarFieldIndex(headers) {
+  if (!Array.isArray(headers)) return null;
+
+  const byNormalizedHeader = new Map();
+  headers.forEach((header, index) => {
+    const normalized = normalizeHeader(header);
+    if (normalized && !byNormalizedHeader.has(normalized)) {
+      byNormalizedHeader.set(normalized, index);
+    }
+  });
+
+  return Object.fromEntries(
+    REQUIRED_CALENDAR_FIELDS.map((field) => [
+      field,
+      byNormalizedHeader.get(normalizeHeader(field))
+    ])
+  );
+}
+
+function recordCell(row, field, fieldIndex = DEFAULT_FIELD_INDEX) {
+  const index = fieldIndex?.[field];
+  if (!Number.isInteger(index)) return undefined;
+  return row?.[index];
+}
+
+function hasPersistedId(row, fieldIndex) {
+  return Boolean(cleanString(recordCell(row, "ID", fieldIndex)));
 }
 
 function isoDate(year, month, day) {
@@ -123,30 +163,31 @@ export function sheetDateToIso(value) {
 
 export function validateCalendarHeaders(headers) {
   if (!Array.isArray(headers)) {
-    return { ok: false, columnCount: 0, mismatchAt: 0 };
-  }
-
-  const mismatchAt = EXPECTED_CALENDAR_HEADERS.findIndex(
-    (expected, index) => headers[index] !== expected
-  );
-
-  if (mismatchAt !== -1 || headers.length < EXPECTED_CALENDAR_HEADERS.length) {
     return {
       ok: false,
-      columnCount: headers.length,
-      mismatchAt: mismatchAt === -1 ? headers.length : mismatchAt
+      columnCount: 0,
+      missingFields: [...REQUIRED_CALENDAR_FIELDS],
+      fieldIndex: null
     };
   }
 
+  const fieldIndex = calendarFieldIndex(headers);
+  const missingFields = REQUIRED_CALENDAR_FIELDS.filter(
+    (field) => !Number.isInteger(fieldIndex?.[field])
+  );
+
   return {
-    ok: true,
+    ok: missingFields.length === 0,
     columnCount: headers.length,
-    mismatchAt: null
+    missingFields,
+    fieldIndex
   };
 }
 
-export function normalizeCalendarRows(rows) {
-  const sourceRows = Array.isArray(rows) ? rows.filter(hasPersistedId) : [];
+export function normalizeCalendarRows(rows, fieldIndex = DEFAULT_FIELD_INDEX) {
+  const sourceRows = Array.isArray(rows)
+    ? rows.filter((row) => hasPersistedId(row, fieldIndex))
+    : [];
   const events = [];
   const quality = {
     missingStartDate: 0,
@@ -155,13 +196,13 @@ export function normalizeCalendarRows(rows) {
   };
 
   for (const row of sourceRows) {
-    const startDate = sheetDateToIso(recordCell(row, "Fecha trabajo"));
+    const startDate = sheetDateToIso(recordCell(row, "Fecha trabajo", fieldIndex));
     if (!startDate) {
       quality.missingStartDate += 1;
       continue;
     }
 
-    const rawEnd = recordCell(row, "Fecha fin");
+    const rawEnd = recordCell(row, "Fecha fin", fieldIndex);
     const parsedEnd = sheetDateToIso(rawEnd);
     let endDate = parsedEnd || startDate;
     let dateIssue = null;
@@ -181,11 +222,11 @@ export function normalizeCalendarRows(rows) {
     events.push({
       startDate,
       endDate,
-      client: cleanString(recordCell(row, "Cliente")),
-      project: cleanString(recordCell(row, "Proyecto / Show")),
-      role: cleanString(recordCell(row, "Rol")),
-      currency: cleanString(recordCell(row, "Moneda")),
-      state: cleanString(recordCell(row, "Estado")),
+      client: cleanString(recordCell(row, "Cliente", fieldIndex)),
+      project: cleanString(recordCell(row, "Proyecto / Show", fieldIndex)),
+      role: cleanString(recordCell(row, "Rol", fieldIndex)),
+      currency: cleanString(recordCell(row, "Moneda", fieldIndex)),
+      state: cleanString(recordCell(row, "Estado", fieldIndex)),
       multiDay: endDate !== startDate,
       dateIssue
     });
@@ -268,13 +309,20 @@ export async function handleCalendarApi(
         {
           ok: false,
           error: "Calendar source schema mismatch",
-          schema: headerCheck
+          schema: {
+            ok: false,
+            columnCount: headerCheck.columnCount,
+            missingFields: headerCheck.missingFields
+          }
         },
         503
       );
     }
 
-    const { events, quality } = normalizeCalendarRows(rows);
+    const { events, quality } = normalizeCalendarRows(
+      rows,
+      headerCheck.fieldIndex
+    );
 
     return jsonResponse({
       ok: true,
