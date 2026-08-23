@@ -32,6 +32,23 @@
     collapse.textContent = next ? "Expand" : "Collapse";
   });
 
+  function activateCalendarNav() {
+    const calendarButton = [...document.querySelectorAll(".app-nav__item")].find(
+      (item) => item.tagName === "BUTTON" && item.querySelector("span")?.textContent?.trim() === "Calendar"
+    );
+    if (!calendarButton) return;
+
+    const calendarLink = document.createElement("a");
+    calendarLink.className = "app-nav__item";
+    calendarLink.href = "/admin/calendar/";
+    calendarLink.innerHTML = calendarButton.innerHTML;
+    const small = calendarLink.querySelector("small");
+    if (small) small.textContent = "Read-only";
+    calendarButton.replaceWith(calendarLink);
+  }
+
+  activateCalendarNav();
+
   async function loadIdentity() {
     try {
       const response = await fetch("/api/admin/whoami", {
