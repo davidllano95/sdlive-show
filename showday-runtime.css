@@ -3,11 +3,11 @@
   align-items: center;
   min-height: 30px;
   padding: 7px 10px;
-  border: 1px solid rgba(var(--showday-accent-rgb, 255, 107, 74), 0.62);
-  border-radius: var(--radius-small, 6px);
-  background: rgba(var(--showday-accent-rgb, 255, 107, 74), 0.1);
-  color: var(--showday-accent, #ff6b4a);
-  font-family: var(--font-mono, "Sora", system-ui, sans-serif);
+  border: 1px solid rgba(var(--showday-accent-rgb), 0.62);
+  border-radius: var(--radius-small);
+  background: rgba(var(--showday-accent-rgb), 0.1);
+  color: var(--showday-accent);
+  font-family: var(--font-mono);
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.1em;
