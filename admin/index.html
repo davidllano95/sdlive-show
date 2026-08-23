@@ -24,6 +24,11 @@
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 3 10.1V21h7v-6h4v6h7V10.1L12 3Zm0 2.1 7 5.6v8.8h-3.5v-6h-7v6H5v-8.8l7-5.6Z"/></svg>
           <span>Dashboard</span>
         </a>
+        <a class="app-nav__item" href="./finance/">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4V5Zm2 2v10h12V7H6Zm1.5 7.5h2V16h-2v-1.5Zm3.5-3h2V16h-2v-4.5Zm3.5-3h2V16h-2V8.5Z"/></svg>
+          <span>Finance</span>
+          <small>SD.Live Track</small>
+        </a>
         <a class="app-nav__item" href="./editor/">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 3 13.2 8-6.1 1.3 3.8 6-2.1 1.3-3.8-6.1L6 18 5 3Z"/></svg>
           <span>Site Editor</span>
@@ -97,7 +102,7 @@
           <div>
             <span class="eyebrow">Workspace</span>
             <h2>One place to run <span class="inline-wordmark" aria-label="SD.Live"><span>SD</span><i aria-hidden="true">.</i><span>Live</span></span>.</h2>
-            <p>The visual editor is live. Inbox, leads, rental, projects, media and analytics will plug into this same back office as they are activated.</p>
+            <p>The Dashboard stays lightweight. Finance and Site Editor now live in dedicated workspaces, while Inbox, leads, rental, projects, media and analytics plug into this control center as they are activated.</p>
           </div>
           <div class="system-pill" id="systemPill">
             <i></i>
@@ -145,6 +150,18 @@
                 <span class="module-status is-live">Live</span>
                 <h4>Site Editor</h4>
                 <p>Edit the real site, switch COL/INT, EN/ES and Desktop/Mobile, manage Draft and Publish.</p>
+              </div>
+              <span class="arrow">→</span>
+            </a>
+
+            <a class="module" href="./finance/">
+              <div class="module-icon">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4V5Zm2 2v10h12V7H6Zm1.5 7.5h2V16h-2v-1.5Zm3.5-3h2V16h-2v-4.5Zm3.5-3h2V16h-2V8.5Z"/></svg>
+              </div>
+              <div>
+                <span class="module-status is-live">Live · Read-only</span>
+                <h4>Finance</h4>
+                <p>Open SD.Live Track analytics, receivables, collection performance and planning in its own scalable workspace.</p>
               </div>
               <span class="arrow">→</span>
             </a>
@@ -244,6 +261,6 @@
     </main>
   </div>
 
-  <script src="./dashboard.js"></script>
+  <script src="./dashboard.js?v=20260823-4"></script>
 </body>
 </html>
