@@ -79,16 +79,20 @@
   }
 
   function formatMoney(value, currency) {
+    if (value === null || value === undefined || value === "") return "—";
     const amount = Number(value);
     if (!Number.isFinite(amount)) return "—";
+    if (currency !== "COP" && currency !== "USD") {
+      return `${currency || ""} ${amount.toLocaleString()}`.trim();
+    }
     try {
       return new Intl.NumberFormat(language() === "es" ? "es-CO" : "en-US", {
         style: "currency",
-        currency: currency === "USD" ? "USD" : "COP",
+        currency,
         maximumFractionDigits: currency === "USD" ? 2 : 0
       }).format(amount);
     } catch {
-      return `${currency || ""} ${amount.toLocaleString()}`.trim();
+      return `${currency} ${amount.toLocaleString()}`;
     }
   }
 
@@ -133,7 +137,8 @@
     const sent = queue === "collectible" || (queue === "blocked" && item?.invoiceSentDate)
       ? `<span><b>${escapeHtml(t.sentDate)}</b>${escapeHtml(safeText(item?.invoiceSentDate))}</span>`
       : "";
-    const days = Number.isFinite(Number(item?.daysUnpaid))
+    const hasDays = item?.daysUnpaid !== null && item?.daysUnpaid !== undefined && item?.daysUnpaid !== "" && Number.isFinite(Number(item.daysUnpaid));
+    const days = hasDays
       ? `<span><b>${escapeHtml(t.daysUnpaid)}</b>${escapeHtml(String(item.daysUnpaid))}</span>`
       : "";
 
