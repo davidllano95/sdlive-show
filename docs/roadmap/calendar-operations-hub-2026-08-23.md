@@ -1,52 +1,42 @@
 # SD.Live Control Center — Calendar / Operations Hub handoff
 
 **Updated:** 2026-08-23 — America/Bogota  
-**Status:** Calendar schema gate **PASS**. AppSheet multi-day setup **PASS**. Admin read-only Calendar desktop/data QA **PASS**. Mobile Calendar/Agenda **PASS**. Brand-palette visual QA **PASS**. **Read-only Calendar milestone CLOSED.** Controlled Admin create/write is the active gate.  
-**Continuation point:** this document supersedes older Finance Phase 2 handoffs for deciding what to build next.
+**Status:** AppSheet multi-day **PASS** · Admin Calendar read-only **CLOSED/PASS** · Site Schedule + automatic Show Day + Location **CLOSED/PASS** · public header parity **PASS**. Controlled Admin create is implemented but production write remains **BLOCKED on Google OAuth Sheets write scope**.  
+**Continuation point:** re-authorize the existing Google OAuth connection, then run one controlled create → Google Sheet → AppSheet smoke.
 
-## Finance Phase 2 closure checkpoint
+## 1. Permanent architecture / source of truth
 
-Finance Phase 2 core real-use QA is complete in production, including the dedicated `/admin/finance/` workspace, year/language controls, invoice eligibility, actionable worklists, LiventX workflow wording, pass-through calculator, Aging drilldowns and all five Data Quality drilldowns. Final Data Quality visual QA also passed.
-
-Finance-wide generic Phase 3 write-back remains blocked. Calendar / Operations has a separately authorized, tightly scoped write path to the same `REGISTRO` table after the read-only Calendar milestone proved stable in production.
-
-A medium-priority integration follow-up is tracked in GitHub issue #83: billing eligibility, `Por facturar` / `Flujo bloqueado`, and relevant AppSheet invoice reminders must use the day after `Fecha fin` rather than the day after `Fecha trabajo`. Single-day behavior remains equivalent because `Fecha fin = Fecha trabajo`. This must be completed before the AppSheet/Finance integration is closed, but it does not block the first controlled Calendar create milestone.
-
-## Permanent visual / brand rule
-
-From this milestone forward, every new or modified SD.Live surface must preserve the established brand palette of the surface it belongs to instead of introducing a one-off palette.
-
-For the private Admin / Control Center:
-
-- shared Admin tokens in `admin/dashboard.css` are authoritative;
-- primary accent = `--accent: #a089e5` / `--accent-rgb: 160,137,229` unless the global Admin design system is deliberately changed;
-- new modules must use `var(--accent)` / `rgba(var(--accent-rgb), …)` rather than inventing hard-coded primary colors;
-- `--green`, `--amber` and `--danger` are semantic status colors, not alternate decorative brand palettes;
-- existing neutral background/text/border tokens should be reused where possible;
-- desktop and mobile production smoke must include a brand-palette check before a visual milestone is closed.
-
-The same principle applies to public-site work: reuse the established public brand tokens/approved visual language for that surface rather than copying arbitrary colors from another module.
-
-Calendar PR #87 removed the temporary blue/lime Calendar accents and reused the shared violet Admin accent for today, event bars, multi-day emphasis, focus and the mobile Calendar/Agenda selector. Production iPhone QA confirmed the palette now matches SD.Live.
-
-## Operational source of truth
-
-- Google Sheets `REGISTRO` remains persistence + formula owner.
+- Google Sheets `REGISTRO` remains operations/finance persistence + formula owner.
 - AppSheet **SD.Live Track** remains the primary mobile/offline workflow client.
-- Admin is an additional authenticated operations client, not a competing database.
+- Admin Calendar is an additional authenticated operations client, not a competing database.
 - No D1 mirror for operational/finance rows.
+- D1 Site Schedule is a **website-only presentation layer**, not a finance/operations source-of-truth replacement.
 - COP and USD remain strictly separated in Finance.
 - Cloudflare Access remains the Admin security boundary.
+- Generic Finance Phase 3 write-back remains blocked.
 
-## Verified REGISTRO schema
+## 2. Permanent visual / brand rule
 
-The workbook was inspected from the real `SD.Live Track.xlsx` source. `REGISTRO` originally contained A:AA (27 physical columns) and had no end-date field.
+Every new or modified SD.Live surface must preserve the established brand palette/tokens of the surface it belongs to.
 
-A new physical source column has now been added:
+For private Admin:
 
-- **AB — `Fecha fin`**
+- `admin/dashboard.css` shared tokens are authoritative;
+- primary accent = `--accent: #a089e5` / `--accent-rgb: 160,137,229` unless the global Admin design system is deliberately changed;
+- new modules use `var(--accent)` / `rgba(var(--accent-rgb), …)`;
+- `--green`, `--amber`, `--danger` are semantic status colors only;
+- desktop + mobile visual smoke includes palette consistency before closure.
 
-`Fecha trabajo` remains the canonical **start date**. It was deliberately not renamed or moved because existing finance formulas and historical workflow rules depend on it.
+Public-site work reuses the existing public brand/Show Day tokens. PR #87 closed Calendar palette parity on iPhone.
+
+## 3. Verified REGISTRO schema / ownership
+
+`REGISTRO` has A:AB, with:
+
+- **A — `Fecha trabajo`** = canonical start date;
+- **AB — `Fecha fin`** = canonical end date.
+
+`Fecha trabajo` was intentionally not renamed/moved because existing formulas/workflows depend on it.
 
 ### Ownership map
 
@@ -55,119 +45,205 @@ A new physical source column has now been added:
 | `Fecha trabajo`, `Cliente`, `Proyecto / Show`, `Rol`, `Moneda`, `Valor bruto`, `Método de pago`, `Notas`, `NUM CONTACTO`, `Fecha fin` | Human/source fields | Eligible for controlled create/edit where relevant |
 | `Estado` | Human-selectable + workflow-managed | Controlled; preserve AppSheet semantics |
 | `Valor Recibido` | Human input at payment stage | Controlled payment workflow, not generic create |
-| `Fecha cuenta enviada`, `Fecha evaluación`, `Fecha firma`, `Fecha pago` | Workflow-managed dates | Set by explicit workflow actions, not generic raw editing by default |
-| `ID` | Persisted AppSheet key (`UNIQUEID()`) | System identity; future Admin create must generate/persist a compatible unique value idempotently |
+| `Fecha cuenta enviada`, `Fecha evaluación`, `Fecha firma`, `Fecha pago` | Workflow-managed dates | Explicit workflow actions only |
+| `ID` | Persisted AppSheet key | System identity; Admin create persists an AppSheet-compatible unique ID idempotently |
 | `Mes`, `Año`, `Impuestos / Fees`, `Valor Neto`, `Días sin pagar`, `Month Number`, `Año Pago`, `Month Number (pago)`, `Mes de pago`, `Rango Aging`, `MES PAGO KEY` | Google Sheets array-formula columns | **Never write from Admin/AppSheet forms** |
 
-The existing Finance API intentionally still reads `REGISTRO!A:AA`; therefore adding AB does not change the Finance browser payload or formula behavior. Calendar reads A:AB separately.
+Finance intentionally keeps its established read boundary unless separately changed. Calendar reads A:AB.
 
-## AppSheet multi-day configuration — PASS
+## 4. AppSheet multi-day configuration — PASS
 
 Production AppSheet was updated and manually verified:
 
-- `Fecha fin` regenerated into AppSheet and typed as **Date**.
-- `Fecha fin` Initial value: `[Fecha trabajo]`.
-- `Fecha fin` validation prevents end-before-start.
-- `Fecha fin` was added immediately after `Fecha trabajo` in **Nuevo Trabajo**.
-- Calendar Start date = `Fecha trabajo`.
-- Calendar End date = `Fecha fin`.
-- Existing rows with blank `Fecha fin` were backfilled from `Fecha trabajo` using a one-time Apps Script that only filled blank end dates; existing explicit multi-day ends were preserved.
-- AppSheet Sync completed successfully after backfill.
+- `Fecha fin` is Date;
+- Initial value = `[Fecha trabajo]`;
+- validation rejects end-before-start;
+- `Fecha fin` follows `Fecha trabajo` in Nuevo Trabajo;
+- Calendar Start = `Fecha trabajo`;
+- Calendar End = `Fecha fin`;
+- historical blank ends were backfilled from start without overwriting explicit ends;
+- Sync completed successfully.
 
-Manual production QA passed:
+Manual QA passed for existing one-day jobs, real multi-day RENT, new one-day defaults and invalid end rejection.
 
-1. existing one-day jobs remained visible;
-2. a real multi-day RENT record rendered as one continuous Calendar span;
-3. new jobs automatically receive `Fecha fin = Fecha trabajo`;
-4. setting `Fecha fin` earlier than `Fecha trabajo` is rejected.
+## 5. Read-only Admin Calendar — CLOSED/PASS
 
-## Read-only Admin Calendar — CLOSED / production PASS
+Authenticated `GET /api/admin/calendar/events`:
 
-The first Admin Calendar milestone is deliberately read-only and is now closed after desktop, mobile, data-quality and brand-palette production QA.
+- reads the same `REGISTRO`;
+- resolves only required Calendar fields by normalized header name;
+- converts Sheets dates to ISO server-side;
+- defensively falls blank end back to start;
+- prevents backwards spans;
+- returns sanitized Calendar data only.
 
-Server source:
+Browser payload does not expose Notes, `NUM CONTACTO`, persisted Sheet ID, spreadsheet row numbers, OAuth secrets or formula-only Finance data.
 
-- authenticated `GET /api/admin/calendar/events`;
-- reads `REGISTRO!A1:AB3000` from the same Google Sheet;
-- resolves only Calendar-required columns by normalized header name rather than coupling Calendar to every Finance/helper header character-for-character;
-- tolerates harmless header casing/spacing differences and unrelated helper-column changes;
-- still requires `Fecha trabajo`, `Fecha fin`, `Cliente`, `Proyecto / Show`, `Rol`, `Moneda`, `Estado` and persisted `ID`;
-- converts Sheets dates to ISO dates server-side;
-- falls back blank `Fecha fin` to `Fecha trabajo` defensively;
-- prevents malformed/backwards date data from generating backwards spans;
-- returns date-quality counts for diagnostics.
+Production QA passed desktop + iPhone Calendar/Agenda, real multi-day RENT and N. Jade spans, one-day events and shared Admin palette.
 
-Browser payload is sanitized to Calendar-relevant fields only:
+## 6. Controlled Admin create — IMPLEMENTED, OAuth-gated
 
-- `startDate`
-- `endDate`
-- `client`
-- `project`
-- `role`
-- `currency`
-- `state`
-- `multiDay`
-- date-issue marker when applicable
+PR #89 implemented authenticated `POST /api/admin/calendar/events`.
 
-It does **not** expose `Notas`, `NUM CONTACTO`, persisted `ID`, spreadsheet row numbers, OAuth secrets or formula-only Finance fields.
+Contract:
 
-### Production evidence
+- accepts only mapped source/create fields;
+- server validates required values, dates, enums/currency and numeric fields;
+- one-day work defaults end = start;
+- initial state remains workflow-safe;
+- durable AppSheet-compatible ID is generated/persisted;
+- request ID provides idempotent retry/duplicate protection;
+- formula-owned columns are never written;
+- workflow dates/Valor Recibido are not exposed as generic create fields;
+- Notes/contact can be accepted on create without appearing in Calendar read payloads;
+- there is no D1 fallback if Sheets write fails.
 
-The production API returned:
+### Production write result
 
-- `ok: true`;
-- `readOnly: true`;
-- `source: REGISTRO`;
-- `timeZone: America/Bogota`;
-- **57 events**;
-- `missingStartDate: 0`;
-- `invalidEndDate: 0`;
-- `endBeforeStart: 0`.
+The first real create smoke reached the Google Sheets authorization boundary and returned:
 
-Desktop Calendar QA passed one check at a time:
+> Google Sheets write permission is not authorized for this connection yet.
 
-1. `/admin/calendar/` loads real events and reports online/read-only;
-2. **RENT** renders continuously from **2026-08-04 through 2026-08-28**;
-3. month navigation to September works;
-4. **N. Jade** renders continuously from **2026-09-06 through 2026-09-21**;
-5. a one-day **Coca-Cola** event on **2026-08-13** renders only on that day.
+No row was written.
 
-Mobile QA passed:
+The existing refresh token is sufficient for read-only Finance/Calendar but lacks write-capable Sheets authorization.
 
-1. the original agenda-only fallback was usable but insufficient because the user wanted the actual month Calendar on phone;
-2. PR #86 added **Calendar / Agenda** on mobile with Calendar as the default while preserving continuous multi-day spans;
-3. production smoke confirmed the month Calendar and Agenda selector are usable on iPhone;
-4. PR #87 aligned Calendar visual accents to the shared SD.Live Admin violet tokens;
-5. production iPhone smoke confirmed the updated palette is coherent with the brand.
+### Active OAuth gate
 
-The initial production failure was a Calendar schema mismatch at column AB. It was corrected in PR #84 by decoupling Calendar from the complete A:AB exact-header contract and mapping only the fields Calendar actually needs.
+Re-authorize the **existing** OAuth client with:
 
-## Authorized future write boundary
+`https://www.googleapis.com/auth/spreadsheets`
 
-The user explicitly authorized creating/editing Calendar/operations records from Admin so the Control Center can function without AppSheet when needed.
+Then:
 
-That authorization covers authenticated operations rows in the same `REGISTRO`, using mapped source fields and persisted unique identity. It does **not** authorize arbitrary cells, formula overwrites, a D1 finance mirror, generic Finance Phase 3 writes or broad browser exposure of private Notes/contact fields.
+1. replace only the Worker refresh token if the authorization produces a new one;
+2. retry exactly one controlled `QA Admin / CREATE SMOKE` row;
+3. verify it in Google Sheets;
+4. sync AppSheet;
+5. verify the same persisted record in AppSheet;
+6. only after PASS, close create and proceed toward controlled edit/workflow actions.
 
-### Controlled Admin create — active sequence
+Checkpoint: `docs/checkpoints/calendar-create-oauth-write-gate-2026-08-23.md`.
 
-1. Define the exact create form fields from the verified ownership map.
-2. Validate auth, required values, dates (`end >= start`), currencies/enums and numeric inputs server-side.
-3. Generate/persist an AppSheet-compatible unique `ID` with idempotent retry/duplicate protection.
-4. Write only mapped source/workflow-safe columns to the same `REGISTRO`; never write formula-owned columns.
-5. Keep `Fecha fin` as a source field, defaulting one-day jobs to `Fecha fin = Fecha trabajo`.
-6. Preserve Notes/contact privacy in browser read payloads even if authenticated create forms accept those values.
-7. Smoke one controlled created row in Google Sheets.
-8. Sync AppSheet and verify the same row appears correctly there.
-9. Only after create PASS, add edit + explicit workflow actions.
+## 7. Site Schedule — CLOSED/PASS
 
-## Dashboard → AppSheet launcher
+### Decision
 
-Still required. The exact real AppSheet **App Link / app URL / app ID** is not stored in the repository and must not be guessed. Obtain the actual link from AppSheet before wiring the launcher.
+Canonical `REGISTRO` dates remain untouched. Site Schedule is exclusively for how work is represented on the website/Admin Calendar.
 
-## Current next action
+A broad source event can be split into several real presentation blocks, useful when the source row covers an overall engagement but the website should only show actual working days.
 
-The read-only Calendar milestone is closed.
+### Storage
 
-The active gate is **controlled Admin create → same Google Sheets `REGISTRO` → AppSheet sync**. Start by implementing the create contract/form against the verified source-of-truth map, preserving AppSheet-compatible identity, formula ownership, privacy boundaries and the permanent SD.Live brand-palette rule.
+After production persistence debugging, Site Schedule uses its own D1 application table:
 
-Generic Finance Phase 3 write-back remains blocked. GitHub issue #83 remains medium priority and must be completed before the overall AppSheet/Finance integration closes.
+- `site_schedule_state`.
+
+It no longer depends on CMS content-entry/revision contracts. This keeps the operational presentation layer isolated from editorial CMS data.
+
+### Block contract
+
+Each block owns:
+
+- Start date;
+- End date;
+- `Show Day` boolean;
+- `Location`.
+
+Rules:
+
+- segments stay inside the original source range;
+- segments cannot overlap;
+- Location max length is validated;
+- Location is required if `Show Day=true`;
+- split dates, Show Day and Location never write to Sheets/AppSheet.
+
+### Calendar behavior
+
+- normal `GET /api/admin/calendar/events` applies Site Schedule overrides to display events;
+- `?view=source` returns canonical source spans for the editor;
+- if no override exists, source span is displayed;
+- Calendar `Next` consumes effective displayed blocks;
+- D1 read failure fails safe to source spans rather than breaking Calendar.
+
+### Production RENT split — PASS
+
+The real RENT source span Aug 4–28 was saved as:
+
+- Aug 4–9;
+- Aug 14–17;
+- Aug 20–24;
+- Aug 27–28.
+
+Production Calendar correctly shows four blocks with gaps. `Next` also follows the effective block dates.
+
+## 8. Automatic Show Day + Location — CLOSED/PASS
+
+Public endpoint:
+
+- `GET /api/site/showday-status`.
+
+Behavior:
+
+- today evaluated in America/Bogota;
+- active only inside a Site Schedule block with `showDay=true` and a Location;
+- safe/minimal public payload;
+- failure fails closed to normal mode;
+- refreshes periodically;
+- legacy visitor manual Show Day toggle is removed at the edge;
+- Location is visible publicly only while Show Day is active.
+
+Production QA passed:
+
+- all block switches OFF → normal site, no manual button;
+- active RENT block Show Day ON → public site changes automatically;
+- configured Location appears correctly;
+- state remains independent from AppSheet.
+
+## 9. Public header parity — PASS
+
+Initial landing-page smoke showed a different simplified SEO header even though Show Day was active. The desired contract was clarified: **all public pages should feel like one site and use the Home header behavior**.
+
+PR #96 now normalizes `.seo-header` pages at the edge to the same Home header structure:
+
+- canonical SD.Live logo treatment;
+- ON AIR state;
+- Location below the logo;
+- Home navigation menu;
+- EN/ES control;
+- Start Project CTA;
+- mobile navigation behavior.
+
+Production theatre landing QA returned PASS and the original menus make the secondary route feel like the same site rather than a disconnected landing.
+
+## 10. Known low-priority Show Day polish
+
+Approved backlog, not part of the current gate:
+
+### Dynamic favicon
+
+Add a Show Day favicon variant and automatically switch the page favicon from the same authoritative Show Day state.
+
+### Remove startup popping
+
+Current active Show Day can first-paint normal violet and then switch to red after `/api/site/showday-status` resolves. Future hardening should resolve/inject Show Day state before visible paint, ideally at the edge, while failing closed to normal mode.
+
+Dynamic favicon should be tied to the same prepaint state so favicon and page never disagree.
+
+## 11. Billing/reminder end-date follow-up — Issue #83 OPEN
+
+Finance/AppSheet billing readiness and invoice reminders must use the day after canonical **Sheets `Fecha fin`**, not the day after `Fecha trabajo`.
+
+- single-day behavior remains equivalent because end=start;
+- multi-day eligibility starts the day after end;
+- Site Schedule split dates do **not** alter this finance rule;
+- preserve LiventX workflow semantics;
+- complete before the overall AppSheet/Finance integration is closed.
+
+## 12. Current next action
+
+**Do not open another feature milestone. Continue the OAuth gate.**
+
+The first manual step is to use Google OAuth Playground to re-authorize the existing OAuth client for Sheets write scope. Proceed one manual action at a time.
+
+After controlled create passes end-to-end, the next Calendar milestone may be controlled edit + explicit workflow actions. Generic Finance Phase 3 remains blocked.
