@@ -1,0 +1,103 @@
+.calendar-view-radio,
+.mobile-calendar-view-toggle {
+  display: none;
+}
+
+@media (max-width: 720px) {
+  .calendar-panel {
+    overflow: hidden;
+  }
+
+  .mobile-calendar-view-toggle {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+    width: 100%;
+    padding: 4px;
+    margin-top: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.025);
+  }
+
+  .mobile-calendar-view-toggle label {
+    display: grid;
+    place-items: center;
+    min-height: 38px;
+    padding: 7px 10px;
+    border-radius: 9px;
+    color: rgba(255, 255, 255, 0.58);
+    font-size: 0.78rem;
+    font-weight: 750;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  #calendarViewMonth:checked ~ .calendar-toolbar .mobile-calendar-view-toggle label[for="calendarViewMonth"],
+  #calendarViewAgenda:checked ~ .calendar-toolbar .mobile-calendar-view-toggle label[for="calendarViewAgenda"] {
+    color: #0b0d10;
+    background: #dfff69;
+  }
+
+  .calendar-weekdays,
+  .calendar-grid,
+  .calendar-agenda {
+    display: none;
+  }
+
+  #calendarViewMonth:checked ~ .calendar-weekdays {
+    display: grid;
+  }
+
+  #calendarViewMonth:checked ~ .calendar-grid {
+    display: block;
+  }
+
+  #calendarViewAgenda:checked ~ .calendar-agenda {
+    display: block;
+  }
+
+  .calendar-weekdays span {
+    padding: 7px 1px;
+    font-size: 0.58rem;
+    letter-spacing: 0;
+    text-align: center;
+  }
+
+  .calendar-day {
+    min-height: calc(60px + var(--calendar-lanes, 0) * 21px);
+    padding: 6px 3px 8px;
+  }
+
+  .calendar-day__number {
+    width: 22px;
+    height: 22px;
+    font-size: 0.68rem;
+  }
+
+  .calendar-events {
+    top: 33px;
+    grid-auto-rows: 18px;
+    row-gap: 3px;
+  }
+
+  .calendar-event {
+    margin: 0 2px;
+    padding: 2px 4px;
+    border-radius: 5px;
+    font-size: 0.56rem;
+    line-height: 1.2;
+  }
+
+  .calendar-event.is-clipped-start {
+    border-radius: 0 5px 5px 0;
+  }
+
+  .calendar-event.is-clipped-end {
+    border-radius: 5px 0 0 5px;
+  }
+
+  .calendar-event.is-clipped-start.is-clipped-end {
+    border-radius: 0;
+  }
+}
