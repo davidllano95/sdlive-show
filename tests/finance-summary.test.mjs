@@ -110,7 +110,9 @@ const SAMPLE_ROWS = [
 ];
 
 test("finance summary preserves collection rules and COP/USD separation", () => {
-  const summary = buildFinanceSummary(SAMPLE_ROWS);
+  const summary = buildFinanceSummary(SAMPLE_ROWS, {
+    now: new Date("2026-08-23T16:00:00Z")
+  });
 
   assert.equal(summary.recordCount, 6);
   assert.deepEqual(summary.toInvoice, {
@@ -148,6 +150,61 @@ test("finance summary preserves collection rules and COP/USD separation", () => 
     feesByCurrency: { COP: 50, USD: 25 },
     missingReceivedAmountCount: 1
   });
+});
+
+test("pending invoices are facturable only after the work date has passed in Bogota", () => {
+  const summary = buildFinanceSummary([
+    row({
+      "Fecha trabajo": "2026-08-22",
+      "Cliente": "Past event",
+      "Moneda": "COP",
+      "Valor bruto": 1000,
+      "Valor Neto": 900,
+      "Estado": "Pendiente Envio",
+      "ID": "past"
+    }),
+    row({
+      "Fecha trabajo": "2026-08-23",
+      "Cliente": "Today event",
+      "Moneda": "COP",
+      "Valor bruto": 2000,
+      "Valor Neto": 1800,
+      "Estado": "Pendiente Envio",
+      "ID": "today"
+    }),
+    row({
+      "Fecha trabajo": "2026-08-24",
+      "Cliente": "Future event",
+      "Moneda": "USD",
+      "Valor bruto": 300,
+      "Valor Neto": 275,
+      "Estado": "Pendiente Envio",
+      "ID": "future"
+    }),
+    row({
+      "Fecha trabajo": "",
+      "Cliente": "Missing date",
+      "Moneda": "USD",
+      "Valor bruto": 200,
+      "Valor Neto": 180,
+      "Estado": "Pendiente Envio",
+      "ID": "missing"
+    })
+  ], {
+    now: new Date("2026-08-23T16:00:00Z")
+  });
+
+  assert.deepEqual(summary.toInvoice, {
+    count: 1,
+    grossByCurrency: { COP: 1000, USD: 0 }
+  });
+  assert.equal(summary.receivables.workflowBlockedCount, 3);
+  assert.deepEqual(summary.receivables.workflowBlockedNetByCurrency, {
+    COP: 1800,
+    USD: 455
+  });
+  assert.equal(summary.receivables.count, 0);
+  assert.equal(summary.receivables.priority.length, 0);
 });
 
 test("finance summary endpoint reads REGISTRO only and omits private/raw fields", async () => {

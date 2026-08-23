@@ -111,6 +111,88 @@ function isPendingInvoiceState(value) {
   return cleanString(value).toLowerCase() === "pendiente envio";
 }
 
+function dateKey(year, month, day) {
+  const date = new Date(Date.UTC(year, month - 1, day));
+  if (
+    date.getUTCFullYear() !== year ||
+    date.getUTCMonth() !== month - 1 ||
+    date.getUTCDate() !== day
+  ) {
+    return null;
+  }
+  return year * 10000 + month * 100 + day;
+}
+
+function sheetDateKey(value) {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    const epoch = Date.UTC(1899, 11, 30);
+    const date = new Date(epoch + Math.round(value * 86400000));
+    if (Number.isNaN(date.getTime())) return null;
+    return dateKey(
+      date.getUTCFullYear(),
+      date.getUTCMonth() + 1,
+      date.getUTCDate()
+    );
+  }
+
+  const text = cleanString(value);
+  if (!text) return null;
+
+  let match = text.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if (match) {
+    return dateKey(Number(match[1]), Number(match[2]), Number(match[3]));
+  }
+
+  match = text.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})/);
+  if (match) {
+    const first = Number(match[1]);
+    const second = Number(match[2]);
+    const year = Number(match[3]);
+    let day = first;
+    let month = second;
+
+    if (first <= 12 && second > 12) {
+      month = first;
+      day = second;
+    }
+
+    return dateKey(year, month, day);
+  }
+
+  const parsed = new Date(text);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return dateKey(
+    parsed.getUTCFullYear(),
+    parsed.getUTCMonth() + 1,
+    parsed.getUTCDate()
+  );
+}
+
+function currentBogotaDateKey(now) {
+  const formatter = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Bogota",
+    year: "numeric",
+    month: "numeric",
+    day: "numeric"
+  });
+  const parts = Object.fromEntries(
+    formatter
+      .formatToParts(now)
+      .filter((part) => part.type !== "literal")
+      .map((part) => [part.type, Number(part.value)])
+  );
+  return dateKey(parts.year, parts.month, parts.day);
+}
+
+function pendingInvoiceEligibility(row, todayKey) {
+  const workDateKey = sheetDateKey(recordCell(row, "Fecha trabajo"));
+  const invoiceReady = workDateKey !== null && workDateKey < todayKey;
+  return {
+    invoiceReady,
+    workflowBlocked: !invoiceReady
+  };
+}
+
 function collectionEligibility(row) {
   const state = recordCell(row, "Estado");
   const sentAt = cleanString(recordCell(row, "Fecha cuenta enviada"));
@@ -300,8 +382,9 @@ export async function readFinanceRows(env, fetchImpl = fetch) {
   };
 }
 
-export function buildFinanceSummary(rows) {
+export function buildFinanceSummary(rows, { now = new Date() } = {}) {
   const records = Array.isArray(rows) ? rows.filter(hasPersistedId) : [];
+  const todayKey = currentBogotaDateKey(now);
   const toInvoiceGrossByCurrency = emptyCurrencyTotals();
   const receivableNetByCurrency = emptyCurrencyTotals();
   const blockedNetByCurrency = emptyCurrencyTotals();
@@ -323,14 +406,22 @@ export function buildFinanceSummary(rows) {
     if (rawCurrency && !currency) unsupportedCurrencyCount += 1;
 
     const state = recordCell(row, "Estado");
+    const netAmount = numericValue(recordCell(row, "Valor Neto"));
 
     if (isPendingInvoiceState(state)) {
-      toInvoiceCount += 1;
-      addCurrencyAmount(
-        toInvoiceGrossByCurrency,
-        currency,
-        numericValue(recordCell(row, "Valor bruto"))
-      );
+      const eligibility = pendingInvoiceEligibility(row, todayKey);
+      if (eligibility.invoiceReady) {
+        toInvoiceCount += 1;
+        addCurrencyAmount(
+          toInvoiceGrossByCurrency,
+          currency,
+          numericValue(recordCell(row, "Valor bruto"))
+        );
+      } else {
+        collectionBlockedCount += 1;
+        addCurrencyAmount(blockedNetByCurrency, currency, netAmount);
+      }
+      continue;
     }
 
     if (isPaidState(state)) {
@@ -347,7 +438,6 @@ export function buildFinanceSummary(rows) {
     }
 
     const eligibility = collectionEligibility(row);
-    const netAmount = numericValue(recordCell(row, "Valor Neto"));
     if (eligibility.workflowBlocked) {
       collectionBlockedCount += 1;
       addCurrencyAmount(blockedNetByCurrency, currency, netAmount);
