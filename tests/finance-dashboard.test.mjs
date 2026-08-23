@@ -56,13 +56,15 @@ test("finance summary rounds money and reports workflow-blocked amounts", () => 
   });
 });
 
-test("admin dashboard loads modular finance analytics without sensitive fields", () => {
+test("dedicated Finance workspace loads modular analytics without sensitive fields", () => {
   const dashboard = readFileSync(new URL("../admin/dashboard.js", import.meta.url), "utf8");
+  const financePage = readFileSync(new URL("../admin/finance/index.html", import.meta.url), "utf8");
   const finance = readFileSync(new URL("../admin/finance-dashboard.js", import.meta.url), "utf8");
   const styles = readFileSync(new URL("../admin/finance-dashboard.css", import.meta.url), "utf8");
   const mobile = readFileSync(new URL("../admin/mobile-dashboard.css", import.meta.url), "utf8");
 
-  assert.match(dashboard, /finance-dashboard\.js/);
+  assert.doesNotMatch(dashboard, /finance-dashboard\.js/);
+  assert.match(financePage, /finance-dashboard\.js\?v=/);
   assert.match(finance, /\/api\/admin\/finance\/dashboard/);
   assert.match(finance, /\/api\/admin\/finance\/settings/);
   assert.match(finance, /workflowBlockedNetByCurrency/);
