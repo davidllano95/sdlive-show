@@ -2,7 +2,7 @@
 
 **Updated:** 2026-08-23 — America/Bogota  
 **Status:** AppSheet multi-day **PASS** · Admin Calendar read-only **CLOSED/PASS** · Site Schedule + automatic Show Day + Location **CLOSED/PASS** · public header parity **PASS**. Controlled Admin create is implemented but production write remains **BLOCKED on Google OAuth Sheets write scope**.  
-**Continuation point:** re-authorize the existing Google OAuth connection, then run one controlled create → Google Sheet → AppSheet smoke.
+**Continuation point:** re-authorize the existing Google OAuth connection, then run one controlled create → Google Sheet → AppSheet smoke. After create PASS, run the queued Site Schedule ongoing/future source filter + mandatory detailed desktop/mobile visual audit before broader UI expansion.
 
 ## 1. Permanent architecture / source of truth
 
@@ -121,7 +121,7 @@ Then:
 3. verify it in Google Sheets;
 4. sync AppSheet;
 5. verify the same persisted record in AppSheet;
-6. only after PASS, close create and proceed toward controlled edit/workflow actions.
+6. only after PASS, close create and proceed to the required stabilization work below.
 
 Checkpoint: `docs/checkpoints/calendar-create-oauth-write-gate-2026-08-23.md`.
 
@@ -176,6 +176,23 @@ The real RENT source span Aug 4–28 was saved as:
 - Aug 27–28.
 
 Production Calendar correctly shows four blocks with gaps. `Next` also follows the effective block dates.
+
+### Required Split Work source-list cleanup — QUEUED AFTER CREATE PASS
+
+The Site Schedule source selector must stop surfacing completed past work.
+
+Dynamic rule in **America/Bogota**:
+
+- ongoing: `sourceStartDate <= today <= sourceEndDate` → visible;
+- future: `sourceStartDate > today` → visible;
+- past: `sourceEndDate < today` → hidden from Split Work/source selector.
+
+This is an editor usability filter only:
+
+- do not delete historical Site Schedule overrides;
+- do not remove past events from historical Calendar views;
+- do not mutate `REGISTRO` or AppSheet;
+- search should run across the eligible ongoing/future set.
 
 ## 8. Automatic Show Day + Location — CLOSED/PASS
 
@@ -240,10 +257,30 @@ Finance/AppSheet billing readiness and invoice reminders must use the day after 
 - preserve LiventX workflow semantics;
 - complete before the overall AppSheet/Finance integration is closed.
 
-## 12. Current next action
+## 12. Required post-integration visual audit — QUEUED AFTER CREATE PASS
 
-**Do not open another feature milestone. Continue the OAuth gate.**
+A full visual audit is mandatory because several recent changes altered shared public headers, Show Day, Location, Calendar/Site Schedule and Admin workspaces. Functional smoke is not enough to close visual coherence.
 
-The first manual step is to use Google OAuth Playground to re-authorize the existing OAuth client for Sheets write scope. Proceed one manual action at a time.
+The audit must be **detailed and separate for desktop + mobile** and covers:
 
-After controlled create passes end-to-end, the next Calendar milestone may be controlled edit + explicit workflow actions. Generic Finance Phase 3 remains blocked.
+- Home plus every current public landing route family;
+- normal mode + automatic Show Day active mode;
+- shared header/nav/logo/Location/ON AIR/CTA/language behavior;
+- EN/ES and COL/INT branches where applicable;
+- Rental cart / WhatsApp / footer / anchor offsets / overflow / typography / spacing;
+- `/admin/`, Finance, Calendar, Site Schedule and Editor;
+- mobile menus, safe areas, modals, date inputs, long text, touch targets and horizontal overflow;
+- desktop focus/hover/keyboard states;
+- current Show Day startup popping and dynamic-favicon backlog severity.
+
+Findings use P0–P3 severity. P0/P1 visual regressions must be fixed and production-smoked before the stabilization milestone closes. Remaining P2/P3 items must stay explicitly tracked.
+
+Full matrix, finding format and exit criteria: `docs/roadmap/post-integration-visual-audit-2026-08-23.md`.
+
+## 13. Current next action
+
+**Do not interrupt the OAuth gate.**
+
+Continue Google OAuth Playground re-authorization for Sheets write scope, one manual action at a time. After the controlled create passes end-to-end, implement the ongoing/future-only Site Schedule selector and run the required desktop/mobile visual audit before controlled edit/workflow UI expansion.
+
+Generic Finance Phase 3 remains blocked.
