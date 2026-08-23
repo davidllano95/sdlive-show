@@ -56,9 +56,10 @@
     }
 
     try {
-      await window.SDLiveFinanceDashboard.load();
+      const loading = window.SDLiveFinanceDashboard.load();
       const section = document.getElementById("financeOverview");
       if (mount && section && section.parentElement !== mount) mount.appendChild(section);
+      await loading;
       window.SDLiveFinanceI18n?.refresh?.();
       if (status?.querySelector("span")) status.querySelector("span").textContent = "Finance online · read-only source";
     } catch (error) {
