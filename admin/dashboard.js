@@ -39,6 +39,51 @@
 
   if (collapsed && collapse) collapse.textContent = "Expand";
 
+  function activateCalendarWorkspace() {
+    const navItems = [...document.querySelectorAll(".app-nav__item")];
+    const calendarButton = navItems.find(
+      (item) => item.tagName === "BUTTON" && item.querySelector("span")?.textContent?.trim() === "Calendar"
+    );
+
+    if (calendarButton) {
+      const calendarLink = document.createElement("a");
+      calendarLink.className = "app-nav__item";
+      calendarLink.href = "./calendar/";
+      calendarLink.innerHTML = calendarButton.innerHTML;
+      const status = calendarLink.querySelector("small");
+      if (status) status.textContent = "Read-only";
+      calendarButton.replaceWith(calendarLink);
+    }
+
+    const workspaceGrid = document.querySelector(".workspace-grid");
+    if (!workspaceGrid || workspaceGrid.querySelector('[data-workspace="calendar"]')) return;
+
+    const calendarModule = document.createElement("a");
+    calendarModule.className = "module";
+    calendarModule.href = "./calendar/";
+    calendarModule.dataset.workspace = "calendar";
+    calendarModule.innerHTML = `
+      <div class="module-icon">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h1.5v2H17V3h1.5v2H21v16H3V5h2V3Zm-0.5 7v9h15v-9h-15Z"/></svg>
+      </div>
+      <div>
+        <span class="module-status is-live">Live · Read-only</span>
+        <h4>Calendar</h4>
+        <p>View SD.Live Track jobs and multi-day events from the same REGISTRO source used by AppSheet.</p>
+      </div>
+      <span class="arrow">→</span>
+    `;
+
+    const firstComingSoon = workspaceGrid.querySelector(".module.is-coming");
+    if (firstComingSoon) {
+      workspaceGrid.insertBefore(calendarModule, firstComingSoon);
+    } else {
+      workspaceGrid.appendChild(calendarModule);
+    }
+  }
+
+  activateCalendarWorkspace();
+
   async function api(url) {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 10000);
