@@ -43,7 +43,7 @@
     calendarLink.href = "/admin/calendar/";
     calendarLink.innerHTML = calendarButton.innerHTML;
     const small = calendarLink.querySelector("small");
-    if (small) small.textContent = "Read-only";
+    if (small) small.textContent = "Operations";
     calendarButton.replaceWith(calendarLink);
   }
 
