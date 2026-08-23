@@ -10,7 +10,7 @@
   <link rel="icon" href="../assets/icons/favicon.ico" />
   <link rel="stylesheet" href="./dashboard.css" />
   <link rel="stylesheet" href="./mobile-dashboard.css" />
-  <link rel="stylesheet" href="./calendar/calendar.css?v=20260823-2" />
+  <link rel="stylesheet" href="./calendar/calendar.css?v=20260823-3" />
   <link rel="stylesheet" href="./calendar/mobile-month.css?v=20260823-2" />
 </head>
 <body>
@@ -55,7 +55,7 @@
         </button>
         <a class="app-nav__item is-active" href="/admin/calendar/">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h1.5v2H17V3h1.5v2H21v16H3V5h2V3Zm-0.5 7v9h15v-9h-15Z"/></svg>
-          <span>Calendar</span><small>Read-only</small>
+          <span>Calendar</span><small>Operations</small>
         </a>
 
         <p class="nav-label">Content & system</p>
@@ -101,10 +101,13 @@
           <div>
             <span class="eyebrow">SD.Live Track · REGISTRO</span>
             <h2>Operations calendar</h2>
-            <p>Jobs and events from the same Google Sheets source used by AppSheet. Multi-day work is shown as a continuous span. This first Admin milestone is intentionally read-only.</p>
+            <p>Jobs and events use the same Google Sheets source as AppSheet. Multi-day work stays continuous, and new work can now be added through a controlled source-field form without touching formula-owned finance columns.</p>
           </div>
-          <div class="system-pill" id="calendarStatus">
-            <i></i><span>Connecting to Calendar…</span>
+          <div class="calendar-welcome__actions">
+            <button class="button" id="openCreateWork" type="button">+ New work</button>
+            <div class="system-pill" id="calendarStatus">
+              <i></i><span>Connecting to Calendar…</span>
+            </div>
           </div>
         </div>
 
@@ -142,11 +145,101 @@
           <div class="calendar-empty" id="calendarEmpty" hidden>No jobs or events in this month.</div>
         </section>
 
-        <p class="calendar-footnote">Source: Google Sheets <strong>REGISTRO</strong>. Start = <strong>Fecha trabajo</strong>. End = <strong>Fecha fin</strong>. Formula-owned finance columns are not modified by this workspace.</p>
+        <p class="calendar-footnote">Source: Google Sheets <strong>REGISTRO</strong>. Start = <strong>Fecha trabajo</strong>. End = <strong>Fecha fin</strong>. Create writes only mapped source fields; formula-owned finance columns remain untouched. Calendar read payloads still exclude Notes, contact number and persisted ID.</p>
       </section>
+
+      <dialog class="work-dialog" id="createWorkDialog" aria-labelledby="createWorkTitle">
+        <form class="work-form" id="createWorkForm" novalidate>
+          <div class="work-dialog__head">
+            <div>
+              <span class="eyebrow">SD.Live Track · controlled create</span>
+              <h2 id="createWorkTitle">New work</h2>
+              <p>Add the human/source fields only. Finance formulas and workflow dates remain system-owned.</p>
+            </div>
+            <button class="work-dialog__close" id="closeCreateWork" type="button" aria-label="Close">×</button>
+          </div>
+
+          <div class="work-form__grid">
+            <label class="work-field">
+              <span>Fecha trabajo</span>
+              <input id="workStartDate" name="startDate" type="date" required />
+            </label>
+
+            <label class="work-field">
+              <span>Fecha fin</span>
+              <input id="workEndDate" name="endDate" type="date" required />
+              <small>Defaults to the start date; extend it for multi-day work.</small>
+            </label>
+
+            <label class="work-field">
+              <span>Cliente</span>
+              <input name="client" type="text" maxlength="160" autocomplete="organization" required />
+            </label>
+
+            <label class="work-field">
+              <span>Proyecto / Show</span>
+              <input name="project" type="text" maxlength="200" required />
+            </label>
+
+            <label class="work-field">
+              <span>Rol</span>
+              <input name="role" type="text" maxlength="160" />
+            </label>
+
+            <label class="work-field">
+              <span>Moneda</span>
+              <select name="currency" required>
+                <option value="COP" selected>COP</option>
+                <option value="USD">USD</option>
+              </select>
+            </label>
+
+            <label class="work-field">
+              <span>Valor bruto</span>
+              <input name="grossAmount" type="number" min="0" step="0.01" inputmode="decimal" required />
+            </label>
+
+            <label class="work-field">
+              <span>Método de pago</span>
+              <select name="paymentMethod">
+                <option value="">—</option>
+                <option value="Transferencia">Transferencia</option>
+                <option value="Wise">Wise</option>
+                <option value="PayPal">PayPal</option>
+                <option value="Efectivo">Efectivo</option>
+                <option value="Otro">Otro</option>
+              </select>
+            </label>
+
+            <label class="work-field work-field--wide">
+              <span>Notas</span>
+              <textarea name="notes" rows="3" maxlength="3000"></textarea>
+            </label>
+
+            <label class="work-field">
+              <span>NUM CONTACTO</span>
+              <input name="contactNumber" type="text" inputmode="numeric" pattern="[0-9]{7,20}" maxlength="20" autocomplete="tel" />
+              <small>Digits only; no + or spaces.</small>
+            </label>
+
+            <div class="work-field work-field--state">
+              <span>Estado inicial</span>
+              <strong>Pendiente Envio</strong>
+              <small>Workflow dates and payment state are handled later through explicit actions.</small>
+            </div>
+          </div>
+
+          <p class="work-form__message" id="createWorkMessage" role="status" aria-live="polite"></p>
+
+          <div class="work-dialog__actions">
+            <button class="button button--ghost" id="cancelCreateWork" type="button">Cancel</button>
+            <button class="button" id="createWorkSubmit" type="submit">Create work</button>
+          </div>
+        </form>
+      </dialog>
     </main>
   </div>
 
-  <script src="./calendar/calendar.js?v=20260823-1"></script>
+  <script src="./calendar/calendar.js?v=20260823-2"></script>
 </body>
 </html>
