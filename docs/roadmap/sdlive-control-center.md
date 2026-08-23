@@ -1,8 +1,9 @@
 # 14.5 — SD.Live as Control Center
 
-**Reprioritized:** 2026-08-22 — America/Bogota
+**Reprioritized:** 2026-08-22 — America/Bogota  
+**Architecture checkpoint:** 2026-08-23 — America/Bogota
 
-**Status:** Active sequenced initiative — Steps 1–6 are closed. **Finance Phase 2 read-only Admin insights is production-validated and now enters real-use observation.** Finance Phase 3 write-back remains blocked until that read-only surface is trusted in real use. Availability/WhatsApp and finance reminder-delivery hardening remain eligible documented tracks but are not activated automatically.
+**Status:** Active sequenced initiative — Steps 1–6 are closed. **Finance Phase 2 read-only Admin insights is production-validated and in real-use observation.** The Finance UI is now being separated into the dedicated `/admin/finance/` workspace so the main `/admin/` Dashboard remains lightweight and scalable. Finance Phase 3 write-back remains blocked until the read-only surface is trusted in real use. Availability/WhatsApp and finance reminder-delivery hardening remain eligible documented tracks but are not activated automatically.
 
 This initiative supersedes the earlier informal Category D / future-integration framing for CRM, AppSheet integration, Automatic Show Day and Calendar. Existing detail in those sections remains valid; this document defines the required sequence and priority.
 
@@ -11,6 +12,8 @@ This initiative supersedes the earlier informal Category D / future-integration 
 SD.Live is intended to become Samuel's single operational control center, including the freelance finance system historically known as NextPay26 (Google Sheets + AppSheet), rather than remaining only a marketing/CMS site.
 
 That direction must preserve the source-of-truth discipline already established for CMS content, pricing, leads and media. Moving quickly means following the dependency order below, not skipping it.
+
+The Admin shell is also expected to scale by **workspace**, not by making the root Dashboard execute every subsystem. Dashboard, Finance and Site Editor are sibling surfaces behind the same Access boundary; future operational modules should follow the same isolation principle when their runtime/data weight justifies it.
 
 ## Required sequence — do not reorder without explicit re-approval
 
@@ -103,7 +106,7 @@ The first useful integration is live, read-only and private.
 - [x] `/api/admin/finance/health` validates the fixed finance source and exact 27-column `REGISTRO` schema without returning finance values.
 - [x] `/api/admin/finance/summary` reads the bounded `REGISTRO!A1:AA3000` range and returns only approved aggregates/detail.
 - [x] AppSheet continues to handle field/offline capture and existing workflow writes.
-- [x] `/admin` now has a live **SD.Live Track · Read-only — Finance overview**.
+- [x] Admin has a live **SD.Live Track · read-only Finance** surface.
 - [x] Pending invoices / accounts receivable surfaced.
 - [x] Recorded fees/deductions surfaced from authoritative Sheet values.
 - [x] COP / USD split preserved in API and UI.
@@ -127,19 +130,39 @@ Production closeout snapshot:
 
 Guardrails verified:
 
-- `/admin` only and behind existing Cloudflare Access.
+- Admin-only and behind existing Cloudflare Access.
 - No public finance route.
 - Read-only Google Sheets scope and no finance write endpoint.
 - No D1 finance mirror or second financial source of truth.
 - `NUM CONTACTO`, Notes, internal row IDs and OAuth credentials/tokens are omitted from the browser-facing summary.
 
-**Sequencing consequence:** Phase 2 now enters real-use observation. Do not activate Phase 3 write-back merely because the read path works; it still requires trust from real use plus the draft-first/idempotent contract in Step 8.
+**Sequencing consequence:** Phase 2 remains in real-use observation. Do not activate Phase 3 write-back merely because the read path works; it still requires trust from real use plus the draft-first/idempotent contract in Step 8.
+
+### 6.1. Admin Finance workspace separation — 🚧 ACTIVE HARDENING / SMOKE
+
+**Decision approved 2026-08-23.** Evidence: `docs/checkpoints/admin-finance-workspace-separation-2026-08-23.md`.
+
+Finance is promoted from an embedded Dashboard section into a sibling Admin workspace:
+
+- [x] Target route: **`/admin/finance/`**.
+- [x] `/admin/` remains the lightweight control-center overview and CMS/system health surface.
+- [x] `/admin/editor/` remains the Site Editor/CMS surface.
+- [x] Finance runtime/analytics is removed from Dashboard startup.
+- [x] Dashboard keeps navigation/quick access to Finance without executing Finance code.
+- [x] Site Editor navigation exposes the Finance sibling workspace.
+- [x] Existing Finance APIs, calculations, EN/ES, COP/USD separation and Tax Reserve semantics stay unchanged.
+- [x] No source-of-truth, D1 finance persistence or write behavior changes.
+- [ ] Post-merge desktop + iPhone production smoke of `/admin/`, `/admin/finance/` and `/admin/editor/`.
+
+Why: after PR #68 fixed the Finance translation observer freeze, desktop passed. PR #69 then proved on iPhone that the core Admin loaded quickly when Finance startup was deferred, and that Finance itself loaded and remained fluid when started afterward. The permanent scalable solution is therefore **workspace isolation**, not keeping a temporary mobile-only launcher inside Dashboard.
+
+This 6.1 hardening does **not** reopen Step 6 and does **not** advance Phase 3. After smoke, return to Phase 2 real-use observation.
 
 #### Finance reminder delivery hardening — ⏳ D FUTURE BACKLOG
 
-The current AppSheet finance Bots are notification-only and do not write data. The owner reports the push reminders have not been received in practice. Preserve this as a separate delivery/reliability backlog item rather than changing collection logic during the read-only integration.
+The current AppSheet finance Bots are notification-only and do not write data. Preserve this as a separate delivery/reliability backlog item rather than changing collection logic during the read-only integration.
 
-- [ ] Diagnose current AppSheet push notification delivery, recipients and runtime history.
+- [ ] Diagnose current AppSheet push notification delivery, recipients and runtime history if delivery regresses.
 - [ ] Add email delivery for the same approved reminder conditions if useful.
 - [ ] Add WhatsApp delivery for the same approved reminder conditions if useful.
 - [ ] Keep these channels notification-only; reuse one business-rule source and do not fork finance state/ownership.
@@ -191,10 +214,11 @@ Potential later scope:
 - No second source of truth for pricing, leads or financial data.
 - Financial data is more sensitive than rental pricing and remains behind Cloudflare Access.
 - No public finance route regardless of obscurity or unlinked URL state.
+- **The root `/admin/` Dashboard must not auto-boot the full Finance analytics runtime. Finance owns `/admin/finance/`.**
 - AI qualification has no access to pricing, rental catalog or finance data.
 - Read-only or write-once comes before bidirectional sync.
 - "As soon as possible" applies to moving through the sequence, not bypassing prerequisites.
-- Steps 1–6 are now closed for the finance/control-center integration track.
+- Steps 1–6 are closed for the finance/control-center integration track; 6.1 is runtime/UI hardening, not a new finance ownership phase.
 - Finance Phase 3 remains blocked until Phase 2 earns real-use trust and its write contract is explicitly approved.
 - Step 7 is the explicit eligible parallel-track exception but still requires promotion before implementation.
 - Repair vs rewrite is **DECIDED: repair + integrate** based on the 2026-08-22 full audit; do not reopen it without new evidence of material architectural failure.
@@ -220,4 +244,4 @@ Existing sections remain valid detail and should not be deleted or recreated:
 - **16 — Automatic Show Day Mode**
 - **17 — Calendar**
 
-This **14.5 Control Center** initiative owns their sequencing and reprioritization. Steps 4–6 are closed with **SD.Live Track** applied, mobile/offline smoke passed, the field/source-of-truth map documented and the read-only Admin finance surface production-validated. Phase 2 is now in real-use observation; Phase 3 remains gated.
+This **14.5 Control Center** initiative owns their sequencing and reprioritization. Steps 4–6 are closed with **SD.Live Track** applied, mobile/offline smoke passed, the field/source-of-truth map documented and the read-only Admin finance surface production-validated. Finance is now isolated as the dedicated `/admin/finance/` workspace while `/admin/` remains lightweight. Phase 2 stays in real-use observation; Phase 3 remains gated.
