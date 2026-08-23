@@ -120,7 +120,7 @@ The worklist UI also uses the Admin/SD.Live brand accent variables (`--accent`, 
 - Preserved lazy loading, read-only behavior, COP/USD separation and browser privacy guardrails.
 - Production smoke of the refined wording and branded worklist styling passed.
 
-### Current UX milestone — Aging drilldowns + calculator Clear
+### PR #76 — Aging drilldowns + calculator Clear
 
 - **Aging 0–30 / 31–60 / 61+** is implemented as a read-only drilldown for both COP and USD.
 - Each Aging range opens the exact sanitized unpaid accounts that compose the bucket and shows client, project, net amount, sent date, days unpaid and current workflow state.
@@ -130,7 +130,7 @@ The worklist UI also uses the Admin/SD.Live brand accent variables (`--accent`, 
 - Aging remains lazy/on-demand and uses the existing branded Finance worklist modal.
 - The pass-through calculator now includes **Limpiar / Clear**, which resets currency to COP, clears invoice/bank totals, returns to one empty third-party row and clears calculated results.
 - Clear is browser-local only; it does not introduce persistence, API calls or Finance write-back.
-- Production smoke for these two additions is still required after deployment.
+- Production QA passed for a non-empty Aging bucket and for the full **Limpiar / Clear** reset behavior.
 
 ## Production QA checkpoint completed
 
@@ -146,14 +146,14 @@ The following real-use validation is complete on production:
 - [x] **Flujo bloqueado** worklist and blocker reasons against real production data.
 - [x] Refined workflow wording and SD.Live-branded worklist styling.
 - [x] Pass-through calculator with a real-use case: COP 1,000,000 invoiced, COP 900,000 received, COP 300,000 third-party gross → 10% effective retention, COP 630,000 own net, COP 270,000 third-party payout, COP 900,000 reconciliation.
-- [ ] Production smoke of one non-empty **Aging** bucket and its exact account list/actions.
-- [ ] Production smoke of **Limpiar / Clear** in the pass-through calculator.
+- [x] Production smoke of a non-empty **Aging** bucket and its exact account list/actions.
+- [x] Production smoke of **Limpiar / Clear** in the pass-through calculator, confirming COP reset, empty totals, one blank third-party row and cleared results/breakdown.
 
 ## Near-term Finance UX backlog
 
 These are eligible improvements, not automatic authorization:
 
-- [x] Make **Aging 0–30 / 31–60 / 61+** interactive so each bucket opens the exact accounts inside it. Implementation complete; production smoke pending.
+- [x] Make **Aging 0–30 / 31–60 / 61+** interactive so each bucket opens the exact accounts inside it. Implementation and production smoke complete.
 - [ ] Make **Data quality** warnings interactive so each warning opens the exact rows that need correction. This is now the highest-value next drilldown.
 - [ ] Make **Received all-time** interactive to inspect already-paid records, payment date, gross, fees and received amount without turning Admin into a write owner.
 - [ ] Make **Top debtors** interactive so a client opens the individual outstanding accounts that make up the balance.
@@ -172,10 +172,9 @@ These are eligible improvements, not automatic authorization:
 
 ## Next recommended sequence
 
-1. Production-smoke one non-empty **Aging** bucket and verify its exact accounts/actions.
-2. Production-smoke **Limpiar / Clear** in the pass-through calculator.
-3. If continuing Finance UX, implement **Data quality** drilldowns next.
-4. Keep Phase 2 in real-use observation and only fix observed data/UX semantics issues.
-5. Only after enough trust, explicitly decide whether to design Phase 3 draft-first/idempotent write-back or pivot to another Control Center module.
+1. If continuing Finance UX, implement **Data quality** drilldowns next.
+2. Then consider **Received all-time** or **Top debtors** drilldowns based on real-use value.
+3. Keep Phase 2 in real-use observation and only fix observed data/UX semantics issues.
+4. Only after enough trust, explicitly decide whether to design Phase 3 draft-first/idempotent write-back or pivot to another Control Center module.
 
 Availability/WhatsApp remains an independently eligible track, but it is not activated by this handoff.
