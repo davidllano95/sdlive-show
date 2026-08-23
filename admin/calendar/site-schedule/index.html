@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex,nofollow,noarchive" />
+  <meta name="color-scheme" content="dark" />
+  <title>Site Schedule · SD.Live Admin</title>
+  <link rel="icon" href="/assets/icons/favicon.ico" />
+  <link rel="stylesheet" href="/admin/dashboard.css" />
+  <link rel="stylesheet" href="/admin/mobile-dashboard.css" />
+  <link rel="stylesheet" href="/admin/calendar/site-schedule/site-schedule.css?v=20260823-1" />
+</head>
+<body>
+  <div class="backoffice">
+    <aside class="app-sidebar" id="appSidebar">
+      <div class="brand">
+        <img class="brand-full" src="/assets/logos/sd-live-header-normal.png" alt="SD.Live" />
+        <img class="brand-symbol" src="/assets/logos/sd-live-header-normal-symbol.png" alt="" aria-hidden="true" />
+        <span>Admin</span>
+      </div>
+
+      <nav class="app-nav" aria-label="Back office">
+        <a class="app-nav__item" href="/admin/">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 3 10.1V21h7v-6h4v6h7V10.1L12 3Zm0 2.1 7 5.6v8.8h-3.5v-6h-7v6H5v-8.8l7-5.6Z"/></svg>
+          <span>Dashboard</span>
+        </a>
+        <a class="app-nav__item" href="/admin/finance/">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4V5Zm2 2v10h12V7H6Zm1.5 7.5h2V16h-2v-1.5Zm3.5-3h2V16h-2v-4.5Zm3.5-3h2V16h-2V8.5Z"/></svg>
+          <span>Finance</span><small>SD.Live Track</small>
+        </a>
+        <a class="app-nav__item" href="/admin/editor/">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 3 13.2 8-6.1 1.3 3.8 6-2.1 1.3-3.8-6.1L6 18 5 3Z"/></svg>
+          <span>Site Editor</span>
+        </a>
+        <p class="nav-label">Business</p>
+        <a class="app-nav__item is-active" href="/admin/calendar/">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h1.5v2H17V3h1.5v2H21v16H3V5h2V3Zm-0.5 7v9h15v-9h-15Z"/></svg>
+          <span>Calendar</span><small>Operations</small>
+        </a>
+      </nav>
+
+      <div class="sidebar-bottom">
+        <span class="secure"><i></i> Cloudflare Access</span>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <span class="eyebrow"><span class="inline-wordmark" aria-label="SD.Live"><span>SD</span><i aria-hidden="true">.</i><span>Live</span></span> Back Office</span>
+          <h1>Site Schedule</h1>
+        </div>
+        <div class="top-actions">
+          <span class="identity" id="identity">Checking access…</span>
+          <a class="button button--ghost" href="/admin/calendar/">Calendar</a>
+          <a class="button" href="/">Open site ↗</a>
+        </div>
+      </header>
+
+      <section class="content site-schedule-content">
+        <div class="welcome site-schedule-welcome">
+          <div>
+            <span class="eyebrow">Website-only operations layer</span>
+            <h2>Split work into the dates the site should actually show.</h2>
+            <p>REGISTRO and AppSheet remain unchanged. Site Schedule only controls how work is represented in the Admin Calendar and whether a specific block activates automatic Show Day Mode.</p>
+          </div>
+          <div class="system-pill" id="scheduleStatus"><i></i><span>Loading Site Schedule…</span></div>
+        </div>
+
+        <div class="schedule-layout">
+          <section class="schedule-browser" aria-labelledby="scheduleBrowserTitle">
+            <div class="schedule-panel-head">
+              <div>
+                <span class="eyebrow">REGISTRO source</span>
+                <h3 id="scheduleBrowserTitle">Choose work</h3>
+              </div>
+              <input id="eventSearch" class="schedule-search" type="search" placeholder="Search client or project" autocomplete="off" />
+            </div>
+            <div class="schedule-event-list" id="eventList" aria-live="polite"></div>
+          </section>
+
+          <section class="schedule-editor" id="scheduleEditor" aria-labelledby="scheduleEditorTitle">
+            <div class="schedule-editor-empty" id="editorEmpty">
+              <strong>Select a job or event.</strong>
+              <p>Its Google Sheets dates will remain untouched; only the website representation is edited here.</p>
+            </div>
+
+            <form id="scheduleForm" hidden novalidate>
+              <div class="schedule-panel-head schedule-editor-head">
+                <div>
+                  <span class="eyebrow">Selected work</span>
+                  <h3 id="scheduleEditorTitle">Site Schedule</h3>
+                  <p id="sourceRange"></p>
+                </div>
+                <button class="button button--ghost" id="resetSchedule" type="button">Use REGISTRO dates</button>
+              </div>
+
+              <div class="schedule-segments-head">
+                <div>
+                  <strong>Website blocks</strong>
+                  <p>Blocks cannot overlap and must stay inside the original REGISTRO range.</p>
+                </div>
+                <button class="button button--ghost" id="addSegment" type="button">+ Add block</button>
+              </div>
+
+              <div class="schedule-segments" id="segmentList"></div>
+
+              <p class="schedule-message" id="scheduleMessage" role="status" aria-live="polite"></p>
+
+              <div class="schedule-actions">
+                <span class="schedule-help">Show Day + Location are website-only and never write back to AppSheet.</span>
+                <button class="button" id="saveSchedule" type="submit">Save Site Schedule</button>
+              </div>
+            </form>
+          </section>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <template id="segmentTemplate">
+    <article class="schedule-segment">
+      <div class="schedule-segment__dates">
+        <label class="schedule-field">
+          <span>Start</span>
+          <input data-field="startDate" type="date" required />
+        </label>
+        <label class="schedule-field">
+          <span>End</span>
+          <input data-field="endDate" type="date" required />
+        </label>
+      </div>
+      <label class="schedule-showday">
+        <input data-field="showDay" type="checkbox" />
+        <span><strong>Show Day</strong><small>Activate the live site treatment on these dates.</small></span>
+      </label>
+      <label class="schedule-field schedule-field--location">
+        <span>Location</span>
+        <input data-field="location" type="text" maxlength="160" placeholder="e.g. Teatro Colón · Bogotá" />
+        <small>Required when Show Day is enabled; shown publicly only while active.</small>
+      </label>
+      <button class="schedule-segment__remove" data-action="remove" type="button" aria-label="Remove block">Remove</button>
+    </article>
+  </template>
+
+  <script src="/admin/calendar/site-schedule/site-schedule.js?v=20260823-1"></script>
+</body>
+</html>

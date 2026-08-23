@@ -99,11 +99,12 @@
       <section class="content calendar-content">
         <div class="welcome calendar-welcome">
           <div>
-            <span class="eyebrow">SD.Live Track · REGISTRO</span>
+            <span class="eyebrow">SD.Live Track · REGISTRO + Site Schedule</span>
             <h2>Operations calendar</h2>
-            <p>Jobs and events use the same Google Sheets source as AppSheet. Multi-day work stays continuous, and new work can now be added through a controlled source-field form without touching formula-owned finance columns.</p>
+            <p>REGISTRO stays the Google Sheets/AppSheet source of truth. Site Schedule can split those source ranges into the actual website dates, with optional Show Day + Location, without writing the split back to AppSheet or finance formulas.</p>
           </div>
           <div class="calendar-welcome__actions">
+            <a class="button button--ghost" href="/admin/calendar/site-schedule/">Site schedule</a>
             <button class="button" id="openCreateWork" type="button">+ New work</button>
             <div class="system-pill" id="calendarStatus">
               <i></i><span>Connecting to Calendar…</span>
@@ -145,7 +146,7 @@
           <div class="calendar-empty" id="calendarEmpty" hidden>No jobs or events in this month.</div>
         </section>
 
-        <p class="calendar-footnote">Source: Google Sheets <strong>REGISTRO</strong>. Start = <strong>Fecha trabajo</strong>. End = <strong>Fecha fin</strong>. Create writes only mapped source fields; formula-owned finance columns remain untouched. Calendar read payloads still exclude Notes, contact number and persisted ID.</p>
+        <p class="calendar-footnote">Persistent source: Google Sheets <strong>REGISTRO</strong>. Website display may be refined by <strong>Site Schedule</strong> in D1. Site Schedule never writes split blocks, Show Day or Location back to AppSheet. Create still writes only mapped source fields; formula-owned finance columns remain untouched. Calendar payloads exclude Notes, contact number and persisted Sheet ID.</p>
       </section>
 
       <dialog class="work-dialog" id="createWorkDialog" aria-labelledby="createWorkTitle">

@@ -2,6 +2,11 @@ import appWorker from "./worker-router.js";
 import { handleFinanceApi } from "./finance-api.js";
 import { handleFinanceDashboardApi } from "./finance-dashboard-api.js";
 import { handleCalendarApi } from "./calendar-api.js";
+import {
+  decorateCalendarResponse,
+  handleSiteScheduleApi
+} from "./site-schedule-api.js";
+import { applyShowDayRuntime } from "./showday-edge.js";
 
 const PUBLIC_FORM_LIMITS = {
   "/api/contact": {
@@ -99,12 +104,30 @@ export async function enforcePublicFormRateLimit(request, env) {
 export default {
   async fetch(request, env) {
     const path = normalizedPath(request);
+    const url = new URL(request.url);
+
+    if (
+      path === "/api/site/showday-status" ||
+      path === "/api/admin/site-schedule" ||
+      path.startsWith("/api/admin/site-schedule/events/")
+    ) {
+      const response = await handleSiteScheduleApi(request, env, {
+        verifyAdmin: verifyAdminViaExistingApi
+      });
+      if (response) return response;
+    }
 
     if (path === "/api/admin/calendar/events") {
       const response = await handleCalendarApi(request, env, {
         verifyAdmin: verifyAdminViaExistingApi
       });
-      if (response) return response;
+      if (!response) return response;
+      if (request.method === "GET" && response.ok) {
+        return decorateCalendarResponse(response, env, {
+          applyOverrides: url.searchParams.get("view") !== "source"
+        });
+      }
+      return response;
     }
 
     if (
@@ -126,6 +149,11 @@ export default {
 
     const limited = await enforcePublicFormRateLimit(request, env);
     if (limited) return limited;
-    return appWorker.fetch(request, env);
+
+    const response = await appWorker.fetch(request, env);
+    if (request.method === "GET" && !path.startsWith("/admin")) {
+      return applyShowDayRuntime(response);
+    }
+    return response;
   }
 };
