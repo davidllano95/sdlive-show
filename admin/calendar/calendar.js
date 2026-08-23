@@ -310,7 +310,7 @@
     }
 
     const todayIso = bogotaTodayIso();
-    const upcoming = events.find((event) => event.endDate >= todayIso);
+    const upcoming = events.find((event) => event.startDate >= todayIso);
     if (!upcoming) {
       if (nextDate) nextDate.textContent = "—";
       if (nextLabel) nextLabel.textContent = "No upcoming event";
