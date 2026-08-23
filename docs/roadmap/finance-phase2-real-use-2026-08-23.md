@@ -96,14 +96,25 @@ Guardrails:
 - no automatic parsing/exposure of free-form `Notas`;
 - allocation is an internal management reconciliation and does not determine the legal/tax owner of a withholding certificate.
 
+### Current UX hardening — action-card worklists
+
+Real-use testing showed that the top status cards need to answer not only “how much?” but “what exactly do I do next?”. The current UX hardening adds read-only drilldowns for:
+
+- **Por facturar / To invoice** → exact records ready for invoice/account submission and the action to send the account;
+- **Cobrable ahora / Collectible now** → exact collectible records and the action to follow up/collect;
+- **Flujo bloqueado / Workflow blocked** → exact records plus explicit reason codes/actions, including work date today/future/invalid and missing LiventX evaluation/signature.
+
+The drilldown is intentionally lazy-loaded only when a card is opened so the dedicated Finance workspace keeps the lightweight startup behavior validated after PRs #68–#70. It remains read-only and does not expose `Notas`, `NUM CONTACTO` or internal row IDs.
+
 ## Current validation still worth doing
 
-- [ ] Fresh production smoke of `/admin/finance/` on desktop after the latest deploy.
-- [ ] Fresh production smoke of `/admin/finance/` on iPhone after the latest deploy.
-- [ ] Verify year selector still behaves correctly.
-- [ ] Verify ES/EN toggle after the dedicated-workspace changes.
+- [x] Fresh production smoke of `/admin/finance/` on desktop after the latest deploy.
+- [x] Fresh production smoke of `/admin/finance/` on iPhone after the latest deploy.
+- [x] Verify year selector still behaves correctly.
+- [x] Verify ES/EN toggle after the dedicated-workspace changes.
 - [ ] Test the pass-through calculator with at least one real payment case from SD.Live Track and confirm the reconciliation matches the bank receipt and intended third-party transfer.
-- [ ] Confirm the new invoice-date rule moves real future/today events out of Por facturar and into Flujo bloqueado as expected.
+- [x] Confirm the new invoice-date rule moves real future/today events out of Por facturar and into Flujo bloqueado as expected.
+- [ ] After the action-card worklists deploy, verify one card at a time on production (desktop first, then iPhone) and confirm the listed records/actions match SD.Live Track.
 
 ## Near-term Finance UX backlog
 
@@ -124,11 +135,10 @@ These are eligible improvements, not automatic authorization:
 
 ## Next recommended sequence
 
-1. Production-smoke the dedicated Finance workspace on desktop and iPhone.
-2. Test PR #71 invoice classification against real current/future records.
-3. Test PR #72 calculator with a real third-party payment.
-4. Fix only observed Finance UX/data-semantics issues.
-5. Keep Phase 2 in real-use observation.
-6. Only after enough trust, explicitly decide whether to design Phase 3 draft-first/idempotent write-back or pivot to another Control Center module.
+1. Deploy and production-smoke the read-only action-card worklists, one card at a time.
+2. Test PR #72 calculator with a real third-party payment.
+3. Fix only observed Finance UX/data-semantics issues.
+4. Keep Phase 2 in real-use observation.
+5. Only after enough trust, explicitly decide whether to design Phase 3 draft-first/idempotent write-back or pivot to another Control Center module.
 
 Availability/WhatsApp remains an independently eligible track, but it is not activated by this handoff.
