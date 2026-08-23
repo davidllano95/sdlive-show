@@ -33,7 +33,8 @@ test("finance dashboard bilingual layer keeps EN/ES in a centralized persisted c
 });
 
 test("finance translations gate dashboard loading and fail open to English", () => {
-  assert.match(dashboard, /i18n\.src = "\.\/finance-dashboard-i18n\.js"/);
+  assert.match(dashboard, /i18n\.src = "\.\/finance-dashboard-i18n\.js\?v=/);
+  assert.match(dashboard, /script\.src = "\.\/finance-dashboard\.js\?v=/);
   assert.match(dashboard, /i18n\.addEventListener\("load", loadFinanceDashboardScript/);
   assert.match(dashboard, /i18n\.addEventListener\("error", \(\) => \{/);
   assert.match(dashboard, /continuing in English/);
