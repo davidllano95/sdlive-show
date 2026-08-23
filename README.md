@@ -1,66 +1,69 @@
 # SD.Live
 
-Production website and back-office for **SD.Live — Creative Audio**.
+Production website and private back-office for **SD.Live — Creative Audio**.
 
-Production: `https://sdlive.show`  
-Public media: `https://media.sdlive.show`
+- Production: `https://sdlive.show`
+- Public media: `https://media.sdlive.show`
+- Operational timezone for documentation: **America/Bogota** unless explicitly labelled otherwise.
 
-Operational documentation dates use **America/Bogota** unless a timestamp is explicitly labelled UTC. GitHub API timestamps may cross the calendar-day boundary relative to Bogotá. Do not conflate the live `main` HEAD with the **runtime production baseline**: documentation-only commits may advance `main` without changing deployed runtime behavior. Query GitHub for the current HEAD when resuming work instead of treating a hard-coded docs SHA as perpetual HEAD.
+The public site is vanilla HTML/CSS/JS served through Cloudflare Workers + Static Assets. Dynamic APIs, CMS publishing, forms and edge rendering run in Workers. D1 stores structured CMS/application data, R2 stores editor-managed media, and Cloudflare Access protects the Admin.
 
-The public site is a vanilla HTML/CSS/JS frontend served by Cloudflare Workers Static Assets. Dynamic APIs, CMS publishing, forms and edge rendering run in Cloudflare Workers. D1 stores structured CMS content and R2 stores editor-managed media.
+For project state, use this precedence:
 
-For current progress, active gates, evidence, architectural invariants and the classified roadmap, read **`PROJECT_STATUS.md` first**. For the reconciled historical/future feature inventory, then read **`ROADMAP_MASTER_CHECKLIST.md`**. The repository and production behavior remain authoritative over planning prose.
+1. current code + verifiable production behavior;
+2. current schema/configuration;
+3. `PROJECT_STATUS.md` — operational current state and active gate;
+4. this README;
+5. `ROADMAP_MASTER_CHECKLIST.md` — preserved historical/future backlog detail;
+6. prompts, ideas and external references.
 
-## Authority and precedence
+The dedicated Control Center sequence is documented in `docs/roadmap/sdlive-control-center.md`.
 
-When sources conflict, use this order:
+## Permanent change-safety rule
 
-1. **Current code + behavior that can be verified in production.**
-2. **Current schema, migrations and deployed configuration.**
-3. **`PROJECT_STATUS.md` — operational current state / active gate / roadmap.**
-4. **This README.**
-5. **`ROADMAP_MASTER_CHECKLIST.md`** for preserved backlog detail.
-6. Prompts, ideas, benchmark notes and external references.
+Before modifying an existing system, establish where it lives, who consumes it, what persists, which APIs/public/SEO/visual behavior depends on it, which tests/fallbacks exist, and whether the change can be incremental and reversible. If an important answer is unknown, investigate first.
 
-A prompt, benchmark or future-vision document never silently overrides an existing working feature, invariant or source-of-truth. A conflicting change requires an explicit decision and a safe migration plan.
-
-The project distinguishes planning levels:
-
-- **CURRENT STATE** — demonstrable in the repository and/or production.
-- **ROADMAP / ACTIVE GATES** — approved and prioritized work.
-- **BACKLOG** — wanted work preserved for later prioritization.
-- **FUTURE INTEGRATION** — documented possibility; not authorized by its presence alone.
-- **VISION** — strategic direction, not an implementation commitment.
-
-`PROJECT_STATUS.md` uses classifications **A–F**. `F` means **Active Gate / Approved Work** and is distinct from `D` Future Integration.
-
-## Permanent AI / change-safety rule
-
-Before modifying an existing system, first establish where it lives, who consumes it, what persists, what public/API/SEO/visual behavior depends on it, what tests/fallbacks exist, and whether the change can be incremental and reversible. If any important answer is unknown, **investigate first; do not assume**.
-
-When a future improvement is approved or requested during work on SD.Live, record it in **both this README and the roadmap (`PROJECT_STATUS.md` and/or its detailed companion `ROADMAP_MASTER_CHECKLIST.md`)** before the current documentation checkpoint is closed. Future ideas do not become active work unless explicitly prioritized.
+Do not replace a working source of truth merely because a future vision describes a different architecture. **Stability > novelty.**
 
 ## Current architecture
 
-- **Frontend:** vanilla HTML, CSS and JavaScript.
+### Public site
+
+- **Frontend:** vanilla HTML/CSS/JavaScript.
 - **Hosting/runtime:** Cloudflare Workers + Static Assets.
-- **Database:** Cloudflare D1 binding `CMS_DB` → `sdlive-cms-production`.
-- **Media storage:** Cloudflare R2 binding `MEDIA_BUCKET` → `sdlive-media-production`.
-- **Public media domain:** `media.sdlive.show`.
 - **Worker router:** `worker-router.js`.
-- **Hero edge renderer / base Worker:** `worker-entry.js`.
-- **Trusted By edge renderer:** `trusted-edge.js`, applied by `worker-router.js`.
-- **Testimonials edge renderer:** `testimonials-edge.js`, applied by `worker-router.js`.
-- **Core Home CMS:** About, Services, International and Selected Work use `core-sections-*` models/APIs/edge binding.
-- **Presentation CMS:** Rental and Contact use `home-presentation-*` models/APIs/targeted edge patching.
-- **API Worker:** `worker.js` plus section-specific APIs.
-- **Visual safeguard layer:** `visual-safeguards.css` + `visual-safeguards.js`, injected on the public Home by `worker-router.js` and controllable/diagnosable from the Editor.
-- **Editor Select resilience:** `admin/editor/editor-resilience.js` routes visual Select to the owning CMS section/item and must remain global as the Editor expands.
-- **Admin:** `/admin/` behind Cloudflare Access.
+- **Hero/base edge renderer:** `worker-entry.js`.
+- **API Worker:** `worker.js` plus section-specific modules.
 - **Analytics:** GTM + GA4 with consent gating.
 - **Forms:** Turnstile + D1 + Resend.
-- **Languages:** EN / ES with persisted preference and server-side first-paint resolution.
+- **Languages:** EN / ES with server-resolved first paint and persisted preference.
 - **Markets:** Colombia / International behavior.
+
+### CMS / media
+
+- **Database:** D1 binding `CMS_DB` → `sdlive-cms-production`.
+- **Media storage:** R2 binding `MEDIA_BUCKET` → `sdlive-media-production`.
+- **Public media domain:** `media.sdlive.show`.
+- **Hero:** Draft/Published/revisions with edge first-paint rendering.
+- **Trusted By / Supported Brands:** D1/R2 + edge rendering.
+- **Testimonials:** D1/R2 + edge rendering.
+- **Core Home CMS:** About, Services, International and Selected Work.
+- **Presentation CMS:** Rental and Contact presentation only; transactional logic remains system-owned.
+- **Reusable Media Library:** R2-backed Editor library.
+- **Visual safeguards:** `visual-safeguards.css` + `visual-safeguards.js` with Editor diagnostics.
+- **Global Select:** `admin/editor/editor-resilience.js` routes visual selection to the owning CMS section/item.
+
+### Private Admin / Control Center
+
+All Admin workspaces remain behind the same Cloudflare Access boundary.
+
+- **`/admin/` — Dashboard.** Lightweight operational overview, CMS/system health and workspace navigation. It must not auto-boot heavy Finance analytics.
+- **`/admin/finance/` — Finance.** Dedicated **SD.Live Track** analytics workspace. This is the scalable home for cash, production, receivables, collection performance, fees, Tax Reserve planning and later finance-specific capabilities.
+- **`/admin/editor/` — Site Editor.** Visual CMS/editor workspace.
+- **Inbox:** currently bridges to Google Workspace/Gmail.
+- **Leads/CRM, Rental Admin, Projects, Calendar, Analytics and SEO:** planned unless `PROJECT_STATUS.md` explicitly says otherwise.
+
+The Finance workspace separation was approved after production QA showed that the Dashboard and Finance both work on iPhone when their startup work is isolated. Evidence: `docs/checkpoints/admin-finance-workspace-separation-2026-08-23.md`.
 
 ## Source-of-truth matrix
 
@@ -68,334 +71,228 @@ When a future improvement is approved or requested during work on SD.Live, recor
 |---|---|
 | Code, CSS/JS, critical branding, fallbacks | GitHub `main` |
 | Structured CMS Draft/Published content | D1 |
-| Public CMS content | D1 `published_json` after validation |
+| Public CMS content | validated D1 `published_json` |
 | Editor-managed media binary | R2 |
 | Editor-managed media metadata/references | D1 |
-| Rental pricing and quote calculation | Backend pricing logic; never presentation CMS copy |
+| Rental pricing / quote calculation | backend pricing logic; never presentation CMS copy |
 | Public analytics | GA4/GTM after consent |
 | Admin access | Cloudflare Access |
-| Current finance persistence / workflow | Google Sheets `REGISTRO` + AppSheet; field map closed in `docs/checkpoints/sdlive-track-source-of-truth-2026-08-22.md` |
-| Finance `/admin` Phase 2 | Read-only Worker view over the underlying Google Sheet/API; no D1 finance mirror or write-back |
-| Future CRM / Lead→Quote→Project→Invoice ownership | **TBD until explicitly designed; do not duplicate sources** |
+| Current finance persistence / formulas | Google Sheets `REGISTRO` |
+| Finance offline capture/workflows | AppSheet **SD.Live Track** |
+| Finance Admin analytics | read-only Worker view over the underlying Google Sheet/API |
+| Finance Tax Reserve configuration | private D1 setting; planning reserve only, not taxes owed |
+| Future CRM / Lead→Quote→Project→Invoice ownership | TBD before implementation |
+| Future owner availability | D1 `availability_state` only if that feature is implemented |
 
-Critical branding such as the primary SD.Live logo, favicon/app icons and essential fallbacks remain versioned with the code. Home CMS-managed media has completed its R2 migration/production-reference verification; intentional GitHub fallback originals remain versioned unless a later reference-aware cleanup explicitly proves they are safe to remove.
+### Finance non-negotiables
 
-## CMS state
+Control Center Steps 1–6 are closed. The finance system was audited and the decision is **repair + integrate, not rewrite**.
 
-### Hero
+- AppSheet remains the offline field-capture/workflow surface.
+- Google Sheets `REGISTRO` remains the current finance persistence/formula owner.
+- `ID` is the durable AppSheet-generated record key; `_RowNumber` is not an integration identity.
+- The Admin reads the underlying Sheet/API server-side with read-only scope.
+- COP and USD remain separate; no implicit FX conversion.
+- LiventX workflow blocking remains part of collection logic.
+- No browser-facing Finance route exposes Notes, `NUM CONTACTO`, internal row IDs or OAuth credentials/tokens.
+- No D1 finance mirror or second financial source of truth.
+- **Finance Phase 3 write-back remains blocked** until the read-only workspace earns real-use trust and a draft-first/idempotent write contract is explicitly approved.
 
-Hero Draft/Published is fully connected to production. Published content is rendered at the Cloudflare edge before first paint, with static HTML as fallback if D1 is unavailable or invalid.
+Evidence:
 
-**First-paint / anti-popping invariant:** the public Home must not visibly paint stale static CMS copy and then replace it with Published content. Edge SSR is the preferred path; the existing client hydration path remains a resilience fallback for non-SSR/static shells and Admin isolation. Performance work may skip redundant `hero-content.js` / `cms-hydration.js` loading when `data-server-rendered="true"`, but must not delete the fallback, blank the document to hide transitions, or reintroduce static→CMS flash/popping.
+- `docs/audits/nextpay26-repair-vs-rewrite-2026-08-22.md`
+- `docs/checkpoints/sdlive-track-source-of-truth-2026-08-22.md`
+- `docs/checkpoints/sdlive-track-admin-finance-readonly-2026-08-22.md`
+- `docs/checkpoints/admin-finance-workspace-separation-2026-08-23.md`
 
-### Trusted By / Brands Supported Through
+## CMS and public-site invariants
 
-**Production milestone completed.** Trusted By has Draft/Published state, ordering, WLive protection, R2 media, placement/scale metadata, server-side Published rendering, Draft isolation, EN/ES stability and production-validated `Save Draft ≠ live` / `Publish = live` semantics.
+### Draft / Published
 
-### Testimonials
+- `Save Draft` never changes production.
+- Public CMS content uses Published, never Draft.
+- `Publish` is the deliberate promotion action.
+- Static content remains a fallback where the architecture requires it.
 
-**P2.3 completed and validated in production.** Testimonials has D1 Draft/Published/revisions, EN/ES editing, add/delete/reorder, visibility/featured controls, optional R2 logos, edge SSR/fallback and production-validated Draft isolation. The current default schema contains real testimonial content rather than the old pair of balancing mockups.
+### First-paint / anti-popping
 
-### About / Services / International / Selected Work
+Published Home CMS copy should be resolved at the edge before visible first paint. `cms-hydration.js` remains a resilience fallback for non-SSR/static/Admin paths. Performance work may skip redundant hydration only when server-rendered content is already authoritative; do not blank the document or reintroduce static→CMS flash.
 
-**P2.4 implemented.** These sections use the shared core Home CMS contract with Draft/Published/revisions, validated edge rendering, static fallback and visual editors. About and Work integrate with R2/Media Library for editable media.
+### Global Select
 
-### Reusable Media Library
+Select is an Editor contract, not a section-specific convenience. Every new CMS/page must test same-section selection, cross-section selection, exact collection-item routing and no accidental interaction while Select mode is active.
 
-**P2.5 implemented; Home legacy-media closeout completed in P2.8.** The Editor has a reusable R2 Media Library and section bridges. It currently supports folder filtering, search, upload, reuse/copy-reference and delete controls. Reference-aware delete/soft-delete and orphan cleanup remain future hardening. PR #37 retired the temporary Trusted, Testimonials, About/Work and Rental migration scripts/UI after Draft/Published and production R2 references were verified. Media Library, section bridges/controls and critical GitHub/static fallbacks remain intact.
+### Visual safeguards
+
+Established production aesthetics are contracts. If a CMS/editor change reconstructs an approved visual behavior, extend the safeguard registry and regression tests in the same change rather than accepting silent visual degradation.
 
 ### Rental / Contact
 
-**P2.6 implemented and production-smoked.** Rental presentation copy/media and Contact copy/labels use D1 Draft/Published without taking ownership of transactional logic. Rental pricing, stock behavior, preset composition, cart IDs, quote math and email routing remain system-owned. Rental and Testimonials legacy media migration was validated as Draft-only; Rental cart behavior and Contact/Turnstile remained intact. PR #35 corrected the Rental D1 market key to `col` after the first production smoke exposed the invalid `colombia` value.
+- Rental is Colombia-first and hidden by default for International visitors unless direct intent requires it.
+- Rental notifications go **only to `rental@sdlive.show`**.
+- General Contact notifications go to `hello@sdlive.show`.
+- Rental pricing/quote math remains backend-owned.
+- Rental presentation CMS may edit presentation, not transactional IDs, pricing or quote math.
 
-### Home media R2 closeout
-
-**P2.8 CLOSED and production-smoked 2026-08-21.** Before cleanup, About, Selected Work, Testimonials, Rental and Trusted/Supported Brands were checked from the public site and their managed images/logos resolved through `media.sdlive.show`. About, Testimonials, Rental and Trusted had no unpublished media change; Selected Work had a saved unpublished Draft, was visually compared with live, published deliberately and finished with the automatic Failsafe green. PR #37 then removed only the four temporary migration scripts/UI and migration-only tests. Post-merge smoke confirmed: migration panels absent, normal Upload/Replace/Media Library controls intact, Global Select intact, Interact intact, Safeguards **9/9 healthy**, and the public About image still resolving through `media.sdlive.show`. Critical static/GitHub fallbacks remain in place. Runtime production baseline commit after P2.8: `4a8c425bc016acad78ef15d07dd8a7a4792bbc73`.
-
-## Global Select invariant
-
-**Select is an Editor contract, not a section-specific convenience.** In Select mode, clicking an editable visual element must route to its owning page/section and the closest exact CMS item, even when another section is currently active. The inspector must open automatically when necessary.
-
-For every new CMS section or page, smoke testing must include:
-
-- Select while already inside that section;
-- Select while another section is active;
-- exact item routing for cards/collection items;
-- correct market/page routing when the content requires it;
-- no accidental interaction/navigation while Select mode is active.
-
-**P2.7 is merged and production-smoked.** The implementation extends the existing `editor-resilience.js` rather than creating a parallel Select system. Current Home routing includes Hero, Trusted, About, Services, International, Work, Testimonials, Rental and Contact. Production smoke passed same-section exact-item routing, cross-section routing, non-card Services filter routing and Interact mode. Rental is intentionally absent in the INT preview, so that manual click case is not applicable; automated regression coverage preserves the INT→COL recovery path for a selectable Rental target.
-
-## Visual safeguards / aesthetic invariants
-
-Established production aesthetics are a **site contract**, not incidental CSS. CMS/editor work must preserve them unless a visual change is explicitly approved.
-
-The public Home loads `visual-safeguards.css` + `visual-safeguards.js` after the main styling path. The guard layer protects glass surfaces, aurora ambience, reveal-on-scroll motion, Trusted/Testimonial sheen, Trusted carousel motion, Supported Brand reveal motion and established CTA hover treatments.
-
-The guard registry is deliberately extensible. **Any future CMS/editor change that makes an already-approved aesthetic behavior vulnerable to reconstruction must add that behavior to the guard registry and its regression tests in the same PR.**
-
-The Site Editor exposes a **Safeguards** panel with live diagnostics, per-layer protection state and **Restore all defaults**. Editor toggles affect preview protection only; they are not saved into a content Draft. Production loads the safeguard layer enabled by default.
-
-Automated tests lock guard assets, public injection, Editor controls and critical visual contracts. This visual failsafe does not replace production smoke testing and cannot recover from arbitrary broken JavaScript or a failed deployment.
-
-## R2 media rules
+## Media / R2 rules
 
 - Bucket: `sdlive-media-production`.
-- Storage class: **Standard**.
+- Storage class: Standard.
 - Public domain: `https://media.sdlive.show`.
-- Public Development URL / `r2.dev`: disabled.
-- Admin uploads go through authenticated Worker endpoints.
-- Public reads use the custom domain/CDN directly rather than proxying every image through a Worker.
-- **Responsive delivery (P3.4 CLOSED 2026-08-22):** Cloudflare Image Transformations are enabled for `sdlive.show` with Sources restricted to this zone (`sdlive.show` / `*.sdlive.show`). Public Home header fragments use responsive transformed candidates while retaining code-owned PNG masters as `src` fallback; Published Trusted client logos and About media use transformed `srcset` candidates sourced from `media.sdlive.show` while the R2 masters remain authoritative/fallback. Admin/static preview and Media Library continue to use the original source contract. Final Mobile PageSpeed smoke: Performance 90, LCP 3.1 s, `Improve image delivery` estimated savings reduced from ~1.423 MiB before P3.4 to ~58 KiB after P3.4b.
-- **Future media-payload optimization:** separately investigate lazy/deferred loading for hidden/offscreen R2 brand/reveal assets and `world-map.webp`; this is a payload-timing follow-up, not a reason to replace masters or reopen responsive sizing.
-- Upload keys are versioned for long-lived immutable caching.
-- Visual resize/position belongs in D1/CSS metadata; moving a slider does not create a new R2 object.
-- Do not enable paid media products or extra R2 features unless explicitly approved.
-- The four Home legacy-media migrators were retired in P2.8 after production-reference verification; they are not permanent Editor UX and should not be restored without a new migration need.
-- **Do not equate migrator retirement with deleting fallback assets.** Duplicate/original GitHub assets may only be removed through a separate reference-aware cleanup after critical fallbacks and all consumers are proven safe.
+- `r2.dev` remains disabled.
+- Admin uploads use authenticated Worker endpoints.
+- Public reads use the custom media domain/CDN.
+- Upload keys are versioned for long-lived caching.
+- Visual scale/position belongs in D1/CSS metadata; moving a slider does not create a new binary.
+- Responsive public delivery uses Cloudflare Image Transformations while preserving R2/code-owned masters as authoritative fallbacks.
+- Do not delete critical GitHub/static originals merely because managed media also exists in R2.
+- Reference-safe delete/orphan cleanup remains future hardening.
 
-## Back-office reality
+## Current production milestones
 
-The Site Editor/CMS and reusable Media Library are live. Dashboard modules labelled Leads/CRM, Rental Admin, Projects, Calendar, Analytics and SEO remain planned/disabled unless `PROJECT_STATUS.md` explicitly marks a component implemented. Public Rental/forms and existing D1 data are not equivalent to a complete Rental Admin or CRM.
-
-This distinction is mandatory for coding agents: **do not infer implementation from labels, future diagrams or prompts. Evidence is required.**
+- P0 baseline: closed.
+- Hero CMS + first paint: closed.
+- Trusted / Testimonials / Core Home / Rental & Contact CMS: closed.
+- Reusable Media Library + Home R2 closeout: closed.
+- Global Select + Visual Safeguards + automatic publish failsafe: closed.
+- P3.0 public/SEO audit: closed.
+- P3.1 Consent Mode parity: closed.
+- P3.2 public staging strip: closed.
+- P3.3 mobile critical rendering: closed.
+- P3.4 responsive image delivery: closed; final lab evidence reached Mobile Performance 90 / LCP 3.1 s with ~58 KiB residual image-delivery savings.
+- Security baseline: closed; CSP/browser headers + independent Contact/Rental Worker rate limits are live.
+- Finance audit / SD.Live Track rename / source mapping: closed.
+- Finance Phase 2 read-only integration: closed and production-reconciled.
+- 2026-08-23 Admin Finance freeze hardening: desktop confirmed responsive after removing the Finance i18n global DOM observer.
+- 2026-08-23 mobile isolation QA: base Admin and Finance each confirmed responsive when loaded separately.
+- **Current implementation milestone:** dedicated `/admin/finance/` workspace + lightweight `/admin/` Dashboard; production smoke required after merge.
 
 ## Approved future improvements register
 
-These requirements are preserved but are **not active work until explicitly prioritized**. The detailed status/subtasks live in `ROADMAP_MASTER_CHECKLIST.md` and dedicated roadmap specs where linked.
+These are preserved requirements/backlog, **not automatic work**. `PROJECT_STATUS.md` controls current priority and `ROADMAP_MASTER_CHECKLIST.md` preserves the detailed checklist.
+
+### Control Center / business operations
+
+- Phase 2 Finance real-use observation before any write-back.
+- Finance Phase 3: draft-first/write-once rental→finance automation only with explicit mapping, idempotency, duplicate protection and rollback.
+- CRM pipeline, clients/contacts/companies, notes/history and Lead → Quote → Project → Invoice only after source-of-truth design.
+- Native Admin Calendar, Projects, Rental Admin and quote automation when their ownership/contracts are defined.
+- Automatic Show Day from approved Calendar/AppSheet/project source with manual override.
+- Finance reminder delivery hardening: reuse approved reminder rules; notification channels must not become a second finance state engine.
+- Private/noindex Portfolio/CV variants and a canonical editable HTML CV.
+- Business analytics / Looker Studio or Admin reporting only when reliable downstream data exists.
+
+### Availability / AI
+
+- **Availability-Aware Contact Widget:** eligible independent track, not automatically active. If implemented, D1 `availability_state` is authoritative; owner WhatsApp commands require exact owner authorization; AI may qualify leads only and never owns/invents pricing, rental catalog, availability or finance data. Spec: `docs/roadmap/availability-aware-contact-widget.md`.
+- **Dapta.ai candidate assistant:** future evaluation only after re-checking current pricing, API/embed capabilities, privacy, reliability and human handoff.
 
 ### Site Editor / layout
 
-- Drag & drop, generic reorder, snap-to-grid, card/block resize, spacing/gap/padding/alignment, independent Desktop/Mobile layout, show/hide by device/market, Undo/Redo, revision rollback, full-page Draft, templates, hidden-staging access, duplicate/create blocks, autosave Draft, change comparison, scheduled Publish/visibility, shortcuts and Draft share/preview links.
-- Header visual management: reorder/spacing, link targets, scroll offsets, menu items, Show Day/Live Mode/WhatsApp visibility and contextual header presets.
-- Floating-control positioning, page/device visibility, ordering and iPhone safe-area preview.
-- **Hash/scroll-restoration polish:** refreshing a Home URL that retains `#rental` can visibly pass through top → Rental → the browser-restored prior scroll position because `initMarket()` currently forces `scrollIntoView()` while the browser restores history. Fix separately without hiding the document, disabling native restoration globally, or harming LCP. Safari can additionally show a brief native top→restored-position flash without a hash; treat that separately from CMS content popping.
+- Drag/drop, generic reorder, snap-to-grid, resize, spacing/alignment, independent Desktop/Mobile layout, show/hide by market/device, undo/redo, revision rollback, full-page Draft, templates, autosave Draft, change comparison, scheduled Publish/visibility, shortcuts and shareable Draft previews.
+- Header visual management: order/spacing, links/offsets/menu items and visibility of Show Day/WhatsApp/CTAs.
+- Floating-control positioning and iPhone safe-area preview.
+- Hash/history scroll-restoration polish without blanking the document or harming LCP.
 
-### Media / content systems
+### Media / content
 
-- R2 Media Library hardening: reference-safe delete/soft-delete, unused-media detection, richer tags, Library-level alt metadata, crop/focal point, optional automatic WebP/AVIF only if justified, OG/social image management and later reference-aware cleanup of duplicate originals/fallbacks where proven safe.
-- Portfolio/Selected Work deeper model: Highlight Projects, credits, role, client, year, tags, featured/hidden, video, filters, case studies, before/after and authorized QLab/audio/video examples.
-- Raw vs Mixed: real audio pairs, Admin management, waveform, sample-accurate switching if justified and multiple examples.
-- Remaining hidden/staging content should be audited and moved into real CMS/templates only when content/scope is approved; Testimonials are already a real CMS and Sound for Picture must not be published merely because placeholder markup exists.
-- **Optional background removal during CMS upload:** evaluate `remove.bg` API integration (`https://www.remove.bg/api#remove-background`) so an authenticated Editor upload can ask whether to remove the background. This must be opt-in per image, keep API credentials server-side, preserve/identify the original, respect R2 versioning/fallbacks, surface third-party failure cleanly and verify current pricing/credits/privacy/file limits before implementation. Never remove a background silently.
+- R2 reference-safe delete/soft-delete, unused-media detection, richer tags, Library-level alt metadata, crop/focal point and OG/social images.
+- Optional `remove.bg` processing only per-user opt-in, server-side credentials, preserved original/fallback, versioned R2 result and current cost/privacy review.
+- Deeper Portfolio/Selected Work model: credits, role, client, year, tags, featured/hidden, video/case studies and authorized before/after media.
+- Raw vs Mixed real authorized audio + Admin management.
+- Journal/Insights only with real editorial value; no mass AI filler.
+- Technical Audio Training only after real curriculum/audience/capacity/pricing/evidence is defined.
 
-### Rental / Contact
+### Rental / conversion
 
-- **Rental compatibility recommendations:** WING should recommend the appropriate Midas DL32 stagebox; LV1 Classic should recommend StageGrid 4000. Exact UX must be approved and equipment must never be silently auto-added.
-- **Rental item creation + pricing rules:** future Rental Admin can add items and validated fixed/per-day/multi-day/quantity/pair/bundle/conditional pricing rules while the backend remains the source of truth.
-- Make Rental unmistakably a **request for quotation, not checkout**, to reduce lead abandonment.
-- Equipment Rental service card → `#rental` with a deliberate INT fallback/behavior.
-- Inventory/calendar availability and double-booking prevention, PDF quote/validity/approval, delivery/logistics and future CRM relationship.
-- Contact automatic visitor confirmation email is optional future work; Turnstile/D1/direct backend/email notification already exist. Public `POST /api/contact` and `POST /api/rental` are now protected by independent Worker-native rate limits (10 requests / 60 seconds per endpoint) in addition to Turnstile.
+- Make Rental unmistakably a **request for quotation, not checkout**.
+- Reject completely empty Rental requests while preserving service-only inquiries.
+- Compatibility guidance such as WING → DL32 and LV1 Classic → StageGrid 4000; never silently auto-add equipment.
+- Future Rental Admin item creation + validated backend-owned pricing rules.
+- Inventory/calendar availability, double-booking prevention, PDF quote/validity/approval and delivery/logistics.
 
-### Business back-office / professional identity
+### SEO / analytics / platform
 
-- **SD.Live as Control Center — active sequenced initiative:** P3.4, Security, finance audit, SD.Live Track rename and field/source-of-truth mapping are closed. The finance decision remains **repair + integrate, not rewrite**; AppSheet keeps offline field capture. **Current F gate is Step 6: read-only `/admin` finance insights** over the underlying Google Sheet/API. Evidence: `docs/checkpoints/sdlive-track-source-of-truth-2026-08-22.md`; sequence: `docs/roadmap/sdlive-control-center.md`.
-- CRM pipeline, clients/contacts/companies, notes/history/source and Lead → Quote → Project → Invoice.
-- Existing Google Sheets + AppSheet finance system is retained after audit; AppSheet remains the offline capture/workflow surface and Google Sheets `REGISTRO` remains Phase 2 persistence. Field ownership is mapped; the next integration is read-only `/admin`, with no D1 finance mirror/write-back.
-- **Finance reminder delivery — future backlog:** current AppSheet Bots are notification-only; diagnose why owner push reminders have not been received, then optionally add email and WhatsApp delivery using the same approved reminder rules. Do not create finance writes or duplicate collection logic in the notification layer.
-- Automatic Show Day from Calendar/AppSheet with configurable window and manual override.
-- Admin Calendar, Projects, quote automation, native Workspace Inbox and correct-alias replies.
-- Private recruiter/client Portfolio/CV variants with noindex/share controls.
-- **Editable HTML CV:** create a canonical CV/resume in HTML that is visually and editorially coherent with SD.Live, easy to maintain, responsive/print-friendly and suitable for controlled PDF export or application-specific variants. Do not make it public/indexable by default without a deliberate publishing decision.
-- **Legacy personal-site coherence audit:** review `https://samueldavidllano.carrd.co` against current SD.Live positioning, bio, services, links, visual identity and calls to action; decide deliberately what should remain, be updated, redirect, or be retired so both public identities do not contradict each other.
-- Business analytics/Data Studio/Looker or hybrid only when reliable source data exists.
-- Settings module, Admin audit log, backups/export, rollback, activity/automation center, Client Portal, generic share links, role-based access, Admin PWA, QR generator and UTM/link builder are future/optional capabilities.
-
-### AI / conversational integrations
-
-- **Availability-Aware Contact Widget — parallel-track eligible backlog:** P3.4 and Security prerequisites are closed, so this may be promoted independently while rename/source mapping proceeds; it is not active automatically. Resolve owner availability server-side from one D1 `availability_state` source of truth using expiring manual override → travel mode → default `America/Bogota` weekly schedule. Owner WhatsApp commands require exact `env.OWNER_WHATSAPP_NUMBER`; AI may qualify leads only and must never own pricing/catalog/finance data.
-- **Dapta.ai candidate assistant:** evaluate a future SD.Live website assistant using `https://dapta.ai`. Before implementation, re-verify the provider's current free/paid limits, embed/API capabilities, privacy/data processing, branding constraints and operational reliability. The assistant may guide visitors toward Services, Contact and Rental, but must never invent pricing, availability, project claims or technical capability; deterministic site/backend sources remain authoritative and human handoff must stay available.
-
-### Performance / edge caching
-
-- **Verified current condition:** `worker-entry.js::transformHomeResponse()` explicitly sets `Cache-Control: no-store` on the public root HTML while the Home performs CMS reads and HTMLRewriter rendering per request. This is a legitimate future performance opportunity, not an instruction to change headers blindly.
-- P3.0 lab evidence showed Home TTFB around **10 ms** in Lighthouse while Mobile LCP remained poor, so cache is **not the primary demonstrated cause of the current mobile LCP**. Keep cache optimization evidence-driven and subordinate to the critical-rendering/image work unless later measurements change that conclusion.
-- Evaluate a short shared-cache strategy (for example a bounded TTL with `stale-while-revalidate`) versus publish-triggered selective invalidation/purge. Measure real TTFB/D1 impact before and after.
-- Any cache design must preserve correct EN/ES behavior, the existing `Vary: Accept-Language, Cookie` contract, COL/INT behavior, Admin preview isolation, automatic publish failsafe semantics, Draft ≠ Published, and immediate-enough Publish behavior. Do not cache authenticated/admin responses or create a stale-content correctness regression.
-- Treat active Publish invalidation as the more robust long-term option only after the exact Cloudflare cache/purge mechanism, cost, keys/variants and rollback path are proven. `no-store` remains the safe baseline until that design is approved.
-- **IndexNow / Cloudflare Crawler Hints:** Bing showed no existing IndexNow configuration and Cloudflare Crawler Hints is currently OFF. Evaluate Crawler Hints together with the future Home cache/invalidation design rather than adding a parallel manual IndexNow key/API now. Re-check current Cloudflare/Bing behavior at implementation time.
-
-### Analytics / SEO / acquisition
-
-- GA4/GTM base and `generate_lead`/WhatsApp/Email validation already exist. Remaining integrity work includes internal-traffic separation, explicit duplicate-firing proof if not closed, Key Event hygiene and downstream funnel attribution once CRM stages exist.
-- Permanent analytics rule: **observe → test → confirm → correct → retest**. Do not edit GTM solely because normal traffic is absent from DebugView; use Realtime for live traffic validation.
-- P3.0 external audit completed across Google Search Console, Bing Webmaster/Site Scan and PageSpeed/Lighthouse. Sitemap discovery is healthy on both engines; Google had **6/7 URLs indexed** at audit time and the remaining Bogotá services landing passed Live Test and was submitted for indexing. Bing knew/submitted all 7 URLs but had not populated aggregate Site Explorer/indexed coverage yet; Live URL tests passed on tested pages and Site Scan completed **7/7 pages, 0 errors**.
-- **Bing follow-up required:** re-check Bing indexation/coverage after a reasonable processing window, target **7–14 days after the 2026-08-21 audit** (roughly 2026-08-28 through 2026-09-04) before treating the current “discovered/not yet crawled / no Site Explorer data” state as a technical problem. Do not repeatedly re-submit the same URLs in the meantime unless new evidence appears.
-- Bing's single Site Scan warning for “missing alt” was reviewed as **non-actionable**: the 7 instances are intentionally empty `alt=""` on decorative/aria-hidden images (six header-logo animation fragments plus the mirrored second PA image). Do not add redundant alt text merely to silence the scanner.
-- Final Colombia/international SEO audit, Core Web Vitals, internal linking, Search Console/Bing index coverage and future SEO controls in Admin remain ongoing quality streams; do not call CWV a field failure while Search Console lacks sufficient CrUX data.
-- Candidate queries such as `alquiler sonido bogota`, `sonido eventos corporativos bogota`, `alquiler consolas bogota` and `behringer wing bogota` require real-offer/intention/URL-overlap research before any page is created.
-- Audit public landing visual consistency, EN/ES/hreflang/COL-INT behavior, orphan pages and future Show Day behavior across pages.
-- Analyze acquisition channels by ROI/audience: social/LinkedIn, referrals/partners, targeted outreach, tutorials/training and podcast only if a credible distribution/business case exists.
-- Restore Journal/Insights only with real editorial value: professional-audio insights, AV briefs for marketing teams, technical education and responsible Suno/AI/audio-production analysis. No mass AI filler.
-- **Technical Audio Training** is an approved backlog service concept: define curriculum, audience, delivery, market, capacity, evidence and pricing before publishing.
-
-### Platform / quality / security
-
-- Code cleanup/optimization is a quality stream: audit and refactor incrementally with tests, smoke and rollback; never change approved behavior just for elegance.
-- COL vs INT needs an explicit full production audit and ideally a privacy-respecting Admin diagnosis of detected market/reason.
-- Worker/D1/R2/publish/deploy/error observability, backups, threshold warnings and safe media cleanup.
-- Security baseline is closed: Worker-native rate limiting + CSP/Referrer-Policy/Permissions-Policy are live. Remaining security work is future abuse testing, observability, incident/backup discipline and evidence-based Cloudflare plan evaluation.
-- Evaluate Cloudflare free-vs-paid security capabilities against actual SD.Live risk before enabling recurring-cost products.
-- Main public contact config uses `hello@sdlive.show` and Rental uses `rental@sdlive.show`; perform a final stale-personal-email audit and verify Workspace aliases/DMARC before automation.
-
-## P3.0 audit closeout — 2026-08-21 America/Bogota
-
-P3.0 is **closed as an evidence/audit gate**. The audit did not uncover a general routing, HTTPS, sitemap or search-engine block, but it did produce a prioritized correction queue.
-
-**P0 confirmed in production at audit time:**
-
-- Consent Mode/default-denied contract was present on Home but missing from other public HTML pages that loaded GTM directly; **closed in P3.1**.
-- Hidden `#contentStaging` placeholder copy was present in the public/indexable Home HTML response despite being visually hidden; **closed in P3.2 at the public response layer while preserving the Admin/static staging source**.
-
-**P1 / high-value findings:**
-
-- Mobile Lighthouse performance is reproducibly weak under throttled lab conditions (61/66 in two runs) while Desktop was 96; Mobile LCP is the Hero `<h1>`, with render delay dominating and TTFB around 10 ms.
-- Image delivery has roughly 1.4 MB estimated savings; oversized header PNGs and large R2 logos/images should be solved through responsive variants/`srcset`/pipeline, not manual one-off compression.
-- Accessibility score was 89: consent-banner semantics/name, Turnstile ARIA compatibility, localized contrast fixes and footer heading order are actionable.
-- EN Work CTA currently leads to a Spanish landing; WhatsApp is absent from public landings; Rental permits an empty request and should read unmistakably as RFQ rather than checkout; pricing copy duplicates backend-owned rates and needs drift protection, not a second pricing engine.
-
-**P2 / maintenance findings:** static sitemap `lastmod`, public `deploy-test.txt`, and experimental Agentic Browsing diagnostics.
-
-Search-engine state and the Bing follow-up are recorded in the SEO/acquisition register above and in the master roadmap.
-
-## P3.1 + P3.2 production closeout — 2026-08-21 America/Bogota
-
-Both P0 corrections raised by P3.0 are **closed and production-smoked**.
-
-**P3.1 — Consent Mode parity:** PR #41 added the existing `analytics-consent.js` bootstrap before GTM on every current public GTM page that was missing it and added regression coverage for future HTML pages. Squash merge: `2d7a934d776c1af1ffcaaf847afab7c6fa55d91d`. Production smoke passed: a fresh private `/en/` visit showed the consent banner; **Necessary only** persisted after reload and across Theatre; a fresh private `/es-co/` visit showed the Spanish banner; **Permitir analítica** persisted after reload and across Rental; the 404 respected the saved choice.
-
-**P3.2 — Public staging strip:** PR #42 removes `#contentStaging` only from the transformed public Home response while leaving `index.html` staging intact for the isolated Admin preview. Squash merge/runtime baseline: `d4e3a28140664b96fc5d74578cef0442baa1a191`. Production View Source returned no `Future picture project` and no `contentStaging`; `/admin/editor/` continued loading normally and Safeguards `Run check` remained **9/9 healthy**. Sound for Picture remains unpublished/inert staging.
-
-Current runtime production baseline after these P0 closeouts: **`d4e3a28140664b96fc5d74578cef0442baa1a191`**.
-
-## P3.3 production closeout — 2026-08-22 America/Bogota
-
-**P3.3 — Mobile critical rendering path is CLOSED as an evidence-driven optimization gate.** The goal was not to chase a Lighthouse score at any cost; it was to remove proven redundant work while preserving privacy, server-resolved language, CMS first-paint correctness and established visual behavior.
-
-- The first experiment (PR #44) moved `site-consistency.css` and `visual-safeguards.css` out of the blocking path. Two-run measurement showed no attributable benefit, so it was reverted through PR #45 rather than accumulating complexity.
-- PR #46, squash merge `d52ca8d80c4e9fd3caa5f6be1aaae423e00c0840`, stops `home-navigation.js` from importing `hero-content.js` → `cms-hydration.js` when the Hero already has `data-server-rendered="true"`. The fallback remains intact for static/non-edge shells and Admin isolation. Production smoke showed no CMS content popping, and the redundant hydration chain disappeared from the public SSR Home dependency tree.
-- Historical reason for `cms-hydration.js`: it protects against the earlier static→CMS replacement flash/popping. **Do not delete this fallback merely because SSR can skip it on the normal public path.** Any future rendering optimization must test cold-load/reload for stale-content flash, Hero blanking and page popping.
-- PR #47, squash merge `49d09a8598d0a4c3c42de7b1dedacf763a26a91b`, keeps a tiny Consent Mode `default: denied` bootstrap synchronous before GTM on public `/`, while deferring the full existing consent manager/UI. Banner presence and Necessary-only persistence passed production smoke; `analytics-consent.js` disappeared from Lighthouse render blockers.
-- P3.0 Mobile baseline was 61/66 Performance with LCP 14.8/10.2 s. The final two post-#47 runs were **75 / LCP 5.4 s** and **73 / LCP 6.0 s**, with FCP 2.7 s in both and Hero element render delay about **810/670 ms**. Lighthouse remains variable, so preserve these as lab evidence rather than field-CWV claims.
-- TTFB remained around 10 ms in LCP breakdowns, reinforcing that Home `no-store` caching is not the demonstrated primary LCP cause.
-- The remaining repeated high-value opportunity is responsive image delivery (~1.4 MB estimated savings); that belongs to the separate P3.4 gate rather than being mixed into P3.3.
-- Separate navigation polish discovered during smoke: refresh with retained `#rental` can race our explicit `scrollIntoView()` against browser history restoration, producing top → Rental → prior position. This is **not CMS popping** and must be fixed independently without document blanking or LCP regression.
-
-Runtime production baseline after the accepted P3.3 changes: **`49d09a8598d0a4c3c42de7b1dedacf763a26a91b`**.
-
-## Security baseline production closeout — 2026-08-22 America/Bogota
-
-**CLOSED and production-smoked.** The Control Center hardening prerequisite is complete.
-
-- **Security A — CSP + browser headers:** PR #53, squash merge `2710c0c006e82ee2c04942db7fd7ef1f4fcaa0bd`. Static pages/Admin receive the shared `_headers` contract and the Worker-generated Home applies the same contract through `security-headers.js`. CSP keeps current GTM/GA, Google Fonts, Turnstile, Cloudflare Insights and `media.sdlive.show` integrations working, blocks `unsafe-eval`, uses `frame-ancestors 'self'` / `SAMEORIGIN` so the Admin preview remains functional, and adds `nosniff`, Referrer-Policy and Permissions-Policy.
-- **Security B — public form rate limiting:** PR #54, squash merge/runtime baseline `2c0fe574a0ab37ceb00cf84b31cbf1b68e1746c4`. `public-form-rate-limit.js` is the Worker entrypoint and uses two independent bindings from `wrangler.jsonc`: Contact 10/60s and Rental 10/60s, keyed by Cloudflare client IP. Limits run before Turnstile Siteverify, D1 writes and Resend; exceeded requests return `429` + `Retry-After: 60`.
-- **Production smoke PASS:** Home normal; cold-cache Rental imagery resolved as expected lazy loading and became immediate on reload; `/en/` normal; `/admin/` + Site Editor + same-origin preview normal; normal Contact submission succeeded and notification arrived; normal Rental submission succeeded and notification arrived at `rental@sdlive.show`.
-- Turnstile remains the primary bot-verification layer; rate limiting is an additional abuse-control layer, not a replacement.
-
-**Next F — Active Gate:** full audit of the finance system currently known as NextPay26 before any repair/rewrite or SD.Live integration decision. Required sequence remains in `docs/roadmap/sdlive-control-center.md`. Availability/WhatsApp is now eligible to run as the documented parallel track, but is not automatically active.
-
-## SEO / content safety rules
-
-The intended sequence is:
-
-**real offering → useful page → SEO**
-
-Never invert it into:
-
-**keyword → artificial page → generated filler**.
-
-Do not infer commercial intent from a single keyword. Before creating an SEO page, establish the real service, operator/capability, market, operational capacity, evidence/portfolio, CTA, search intent and whether an existing URL already satisfies that intent. If no real offer exists behind the page, **do not create it**.
-
-Do not create mass service/product/project/article pages merely to fill a sitemap or chase keywords.
-
-## Competitive / benchmark references
-
-These sites are **learning references only**. They are never templates or requirements, and SD.Live must not copy their design, copy, images or branding. When a future design/structure decision materially relates to these references, consult the live references first and ask before adopting a comparable pattern.
-
-- `https://www.mediacoustix.com/` — professional authority, service framing, storytelling and SEO learning.
-- `https://www.aerislatam.com` — engineering, case studies, projects and integration learning.
-- `https://www.adlib.co.uk` — case studies, production, rental and technical documentation learning.
-- `https://www.cohesionaudio.com` — technical projects and equipment-association learning.
-- `https://www.worldtouraudio.com` — rental, staffing and engineering learning.
-- `https://wonderlust.live/` — interaction/brand-expression reference; consult before related visual/structural changes.
-- `https://www.wlive.co` — brand/context reference; WLive also remains valid visible SD.Live content.
-
-## Future evolution roadmap
-
-`PROJECT_STATUS.md` contains the classified **Future Evolution — SD.Live 2.0** roadmap. `ROADMAP_MASTER_CHECKLIST.md` preserves the complete reconciled historical backlog and explicitly marks what is already done versus partial/pending.
-
-Those items are **future integrations/backlog, not immediate instructions**, unless explicitly promoted to **F — Active Gate**. The roadmap also records deferred/not-recommended ideas such as full rewrites, mass AI content, doorway/location pages, duplicate pricing/CMS systems and copying competitor design/branding.
+- Re-check Bing indexation in the documented processing window rather than repeatedly resubmitting unchanged URLs.
+- Continue GSC/Bing/GA4 integrity work and internal-traffic separation before acquisition conclusions.
+- EN/ES/market continuity and internal linking audits as architecture evolves.
+- Home HTML cache optimization only after measuring real benefit and preserving language/cookie variants, Draft/Published and Publish freshness.
+- Evaluate Crawler Hints/IndexNow with future cache/invalidation design, not as a parallel reflex.
+- Incremental code cleanup/observability/backups/security testing only with evidence, tests and rollback.
+- Legacy `samueldavidllano.carrd.co` coherence audit before deciding update/redirect/retirement.
 
 ## Important files
 
-- `index.html` — main public Home shell and static fallback content.
-- `styles.css` — main public styles.
-- `visual-safeguards.css` / `visual-safeguards.js` — self-healing baseline for established visual contracts.
-- `script.js` — primary public UI/runtime behavior and Rental client-side behavior.
-- `worker-router.js` — top-level Worker router and section SSR/API routing.
-- `worker-entry.js` — Hero edge rendering and base routing.
-- `worker.js` — base CMS/admin APIs, Contact, Rental, D1 and email logic.
-- `public-form-rate-limit.js` — top-level abuse-control wrapper for the two public POST form endpoints.
-- `security-headers.js` / `_headers` — shared CSP/browser-header contract for Worker-generated Home and Static Assets/Admin.
-- `core-sections-content.js` / `core-sections-api.js` / `core-sections-edge.js` — About/Services/Work/International CMS.
-- `home-presentation-content.js` / `home-presentation-api.js` / `home-presentation-edge.js` — Rental/Contact presentation CMS.
-- `trusted-edge.js`, `trusted-api.js`, `trusted-content.js` — Trusted CMS.
-- `testimonials-edge.js`, `testimonials-api.js`, `testimonials-content.js` — Testimonials CMS.
-- `media-api.js` / `admin/editor/media-library.js` — authenticated R2 media and reusable Media Library.
-- `admin/editor/editor-resilience.js` — global Select routing/resilience layer.
-- `admin/editor/automatic-failsafe.js` — automatic publish verification.
-- `admin/editor/visual-safeguards-editor.js` — visual diagnostics/restore panel.
-- `docs/roadmap/availability-aware-contact-widget.md` — proposed availability-aware WhatsApp/AI parallel track; eligible after the security closeout, not active by existence alone.
-- `docs/audits/nextpay26-repair-vs-rewrite-2026-08-22.md` — completed finance audit and repair + integrate decision evidence.
-- `docs/roadmap/sdlive-control-center.md` — required Control Center sequence; brand-coherent rename is the current F Active Gate.
-- `PROJECT_STATUS.md` — operational current state, active gate, evidence and roadmap policy.
-- `ROADMAP_MASTER_CHECKLIST.md` — reconciled historical/future feature inventory; preservation layer, not automatic work authorization.
+### Public/runtime
+
+- `index.html` — public Home shell + static fallbacks.
+- `styles.css` — primary public styles.
+- `script.js` — primary public UI/runtime and Rental client behavior.
+- `worker-router.js` — top-level routing/edge composition.
+- `worker-entry.js` — Hero/base edge rendering.
+- `worker.js` — base Admin/CMS APIs, Contact, Rental, D1/email logic.
+- `public-form-rate-limit.js` — public form abuse-control wrapper.
+- `security-headers.js` / `_headers` — CSP/browser security contract.
+- `visual-safeguards.css` / `visual-safeguards.js` — visual contract protection.
+
+### Admin
+
+- `admin/index.html` / `admin/dashboard.js` — lightweight Dashboard.
+- `admin/finance/index.html` / `admin/finance-page.js` — dedicated Finance workspace shell/bootstrap.
+- `admin/finance-dashboard.js` / `.css` — Finance analytics UI.
+- `admin/finance-dashboard-i18n.js` / `.css` — Finance EN/ES layer.
+- `admin/editor/` — Site Editor workspace.
+- `admin/editor/editor-resilience.js` — Global Select routing/resilience.
+- `admin/editor/automatic-failsafe.js` — publish verification.
+- `admin/editor/media-library.js` — reusable R2 Media Library.
+
+### Documentation
+
+- `PROJECT_STATUS.md` — current operational state and active gate.
+- `ROADMAP_MASTER_CHECKLIST.md` — preserved detailed backlog/history.
+- `docs/roadmap/sdlive-control-center.md` — Control Center sequencing.
+- `docs/checkpoints/admin-finance-workspace-separation-2026-08-23.md` — Finance workspace architecture decision.
 
 ## Critical routes / endpoints
 
-Public:
+### Public
 
 - `/`
 - `/en/`
 - `/es-co/`
 - `/theatre-sound-design-audio-post`
 - `/privacy`
-- SEO/service/rental landings in the repository
+- current service/Rental landings in the repository
 
-API includes:
+### Private Admin
+
+- `/admin/`
+- `/admin/finance/`
+- `/admin/editor/`
+
+### APIs include
 
 - `GET /api/health`
-- `GET /api/content/hero`
-- `GET /api/content/trusted`
-- `GET /api/content/testimonials`
-- core/presentation public content endpoints
-- Admin content endpoints under `/api/admin/...`
-- Admin media endpoints under `/api/admin/media/...`
+- public CMS content endpoints
+- Admin content/media endpoints under `/api/admin/...`
+- `GET /api/admin/finance/health`
+- `GET /api/admin/finance/summary`
+- `GET /api/admin/finance/dashboard`
+- private Finance settings endpoint(s) used by the Tax Reserve UI
 - `POST /api/contact`
 - `POST /api/rental`
 
-## Operational invariants
+## Brand / operational invariants
 
 - Brand spelling is exactly **SD.Live**.
-- Descriptor is **Creative Audio**.
+- Descriptor: **Creative Audio**.
 - Canonical tagline: **Creative Audio. Technical systems. Built for the show.**
-- Visible `SD.Live` mentions should use the floating-dot wordmark when appropriate; metadata/machine strings stay literal.
+- Visible `SD.Live` mentions use the floating-dot wordmark where appropriate; metadata/machine strings remain literal.
 - WLive remains visible.
-- **Stability > novelty.** Preserve and extend working architecture by default.
-- Established production aesthetics are protected visual contracts.
-- Global Select must route to the owning CMS section/item and is part of every CMS smoke test.
-- Public CMS first paint must not reintroduce static→Published flash/popping; SSR may skip redundant hydration but fallback resilience remains required.
-- Rental is Colombia-first and hidden by default for International visitors.
-- Rental notifications go **only to `rental@sdlive.show`**.
-- General Contact notifications go to `hello@sdlive.show`.
-- Rental pricing is server-side/backend-owned.
-- Cloudflare Access is the real Admin access layer.
-- GTM is for consent/analytics/events, not navigation, branding or layout.
-- GitHub is source-of-truth for code; D1 for structured CMS content; R2 for editor-managed media.
+- Cloudflare Access is the real Admin barrier; never restore a visual/mock login as security.
+- GTM is analytics/consent/events only, never navigation/branding/layout.
 - Do not restore Netlify, the old Owner Access mockup, `site-runtime`, or GTM-driven navigation.
-- Do not replace a working implementation because a future vision describes a different architecture.
-- Unknown implementation details must be investigated, never invented.
+- GitHub = code; D1 = structured CMS/application state; R2 = editor-managed media; Finance ownership is explicitly separate as documented above.
 
 ## Tests
 
@@ -403,7 +300,7 @@ API includes:
 npm test
 ```
 
-The test suite uses Node's built-in test runner and GitHub Actions runs it on pull requests and `main`.
+The repository uses Node's built-in test runner and GitHub Actions runs CI on pull requests and `main`.
 
 ## Development workflow
 
@@ -416,29 +313,24 @@ Pull Request
   ↓
 CI + deploy validation
   ↓
-Squash and merge
+squash merge
   ↓
-production smoke test
+production smoke
   ↓
-close milestone/update evidence
+close milestone / update evidence
 ```
 
 Do not treat a feature-branch deployment as production. `sdlive.show` represents the active `main` deployment unless Cloudflare explicitly exposes a preview URL.
 
-After a material milestone, update `PROJECT_STATUS.md`, this README and, when the backlog itself changes, `ROADMAP_MASTER_CHECKLIST.md`. A future improvement may be bundled into the active block's documentation update rather than causing a separate deployment, but it must not be lost.
+## Current gate
 
-## Current gate status
+**Control Center Steps 1–6 are CLOSED.** Finance Phase 2 remains read-only and in real-use observation; Phase 3 write-back is still blocked.
 
-**P3.0–P3.4 are CLOSED. The Security baseline is also CLOSED and production-smoked.**
+**Current F hardening gate:** finish and production-smoke the dedicated Finance workspace architecture:
 
-- **P3.4 — Responsive image/media delivery:** CLOSED via PR #50/#51. Final Mobile lab smoke measured Performance 90 / LCP 3.1 s and reduced `Improve image delivery` estimated savings from ~1.423 MiB to ~58 KiB while preserving masters, R2 ownership, Trusted/About appearance and anti-popping behavior.
-- **Security A — CSP/browser headers:** CLOSED via PR #53 / `2710c0c0...`; Home, `/en/`, Admin and the embedded Site Editor preview passed production smoke.
-- **Security B — public form rate limiting:** CLOSED via PR #54 / `2c0fe574...`; Contact and Rental normal submissions both passed production smoke and their notifications arrived at the intended mailboxes.
+- `/admin/` stays lightweight and must not load Finance analytics runtime;
+- `/admin/finance/` owns SD.Live Track Finance analytics;
+- `/admin/editor/` remains isolated as the Site Editor;
+- validate desktop + iPhone navigation, Finance render, year selector and EN/ES after merge.
 
-**Control Center Step 3 — finance audit is CLOSED.** The 2026-08-22 audit reviewed 12 Sheets tabs, 57 real records, 11 Actions, 3 Bots, 11 Views, 10 Slices and critical formulas/business rules. It found zero P0 data-loss/corruption issues and documented the explicit decision **repair + integrate; do not rewrite**. AppSheet remains the offline field-capture surface; the eventual `/admin` view starts read-only from the underlying Google Sheet/API.
-
-The current approved gate is **F — Control Center Step 4: brand-coherent rename**. After rename, the required sequence is field/source-of-truth mapping → read-only Admin insights. The **Availability-Aware Contact Widget** is now eligible as the one explicit parallel track, but remains unimplemented and must not be treated as active unless separately promoted.
-
-The Bing indexation recheck remains required for **2026-08-28 through 2026-09-04**. Do not repeatedly resubmit the same URLs before that window without new evidence.
-
-Carrd coherence, editable HTML CV, Dapta.ai, remove.bg, Home cache optimization, Crawler Hints/IndexNow and hidden/offscreen payload trimming remain backlog/future integrations unless separately promoted. Sound for Picture remains inert staging until real content/scope is explicitly approved.
+After this smoke, return to normal Phase 2 observation rather than starting write-back automatically. Availability/WhatsApp remains eligible as the explicit independent track but is not active by default.
