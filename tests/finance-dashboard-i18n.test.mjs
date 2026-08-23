@@ -19,7 +19,7 @@ test("finance dashboard bilingual layer keeps EN/ES in a centralized persisted c
   assert.match(i18n, /sdlive-finance-language/);
   assert.match(i18n, /data-lang=\"es\"/);
   assert.match(i18n, /data-lang=\"en\"/);
-  assert.match(i18n, /localStorage\.setItem\(STORAGE_KEY/);
+  assert.match(i18n, /storageSet\(STORAGE_KEY, language\)/);
   assert.match(i18n, /Finance dashboard/);
   assert.match(i18n, /Panel financiero/);
   assert.match(i18n, /Tax reserve/);
@@ -33,7 +33,8 @@ test("finance dashboard bilingual layer keeps EN/ES in a centralized persisted c
 });
 
 test("finance translations gate dashboard loading and fail open to English", () => {
-  assert.match(dashboard, /i18n\.src = "\.\/finance-dashboard-i18n\.js"/);
+  assert.match(dashboard, /i18n\.src = "\.\/finance-dashboard-i18n\.js\?v=/);
+  assert.match(dashboard, /script\.src = "\.\/finance-dashboard\.js\?v=/);
   assert.match(dashboard, /i18n\.addEventListener\("load", loadFinanceDashboardScript/);
   assert.match(dashboard, /i18n\.addEventListener\("error", \(\) => \{/);
   assert.match(dashboard, /continuing in English/);

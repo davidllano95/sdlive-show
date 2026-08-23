@@ -4,7 +4,6 @@
   const textSource = new WeakMap();
   const textRendered = new WeakMap();
   const attrState = new WeakMap();
-  let observer = null;
   let translating = false;
 
   const ES = Object.freeze({
@@ -103,8 +102,24 @@
     "Dec": "Dic"
   });
 
+  function storageGet(key) {
+    try {
+      return window.localStorage?.getItem(key) ?? null;
+    } catch {
+      return null;
+    }
+  }
+
+  function storageSet(key, value) {
+    try {
+      window.localStorage?.setItem(key, value);
+    } catch {
+      // Language persistence is non-critical.
+    }
+  }
+
   function preferredLanguage() {
-    const stored = String(localStorage.getItem(STORAGE_KEY) || "").toLowerCase();
+    const stored = String(storageGet(STORAGE_KEY) || "").toLowerCase();
     if (SUPPORTED.has(stored)) return stored;
     return String(navigator.language || "en").toLowerCase().startsWith("es") ? "es" : "en";
   }
@@ -255,7 +270,7 @@
   function setLanguage(next) {
     if (!SUPPORTED.has(next)) return;
     language = next;
-    localStorage.setItem(STORAGE_KEY, language);
+    storageSet(STORAGE_KEY, language);
     updateLanguageControl();
     translateRoot();
   }
@@ -299,26 +314,7 @@
     translateRoot();
   }
 
-  function observe() {
-    if (observer) return;
-    observer = new MutationObserver((mutations) => {
-      if (translating) return;
-      const relevant = mutations.some((mutation) => {
-        if (mutation.type === "characterData") return mutation.target.parentElement?.closest("#financeOverview");
-        if (mutation.type === "attributes") return mutation.target.closest?.("#financeOverview");
-        return [...mutation.addedNodes].some((node) =>
-          node.nodeType === Node.ELEMENT_NODE
-            ? (node.matches?.("#financeOverview") || node.closest?.("#financeOverview") || node.querySelector?.("#financeOverview"))
-            : node.parentElement?.closest?.("#financeOverview")
-        );
-      });
-      if (relevant) queueMicrotask(refresh);
-    });
-    observer.observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ["aria-label", "placeholder", "title"] });
-  }
-
   ensureStyles();
-  observe();
   refresh();
 
   window.SDLiveFinanceI18n = {
