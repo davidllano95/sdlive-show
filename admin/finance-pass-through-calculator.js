@@ -16,7 +16,6 @@
       partyAmount: "Gross amount",
       addParty: "+ Add third party",
       remove: "Remove",
-      results: "Reconciliation",
       totalRetention: "Total retentions",
       retentionRate: "Effective retention rate",
       myGross: "My gross amount",
@@ -47,7 +46,6 @@
       partyAmount: "Valor bruto",
       addParty: "+ Agregar tercero",
       remove: "Quitar",
-      results: "Conciliación",
       totalRetention: "Retenciones totales",
       retentionRate: "Tasa efectiva de retención",
       myGross: "Mi valor bruto",
@@ -97,7 +95,6 @@
 
   function partyData(root) {
     return partyRows(root).map((row, index) => ({
-      row,
       name: row.querySelector("[data-party-name]")?.value.trim() || `${t("unnamed")} ${index + 1}`,
       amount: numberFromInput(row.querySelector("[data-party-amount]"))
     }));
@@ -108,75 +105,65 @@
     if (element) element.textContent = value;
   }
 
-  function renderPartyBreakdown(root, parties, rate, currency) {
+  function clearMetrics(root) {
+    ["totalRetention", "retentionRate", "myGross", "myRetention", "myNet", "thirdPartyGross", "thirdPartyRetention", "thirdPartyPayable"].forEach((key) => setMetric(root, key, "—"));
+    const breakdown = root.querySelector("[data-party-breakdown]");
+    if (breakdown) breakdown.innerHTML = "";
+  }
+
+  function renderPartyBreakdown(root, result, currency) {
     const target = root.querySelector("[data-party-breakdown]");
     if (!target) return;
     target.innerHTML = "";
-
-    parties.filter((party) => party.amount > 0).forEach((party) => {
-      const allocatedRetention = party.amount * rate;
-      const payable = party.amount - allocatedRetention;
+    result.thirdParties.filter((party) => party.gross > 0).forEach((party) => {
       const row = document.createElement("div");
       row.className = "pass-through-breakdown__row";
-      row.innerHTML = `
-        <div><strong></strong><small></small></div>
-        <span></span>
-      `;
+      row.innerHTML = `<div><strong></strong><small></small></div><span></span>`;
       row.querySelector("strong").textContent = party.name;
-      row.querySelector("small").textContent = `${t("retention")}: ${formatMoney(currency, allocatedRetention)}`;
-      row.querySelector("span").textContent = `${t("payable")}: ${formatMoney(currency, payable)}`;
+      row.querySelector("small").textContent = `${t("retention")}: ${formatMoney(currency, party.retention)}`;
+      row.querySelector("span").textContent = `${t("payable")}: ${formatMoney(currency, party.payable)}`;
       target.appendChild(row);
     });
   }
 
   function calculate(root) {
     const currency = root.querySelector("[data-currency]")?.value || "COP";
-    const invoiced = numberFromInput(root.querySelector("[data-invoiced]"));
-    const received = numberFromInput(root.querySelector("[data-received]"));
-    const parties = partyData(root);
-    const thirdPartyGross = parties.reduce((sum, party) => sum + party.amount, 0);
     const status = root.querySelector("[data-status]");
-
-    if (!invoiced || !received) {
-      status.textContent = t("idle");
-      status.classList.remove("is-error");
-      ["totalRetention", "retentionRate", "myGross", "myRetention", "myNet", "thirdPartyGross", "thirdPartyRetention", "thirdPartyPayable"].forEach((key) => setMetric(root, key, "—"));
-      renderPartyBreakdown(root, [], 0, currency);
-      return;
-    }
-
-    if (received > invoiced) {
-      status.textContent = t("errorReceived");
+    const calculator = window.SDLivePassThroughMath?.calculate;
+    if (!calculator) {
+      status.textContent = "Calculator unavailable";
       status.classList.add("is-error");
       return;
     }
 
-    if (thirdPartyGross > invoiced) {
-      status.textContent = t("errorParties");
-      status.classList.add("is-error");
+    const result = calculator({
+      invoiced: numberFromInput(root.querySelector("[data-invoiced]")),
+      received: numberFromInput(root.querySelector("[data-received]")),
+      thirdParties: partyData(root)
+    });
+
+    if (!result.ok) {
+      clearMetrics(root);
+      status.classList.toggle("is-error", result.code !== "missing_totals");
+      status.textContent = result.code === "received_exceeds_invoiced"
+        ? t("errorReceived")
+        : result.code === "third_parties_exceed_invoiced"
+          ? t("errorParties")
+          : t("idle");
       return;
     }
 
     status.textContent = "";
     status.classList.remove("is-error");
-
-    const totalRetention = invoiced - received;
-    const rate = invoiced > 0 ? totalRetention / invoiced : 0;
-    const myGross = invoiced - thirdPartyGross;
-    const myRetention = myGross * rate;
-    const myNet = myGross - myRetention;
-    const thirdPartyRetention = thirdPartyGross * rate;
-    const thirdPartyPayable = thirdPartyGross - thirdPartyRetention;
-
-    setMetric(root, "totalRetention", formatMoney(currency, totalRetention));
-    setMetric(root, "retentionRate", `${(rate * 100).toFixed(2)}%`);
-    setMetric(root, "myGross", formatMoney(currency, myGross));
-    setMetric(root, "myRetention", formatMoney(currency, myRetention));
-    setMetric(root, "myNet", formatMoney(currency, myNet));
-    setMetric(root, "thirdPartyGross", formatMoney(currency, thirdPartyGross));
-    setMetric(root, "thirdPartyRetention", formatMoney(currency, thirdPartyRetention));
-    setMetric(root, "thirdPartyPayable", formatMoney(currency, thirdPartyPayable));
-    renderPartyBreakdown(root, parties, rate, currency);
+    setMetric(root, "totalRetention", formatMoney(currency, result.totalRetention));
+    setMetric(root, "retentionRate", `${(result.retentionRate * 100).toFixed(2)}%`);
+    setMetric(root, "myGross", formatMoney(currency, result.myGross));
+    setMetric(root, "myRetention", formatMoney(currency, result.myRetention));
+    setMetric(root, "myNet", formatMoney(currency, result.myNet));
+    setMetric(root, "thirdPartyGross", formatMoney(currency, result.thirdPartyGross));
+    setMetric(root, "thirdPartyRetention", formatMoney(currency, result.thirdPartyRetention));
+    setMetric(root, "thirdPartyPayable", formatMoney(currency, result.thirdPartyPayable));
+    renderPartyBreakdown(root, result, currency);
   }
 
   function partyRow(id) {
@@ -192,12 +179,8 @@
   }
 
   function refreshCopy(root) {
-    root.querySelectorAll("[data-copy]").forEach((element) => {
-      element.textContent = t(element.dataset.copy);
-    });
-    root.querySelectorAll("[data-label]").forEach((element) => {
-      element.textContent = t(element.dataset.label);
-    });
+    root.querySelectorAll("[data-copy]").forEach((element) => { element.textContent = t(element.dataset.copy); });
+    root.querySelectorAll("[data-label]").forEach((element) => { element.textContent = t(element.dataset.label); });
     root.querySelectorAll("[data-remove-party]").forEach((button) => {
       button.textContent = t("remove");
       button.setAttribute("aria-label", t("remove"));
@@ -217,12 +200,7 @@
     section.className = "finance-pass-through";
     section.id = ROOT_ID;
     section.innerHTML = `
-      <div class="finance-section-title finance-pass-through__title">
-        <div>
-          <span class="eyebrow" data-copy="eyebrow"></span>
-          <h4 data-copy="title"></h4>
-        </div>
-      </div>
+      <div class="finance-section-title finance-pass-through__title"><div><span class="eyebrow" data-copy="eyebrow"></span><h4 data-copy="title"></h4></div></div>
       <article class="finance-panel finance-pass-through__panel">
         <p class="finance-pass-through__intro" data-copy="intro"></p>
         <div class="finance-pass-through__inputs">
@@ -230,10 +208,7 @@
           <label><span data-copy="invoiced"></span><input type="number" min="0" step="0.01" inputmode="decimal" data-invoiced /></label>
           <label><span data-copy="received"></span><input type="number" min="0" step="0.01" inputmode="decimal" data-received /></label>
         </div>
-        <div class="finance-pass-through__parties-head">
-          <strong data-copy="parties"></strong>
-          <button type="button" data-add-party data-copy="addParty"></button>
-        </div>
+        <div class="finance-pass-through__parties-head"><strong data-copy="parties"></strong><button type="button" data-add-party data-copy="addParty"></button></div>
         <div class="finance-pass-through__parties" data-parties></div>
         <div class="finance-pass-through__status" data-status></div>
         <div class="finance-pass-through__results">
@@ -246,10 +221,7 @@
           <div class="finance-pass-through__result"><span data-copy="thirdPartyRetention"></span><strong data-result="thirdPartyRetention">—</strong></div>
           <div class="finance-pass-through__result finance-pass-through__result--warning"><span data-copy="thirdPartyPayable"></span><strong data-result="thirdPartyPayable">—</strong></div>
         </div>
-        <div class="finance-pass-through__breakdown">
-          <strong data-copy="perParty"></strong>
-          <div data-party-breakdown></div>
-        </div>
+        <div class="finance-pass-through__breakdown"><strong data-copy="perParty"></strong><div data-party-breakdown></div></div>
         <p class="finance-pass-through__assumption" data-copy="assumption"></p>
         <small class="finance-pass-through__privacy" data-copy="noPersist"></small>
       </article>
@@ -265,30 +237,27 @@
     section.addEventListener("input", () => calculate(section));
     section.addEventListener("change", () => calculate(section));
     section.addEventListener("click", (event) => {
-      const add = event.target.closest("[data-add-party]");
-      if (add) {
-        if (partyRows(section).length >= MAX_PARTIES) return;
-        partiesRoot.appendChild(partyRow(nextPartyId++));
-        refreshCopy(section);
+      if (event.target.closest("[data-add-party]")) {
+        if (partyRows(section).length < MAX_PARTIES) {
+          partiesRoot.appendChild(partyRow(nextPartyId++));
+          refreshCopy(section);
+        }
         return;
       }
       const remove = event.target.closest("[data-remove-party]");
-      if (remove) {
-        const rows = partyRows(section);
-        if (rows.length === 1) {
-          rows[0].querySelector("[data-party-name]").value = "";
-          rows[0].querySelector("[data-party-amount]").value = "";
-        } else {
-          remove.closest(".pass-through-party")?.remove();
-        }
-        calculate(section);
+      if (!remove) return;
+      const rows = partyRows(section);
+      if (rows.length === 1) {
+        rows[0].querySelector("[data-party-name]").value = "";
+        rows[0].querySelector("[data-party-amount]").value = "";
+      } else {
+        remove.closest(".pass-through-party")?.remove();
       }
+      calculate(section);
     });
 
     document.addEventListener("click", (event) => {
-      if (event.target.closest(".finance-language-control button[data-lang]")) {
-        window.setTimeout(() => refreshCopy(section), 0);
-      }
+      if (event.target.closest(".finance-language-control button[data-lang]")) window.setTimeout(() => refreshCopy(section), 0);
     });
 
     refreshCopy(section);
