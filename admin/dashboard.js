@@ -31,8 +31,8 @@
   shell?.classList.toggle("is-collapsed", collapsed);
 
   collapse?.addEventListener("click", () => {
-    const next = !shell.classList.contains("is-collapsed");
-    shell.classList.toggle("is-collapsed", next);
+    const next = !shell?.classList.contains("is-collapsed");
+    shell?.classList.toggle("is-collapsed", next);
     safeStorageSet("sdlive-admin-dashboard-collapsed", String(next));
     collapse.textContent = next ? "Expand" : "Collapse";
   });
@@ -51,20 +51,15 @@
       });
 
       const type = response.headers.get("content-type") || "";
-      if (!type.includes("application/json")) {
-        throw new Error("Unexpected response");
-      }
+      if (!type.includes("application/json")) throw new Error("Unexpected response");
 
       const data = await response.json();
       if (!response.ok || data?.ok === false) {
         throw new Error(data?.error || `Request failed (${response.status})`);
       }
-
       return data;
     } catch (error) {
-      if (error?.name === "AbortError") {
-        throw new Error("Admin API timed out");
-      }
+      if (error?.name === "AbortError") throw new Error("Admin API timed out");
       throw error;
     } finally {
       clearTimeout(timeout);
@@ -82,90 +77,6 @@
     }).format(date);
   }
 
-  function loadFinanceDashboardScript() {
-    if (window.SDLiveFinanceDashboard?.load) {
-      window.SDLiveFinanceDashboard.load();
-      window.SDLiveFinanceI18n?.refresh?.();
-      return;
-    }
-
-    const existing = document.querySelector('script[data-sdlive-finance-dashboard]');
-    if (existing) return;
-
-    const script = document.createElement("script");
-    script.src = "./finance-dashboard.js?v=20260823-2";
-    script.defer = true;
-    script.dataset.sdliveFinanceDashboard = "true";
-    script.addEventListener("load", () => {
-      window.SDLiveFinanceDashboard?.load();
-      window.SDLiveFinanceI18n?.refresh?.();
-    });
-    script.addEventListener("error", () => {
-      console.error("[SD.Live] Could not load Finance Dashboard module");
-    });
-    document.body.appendChild(script);
-  }
-
-  function loadFinanceModule() {
-    if (window.SDLiveFinanceI18n) {
-      loadFinanceDashboardScript();
-      return;
-    }
-
-    const existingI18n = document.querySelector('script[data-sdlive-finance-i18n]');
-    if (existingI18n) {
-      existingI18n.addEventListener("load", loadFinanceDashboardScript, { once: true });
-      return;
-    }
-
-    const i18n = document.createElement("script");
-    i18n.src = "./finance-dashboard-i18n.js?v=20260823-2";
-    i18n.defer = true;
-    i18n.dataset.sdliveFinanceI18n = "true";
-    i18n.addEventListener("load", loadFinanceDashboardScript, { once: true });
-    i18n.addEventListener("error", () => {
-      console.error("[SD.Live] Could not load Finance Dashboard translations; continuing in English");
-      loadFinanceDashboardScript();
-    }, { once: true });
-    document.body.appendChild(i18n);
-  }
-
-  function isCompactAdmin() {
-    if (typeof window.matchMedia === "function") {
-      return window.matchMedia("(max-width: 900px)").matches;
-    }
-    return window.innerWidth <= 900;
-  }
-
-  function showFinanceLauncher() {
-    if (document.getElementById("financeMobileLauncher")) return;
-
-    const launcher = document.createElement("section");
-    launcher.className = "section panel";
-    launcher.id = "financeMobileLauncher";
-    launcher.innerHTML = `
-      <div class="section-head">
-        <div>
-          <span class="eyebrow">SD.Live Track · Finance</span>
-          <h3>Finance dashboard</h3>
-        </div>
-      </div>
-      <p class="panel-note">Finance is paused on compact screens so the Admin shell can become interactive first.</p>
-      <button class="button" type="button">Load Finance Dashboard</button>
-    `;
-
-    const metrics = document.querySelector(".metrics");
-    if (metrics) metrics.insertAdjacentElement("afterend", launcher);
-    else document.querySelector(".content")?.prepend(launcher);
-
-    const button = launcher.querySelector("button");
-    button?.addEventListener("click", () => {
-      button.disabled = true;
-      button.textContent = "Loading Finance…";
-      loadFinanceModule();
-    }, { once: true });
-  }
-
   async function load() {
     try {
       const [health, whoami, hero, revisions] = await Promise.all([
@@ -176,7 +87,6 @@
       ]);
 
       if (identity) identity.textContent = whoami.email || "Authenticated";
-
       if (d1Status) d1Status.textContent = health.ok ? "Online" : "Issue";
       if (d1Detail) d1Detail.textContent = health.database || "D1";
 
@@ -243,9 +153,4 @@
   }
 
   load();
-  if (isCompactAdmin()) {
-    showFinanceLauncher();
-  } else {
-    loadFinanceModule();
-  }
 })();
