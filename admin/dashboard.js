@@ -11,35 +11,64 @@
   const activity = document.getElementById("activity");
   const systemPill = document.getElementById("systemPill");
 
-  const collapsed = localStorage.getItem("sdlive-admin-dashboard-collapsed") === "true";
+  function safeStorageGet(key) {
+    try {
+      return window.localStorage?.getItem(key) ?? null;
+    } catch {
+      return null;
+    }
+  }
+
+  function safeStorageSet(key, value) {
+    try {
+      window.localStorage?.setItem(key, value);
+    } catch {
+      // Storage preference is non-critical. The Admin must keep working.
+    }
+  }
+
+  const collapsed = safeStorageGet("sdlive-admin-dashboard-collapsed") === "true";
   shell?.classList.toggle("is-collapsed", collapsed);
 
   collapse?.addEventListener("click", () => {
     const next = !shell.classList.contains("is-collapsed");
     shell.classList.toggle("is-collapsed", next);
-    localStorage.setItem("sdlive-admin-dashboard-collapsed", String(next));
+    safeStorageSet("sdlive-admin-dashboard-collapsed", String(next));
     collapse.textContent = next ? "Expand" : "Collapse";
   });
 
   if (collapsed && collapse) collapse.textContent = "Expand";
 
   async function api(url) {
-    const response = await fetch(url, {
-      credentials: "same-origin",
-      cache: "no-store"
-    });
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
 
-    const type = response.headers.get("content-type") || "";
-    if (!type.includes("application/json")) {
-      throw new Error("Unexpected response");
+    try {
+      const response = await fetch(url, {
+        credentials: "same-origin",
+        cache: "no-store",
+        signal: controller.signal
+      });
+
+      const type = response.headers.get("content-type") || "";
+      if (!type.includes("application/json")) {
+        throw new Error("Unexpected response");
+      }
+
+      const data = await response.json();
+      if (!response.ok || data?.ok === false) {
+        throw new Error(data?.error || `Request failed (${response.status})`);
+      }
+
+      return data;
+    } catch (error) {
+      if (error?.name === "AbortError") {
+        throw new Error("Admin API timed out");
+      }
+      throw error;
+    } finally {
+      clearTimeout(timeout);
     }
-
-    const data = await response.json();
-    if (!response.ok || data?.ok === false) {
-      throw new Error(data?.error || `Request failed (${response.status})`);
-    }
-
-    return data;
   }
 
   function formatTimestamp(value) {
