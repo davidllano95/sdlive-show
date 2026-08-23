@@ -310,22 +310,42 @@
     }
 
     const todayIso = bogotaTodayIso();
-    const upcoming = events.find((event) => event.startDate >= todayIso);
-    if (!upcoming) {
+    const tomorrowIso = isoFromDate(addDays(dateFromIso(todayIso), 1));
+    const ongoing = events.find(
+      (event) => event.startDate <= todayIso && event.endDate >= tomorrowIso
+    );
+
+    let nextOccurrence = null;
+    if (ongoing) {
+      nextOccurrence = {
+        event: ongoing,
+        date: tomorrowIso
+      };
+    } else {
+      const upcoming = events.find((event) => event.startDate >= todayIso);
+      if (upcoming) {
+        nextOccurrence = {
+          event: upcoming,
+          date: upcoming.startDate
+        };
+      }
+    }
+
+    if (!nextOccurrence) {
       if (nextDate) nextDate.textContent = "—";
       if (nextLabel) nextLabel.textContent = "No upcoming event";
       return;
     }
 
-    const start = dateFromIso(upcoming.startDate);
+    const occurrenceDate = dateFromIso(nextOccurrence.date);
     if (nextDate) {
       nextDate.textContent = new Intl.DateTimeFormat(undefined, {
         month: "short",
         day: "numeric",
         timeZone: "UTC"
-      }).format(start);
+      }).format(occurrenceDate);
     }
-    if (nextLabel) nextLabel.textContent = eventLabel(upcoming);
+    if (nextLabel) nextLabel.textContent = eventLabel(nextOccurrence.event);
   }
 
   function render() {
