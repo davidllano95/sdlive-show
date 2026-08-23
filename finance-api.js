@@ -188,6 +188,7 @@ function pendingInvoiceEligibility(row, todayKey) {
   const workDateKey = sheetDateKey(recordCell(row, "Fecha trabajo"));
   const invoiceReady = workDateKey !== null && workDateKey < todayKey;
   return {
+    workDateKey,
     invoiceReady,
     workflowBlocked: !invoiceReady
   };
@@ -214,6 +215,32 @@ function collectionEligibility(row) {
     collectible: ready,
     workflowBlocked: !ready
   };
+}
+
+function publicWorkItem(row, currency, rawCurrency) {
+  return {
+    workDate: cleanString(recordCell(row, "Fecha trabajo")),
+    client: cleanString(recordCell(row, "Cliente")),
+    project: cleanString(recordCell(row, "Proyecto / Show")),
+    currency: currency || rawCurrency || null,
+    state: cleanString(recordCell(row, "Estado"))
+  };
+}
+
+function blockedReasonCodes(row, { todayKey, pendingEligibility = null } = {}) {
+  if (pendingEligibility) {
+    if (pendingEligibility.workDateKey === null) return ["invalid_work_date"];
+    if (pendingEligibility.workDateKey === todayKey) return ["work_date_today"];
+    if (pendingEligibility.workDateKey > todayKey) return ["work_date_future"];
+    return ["invoice_not_ready"];
+  }
+
+  const reasons = [];
+  if (cleanString(recordCell(row, "Cliente")) === "LiventX") {
+    if (!cleanString(recordCell(row, "Fecha evaluación"))) reasons.push("missing_evaluation");
+    if (!cleanString(recordCell(row, "Fecha firma"))) reasons.push("missing_signature");
+  }
+  return reasons.length ? reasons : ["workflow_incomplete"];
 }
 
 export function financeHealthDiagnostic(error) {
@@ -392,6 +419,8 @@ export function buildFinanceSummary(rows, { now = new Date() } = {}) {
   const paidFeesByCurrency = emptyCurrencyTotals();
   const agingMap = new Map();
   const priority = [];
+  const toInvoiceQueue = [];
+  const blockedQueue = [];
 
   let toInvoiceCount = 0;
   let receivableCount = 0;
@@ -410,16 +439,29 @@ export function buildFinanceSummary(rows, { now = new Date() } = {}) {
 
     if (isPendingInvoiceState(state)) {
       const eligibility = pendingInvoiceEligibility(row, todayKey);
+      const grossAmount = numericValue(recordCell(row, "Valor bruto"));
       if (eligibility.invoiceReady) {
         toInvoiceCount += 1;
-        addCurrencyAmount(
-          toInvoiceGrossByCurrency,
-          currency,
-          numericValue(recordCell(row, "Valor bruto"))
-        );
+        addCurrencyAmount(toInvoiceGrossByCurrency, currency, grossAmount);
+        toInvoiceQueue.push({
+          ...publicWorkItem(row, currency, rawCurrency),
+          grossAmount: grossAmount === null ? null : roundMoney(grossAmount),
+          netAmount: netAmount === null ? null : roundMoney(netAmount),
+          action: "send_invoice"
+        });
       } else {
         collectionBlockedCount += 1;
         addCurrencyAmount(blockedNetByCurrency, currency, netAmount);
+        blockedQueue.push({
+          ...publicWorkItem(row, currency, rawCurrency),
+          netAmount: netAmount === null ? null : roundMoney(netAmount),
+          invoiceSentDate: "",
+          daysUnpaid: null,
+          reasonCodes: blockedReasonCodes(row, {
+            todayKey,
+            pendingEligibility: eligibility
+          })
+        });
       }
       continue;
     }
@@ -438,9 +480,17 @@ export function buildFinanceSummary(rows, { now = new Date() } = {}) {
     }
 
     const eligibility = collectionEligibility(row);
+    const daysUnpaid = numericValue(recordCell(row, "Días sin pagar"));
     if (eligibility.workflowBlocked) {
       collectionBlockedCount += 1;
       addCurrencyAmount(blockedNetByCurrency, currency, netAmount);
+      blockedQueue.push({
+        ...publicWorkItem(row, currency, rawCurrency),
+        netAmount: netAmount === null ? null : roundMoney(netAmount),
+        invoiceSentDate: cleanString(recordCell(row, "Fecha cuenta enviada")),
+        daysUnpaid,
+        reasonCodes: blockedReasonCodes(row, { todayKey })
+      });
     }
     if (!eligibility.collectible) continue;
 
@@ -448,7 +498,6 @@ export function buildFinanceSummary(rows, { now = new Date() } = {}) {
     addCurrencyAmount(receivableNetByCurrency, currency, netAmount);
 
     const agingBucket = cleanString(recordCell(row, "Rango Aging")) || "Sin rango";
-    const daysUnpaid = numericValue(recordCell(row, "Días sin pagar"));
     const aging = agingMap.get(agingBucket) || {
       bucket: agingBucket,
       count: 0,
@@ -480,6 +529,23 @@ export function buildFinanceSummary(rows, { now = new Date() } = {}) {
     return String(a.client).localeCompare(String(b.client));
   });
 
+  toInvoiceQueue.sort((a, b) => {
+    const dateA = sheetDateKey(a.workDate) ?? Number.MAX_SAFE_INTEGER;
+    const dateB = sheetDateKey(b.workDate) ?? Number.MAX_SAFE_INTEGER;
+    if (dateA !== dateB) return dateA - dateB;
+    return String(a.client).localeCompare(String(b.client));
+  });
+
+  blockedQueue.sort((a, b) => {
+    const daysA = a.daysUnpaid ?? -1;
+    const daysB = b.daysUnpaid ?? -1;
+    if (daysB !== daysA) return daysB - daysA;
+    const dateA = sheetDateKey(a.workDate) ?? Number.MAX_SAFE_INTEGER;
+    const dateB = sheetDateKey(b.workDate) ?? Number.MAX_SAFE_INTEGER;
+    if (dateA !== dateB) return dateA - dateB;
+    return String(a.client).localeCompare(String(b.client));
+  });
+
   const aging = [...agingMap.values()]
     .sort((a, b) => b.maxDays - a.maxDays || a.bucket.localeCompare(b.bucket))
     .map(({ maxDays, ...entry }) => ({
@@ -500,6 +566,11 @@ export function buildFinanceSummary(rows, { now = new Date() } = {}) {
       workflowBlockedNetByCurrency: finalizedCurrencyTotals(blockedNetByCurrency),
       aging,
       priority: priority.slice(0, 10)
+    },
+    workQueues: {
+      toInvoice: toInvoiceQueue,
+      collectible: priority,
+      blocked: blockedQueue
     },
     received: {
       paidCount,

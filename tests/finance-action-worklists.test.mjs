@@ -1,0 +1,126 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+
+import {
+  EXPECTED_FINANCE_HEADERS,
+  buildFinanceSummary
+} from "../finance-api.js";
+
+const INDEX = Object.fromEntries(
+  EXPECTED_FINANCE_HEADERS.map((header, index) => [header, index])
+);
+
+function row(values) {
+  const result = Array(EXPECTED_FINANCE_HEADERS.length).fill("");
+  for (const [field, value] of Object.entries(values)) result[INDEX[field]] = value;
+  return result;
+}
+
+test("finance summary exposes read-only action queues with exact blockers", () => {
+  const summary = buildFinanceSummary([
+    row({
+      "Fecha trabajo": "2026-08-20",
+      "Cliente": "Invoice me",
+      "Proyecto / Show": "Past show",
+      "Moneda": "COP",
+      "Valor bruto": 1000,
+      "Valor Neto": 900,
+      "Estado": "Pendiente Envio",
+      "ID": "secret-invoice-id",
+      "Notas": "private note",
+      "NUM CONTACTO": "+57-secret"
+    }),
+    row({
+      "Fecha trabajo": "2026-08-23",
+      "Cliente": "Today",
+      "Proyecto / Show": "Today show",
+      "Moneda": "COP",
+      "Valor bruto": 500,
+      "Valor Neto": 450,
+      "Estado": "Pendiente Envio",
+      "ID": "secret-today-id"
+    }),
+    row({
+      "Fecha trabajo": "2026-08-24",
+      "Cliente": "Future",
+      "Proyecto / Show": "Future show",
+      "Moneda": "USD",
+      "Valor bruto": 300,
+      "Valor Neto": 275,
+      "Estado": "Pendiente Envio",
+      "ID": "secret-future-id"
+    }),
+    row({
+      "Fecha trabajo": "",
+      "Cliente": "Bad date",
+      "Moneda": "USD",
+      "Valor bruto": 200,
+      "Valor Neto": 180,
+      "Estado": "Pendiente Envio",
+      "ID": "secret-date-id"
+    }),
+    row({
+      "Fecha trabajo": "2026-08-01",
+      "Cliente": "LiventX",
+      "Proyecto / Show": "Needs both",
+      "Moneda": "USD",
+      "Valor Neto": 600,
+      "Estado": "Cuenta enviada",
+      "Fecha cuenta enviada": "2026-08-05",
+      "Días sin pagar": 18,
+      "ID": "secret-liventx-id"
+    }),
+    row({
+      "Fecha trabajo": "2026-08-02",
+      "Cliente": "Regular client",
+      "Proyecto / Show": "Collect now",
+      "Moneda": "COP",
+      "Valor Neto": 700,
+      "Estado": "Cuenta enviada",
+      "Fecha cuenta enviada": "2026-08-06",
+      "Días sin pagar": 17,
+      "Rango Aging": "15-30 días",
+      "ID": "secret-collect-id"
+    })
+  ], { now: new Date("2026-08-23T16:00:00Z") });
+
+  assert.equal(summary.workQueues.toInvoice.length, 1);
+  assert.equal(summary.workQueues.toInvoice[0].client, "Invoice me");
+  assert.equal(summary.workQueues.toInvoice[0].action, "send_invoice");
+  assert.equal(summary.workQueues.collectible.length, 1);
+  assert.equal(summary.workQueues.collectible[0].client, "Regular client");
+
+  assert.equal(summary.workQueues.blocked.length, 4);
+  const byClient = Object.fromEntries(summary.workQueues.blocked.map((item) => [item.client, item]));
+  assert.deepEqual(byClient.Today.reasonCodes, ["work_date_today"]);
+  assert.deepEqual(byClient.Future.reasonCodes, ["work_date_future"]);
+  assert.deepEqual(byClient["Bad date"].reasonCodes, ["invalid_work_date"]);
+  assert.deepEqual(byClient.LiventX.reasonCodes, ["missing_evaluation", "missing_signature"]);
+
+  const serialized = JSON.stringify(summary.workQueues);
+  assert.equal(serialized.includes("secret-"), false);
+  assert.equal(serialized.includes("private note"), false);
+  assert.equal(serialized.includes("+57-secret"), false);
+});
+
+test("dedicated Finance workspace loads interactive worklists lazily", async () => {
+  const [html, script, styles] = await Promise.all([
+    readFile(new URL("../admin/finance/index.html", import.meta.url), "utf8"),
+    readFile(new URL("../admin/finance-action-worklists.js", import.meta.url), "utf8"),
+    readFile(new URL("../admin/finance-action-worklists.css", import.meta.url), "utf8")
+  ]);
+
+  assert.match(html, /finance-action-worklists\.css\?v=/);
+  assert.match(html, /finance-action-worklists\.js\?v=/);
+  assert.match(script, /financeToInvoiceCount/);
+  assert.match(script, /financeReceivableCount/);
+  assert.match(script, /financeBlockedCount/);
+  assert.match(script, /data\?\.summary\?\.workQueues/);
+  assert.match(script, /missing_evaluation/);
+  assert.match(script, /missing_signature/);
+  assert.match(script, /work_date_today/);
+  assert.match(script, /work_date_future/);
+  assert.match(script, /credentials: "same-origin"/);
+  assert.match(styles, /@media \(max-width: 640px\)/);
+});
