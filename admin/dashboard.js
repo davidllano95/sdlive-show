@@ -93,7 +93,7 @@
     if (existing) return;
 
     const script = document.createElement("script");
-    script.src = "./finance-dashboard.js";
+    script.src = "./finance-dashboard.js?v=20260823-2";
     script.defer = true;
     script.dataset.sdliveFinanceDashboard = "true";
     script.addEventListener("load", () => {
@@ -119,7 +119,7 @@
     }
 
     const i18n = document.createElement("script");
-    i18n.src = "./finance-dashboard-i18n.js";
+    i18n.src = "./finance-dashboard-i18n.js?v=20260823-2";
     i18n.defer = true;
     i18n.dataset.sdliveFinanceI18n = "true";
     i18n.addEventListener("load", loadFinanceDashboardScript, { once: true });
