@@ -126,8 +126,9 @@
   }
 
   function agingKeyFromDays(value) {
+    if (value === null || value === undefined || value === "") return null;
     const days = Number(value);
-    if (!Number.isFinite(days) || days < 0) return null;
+    if (!Number.isFinite(days)) return null;
     if (days <= 30) return "0-30";
     if (days <= 60) return "31-60";
     return "61+";
