@@ -17,7 +17,7 @@
 
   const DAY_MS = 86400000;
   let events = [];
-  let visibleMonth = monthStart(new Date());
+  let visibleMonth = monthStart(dateFromIso(bogotaTodayIso()));
 
   function safeStorageGet(key) {
     try {
@@ -46,8 +46,24 @@
     collapse.textContent = next ? "Expand" : "Collapse";
   });
 
+  function bogotaTodayIso() {
+    const parts = Object.fromEntries(
+      new Intl.DateTimeFormat("en-CA", {
+        timeZone: "America/Bogota",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit"
+      })
+        .formatToParts(new Date())
+        .filter((part) => part.type !== "literal")
+        .map((part) => [part.type, part.value])
+    );
+
+    return `${parts.year}-${parts.month}-${parts.day}`;
+  }
+
   function monthStart(value) {
-    return new Date(Date.UTC(value.getFullYear(), value.getMonth(), 1));
+    return new Date(Date.UTC(value.getUTCFullYear(), value.getUTCMonth(), 1));
   }
 
   function addDays(value, amount) {
@@ -181,7 +197,7 @@
 
     const days = document.createElement("div");
     days.className = "calendar-days";
-    const todayIso = isoFromDate(new Date());
+    const todayIso = bogotaTodayIso();
 
     for (let offset = 0; offset < 7; offset += 1) {
       const date = addDays(weekStart, offset);
@@ -238,7 +254,8 @@
       heading.textContent = new Intl.DateTimeFormat(undefined, {
         weekday: "short",
         month: "short",
-        day: "numeric"
+        day: "numeric",
+        timeZone: "UTC"
       }).format(date);
       section.appendChild(heading);
 
@@ -265,7 +282,7 @@
       multiDayCount.textContent = String(monthEvents.filter((event) => event.multiDay).length);
     }
 
-    const todayIso = isoFromDate(new Date());
+    const todayIso = bogotaTodayIso();
     const upcoming = events.find((event) => event.endDate >= todayIso);
     if (!upcoming) {
       if (nextDate) nextDate.textContent = "—";
@@ -277,7 +294,8 @@
     if (nextDate) {
       nextDate.textContent = new Intl.DateTimeFormat(undefined, {
         month: "short",
-        day: "numeric"
+        day: "numeric",
+        timeZone: "UTC"
       }).format(start);
     }
     if (nextLabel) nextLabel.textContent = eventLabel(upcoming);
@@ -317,7 +335,7 @@
   });
 
   todayButton?.addEventListener("click", () => {
-    visibleMonth = monthStart(new Date());
+    visibleMonth = monthStart(dateFromIso(bogotaTodayIso()));
     render();
   });
 
