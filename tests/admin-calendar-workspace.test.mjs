@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 
 const calendarPage = readFileSync(new URL("../admin/calendar/index.html", import.meta.url), "utf8");
 const calendarScript = readFileSync(new URL("../admin/calendar/calendar.js", import.meta.url), "utf8");
+const calendarStyles = readFileSync(new URL("../admin/calendar/calendar.css", import.meta.url), "utf8");
 const mobileMonthStyles = readFileSync(new URL("../admin/calendar/mobile-month.css", import.meta.url), "utf8");
 const dashboardScript = readFileSync(new URL("../admin/dashboard.js", import.meta.url), "utf8");
 const financePageScript = readFileSync(new URL("../admin/finance-page.js", import.meta.url), "utf8");
@@ -48,4 +49,13 @@ test("Mobile Calendar keeps month view available and offers Agenda as an alterna
   assert.ok(mobileMonthStyles.includes("#calendarViewMonth:checked ~ .calendar-weekdays"));
   assert.ok(mobileMonthStyles.includes("#calendarViewMonth:checked ~ .calendar-grid"));
   assert.ok(mobileMonthStyles.includes("#calendarViewAgenda:checked ~ .calendar-agenda"));
+});
+
+test("Calendar visual accents reuse the shared Admin brand palette", () => {
+  assert.ok(calendarStyles.includes("var(--accent)"));
+  assert.ok(calendarStyles.includes("rgba(var(--accent-rgb)"));
+  assert.ok(mobileMonthStyles.includes("background: var(--accent)"));
+  assert.equal(calendarStyles.includes("#dfff69"), false);
+  assert.equal(calendarStyles.includes("136, 162, 255"), false);
+  assert.equal(mobileMonthStyles.includes("#dfff69"), false);
 });

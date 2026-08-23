@@ -59,9 +59,10 @@ All Admin workspaces remain behind the same Cloudflare Access boundary.
 
 - **`/admin/` — Dashboard.** Lightweight operational overview, CMS/system health and workspace navigation. It must not auto-boot heavy Finance analytics.
 - **`/admin/finance/` — Finance.** Dedicated **SD.Live Track** analytics workspace. This is the scalable home for cash, production, receivables, collection performance, fees, Tax Reserve planning and later finance-specific capabilities.
+- **`/admin/calendar/` — Calendar / Operations.** Authenticated read-only month Calendar + mobile Calendar/Agenda over Google Sheets `REGISTRO`, including continuous multi-day events. Controlled create/write is the next approved Calendar gate after read-only visual closure.
 - **`/admin/editor/` — Site Editor.** Visual CMS/editor workspace.
 - **Inbox:** currently bridges to Google Workspace/Gmail.
-- **Leads/CRM, Rental Admin, Projects, Calendar, Analytics and SEO:** planned unless `PROJECT_STATUS.md` explicitly says otherwise.
+- **Leads/CRM, Rental Admin, Projects, Analytics and SEO:** planned unless `PROJECT_STATUS.md` explicitly says otherwise.
 
 The Finance workspace separation was approved after production QA showed that the Dashboard and Finance both work on iPhone when their startup work is isolated. Evidence: `docs/checkpoints/admin-finance-workspace-separation-2026-08-23.md`.
 
@@ -77,6 +78,7 @@ The Finance workspace separation was approved after production QA showed that th
 | Rental pricing / quote calculation | backend pricing logic; never presentation CMS copy |
 | Public analytics | GA4/GTM after consent |
 | Admin access | Cloudflare Access |
+| Admin visual palette/tokens | shared variables in `admin/dashboard.css`; modules reuse these tokens rather than inventing local palettes |
 | Current finance persistence / formulas | Google Sheets `REGISTRO` |
 | Finance offline capture/workflows | AppSheet **SD.Live Track** |
 | Finance Admin analytics | read-only Worker view over the underlying Google Sheet/API |
@@ -126,6 +128,8 @@ Select is an Editor contract, not a section-specific convenience. Every new CMS/
 
 Established production aesthetics are contracts. If a CMS/editor change reconstructs an approved visual behavior, extend the safeguard registry and regression tests in the same change rather than accepting silent visual degradation.
 
+**Permanent palette rule:** every new or modified UI must reuse the established brand tokens / approved palette of the surface it belongs to. Do not introduce a one-off decorative color system for a new module. Admin modules use the shared Admin tokens from `admin/dashboard.css`; public-site work reuses the existing public brand system. Brand-palette consistency must be part of desktop and mobile visual smoke before closing a milestone.
+
 ### Rental / Contact
 
 - Rental is Colombia-first and hidden by default for International visitors unless direct intent requires it.
@@ -165,7 +169,10 @@ Established production aesthetics are contracts. If a CMS/editor change reconstr
 - Finance Phase 2 read-only integration: closed and production-reconciled.
 - 2026-08-23 Admin Finance freeze hardening: desktop confirmed responsive after removing the Finance i18n global DOM observer.
 - 2026-08-23 mobile isolation QA: base Admin and Finance each confirmed responsive when loaded separately.
-- **Current implementation milestone:** dedicated `/admin/finance/` workspace + lightweight `/admin/` Dashboard; production smoke required after merge.
+- 2026-08-23 AppSheet multi-day model: PASS (`Fecha trabajo` start + `Fecha fin` end, backfill, validation, new-record default).
+- 2026-08-23 Admin Calendar read-only desktop/data QA: PASS; 57 events read cleanly, including real multi-day RENT and N. Jade spans.
+- 2026-08-23 Admin Calendar mobile structure: PASS after adding Calendar/Agenda with Calendar as the default.
+- **Current implementation milestone:** align Calendar visual accents with the shared SD.Live Admin palette, then close the read-only Calendar gate and begin controlled Admin create → Google Sheets `REGISTRO` → AppSheet sync.
 
 ## Approved future improvements register
 
@@ -173,12 +180,13 @@ These are preserved requirements/backlog, **not automatic work**. `PROJECT_STATU
 
 ### Control Center / business operations
 
-- Phase 2 Finance real-use observation before any write-back.
+- Phase 2 Finance real-use observation before any generic Finance write-back.
 - Finance Phase 3: draft-first/write-once rental→finance automation only with explicit mapping, idempotency, duplicate protection and rollback.
 - CRM pipeline, clients/contacts/companies, notes/history and Lead → Quote → Project → Invoice only after source-of-truth design.
-- Native Admin Calendar, Projects, Rental Admin and quote automation when their ownership/contracts are defined.
+- Calendar controlled create/edit uses the same Google Sheets `REGISTRO` source and AppSheet-compatible identity; it is a separately authorized operations write path, not generic Finance Phase 3.
+- Native Projects, Rental Admin and quote automation when their ownership/contracts are defined.
 - Automatic Show Day from approved Calendar/AppSheet/project source with manual override.
-- Finance reminder delivery hardening: reuse approved reminder rules; notification channels must not become a second finance state engine.
+- Finance reminder delivery hardening: reuse approved reminder rules; notification channels must not become a second finance state engine. Billing eligibility/reminders must use the day after `Fecha fin` before AppSheet/Finance integration closes (GitHub issue #83).
 - Private/noindex Portfolio/CV variants and a canonical editable HTML CV.
 - Business analytics / Looker Studio or Admin reporting only when reliable downstream data exists.
 
@@ -238,9 +246,11 @@ These are preserved requirements/backlog, **not automatic work**. `PROJECT_STATU
 ### Admin
 
 - `admin/index.html` / `admin/dashboard.js` — lightweight Dashboard.
+- `admin/dashboard.css` — shared Admin visual tokens/palette; canonical Admin accent currently `#a089e5` (`--accent-rgb: 160,137,229`).
 - `admin/finance/index.html` / `admin/finance-page.js` — dedicated Finance workspace shell/bootstrap.
 - `admin/finance-dashboard.js` / `.css` — Finance analytics UI.
 - `admin/finance-dashboard-i18n.js` / `.css` — Finance EN/ES layer.
+- `admin/calendar/index.html` / `calendar.css` / `mobile-month.css` / `calendar.js` — read-only Calendar workspace and responsive month/agenda UI.
 - `admin/editor/` — Site Editor workspace.
 - `admin/editor/editor-resilience.js` — Global Select routing/resilience.
 - `admin/editor/automatic-failsafe.js` — publish verification.
@@ -251,6 +261,7 @@ These are preserved requirements/backlog, **not automatic work**. `PROJECT_STATU
 - `PROJECT_STATUS.md` — current operational state and active gate.
 - `ROADMAP_MASTER_CHECKLIST.md` — preserved detailed backlog/history.
 - `docs/roadmap/sdlive-control-center.md` — Control Center sequencing.
+- `docs/roadmap/calendar-operations-hub-2026-08-23.md` — current Calendar/AppSheet/Operations handoff and write boundary.
 - `docs/checkpoints/admin-finance-workspace-separation-2026-08-23.md` — Finance workspace architecture decision.
 
 ## Critical routes / endpoints
@@ -268,6 +279,7 @@ These are preserved requirements/backlog, **not automatic work**. `PROJECT_STATU
 
 - `/admin/`
 - `/admin/finance/`
+- `/admin/calendar/`
 - `/admin/editor/`
 
 ### APIs include
@@ -278,6 +290,7 @@ These are preserved requirements/backlog, **not automatic work**. `PROJECT_STATU
 - `GET /api/admin/finance/health`
 - `GET /api/admin/finance/summary`
 - `GET /api/admin/finance/dashboard`
+- `GET /api/admin/calendar/events`
 - private Finance settings endpoint(s) used by the Tax Reserve UI
 - `POST /api/contact`
 - `POST /api/rental`
@@ -289,6 +302,11 @@ These are preserved requirements/backlog, **not automatic work**. `PROJECT_STATU
 - Canonical tagline: **Creative Audio. Technical systems. Built for the show.**
 - Visible `SD.Live` mentions use the floating-dot wordmark where appropriate; metadata/machine strings remain literal.
 - WLive remains visible.
+- **Brand-palette reuse is mandatory for all new implementation work.** New components inherit the existing visual system of their surface; they do not create a standalone palette.
+- Private Admin primary accent is the shared `--accent` in `admin/dashboard.css` (currently `#a089e5`, RGB `160,137,229`). Use `var(--accent)` / `rgba(var(--accent-rgb), …)` instead of hard-coded new primary hues.
+- Admin `--green`, `--amber` and `--danger` are semantic status colors and may be used for success/warning/error meaning; they are not alternate decorative palettes.
+- Public-site work must likewise reuse the established public brand tokens/approved visual language rather than copying arbitrary colors from Admin or another module.
+- Desktop + mobile visual QA includes palette consistency before a visual milestone closes.
 - Cloudflare Access is the real Admin barrier; never restore a visual/mock login as security.
 - GTM is analytics/consent/events only, never navigation/branding/layout.
 - Do not restore Netlify, the old Owner Access mockup, `site-runtime`, or GTM-driven navigation.
@@ -324,13 +342,13 @@ Do not treat a feature-branch deployment as production. `sdlive.show` represents
 
 ## Current gate
 
-**Control Center Steps 1–6 are CLOSED.** Finance Phase 2 remains read-only and in real-use observation; Phase 3 write-back is still blocked.
+**Control Center Steps 1–6 and Finance Phase 2 read-only are CLOSED.** Generic Finance Phase 3 write-back remains blocked.
 
-**Current F hardening gate:** finish and production-smoke the dedicated Finance workspace architecture:
+**Active Calendar gate:** finish the read-only Calendar visual closeout using the permanent brand-palette rule:
 
-- `/admin/` stays lightweight and must not load Finance analytics runtime;
-- `/admin/finance/` owns SD.Live Track Finance analytics;
-- `/admin/editor/` remains isolated as the Site Editor;
-- validate desktop + iPhone navigation, Finance render, year selector and EN/ES after merge.
-
-After this smoke, return to normal Phase 2 observation rather than starting write-back automatically. Availability/WhatsApp remains eligible as the explicit independent track but is not active by default.
+- desktop/data/multi-day/single-day Calendar QA is PASS;
+- iPhone Calendar/Agenda structure is PASS;
+- Calendar accents must reuse the shared Admin violet tokens on desktop and mobile;
+- after that visual smoke passes, begin the separately authorized **controlled Admin create → Google Sheets `REGISTRO` → AppSheet sync** sequence;
+- do not broaden Calendar create into generic Finance write-back;
+- before the overall AppSheet/Finance integration is closed, complete issue #83 so billing eligibility and invoice reminders use the day after `Fecha fin`.
