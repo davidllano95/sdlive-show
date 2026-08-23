@@ -14,10 +14,22 @@
   const previousButton = document.getElementById("calendarPrev");
   const todayButton = document.getElementById("calendarToday");
   const nextButton = document.getElementById("calendarNext");
+  const openCreateButton = document.getElementById("openCreateWork");
+  const createDialog = document.getElementById("createWorkDialog");
+  const createForm = document.getElementById("createWorkForm");
+  const closeCreateButton = document.getElementById("closeCreateWork");
+  const cancelCreateButton = document.getElementById("cancelCreateWork");
+  const createSubmitButton = document.getElementById("createWorkSubmit");
+  const createMessage = document.getElementById("createWorkMessage");
+  const startInput = document.getElementById("workStartDate");
+  const endInput = document.getElementById("workEndDate");
 
   const DAY_MS = 86400000;
   let events = [];
   let visibleMonth = monthStart(dateFromIso(bogotaTodayIso()));
+  let createRequestId = null;
+  let previousStartDate = "";
+  let isCreating = false;
 
   function safeStorageGet(key) {
     try {
@@ -116,12 +128,20 @@
     ].filter(Boolean).join(" · ");
   }
 
-  async function api(url) {
+  async function api(url, options = {}) {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 12000);
+    const timeout = setTimeout(() => controller.abort(), 15000);
+    const method = options.method || "GET";
+    const headers = new Headers(options.headers || {});
+    if (options.body && !headers.has("Content-Type")) {
+      headers.set("Content-Type", "application/json; charset=utf-8");
+    }
 
     try {
       const response = await fetch(url, {
+        ...options,
+        method,
+        headers,
         credentials: "same-origin",
         cache: "no-store",
         signal: controller.signal
@@ -130,11 +150,18 @@
       if (!type.includes("application/json")) throw new Error("Unexpected response");
       const data = await response.json();
       if (!response.ok || data?.ok === false) {
-        throw new Error(data?.error || `Request failed (${response.status})`);
+        const error = new Error(data?.error || `Request failed (${response.status})`);
+        error.status = response.status;
+        error.data = data;
+        throw error;
       }
       return data;
     } catch (error) {
-      if (error?.name === "AbortError") throw new Error("Calendar API timed out");
+      if (error?.name === "AbortError") {
+        const timeoutError = new Error("Calendar API timed out");
+        timeoutError.code = "timeout";
+        throw timeoutError;
+      }
       throw error;
     } finally {
       clearTimeout(timeout);
@@ -324,6 +351,27 @@
     if (empty) empty.hidden = monthEvents.length !== 0;
   }
 
+  function applyCalendarData(calendar, statusText = null) {
+    events = Array.isArray(calendar?.events) ? calendar.events : [];
+    const issueCount = Object.values(calendar?.quality || {}).reduce(
+      (sum, value) => sum + (Number(value) || 0),
+      0
+    );
+    setStatus(
+      statusText || (issueCount
+        ? `Calendar online · ${issueCount} date warning${issueCount === 1 ? "" : "s"}`
+        : "Calendar online · operations"),
+      issueCount && !statusText ? "is-warning" : ""
+    );
+    render();
+  }
+
+  async function refreshCalendar(statusText = null) {
+    const calendar = await api("/api/admin/calendar/events");
+    applyCalendarData(calendar, statusText);
+    return calendar;
+  }
+
   previousButton?.addEventListener("click", () => {
     visibleMonth = addMonths(visibleMonth, -1);
     render();
@@ -339,6 +387,161 @@
     render();
   });
 
+  function newRequestId() {
+    if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
+    const bytes = new Uint8Array(16);
+    globalThis.crypto.getRandomValues(bytes);
+    bytes[6] = (bytes[6] & 0x0f) | 0x40;
+    bytes[8] = (bytes[8] & 0x3f) | 0x80;
+    const hex = [...bytes].map((value) => value.toString(16).padStart(2, "0"));
+    return `${hex.slice(0, 4).join("")}-${hex.slice(4, 6).join("")}-${hex.slice(6, 8).join("")}-${hex.slice(8, 10).join("")}-${hex.slice(10).join("")}`;
+  }
+
+  function setCreateMessage(text = "", className = "") {
+    if (!createMessage) return;
+    createMessage.classList.remove("is-error", "is-success");
+    if (className) createMessage.classList.add(className);
+    createMessage.textContent = text;
+  }
+
+  function validateCreateDates() {
+    if (!startInput || !endInput) return true;
+    endInput.setCustomValidity("");
+    if (startInput.value && endInput.value && endInput.value < startInput.value) {
+      endInput.setCustomValidity("Fecha fin must be the same day or later than Fecha trabajo.");
+      return false;
+    }
+    return true;
+  }
+
+  function resetCreateForm() {
+    createForm?.reset();
+    createRequestId = null;
+    previousStartDate = "";
+    if (endInput) {
+      endInput.min = "";
+      endInput.setCustomValidity("");
+    }
+    setCreateMessage();
+  }
+
+  function openCreateDialog() {
+    if (!createDialog || !createForm) return;
+    resetCreateForm();
+    if (typeof createDialog.showModal === "function") {
+      createDialog.showModal();
+    } else {
+      createDialog.setAttribute("open", "");
+    }
+    requestAnimationFrame(() => startInput?.focus());
+  }
+
+  function closeCreateDialog() {
+    if (!createDialog || isCreating) return;
+    if (typeof createDialog.close === "function") {
+      createDialog.close();
+    } else {
+      createDialog.removeAttribute("open");
+    }
+    resetCreateForm();
+  }
+
+  openCreateButton?.addEventListener("click", openCreateDialog);
+  closeCreateButton?.addEventListener("click", closeCreateDialog);
+  cancelCreateButton?.addEventListener("click", closeCreateDialog);
+
+  createDialog?.addEventListener("cancel", (event) => {
+    if (isCreating) {
+      event.preventDefault();
+      return;
+    }
+    createRequestId = null;
+  });
+
+  startInput?.addEventListener("input", () => {
+    const start = startInput.value;
+    if (endInput) {
+      if (!endInput.value || endInput.value === previousStartDate) {
+        endInput.value = start;
+      }
+      endInput.min = start;
+    }
+    previousStartDate = start;
+    validateCreateDates();
+  });
+
+  endInput?.addEventListener("input", validateCreateDates);
+
+  createForm?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (isCreating) return;
+
+    validateCreateDates();
+    if (!createForm.reportValidity()) return;
+
+    const formData = new FormData(createForm);
+    if (!createRequestId) createRequestId = newRequestId();
+
+    const payload = {
+      requestId: createRequestId,
+      startDate: String(formData.get("startDate") || ""),
+      endDate: String(formData.get("endDate") || ""),
+      client: String(formData.get("client") || ""),
+      project: String(formData.get("project") || ""),
+      role: String(formData.get("role") || ""),
+      currency: String(formData.get("currency") || ""),
+      grossAmount: String(formData.get("grossAmount") || ""),
+      paymentMethod: String(formData.get("paymentMethod") || ""),
+      notes: String(formData.get("notes") || ""),
+      contactNumber: String(formData.get("contactNumber") || "")
+    };
+
+    isCreating = true;
+    if (createSubmitButton) createSubmitButton.disabled = true;
+    if (cancelCreateButton) cancelCreateButton.disabled = true;
+    if (closeCreateButton) closeCreateButton.disabled = true;
+    setCreateMessage("Creating work in REGISTRO…");
+
+    try {
+      await api("/api/admin/calendar/events", {
+        method: "POST",
+        body: JSON.stringify(payload)
+      });
+
+      visibleMonth = monthStart(dateFromIso(payload.startDate));
+      await refreshCalendar("Work created · Calendar refreshed");
+      setCreateMessage("Created successfully.", "is-success");
+
+      if (typeof createDialog?.close === "function") createDialog.close();
+      else createDialog?.removeAttribute("open");
+      createForm.reset();
+      previousStartDate = "";
+      createRequestId = null;
+    } catch (error) {
+      const code = error?.data?.code || "";
+      if (code === "sheets_write_http_403") {
+        setCreateMessage(
+          "Google Sheets write permission is not authorized for this connection yet.",
+          "is-error"
+        );
+      } else if (error?.data?.fields?.endDate === "before_start") {
+        setCreateMessage("Fecha fin cannot be earlier than Fecha trabajo.", "is-error");
+      } else if (error?.status === 409) {
+        setCreateMessage(
+          "This submission was already used with different values. Close the form and start a new entry.",
+          "is-error"
+        );
+      } else {
+        setCreateMessage(error.message || "Could not create work.", "is-error");
+      }
+    } finally {
+      isCreating = false;
+      if (createSubmitButton) createSubmitButton.disabled = false;
+      if (cancelCreateButton) cancelCreateButton.disabled = false;
+      if (closeCreateButton) closeCreateButton.disabled = false;
+    }
+  });
+
   async function load() {
     try {
       const [whoami, calendar] = await Promise.all([
@@ -346,16 +549,7 @@
         api("/api/admin/calendar/events")
       ]);
       if (identity) identity.textContent = whoami.email || "Authenticated";
-      events = Array.isArray(calendar.events) ? calendar.events : [];
-      const issueCount = Object.values(calendar.quality || {}).reduce(
-        (sum, value) => sum + (Number(value) || 0),
-        0
-      );
-      setStatus(
-        issueCount ? `Calendar online · ${issueCount} date warning${issueCount === 1 ? "" : "s"}` : "Calendar online · read-only",
-        issueCount ? "is-warning" : ""
-      );
-      render();
+      applyCalendarData(calendar);
     } catch (error) {
       setStatus("Calendar unavailable", "is-error");
       if (monthTitle) monthTitle.textContent = "Could not load Calendar";
