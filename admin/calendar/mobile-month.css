@@ -35,8 +35,8 @@
 
   #calendarViewMonth:checked ~ .calendar-toolbar .mobile-calendar-view-toggle label[for="calendarViewMonth"],
   #calendarViewAgenda:checked ~ .calendar-toolbar .mobile-calendar-view-toggle label[for="calendarViewAgenda"] {
-    color: #0b0d10;
-    background: #dfff69;
+    color: #090910;
+    background: var(--accent);
   }
 
   .calendar-weekdays,
