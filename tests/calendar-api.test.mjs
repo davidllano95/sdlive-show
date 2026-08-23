@@ -18,19 +18,55 @@ function row(overrides = {}) {
   return values;
 }
 
-test("Calendar requires the verified REGISTRO A:AB schema", () => {
-  assert.deepEqual(validateCalendarHeaders([...EXPECTED_CALENDAR_HEADERS]), {
-    ok: true,
-    columnCount: 28,
-    mismatchAt: null
-  });
+test("Calendar requires only its operational fields and normalizes header text", () => {
+  const exact = validateCalendarHeaders([...EXPECTED_CALENDAR_HEADERS]);
+  assert.equal(exact.ok, true);
+  assert.equal(exact.columnCount, 28);
+  assert.deepEqual(exact.missingFields, []);
+
+  const normalized = [...EXPECTED_CALENDAR_HEADERS];
+  normalized[27] = "  FECHA   FIN  ";
+  normalized[1] = "Unrelated finance helper";
+  const normalizedCheck = validateCalendarHeaders(normalized);
+  assert.equal(normalizedCheck.ok, true);
+  assert.equal(normalizedCheck.fieldIndex["Fecha fin"], 27);
 
   const missingEnd = EXPECTED_CALENDAR_HEADERS.slice(0, -1);
-  assert.equal(validateCalendarHeaders(missingEnd).ok, false);
+  const missingCheck = validateCalendarHeaders(missingEnd);
+  assert.equal(missingCheck.ok, false);
+  assert.deepEqual(missingCheck.missingFields, ["Fecha fin"]);
+});
 
-  const wrongEnd = [...EXPECTED_CALENDAR_HEADERS];
-  wrongEnd[27] = "Fin";
-  assert.equal(validateCalendarHeaders(wrongEnd).ok, false);
+test("Calendar can read required fields even when their columns move", () => {
+  const headers = [
+    "ID",
+    "Proyecto / Show",
+    "Fecha fin",
+    "Cliente",
+    "Estado",
+    "Fecha trabajo",
+    "Rol",
+    "Moneda"
+  ];
+  const headerCheck = validateCalendarHeaders(headers);
+  assert.equal(headerCheck.ok, true);
+
+  const source = [
+    "persisted",
+    "Tour",
+    "2026-08-25",
+    "Client",
+    "Pendiente Envio",
+    "2026-08-23",
+    "A1",
+    "COP"
+  ];
+  const { events } = normalizeCalendarRows([source], headerCheck.fieldIndex);
+  assert.equal(events.length, 1);
+  assert.equal(events[0].project, "Tour");
+  assert.equal(events[0].startDate, "2026-08-23");
+  assert.equal(events[0].endDate, "2026-08-25");
+  assert.equal(events[0].multiDay, true);
 });
 
 test("Calendar date conversion handles Sheets serial dates", () => {
