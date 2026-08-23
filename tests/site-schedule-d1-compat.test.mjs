@@ -2,17 +2,17 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
-const writer = readFileSync(new URL("../site-schedule-write-compat.js", import.meta.url), "utf8");
+const store = readFileSync(new URL("../site-schedule-store-v2.js", import.meta.url), "utf8");
 const router = readFileSync(new URL("../public-form-rate-limit.js", import.meta.url), "utf8");
 
-test("Site Schedule writes use the established CMS revision contract", () => {
-  assert.ok(writer.includes("revision_type"));
-  assert.ok(writer.includes("'publish'"));
-  assert.equal(writer.includes("site-schedule-save"), false);
-  assert.equal(writer.includes("site-schedule-delete"), false);
+test("Site Schedule no longer depends on CMS revision compatibility", () => {
+  assert.ok(store.includes("site_schedule_state"));
+  assert.equal(store.includes("cms_revisions"), false);
+  assert.equal(store.includes("revision_type"), false);
 });
 
-test("Site Schedule mutations use the D1-compatible writer", () => {
-  assert.ok(router.includes('import { handleSiteScheduleApiCompat } from "./site-schedule-write-compat.js"'));
-  assert.ok(router.includes("handleSiteScheduleApiCompat(request, env"));
+test("Site Schedule mutations use the dedicated D1 store", () => {
+  assert.ok(router.includes('from "./site-schedule-store-v2.js"'));
+  assert.ok(router.includes("handleSiteScheduleApiV2(request, env"));
+  assert.equal(router.includes("handleSiteScheduleApiCompat"), false);
 });

@@ -3,9 +3,9 @@ import { handleFinanceApi } from "./finance-api.js";
 import { handleFinanceDashboardApi } from "./finance-dashboard-api.js";
 import { handleCalendarApi } from "./calendar-api.js";
 import {
-  decorateCalendarResponse
-} from "./site-schedule-api.js";
-import { handleSiteScheduleApiCompat } from "./site-schedule-write-compat.js";
+  decorateCalendarResponseV2,
+  handleSiteScheduleApiV2
+} from "./site-schedule-store-v2.js";
 import { applyShowDayRuntime } from "./showday-edge.js";
 
 const PUBLIC_FORM_LIMITS = {
@@ -111,7 +111,7 @@ export default {
       path === "/api/admin/site-schedule" ||
       path.startsWith("/api/admin/site-schedule/events/")
     ) {
-      const response = await handleSiteScheduleApiCompat(request, env, {
+      const response = await handleSiteScheduleApiV2(request, env, {
         verifyAdmin: verifyAdminViaExistingApi
       });
       if (response) return response;
@@ -123,7 +123,7 @@ export default {
       });
       if (!response) return response;
       if (request.method === "GET" && response.ok) {
-        return decorateCalendarResponse(response, env, {
+        return decorateCalendarResponseV2(response, env, {
           applyOverrides: url.searchParams.get("view") !== "source"
         });
       }
