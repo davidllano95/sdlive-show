@@ -1,14 +1,76 @@
 (() => {
   const STATUS_ENDPOINT = "/api/site/showday-status";
   const REFRESH_MS = 60000;
+  const LANGUAGE_KEY = "sdlive-language-preference";
   const root = document.documentElement;
   const workLocation = document.getElementById("workLocation");
   const originalWorkLocation = workLocation?.textContent || "Creative Audio";
   const seoLogo = document.querySelector(".seo-header-logo img");
   const originalSeoLogoSrc = seoLogo?.getAttribute("src") || "";
   const originalSeoLogoSrcset = seoLogo?.getAttribute("srcset") || "";
+  const sharedHeader = document.querySelector("[data-sdlive-shared-public-header]");
 
   let timer = 0;
+
+  function currentLanguage() {
+    return String(root.lang || "en").toLowerCase().startsWith("es") ? "es" : "en";
+  }
+
+  function persistLanguage(lang) {
+    try {
+      localStorage.setItem(LANGUAGE_KEY, lang);
+    } catch {
+      // Cookie remains authoritative for the next request when storage is blocked.
+    }
+    document.cookie = `${LANGUAGE_KEY}=${encodeURIComponent(lang)}; Path=/; Max-Age=31536000; SameSite=Lax`;
+  }
+
+  function translateSharedHeader(lang) {
+    if (!sharedHeader) return;
+    sharedHeader.querySelectorAll("[data-en][data-es]").forEach((element) => {
+      element.textContent = lang === "es" ? element.dataset.es : element.dataset.en;
+    });
+    const en = sharedHeader.querySelector("#langEn");
+    const es = sharedHeader.querySelector("#langEs");
+    en?.setAttribute("aria-pressed", String(lang === "en"));
+    es?.setAttribute("aria-pressed", String(lang === "es"));
+  }
+
+  function initSharedHeaderControls() {
+    if (!sharedHeader) return;
+
+    translateSharedHeader(currentLanguage());
+
+    const navToggle = sharedHeader.querySelector("#navToggle");
+    const closeMenu = () => {
+      sharedHeader.classList.remove("nav-open");
+      navToggle?.setAttribute("aria-expanded", "false");
+    };
+
+    navToggle?.addEventListener("click", () => {
+      const open = !sharedHeader.classList.contains("nav-open");
+      sharedHeader.classList.toggle("nav-open", open);
+      navToggle.setAttribute("aria-expanded", String(open));
+    });
+
+    sharedHeader.querySelectorAll(".main-nav a").forEach((link) => {
+      link.addEventListener("click", closeMenu);
+    });
+
+    sharedHeader.querySelector("#langEn")?.addEventListener("click", () => {
+      persistLanguage("en");
+      window.location.assign("/en/");
+    });
+
+    sharedHeader.querySelector("#langEs")?.addEventListener("click", () => {
+      persistLanguage("es");
+      window.location.assign("/es-co/");
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") closeMenu();
+    });
+  }
 
   function ensureSeoStatus() {
     const headerRow = document.querySelector(".seo-header-row");
@@ -72,6 +134,7 @@
   }
 
   function start() {
+    initSharedHeaderControls();
     refresh();
     timer = window.setInterval(refresh, REFRESH_MS);
   }
