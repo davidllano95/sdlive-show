@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 
 const calendarPage = readFileSync(new URL("../admin/calendar/index.html", import.meta.url), "utf8");
 const calendarScript = readFileSync(new URL("../admin/calendar/calendar.js", import.meta.url), "utf8");
+const mobileMonthStyles = readFileSync(new URL("../admin/calendar/mobile-month.css", import.meta.url), "utf8");
 const dashboardScript = readFileSync(new URL("../admin/dashboard.js", import.meta.url), "utf8");
 const financePageScript = readFileSync(new URL("../admin/finance-page.js", import.meta.url), "utf8");
 const editorShell = readFileSync(new URL("../admin/editor/admin-shell.js", import.meta.url), "utf8");
@@ -36,4 +37,15 @@ test("Calendar frontend renders multi-day spans without edit controls", () => {
   assert.ok(calendarScript.includes('pill.dataset.multiday = String(segment.event.multiDay)'));
   assert.equal(calendarPage.includes("Create event"), false);
   assert.equal(calendarPage.includes("Edit event"), false);
+});
+
+test("Mobile Calendar keeps month view available and offers Agenda as an alternate", () => {
+  assert.ok(calendarPage.includes('id="calendarViewMonth" checked'));
+  assert.ok(calendarPage.includes('id="calendarViewAgenda"'));
+  assert.ok(calendarPage.includes('for="calendarViewMonth">Calendar</label>'));
+  assert.ok(calendarPage.includes('for="calendarViewAgenda">Agenda</label>'));
+  assert.ok(calendarPage.includes("mobile-month.css"));
+  assert.ok(mobileMonthStyles.includes("#calendarViewMonth:checked ~ .calendar-weekdays"));
+  assert.ok(mobileMonthStyles.includes("#calendarViewMonth:checked ~ .calendar-grid"));
+  assert.ok(mobileMonthStyles.includes("#calendarViewAgenda:checked ~ .calendar-agenda"));
 });

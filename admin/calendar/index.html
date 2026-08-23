@@ -11,6 +11,7 @@
   <link rel="stylesheet" href="./dashboard.css" />
   <link rel="stylesheet" href="./mobile-dashboard.css" />
   <link rel="stylesheet" href="./calendar/calendar.css?v=20260823-1" />
+  <link rel="stylesheet" href="./calendar/mobile-month.css?v=20260823-1" />
 </head>
 <body>
   <div class="backoffice">
@@ -114,6 +115,9 @@
         </div>
 
         <section class="calendar-panel" aria-labelledby="calendarMonthTitle">
+          <input class="calendar-view-radio" type="radio" name="calendarMobileView" id="calendarViewMonth" checked />
+          <input class="calendar-view-radio" type="radio" name="calendarMobileView" id="calendarViewAgenda" />
+
           <div class="calendar-toolbar">
             <div>
               <span class="eyebrow">Month view</span>
@@ -123,6 +127,10 @@
               <button class="button button--ghost" id="calendarPrev" type="button" aria-label="Previous month">←</button>
               <button class="button button--ghost" id="calendarToday" type="button">Today</button>
               <button class="button button--ghost" id="calendarNext" type="button" aria-label="Next month">→</button>
+            </div>
+            <div class="mobile-calendar-view-toggle" role="group" aria-label="Mobile calendar view">
+              <label for="calendarViewMonth">Calendar</label>
+              <label for="calendarViewAgenda">Agenda</label>
             </div>
           </div>
 
