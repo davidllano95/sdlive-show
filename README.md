@@ -59,7 +59,7 @@ All Admin workspaces remain behind the same Cloudflare Access boundary.
 
 - **`/admin/` — Dashboard.** Lightweight operational overview, CMS/system health and workspace navigation. It must not auto-boot heavy Finance analytics.
 - **`/admin/finance/` — Finance.** Dedicated **SD.Live Track** analytics workspace. This is the scalable home for cash, production, receivables, collection performance, fees, Tax Reserve planning and later finance-specific capabilities.
-- **`/admin/calendar/` — Calendar / Operations.** Authenticated read-only month Calendar + mobile Calendar/Agenda over Google Sheets `REGISTRO`, including continuous multi-day events. Controlled create/write is the next approved Calendar gate after read-only visual closure.
+- **`/admin/calendar/` — Calendar / Operations.** Authenticated month Calendar + mobile Calendar/Agenda over Google Sheets `REGISTRO`, including continuous multi-day events. The read-only production milestone is CLOSED/PASS; controlled create/write to the same `REGISTRO` is the active Calendar gate.
 - **`/admin/editor/` — Site Editor.** Visual CMS/editor workspace.
 - **Inbox:** currently bridges to Google Workspace/Gmail.
 - **Leads/CRM, Rental Admin, Projects, Analytics and SEO:** planned unless `PROJECT_STATUS.md` explicitly says otherwise.
@@ -171,8 +171,10 @@ Established production aesthetics are contracts. If a CMS/editor change reconstr
 - 2026-08-23 mobile isolation QA: base Admin and Finance each confirmed responsive when loaded separately.
 - 2026-08-23 AppSheet multi-day model: PASS (`Fecha trabajo` start + `Fecha fin` end, backfill, validation, new-record default).
 - 2026-08-23 Admin Calendar read-only desktop/data QA: PASS; 57 events read cleanly, including real multi-day RENT and N. Jade spans.
-- 2026-08-23 Admin Calendar mobile structure: PASS after adding Calendar/Agenda with Calendar as the default.
-- **Current implementation milestone:** align Calendar visual accents with the shared SD.Live Admin palette, then close the read-only Calendar gate and begin controlled Admin create → Google Sheets `REGISTRO` → AppSheet sync.
+- 2026-08-23 Admin Calendar mobile Calendar/Agenda: PASS with Calendar as the default.
+- 2026-08-23 Admin Calendar brand-palette QA: PASS on iPhone after PR #87 aligned accents to shared Admin tokens.
+- **Admin Calendar read-only milestone: CLOSED/PASS.**
+- **Current implementation milestone:** controlled Admin create → same Google Sheets `REGISTRO` → AppSheet sync, preserving formula ownership, AppSheet-compatible IDs, privacy boundaries and brand tokens.
 
 ## Approved future improvements register
 
@@ -250,7 +252,7 @@ These are preserved requirements/backlog, **not automatic work**. `PROJECT_STATU
 - `admin/finance/index.html` / `admin/finance-page.js` — dedicated Finance workspace shell/bootstrap.
 - `admin/finance-dashboard.js` / `.css` — Finance analytics UI.
 - `admin/finance-dashboard-i18n.js` / `.css` — Finance EN/ES layer.
-- `admin/calendar/index.html` / `calendar.css` / `mobile-month.css` / `calendar.js` — read-only Calendar workspace and responsive month/agenda UI.
+- `admin/calendar/index.html` / `calendar.css` / `mobile-month.css` / `calendar.js` — Calendar workspace and responsive month/agenda UI; read-only milestone closed, controlled create is next.
 - `admin/editor/` — Site Editor workspace.
 - `admin/editor/editor-resilience.js` — Global Select routing/resilience.
 - `admin/editor/automatic-failsafe.js` — publish verification.
@@ -342,13 +344,17 @@ Do not treat a feature-branch deployment as production. `sdlive.show` represents
 
 ## Current gate
 
-**Control Center Steps 1–6 and Finance Phase 2 read-only are CLOSED.** Generic Finance Phase 3 write-back remains blocked.
+**Control Center Steps 1–6, Finance Phase 2 read-only and the Admin Calendar read-only milestone are CLOSED/PASS.** Generic Finance Phase 3 write-back remains blocked.
 
-**Active Calendar gate:** finish the read-only Calendar visual closeout using the permanent brand-palette rule:
+**Active Calendar / Operations gate:** implement controlled Admin create against the same Google Sheets `REGISTRO`:
 
-- desktop/data/multi-day/single-day Calendar QA is PASS;
-- iPhone Calendar/Agenda structure is PASS;
-- Calendar accents must reuse the shared Admin violet tokens on desktop and mobile;
-- after that visual smoke passes, begin the separately authorized **controlled Admin create → Google Sheets `REGISTRO` → AppSheet sync** sequence;
-- do not broaden Calendar create into generic Finance write-back;
+- define exact create fields from the verified ownership map;
+- validate auth, required fields, enums, numeric values and `Fecha fin >= Fecha trabajo` server-side;
+- generate/persist an AppSheet-compatible durable `ID` with idempotent retry/duplicate protection;
+- write only source/workflow-safe columns and never formula-owned columns;
+- preserve Notes/contact privacy in browser read payloads;
+- default one-day work to `Fecha fin = Fecha trabajo`;
+- production-smoke one created row in Google Sheets, then sync AppSheet and verify the same record there;
+- keep the permanent brand-palette rule for all new Admin UI;
+- do not broaden this controlled Calendar path into generic Finance write-back;
 - before the overall AppSheet/Finance integration is closed, complete issue #83 so billing eligibility and invoice reminders use the day after `Fecha fin`.
