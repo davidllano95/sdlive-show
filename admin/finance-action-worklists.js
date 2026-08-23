@@ -29,8 +29,8 @@
       invalid_work_date: "Correct the work date before invoicing",
       work_date_today: "Wait until tomorrow; today’s work is not invoice-ready yet",
       work_date_future: "Wait until after the work date before invoicing",
-      missing_evaluation: "Record the LiventX evaluation",
-      missing_signature: "Record the LiventX signature",
+      missing_evaluation: "Send evaluation",
+      missing_signature: "Sign invoice",
       invoice_not_ready: "Complete the invoicing prerequisites",
       workflow_incomplete: "Complete the pending workflow"
     },
@@ -56,8 +56,8 @@
       invalid_work_date: "Corregir la fecha de trabajo antes de facturar",
       work_date_today: "Esperar hasta mañana; el trabajo de hoy aún no está listo para facturar",
       work_date_future: "Esperar hasta después de la fecha de trabajo para facturar",
-      missing_evaluation: "Registrar la evaluación de LiventX",
-      missing_signature: "Registrar la firma de LiventX",
+      missing_evaluation: "Enviar evaluación",
+      missing_signature: "Firmar factura",
       invoice_not_ready: "Completar los requisitos antes de facturar",
       workflow_incomplete: "Completar el flujo pendiente"
     }

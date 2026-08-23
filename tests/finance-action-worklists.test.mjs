@@ -104,23 +104,29 @@ test("finance summary exposes read-only action queues with exact blockers", () =
   assert.equal(serialized.includes("+57-secret"), false);
 });
 
-test("dedicated Finance workspace loads interactive worklists lazily", async () => {
+test("dedicated Finance workspace loads branded interactive worklists lazily", async () => {
   const [html, script, styles] = await Promise.all([
     readFile(new URL("../admin/finance/index.html", import.meta.url), "utf8"),
     readFile(new URL("../admin/finance-action-worklists.js", import.meta.url), "utf8"),
     readFile(new URL("../admin/finance-action-worklists.css", import.meta.url), "utf8")
   ]);
 
-  assert.match(html, /finance-action-worklists\.css\?v=/);
-  assert.match(html, /finance-action-worklists\.js\?v=/);
+  assert.match(html, /finance-action-worklists\.css\?v=20260823-2/);
+  assert.match(html, /finance-action-worklists\.js\?v=20260823-2/);
   assert.match(script, /financeToInvoiceCount/);
   assert.match(script, /financeReceivableCount/);
   assert.match(script, /financeBlockedCount/);
   assert.match(script, /data\?\.summary\?\.workQueues/);
-  assert.match(script, /missing_evaluation/);
-  assert.match(script, /missing_signature/);
+  assert.match(script, /missing_evaluation: "Send evaluation"/);
+  assert.match(script, /missing_signature: "Sign invoice"/);
+  assert.match(script, /missing_evaluation: "Enviar evaluación"/);
+  assert.match(script, /missing_signature: "Firmar factura"/);
   assert.match(script, /work_date_today/);
   assert.match(script, /work_date_future/);
   assert.match(script, /credentials: "same-origin"/);
+  assert.match(styles, /var\(--accent\)/);
+  assert.match(styles, /rgba\(var\(--accent-rgb\)/);
+  assert.doesNotMatch(styles, /#dfff69/i);
+  assert.doesNotMatch(styles, /223,\s*255,\s*105/);
   assert.match(styles, /@media \(max-width: 640px\)/);
 });
