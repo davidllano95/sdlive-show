@@ -111,7 +111,7 @@ test("Finance workspace wires all five quality warnings to lazy branded drilldow
     readFile(new URL("../admin/finance-data-quality-worklists.css", import.meta.url), "utf8")
   ]);
 
-  assert.match(html, /finance-data-quality-worklists\.css\?v=20260823-2/);
+  assert.match(html, /finance-data-quality-worklists\.css\?v=20260823-3/);
   assert.match(html, /finance-data-quality-worklists\.js\?v=20260823-1/);
   assert.match(script, /missingReceivedAmount/);
   assert.match(script, /unsupportedCurrency/);
@@ -127,9 +127,10 @@ test("Finance workspace wires all five quality warnings to lazy branded drilldow
   assert.match(script, /Revisar las fechas de cuenta enviada y pago/);
   assert.doesNotMatch(script, /NUM CONTACTO/);
   assert.doesNotMatch(script, /Notas/);
-  assert.match(styles, /grid-template-columns: minmax\(0, 1fr\) auto auto/);
+  assert.match(styles, /grid-template-columns: minmax\(0, 1fr\) auto/);
+  assert.doesNotMatch(styles, /grid-template-columns: minmax\(0, 1fr\) auto auto/);
   assert.match(styles, /\.finance-quality-row--interactive > strong/);
-  assert.match(styles, /\.finance-quality-row__drilldown[\s\S]*position: static/);
+  assert.match(styles, /\.finance-quality-row__drilldown\s*\{\s*display: none;/);
   assert.match(styles, /var\(--accent\)/);
   assert.match(styles, /rgba\(var\(--accent-rgb\)/);
   assert.match(styles, /@media \(max-width: 640px\)/);
