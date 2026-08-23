@@ -11,7 +11,7 @@
 | Media pública | `https://media.sdlive.show` |
 | Estado macro | **Finance Phase 2 CLOSED/PASS · Calendar read-only CLOSED/PASS · Site Schedule + automatic Show Day CLOSED/PASS** |
 | Active Gate | **Calendar controlled create — Google OAuth Sheets write authorization** |
-| Después | one create → Google Sheet → AppSheet smoke; then controlled edit/workflow actions |
+| Después | one create → Google Sheet → AppSheet smoke; then Site Schedule ongoing/future filter + mandatory desktop/mobile visual audit |
 | Bloqueado | **Generic Finance Phase 3 write-back remains BLOCKED** |
 
 ## Convención y precedencia
@@ -92,7 +92,8 @@ Website-only operations layer:
 - cada block tiene start/end, Show Day boolean y Location;
 - Location required when Show Day is enabled;
 - Calendar display + `Next` usan effective blocks;
-- source view mantiene canonical REGISTRO dates.
+- source view mantiene canonical REGISTRO dates;
+- **queued cleanup:** Split Work/source selector debe mostrar solo ongoing + future source work en America/Bogota; past (`sourceEndDate < today`) queda oculto del editor sin borrar históricos.
 
 ### `/admin/editor/` — Site Editor
 
@@ -129,6 +130,8 @@ CMS visual actual con Draft/Published/revisions, EN/ES, COL/INT, Media Library, 
 | Site Schedule | CLOSED/PASS | PR #93 + storage fix #95 + production QA |
 | Automatic Show Day + Location | CLOSED/PASS | Site Schedule checkpoint + Home QA |
 | Public landing header parity | PASS | PR #96 + theatre landing production QA |
+| Post-integration visual audit | **REQUIRED / queued after create PASS** | `docs/roadmap/post-integration-visual-audit-2026-08-23.md` |
+| Site Schedule ongoing/future source filter | **REQUIRED / queued after create PASS** | same visual/stabilization roadmap |
 | Finance Phase 3 generic write-back | **BLOCKED** | explicit architecture rule |
 | Billing/reminder end-date correction | OPEN | GitHub issue #83 |
 
@@ -213,6 +216,18 @@ Approved backlog, **not current gate**:
 - eliminate startup violet→red popping by resolving authoritative Show Day state before visible first paint, ideally at the edge;
 - favicon should be tied to the same prepaint state so favicon and page visual state never disagree.
 
+## Required stabilization after controlled create PASS
+
+Before broad new visual work or the next Calendar UI milestone:
+
+1. filter the Site Schedule Split Work/source list to **ongoing + future only** using America/Bogota dates; historical overrides remain persisted and historical Calendar data remains available;
+2. execute the full **desktop + mobile visual audit** in `docs/roadmap/post-integration-visual-audit-2026-08-23.md`;
+3. cover public Home + every current landing family, normal + Show Day, EN/ES and COL/INT branches where applicable;
+4. cover `/admin/`, Finance, Calendar, Site Schedule and Editor separately on desktop/mobile;
+5. classify findings P0–P3 and close all P0/P1 regressions before declaring the stabilization milestone PASS.
+
+This audit was explicitly requested after recent cross-surface changes exposed visually strange states. It is intentionally queued rather than interrupting the OAuth authorization currently in progress.
+
 ## Change Safety Gate
 
 Antes de modificar una funcionalidad existente:
@@ -230,7 +245,7 @@ Si una respuesta importante es desconocida: **investigar, no asumir**.
 
 ## Active Gate — Google OAuth Sheets write permission
 
-The next step is deliberately narrow. Do not open another milestone first.
+The next step is deliberately narrow. Do not open another implementation milestone first.
 
 1. Re-authorize the **existing** Google OAuth client with Sheets write scope:
    `https://www.googleapis.com/auth/spreadsheets`
@@ -238,7 +253,8 @@ The next step is deliberately narrow. Do not open another milestone first.
 3. Retry exactly one controlled Admin Calendar create.
 4. Verify the new row in Google Sheets.
 5. Sync AppSheet and verify the same persisted row.
-6. If PASS, close controlled create and then design controlled edit / explicit workflow actions.
+6. If PASS, close controlled create.
+7. Then run the queued Site Schedule source filter + required visual stabilization audit before controlled edit/workflow UI expansion.
 
 Do **not** change spreadsheet source of truth, D1 finance architecture, formula ownership or generic Finance permissions during this OAuth step.
 
@@ -246,6 +262,8 @@ Do **not** change spreadsheet source of truth, D1 finance architecture, formula 
 
 - GitHub issue #83: invoice eligibility + reminders based on day after canonical `Fecha fin`.
 - Finance Phase 2 real-use observation.
+- Site Schedule Split Work ongoing/future-only source filter.
+- Required post-integration desktop/mobile visual audit.
 - Dynamic Show Day favicon + no-pop prepaint polish.
 - CRM/Projects/Rental Admin only after source-of-truth design.
 - Search/analytics/indexation follow-up as already documented.
@@ -255,6 +273,7 @@ Do **not** change spreadsheet source of truth, D1 finance architecture, formula 
 - `README.md` — architecture/current operating overview.
 - `ROADMAP_MASTER_CHECKLIST.md` — detailed historical/future backlog.
 - `docs/roadmap/calendar-operations-hub-2026-08-23.md` — Calendar/AppSheet/Site Schedule handoff.
+- `docs/roadmap/post-integration-visual-audit-2026-08-23.md` — required visual audit + Site Schedule source-list cleanup contract.
 - `docs/checkpoints/site-schedule-showday-2026-08-23.md` — closed Site Schedule/Show Day milestone.
 - `docs/checkpoints/calendar-create-oauth-write-gate-2026-08-23.md` — current active gate.
 - `docs/checkpoints/sdlive-track-source-of-truth-2026-08-22.md` — field ownership.
@@ -271,6 +290,7 @@ Do **not** change spreadsheet source of truth, D1 finance architecture, formula 
 - **2026-08-23:** controlled Calendar create implementation merged; production OAuth write gate identified.
 - **2026-08-23:** Site Schedule + automatic Show Day + Location closed/PASS after production QA.
 - **2026-08-23:** secondary public headers unified with Home and theatre landing QA PASS.
+- **2026-08-23:** detailed desktop/mobile visual audit + ongoing/future-only Split Work filter added as required post-create stabilization work.
 
 ## Siguiente trabajo
 

@@ -157,6 +157,8 @@ Each block owns:
 
 Location is required when Show Day is enabled.
 
+**Queued Site Schedule usability cleanup:** the Split Work/source selector must only list ongoing or future source work in `America/Bogota`. Source rows with `sourceEndDate < today` must be hidden from that selector without deleting their historical overrides or changing historical Calendar data.
+
 ### Public behavior
 
 - Public endpoint: `GET /api/site/showday-status`.
@@ -199,6 +201,12 @@ Published Home CMS copy should be resolved at the edge before visible first pain
 
 The normal favicon remains static today. **Approved low-priority improvement:** add a Show Day favicon variant and switch it automatically with the same authoritative Show Day state. This should be implemented together with or after the anti-popping prepaint work so favicon and page state do not disagree during startup.
 
+### Required detailed visual audit
+
+A dedicated **post-integration visual audit is now mandatory** after the current OAuth/create gate passes and before broad new visual feature work. It must review public + Admin surfaces separately on desktop and mobile, including normal/Show Day states, shared headers, EN/ES, COL/INT, Calendar, Site Schedule, Finance and Editor. Findings use P0–P3 severity and P0/P1 regressions must be fixed before the visual milestone closes.
+
+Full scope and exit criteria: `docs/roadmap/post-integration-visual-audit-2026-08-23.md`.
+
 ### Global Select / Visual Safeguards
 
 Established production aesthetics are contracts. New CMS/editor reconstruction must preserve Global Select ownership and extend Safeguards/tests where appropriate.
@@ -232,12 +240,15 @@ Every new or modified UI must reuse the established brand tokens / approved pale
 - Site Schedule + automatic Show Day + Location: **CLOSED/PASS**.
 - Shared Home header on public secondary/SEO pages: **PASS**.
 - **Active implementation gate:** Calendar controlled create production write authorization via Google OAuth Sheets write scope.
+- **Queued stabilization gate after create PASS:** Site Schedule ongoing/future source filtering + detailed desktop/mobile visual audit.
 
 ## Priority backlog preserved
 
 - Re-authorize Google OAuth for controlled Calendar writes; run one create → Sheet → AppSheet smoke.
+- After create PASS: hide past source work from Site Schedule Split Work selector (`sourceEndDate < today` in America/Bogota).
+- After create PASS: run the mandatory detailed desktop/mobile visual audit in `docs/roadmap/post-integration-visual-audit-2026-08-23.md` and fix P0/P1 regressions.
 - Issue #83: billing eligibility/reminders use the day after canonical `Fecha fin`, not Site Schedule dates.
-- After create PASS: controlled edit + explicit workflow actions; do not broaden into generic Finance writes.
+- After stabilization PASS: controlled edit + explicit workflow actions; do not broaden into generic Finance writes.
 - Show Day dynamic favicon.
 - Show Day prepaint/edge state to eliminate normal-violet → red startup popping.
 - Phase 2 Finance real-use observation before any generic Finance Phase 3 proposal.
@@ -275,6 +286,7 @@ Every new or modified UI must reuse the established brand tokens / approved pale
 - `PROJECT_STATUS.md` — current operational state and active gate.
 - `ROADMAP_MASTER_CHECKLIST.md` — preserved detailed backlog/history.
 - `docs/roadmap/calendar-operations-hub-2026-08-23.md` — Calendar/AppSheet/Site Schedule handoff.
+- `docs/roadmap/post-integration-visual-audit-2026-08-23.md` — required desktop/mobile visual audit + Site Schedule source-list cleanup contract.
 - `docs/checkpoints/site-schedule-showday-2026-08-23.md` — closed Site Schedule/Show Day milestone.
 - `docs/checkpoints/calendar-create-oauth-write-gate-2026-08-23.md` — current OAuth gate.
 
@@ -346,6 +358,9 @@ The next gate is deliberately narrow:
 3. run exactly one controlled Admin Calendar create smoke;
 4. verify the row in Google Sheets;
 5. sync AppSheet and verify the same record;
-6. only then close controlled-create PASS and consider edit/workflow actions.
+6. close controlled-create PASS;
+7. implement the Site Schedule ongoing/future-only source selector;
+8. run the required detailed desktop/mobile visual audit and close P0/P1 findings;
+9. only then proceed to controlled edit/workflow actions or broader visual feature work.
 
 Do not change the spreadsheet source of truth, D1 finance architecture, formula ownership or generic Finance permissions as part of this OAuth step.
