@@ -20,7 +20,6 @@
   border: 1px solid var(--border);
   border-radius: 18px;
   background: var(--panel);
-  box-shadow: var(--shadow);
 }
 
 .schedule-browser {
@@ -60,7 +59,7 @@
   padding: 8px 11px;
   border: 1px solid var(--border);
   border-radius: 10px;
-  background: rgba(255,255,255,0.03);
+  background: var(--panel2);
   color: var(--text);
   font: inherit;
 }
@@ -87,7 +86,7 @@
   padding: 12px;
   border: 1px solid transparent;
   border-radius: 12px;
-  background: rgba(255,255,255,0.025);
+  background: var(--panel2);
   color: var(--text);
   text-align: left;
 }
@@ -131,9 +130,9 @@
 }
 
 .schedule-event__badges em.is-showday {
-  border: 1px solid rgba(255, 107, 74, 0.42);
-  background: rgba(255, 107, 74, 0.08);
-  color: #ff8a70;
+  border: 1px solid rgba(var(--accent-rgb), 0.42);
+  background: rgba(var(--accent-rgb), 0.14);
+  color: var(--accent);
 }
 
 .schedule-list-empty,
@@ -201,7 +200,7 @@
   padding: 14px;
   border: 1px solid var(--border);
   border-radius: 14px;
-  background: rgba(255,255,255,0.025);
+  background: var(--panel2);
 }
 
 .schedule-segment.is-showday {
@@ -235,7 +234,7 @@
   padding: 8px 10px;
   border: 1px solid var(--border);
   border-radius: 10px;
-  background: rgba(0,0,0,0.18);
+  background: var(--bg2);
   color: var(--text);
   font: inherit;
 }
@@ -254,7 +253,7 @@
   padding: 8px 10px;
   border: 1px solid var(--border);
   border-radius: 10px;
-  background: rgba(255,255,255,0.02);
+  background: var(--panel2);
 }
 
 .schedule-showday input {
@@ -285,7 +284,7 @@
 }
 
 .schedule-segment__remove:hover {
-  border-color: rgba(255,255,255,0.3);
+  border-color: var(--accent);
   color: var(--text);
 }
 
@@ -301,7 +300,7 @@
 }
 
 .schedule-message.is-error {
-  color: var(--danger, #ff6b6b);
+  color: var(--danger);
 }
 
 .schedule-actions {
