@@ -2,7 +2,8 @@ import { fetchGoogleAccessToken } from "./finance-api.js";
 
 const GOOGLE_SHEETS_API_BASE = "https://sheets.googleapis.com/v4/spreadsheets";
 const CALENDAR_SHEET = "REGISTRO";
-const CALENDAR_RANGE = `${CALENDAR_SHEET}!A1:AB3000`;
+const CALENDAR_MAX_ROW = 3000;
+const CALENDAR_RANGE = `${CALENDAR_SHEET}!A1:AB${CALENDAR_MAX_ROW}`;
 const CREATE_INITIAL_STATE = "Pendiente Envio";
 const SUPPORTED_CURRENCIES = Object.freeze(["COP", "USD"]);
 const SUPPORTED_PAYMENT_METHODS = Object.freeze([
@@ -70,6 +71,30 @@ const CREATE_WRITE_FIELDS = Object.freeze([
   "Fecha fin"
 ]);
 
+const CREATE_ROW_OCCUPANCY_FIELDS = Object.freeze([
+  "Fecha trabajo",
+  "Cliente",
+  "Proyecto / Show",
+  "Rol",
+  "Moneda",
+  "Valor bruto",
+  "Estado",
+  "Fecha cuenta enviada",
+  "Fecha evaluación",
+  "Fecha firma",
+  "Fecha pago",
+  "Método de pago",
+  "Notas",
+  "ID",
+  "Valor Recibido",
+  "NUM CONTACTO",
+  "Fecha fin"
+]);
+
+const CREATE_REQUIRED_FIELDS = Object.freeze(
+  [...new Set([...CREATE_WRITE_FIELDS, ...CREATE_ROW_OCCUPANCY_FIELDS])]
+);
+
 const DEFAULT_FIELD_INDEX = Object.freeze(
   Object.fromEntries(
     EXPECTED_CALENDAR_HEADERS.map((header, index) => [header, index])
@@ -129,7 +154,7 @@ function calendarFieldIndex(headers) {
 }
 
 function createFieldIndex(headers) {
-  return fieldIndexFor(headers, CREATE_WRITE_FIELDS);
+  return fieldIndexFor(headers, CREATE_REQUIRED_FIELDS);
 }
 
 function recordCell(row, field, fieldIndex = DEFAULT_FIELD_INDEX) {
@@ -140,6 +165,12 @@ function recordCell(row, field, fieldIndex = DEFAULT_FIELD_INDEX) {
 
 function hasPersistedId(row, fieldIndex) {
   return Boolean(cleanString(recordCell(row, "ID", fieldIndex)));
+}
+
+function hasCreateRowContent(row, fieldIndex) {
+  return CREATE_ROW_OCCUPANCY_FIELDS.some((field) =>
+    Boolean(cleanString(recordCell(row, field, fieldIndex)))
+  );
 }
 
 function isoDate(year, month, day) {
@@ -189,11 +220,6 @@ function columnLetter(index) {
     value = Math.floor((value - 1) / 26);
   }
   return result;
-}
-
-function parseAppendedRow(updatedRange) {
-  const match = cleanString(updatedRange).match(/![A-Z]+(\d+)/i);
-  return match ? Number(match[1]) : null;
 }
 
 function sheetsWriteError(stage, status) {
@@ -269,13 +295,13 @@ export function validateCalendarCreateHeaders(headers) {
     return {
       ok: false,
       columnCount: 0,
-      missingFields: [...CREATE_WRITE_FIELDS],
+      missingFields: [...CREATE_REQUIRED_FIELDS],
       fieldIndex: null
     };
   }
 
   const fieldIndex = createFieldIndex(headers);
-  const missingFields = CREATE_WRITE_FIELDS.filter(
+  const missingFields = CREATE_REQUIRED_FIELDS.filter(
     (field) => !Number.isInteger(fieldIndex?.[field])
   );
 
@@ -416,6 +442,21 @@ export function normalizeCalendarRows(rows, fieldIndex = DEFAULT_FIELD_INDEX) {
   return { events, quality };
 }
 
+export function nextCreateRowNumber(rows, fieldIndex = DEFAULT_FIELD_INDEX) {
+  const sourceRows = Array.isArray(rows) ? rows : [];
+  let lastOccupiedIndex = -1;
+
+  sourceRows.forEach((row, index) => {
+    if (hasCreateRowContent(row, fieldIndex)) lastOccupiedIndex = index;
+  });
+
+  const rowNumber = lastOccupiedIndex + 3;
+  if (rowNumber > CALENDAR_MAX_ROW) {
+    throw new Error("REGISTRO create range is full");
+  }
+  return rowNumber;
+}
+
 async function readCalendarValues(env, fetchImpl = fetch, accessToken = null) {
   const spreadsheetId = requiredEnv(env, "GOOGLE_FINANCE_SPREADSHEET_ID");
   const token = accessToken || await fetchGoogleAccessToken(env, fetchImpl);
@@ -499,42 +540,6 @@ function createRowConflicts(row, input, fieldIndex) {
   }
 
   return conflicts;
-}
-
-async function appendRecordId(env, accessToken, recordId, idIndex, fetchImpl) {
-  const spreadsheetId = requiredEnv(env, "GOOGLE_FINANCE_SPREADSHEET_ID");
-  const spreadsheet = encodeURIComponent(spreadsheetId);
-  const idColumn = columnLetter(idIndex);
-  if (!idColumn) throw new Error("Could not resolve REGISTRO ID column");
-  const range = encodeURIComponent(`${CALENDAR_SHEET}!${idColumn}2:${idColumn}`);
-  const params = new URLSearchParams({
-    valueInputOption: "RAW",
-    insertDataOption: "OVERWRITE"
-  });
-
-  const response = await fetchImpl(
-    `${GOOGLE_SHEETS_API_BASE}/${spreadsheet}/values/${range}:append?${params}`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        Accept: "application/json",
-        "Content-Type": "application/json; charset=utf-8"
-      },
-      body: JSON.stringify({
-        majorDimension: "ROWS",
-        values: [[recordId]]
-      })
-    }
-  );
-
-  if (!response.ok) throw sheetsWriteError("append", response.status);
-  const data = await response.json().catch(() => null);
-  const rowNumber = parseAppendedRow(data?.updates?.updatedRange);
-  if (!Number.isInteger(rowNumber) || rowNumber < 2) {
-    throw new Error("Google Sheets calendar append returned no row number");
-  }
-  return rowNumber;
 }
 
 async function writeCreateValues(env, accessToken, rowNumber, input, fieldIndex, fetchImpl) {
@@ -643,13 +648,7 @@ async function handleCalendarCreate(request, env, fetchImpl) {
     }
     rowNumber = existingIndex + 2;
   } else {
-    rowNumber = await appendRecordId(
-      env,
-      accessToken,
-      input.recordId,
-      headerCheck.fieldIndex.ID,
-      fetchImpl
-    );
+    rowNumber = nextCreateRowNumber(rows, headerCheck.fieldIndex);
     created = true;
   }
 
@@ -667,6 +666,7 @@ async function handleCalendarCreate(request, env, fetchImpl) {
     created,
     idempotentReplay: !created,
     source: CALENDAR_SHEET,
+    rowNumber,
     startDate: input.startDate,
     endDate: input.endDate,
     state: input.state
