@@ -228,6 +228,30 @@
         font: inherit;
         text-decoration: none;
       }
+      .footer-bottom--with-legal {
+        flex-wrap: wrap;
+        gap: 12px 24px;
+      }
+      .footer-legal-links {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 8px 16px;
+        margin-left: auto;
+      }
+      .footer-legal-links .privacy-footer-link,
+      .footer-legal-links .analytics-preferences-link {
+        color: inherit;
+        opacity: .72;
+        font: inherit;
+        text-decoration: none;
+      }
+      .footer-legal-links .privacy-footer-link:hover,
+      .footer-legal-links .analytics-preferences-link:hover {
+        color: var(--color-accent, #A089E5);
+        opacity: 1;
+      }
       @media (max-width: 680px) {
         .analytics-consent-grid { grid-template-columns: 1fr; }
         .analytics-consent-actions {
@@ -235,6 +259,11 @@
           grid-template-columns: 1fr 1fr;
         }
         .analytics-consent-button { width: 100%; }
+        .footer-legal-links {
+          width: 100%;
+          margin-left: 0;
+          justify-content: flex-start;
+        }
       }
       @media (max-width: 420px) {
         .analytics-consent-actions { grid-template-columns: 1fr; }
@@ -311,19 +340,37 @@
     hideBanner();
   }
 
+  function ensureFooterLegalContainer() {
+    const footerBottom = document.querySelector(".site-footer .footer-bottom");
+    if (!footerBottom) return null;
+
+    footerBottom.classList.add("footer-bottom--with-legal");
+
+    let container = footerBottom.querySelector(".footer-legal-links");
+    if (!container) {
+      container = document.createElement("div");
+      container.className = "footer-legal-links";
+      footerBottom.appendChild(container);
+    }
+
+    return container;
+  }
+
   function insertPrivacyLink() {
     const normalizedPath = location.pathname.replace(/\/+$/, "") || "/";
     if (normalizedPath === POLICY_URL) return;
-    if (document.querySelector(".privacy-footer-link, footer a[href='/privacy']")) return;
 
-    const link = document.createElement("a");
-    link.className = "privacy-footer-link";
-    link.href = POLICY_URL;
-    link.dataset.analyticsCopy = "policy";
+    let link = document.querySelector(".privacy-footer-link, footer a[href='/privacy']");
+    if (!link) {
+      link = document.createElement("a");
+      link.className = "privacy-footer-link";
+      link.href = POLICY_URL;
+      link.dataset.analyticsCopy = "policy";
+    }
 
-    const mainFooterColumn = document.getElementById("footerEmail")?.closest(".footer-col");
-    if (mainFooterColumn) {
-      mainFooterColumn.appendChild(link);
+    const legalContainer = ensureFooterLegalContainer();
+    if (legalContainer) {
+      legalContainer.appendChild(link);
       return;
     }
 
@@ -331,16 +378,17 @@
   }
 
   function insertPreferencesLink() {
-    if (document.querySelector(".analytics-preferences-link")) return;
+    let link = document.querySelector(".analytics-preferences-link");
+    if (!link) {
+      link = document.createElement("button");
+      link.type = "button";
+      link.className = "analytics-preferences-link";
+      link.addEventListener("click", showBanner);
+    }
 
-    const link = document.createElement("button");
-    link.type = "button";
-    link.className = "analytics-preferences-link";
-    link.addEventListener("click", showBanner);
-
-    const mainFooterColumn = document.getElementById("footerEmail")?.closest(".footer-col");
-    if (mainFooterColumn) {
-      mainFooterColumn.appendChild(link);
+    const legalContainer = ensureFooterLegalContainer();
+    if (legalContainer) {
+      legalContainer.appendChild(link);
       renderCopy();
       return;
     }
