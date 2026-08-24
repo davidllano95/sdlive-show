@@ -30,6 +30,7 @@
   let createRequestId = null;
   let previousStartDate = "";
   let isCreating = false;
+  let createToastTimer = null;
 
   function safeStorageGet(key) {
     try {
@@ -174,6 +175,49 @@
     if (className) statusPill.classList.add(className);
     const textNode = statusPill.querySelector("span");
     if (textNode) textNode.textContent = text;
+  }
+
+  function showCreateToast(text) {
+    let toast = document.getElementById("calendarCreateToast");
+    if (!toast) {
+      toast = document.createElement("div");
+      toast.id = "calendarCreateToast";
+      toast.setAttribute("role", "status");
+      toast.setAttribute("aria-live", "polite");
+      toast.style.cssText = [
+        "position:fixed",
+        "right:max(18px,env(safe-area-inset-right))",
+        "bottom:max(18px,env(safe-area-inset-bottom))",
+        "z-index:1000",
+        "max-width:min(360px,calc(100vw - 36px))",
+        "padding:12px 14px",
+        "border:1px solid rgba(var(--accent-rgb),.42)",
+        "border-radius:12px",
+        "background:linear-gradient(135deg,rgba(var(--accent-rgb),.20),rgba(var(--accent-rgb),.08)),var(--panel)",
+        "box-shadow:0 18px 50px rgba(0,0,0,.38)",
+        "color:var(--text)",
+        "font-size:10px",
+        "font-weight:750",
+        "letter-spacing:.01em",
+        "transition:opacity .18s ease,transform .18s ease",
+        "pointer-events:none"
+      ].join(";");
+      document.body.appendChild(toast);
+    }
+
+    if (createToastTimer) clearTimeout(createToastTimer);
+    toast.textContent = text;
+    toast.hidden = false;
+    toast.style.opacity = "1";
+    toast.style.transform = "translateY(0)";
+
+    createToastTimer = setTimeout(() => {
+      toast.style.opacity = "0";
+      toast.style.transform = "translateY(8px)";
+      setTimeout(() => {
+        if (toast.style.opacity === "0") toast.hidden = true;
+      }, 200);
+    }, 3600);
   }
 
   function weekSegments(weekStart, weekEnd, monthEvents) {
@@ -523,7 +567,7 @@
     setCreateMessage("Creating work in REGISTRO…");
 
     try {
-      await api("/api/admin/calendar/events", {
+      const createResult = await api("/api/admin/calendar/events", {
         method: "POST",
         body: JSON.stringify(payload)
       });
@@ -531,6 +575,11 @@
       visibleMonth = monthStart(dateFromIso(payload.startDate));
       await refreshCalendar("Work created · Calendar refreshed");
       setCreateMessage("Created successfully.", "is-success");
+
+      const rowLabel = Number.isInteger(createResult?.rowNumber)
+        ? ` · REGISTRO row ${createResult.rowNumber}`
+        : "";
+      showCreateToast(`✓ Event created${rowLabel}`);
 
       if (typeof createDialog?.close === "function") createDialog.close();
       else createDialog?.removeAttribute("open");
