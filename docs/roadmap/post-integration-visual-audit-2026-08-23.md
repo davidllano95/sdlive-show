@@ -82,6 +82,47 @@ Still deliberately required for:
 
 Admin audit remains a first-class part of this milestone and cannot be skipped because public mobile has received more screenshots so far.
 
+## Preserved future Editor / card-system backlog — RECORDED, NOT ACTIVE
+
+The following ideas are intentionally preserved for later implementation and **do not change the current visual-audit sequence**.
+
+### Testimonials — consistent card geometry + long-copy handling
+
+Desired outcome:
+
+- testimonial cards should present a **consistent visual height/geometry** within the same layout so one long quote does not create an awkward oversized card beside shorter ones;
+- long testimonials must remain fully accessible without silently truncating or deleting approved copy;
+- preferred UX direction is a restrained line-clamp/preview with an obvious **Read more / Leer más** affordance that reveals the full quote elegantly (inline expansion, controlled overlay/modal or equivalent pattern to be validated when implemented);
+- expansion/collapse must be keyboard/touch accessible, preserve focus, work on mobile and desktop, and avoid destructive layout jumps or horizontal overflow;
+- EN/ES variants may have different text lengths, so the solution must be content-resilient rather than tuned to one language;
+- do not force every testimonial to the height of the single longest quote if a more elegant progressive-disclosure pattern preserves a balanced layout.
+
+### Generic Editor collection/card reordering
+
+Reordering should become a **consistent first-class Editor capability** across every collection-like section where item order is meaningful, rather than being implemented ad hoc section by section.
+
+Scope includes, where applicable:
+
+- Testimonials;
+- Trusted By / client cards;
+- Supported Brands / marcas atendidas;
+- Services;
+- Selected Work / project cards;
+- Rental presentation cards/items that are presentation-owned by CMS;
+- any future repeatable card/list collection added to the Editor.
+
+Required direction:
+
+- preserve existing section-specific reorder behavior where it already works, but converge toward one shared interaction model;
+- every applicable collection should expose a clear, intuitive way to reorder items in Admin;
+- prefer explicit drag handles and/or accessible move up/down controls rather than making entire cards accidentally draggable;
+- keyboard-accessible reordering is required; touch behavior must be deliberate and comfortable on mobile Admin;
+- order changes belong to Draft until Publish under the existing Draft → Published contract;
+- reordering must not mutate unrelated item data, IDs, media ownership or transactional/backend-owned fields;
+- where a collection has market/language variants, ordering semantics must be defined deliberately rather than creating hidden divergence by accident.
+
+This is a future **Editor UX/systemization** milestone, not permission to interrupt the current Rental/Trusted/Admin audit sequence.
+
 ## Public site — normal mode
 
 Audit every current public route family, not only Home:
