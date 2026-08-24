@@ -24,11 +24,54 @@ html.showday-active .seo-header-logo img {
   filter: none;
 }
 
+html.showday-active .site-footer .footer-brand {
+  position: relative;
+}
+
+html.showday-active .site-footer .footer-brand-lockup {
+  opacity: 0;
+}
+
+html.showday-active .site-footer .footer-brand::before,
+html.showday-active .site-footer .footer-brand::after {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: min(245px, 100%);
+  aspect-ratio: 2172 / 724;
+  content: "";
+  pointer-events: none;
+  background-position: left top;
+  background-repeat: no-repeat;
+  background-size: contain;
+}
+
+html.showday-active .site-footer .footer-brand::before {
+  background-image: url("assets/logos/sd-live-header-showday.png");
+}
+
+html.showday-active .site-footer .footer-brand::after {
+  background-image: url("assets/logos/sd-live-header-showday-dot.png");
+  animation: sdlive-footer-showday-dot 1s steps(1, end) infinite;
+}
+
+@keyframes sdlive-footer-showday-dot {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+
 @media (max-width: 700px) {
   .sdlive-showday-status {
     order: 3;
     width: 100%;
     justify-content: center;
     margin-top: 4px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.showday-active .site-footer .footer-brand::after {
+    animation: none;
+    opacity: 1;
   }
 }
