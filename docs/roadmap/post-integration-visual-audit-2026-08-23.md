@@ -1,9 +1,9 @@
 # SD.Live — post-integration visual audit + stabilization
 
 **Created:** 2026-08-23 — America/Bogota  
-**Updated:** 2026-08-23 — America/Bogota  
+**Updated:** 2026-08-24 — America/Bogota  
 **Status:** **ACTIVE**  
-**Current verified runtime:** through PR #116 (`a48a92c0c6f0d0c38765b04e0833db692456c3e9`).
+**Current verified runtime:** through PR #118 (`5edf69369329b6f1df5bebad654d2c3866b8790e`).
 
 ## Purpose
 
@@ -32,8 +32,9 @@ Valid future ideas may be recorded during the audit but do not become active aut
 - **PR #103:** desktop footer layout rebalanced.
 - **PR #104:** branded `SD.Live` copyright point restored without stray literal period.
 - **PR #105:** mobile Show Day Location spacing +2 px; production user QA PASS.
+- **PR #118:** authenticated Admin Visual QA override added and production-smoked PASS. `Auto / Force On / Force Off` is stored separately from canonical Site Schedule/REGISTRO/AppSheet state; force modes expire at the end of the current America/Bogota date. Normal and Show Day are now deliberately observable during the audit.
 
-### Rental quote drawer — CLOSED for currently testable Show Day matrix
+### Rental quote drawer — CLOSED for Show Day matrix; normal matrix now testable
 
 **PR #107:** reframed the Rental drawer as a **quotation/request flow**, not ecommerce checkout.
 
@@ -48,16 +49,14 @@ Key UX contract:
 
 Backend pricing/quote ownership and `rental@sdlive.show` routing remain unchanged.
 
-**PR #108:** restored the original shopping-cart icon after the temporary request/document icon was rejected.
-
-Verified automatic Show Day QA:
+Verified Show Day QA:
 
 - mobile / ES — PASS;
 - desktop / ES — PASS;
 - mobile / EN — PASS;
 - desktop / EN — PASS.
 
-Normal-mode Rental verification remains explicitly pending because Show Day is currently automatic and active.
+Normal-mode Rental verification remains pending, but is now directly testable using Admin `Force Off` without modifying Site Schedule or operational data.
 
 ### Trusted By / dark client-logo contrast — CLOSED for accepted treatment
 
@@ -79,15 +78,15 @@ Final contract:
 - no other client logos are affected;
 - no plate, border, gradient or glow remains.
 
-Show Day mobile production QA after PR #116 — PASS. Normal-mode visual verification remains pending when normal mode becomes observable.
+Show Day mobile production QA after PR #116 — PASS. Normal-mode visual verification remains pending and is now directly observable with Admin `Force Off`.
 
 ### Documentation/future backlog captured during audit
 
-- **PR #109:** reconciled Show Day docs to dynamic Site Schedule architecture; future authenticated Admin override recommended `Auto / Force On / Force Off`, reversible and ideally TTL-based.
+- **PR #109:** reconciled Show Day docs to dynamic Site Schedule architecture and recorded a future authenticated `Auto / Force On / Force Off` override. **Implemented by PR #118** as a temporary Admin Visual QA control with automatic end-of-day expiry.
 - **PR #110:** recorded consistent testimonial card geometry/long-copy handling and generic Editor collection reordering.
 - **PR #113:** recorded **Attio** as future CRM candidate and **Dapta.ai** as future AI chatbot/agent candidate with pricing/integration/source-of-truth evaluation guardrails.
 
-These are not active milestones.
+Items other than the completed Show Day QA override are not active milestones.
 
 ## Current open findings
 
@@ -109,13 +108,13 @@ Required branches where applicable:
 - EN/ES;
 - COL/INT.
 
-Do not falsely mark normal-mode checks PASS while automatic Show Day prevents observing normal mode.
+Use the authenticated Admin Visual QA override to deliberately expose normal (`Force Off`) or Show Day (`Force On`) only when required for audit coverage. Return to `Auto` when deliberate forcing is no longer needed. The override must never be treated as canonical scheduling data.
 
 ### Admin visual audit — OPEN
 
 Still required for:
 
-- `/admin/` Dashboard;
+- `/admin/` Dashboard, including the new Visual QA Show Day control;
 - `/admin/finance/` Finance;
 - `/admin/calendar/` Calendar / Operations;
 - `/admin/calendar/site-schedule/` Site Schedule;
@@ -188,6 +187,9 @@ For each applicable route inspect:
 ### Show Day-specific checks
 
 - no visitor-facing manual Show Day toggle;
+- `Auto` remains the canonical default and follows Site Schedule;
+- Admin-only Force On/Force Off never mutates Site Schedule, REGISTRO or AppSheet;
+- forced state visibly behaves like the corresponding public state and expires automatically;
 - ON AIR/Location coherent across Home + secondary pages;
 - complete red/orange Show Day palette without accidental mixed normal accents;
 - readable buttons/borders/links/controls;
@@ -215,6 +217,18 @@ Shared checks:
 - keyboard focus order;
 - mobile tap targets;
 - loading/empty/error/offline states.
+
+### Dashboard Visual QA specific
+
+Desktop and mobile separately:
+
+- `Auto / Force On / Force Off` hierarchy and selected state;
+- Force On Location field visibility and validation;
+- Apply button loading/saved/error feedback;
+- current/effective mode summary clarity;
+- expiry copy is understandable;
+- no accidental horizontal overflow or collisions;
+- returning to Auto is obvious and safe.
 
 ### Calendar / Operations specific
 
@@ -274,4 +288,4 @@ The audit closes only when:
 
 ## Current continuation
 
-Continue the remaining public matrix one manual QA action at a time, then the mandatory Admin desktop/mobile audit. Rental Show Day and the accepted Anima/Sonique treatment are closed; do not reopen them without regression evidence. Normal-mode-specific checks remain pending until normal mode is observable.
+The Admin Show Day QA override is production-smoked PASS and removes the previous observability blocker. Continue the remaining public matrix one manual QA action at a time, using `Force Off` for deliberate normal-mode checks and `Force On` only when a Show Day branch must be observed. Then complete the mandatory Admin desktop/mobile audit. Rental Show Day and the accepted Anima/Sonique Show Day treatment are closed; normal-mode verification for those surfaces remains pending and is now directly testable.
