@@ -1042,18 +1042,27 @@ function initRentalQuoteBuilder() {
   const cartLabel = document.getElementById("rentalCartLabel");
   const cartBackdrop = document.getElementById("rentalCartBackdrop");
   const cartCount = document.getElementById("rentalCartCount");
+  const cartEyebrow = modal?.querySelector(".rental-cart-drawer__header .eyebrow");
+  const cartTitle = document.getElementById("rentalCartTitle");
   const summaryTitle = document.getElementById("quoteSummaryTitle");
   const summaryList = document.getElementById("quoteSummaryList");
   const summaryWarning = document.getElementById("quoteSummaryWarning");
   const summaryPriceValue = document.getElementById("quotePriceValue");
   const summaryPriceDetail = document.getElementById("quotePriceDetail");
+  const priceLabel = document.querySelector("#quotePriceBlock > span");
   const pricingNote = document.getElementById("quotePricingNote");
   const requestButton = document.getElementById("quoteRequestBtn");
   const presetButtons = Array.from(document.querySelectorAll("[data-rental-preset]"));
   const equipmentCards = Array.from(document.querySelectorAll("[data-rental-item]"));
+  const cartIcon = cartToggle?.querySelector(".rental-cart-toggle__icon");
   let activePreset = null;
   let closeTimer = 0;
   let previousCartUnits = 0;
+
+  if (cartIcon) {
+    cartIcon.setAttribute("viewBox", "0 0 24 24");
+    cartIcon.innerHTML = '<path d="M7 3.5h7l3 3v14H7zM14 3.5v3h3M9.5 11h5M9.5 14.5h5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7"/>';
+  }
 
   const cartItems = {
     wing: { field: "wing", max: 1 },
@@ -1096,17 +1105,22 @@ function initRentalQuoteBuilder() {
       days: "Rental days",
       attendees: "Expected attendees",
       notes: "Notes",
-      recommendation: "Rental cart",
-      cartTitle: "Rental cart",
-      emptyCart: "Your cart is empty. Add equipment with the + controls on the rental cards.",
+      recommendation: "Rental quote request",
+      cartTitle: "Rental quote",
+      drawerEyebrow: "Rental quote",
+      drawerTitle: "Build your request",
+      closeRequest: "Close rental quote request",
+      emptyCart: "No equipment selected yet. Use + on the rental cards to build your quote request.",
       inCart: "{quantity} selected",
       add: "Add desired quantity",
       addAnother: "Add another",
       removeOne: "Remove one",
       maximum: "Maximum available",
       selected: "Selected",
-      clearCart: "Clear cart",
-      viewCart: "View cart",
+      clearCart: "Clear",
+      viewCart: "Review quote",
+      submit: "Request rental quote",
+      success: "Quote request received. I'll contact you with availability and the final rental quote.",
       packages: {
         corporate: "Corporate Event Package",
         digital: "Digital Show Rig",
@@ -1114,7 +1128,7 @@ function initRentalQuoteBuilder() {
         livePro: "Live Show Pro",
         fohMonPro: "FOH + MON Pro"
       },
-      equipmentTotal: "Estimated rental & services total",
+      equipmentTotal: "Estimated quote total",
       customQuote: "Custom quote",
       quotedSeparately: "Quoted separately",
       negotiable: "To negotiate",
@@ -1147,17 +1161,22 @@ function initRentalQuoteBuilder() {
       days: "Días de alquiler",
       attendees: "Asistentes estimados",
       notes: "Notas",
-      recommendation: "Carrito de alquiler",
-      cartTitle: "Carrito de alquiler",
-      emptyCart: "Tu carrito está vacío. Agrega equipos con los controles + de las tarjetas de alquiler.",
+      recommendation: "Solicitud de cotización",
+      cartTitle: "Cotización",
+      drawerEyebrow: "Cotización de alquiler",
+      drawerTitle: "Arma tu solicitud",
+      closeRequest: "Cerrar solicitud de cotización",
+      emptyCart: "Aún no has seleccionado equipos. Usa + en las tarjetas para armar tu solicitud de cotización.",
       inCart: "{quantity} seleccionado",
       add: "Agrega la cantidad deseada",
       addAnother: "Agregar otro",
       removeOne: "Quitar uno",
       maximum: "Máximo disponible",
       selected: "Seleccionado",
-      clearCart: "Vaciar carrito",
-      viewCart: "Ver carrito",
+      clearCart: "Limpiar",
+      viewCart: "Revisar solicitud",
+      submit: "Solicitar cotización",
+      success: "Solicitud de cotización recibida. Te contactaré con disponibilidad y la cotización final de alquiler.",
       packages: {
         corporate: "Paquete Evento Corporativo",
         digital: "Sistema Digital para Show",
@@ -1165,7 +1184,7 @@ function initRentalQuoteBuilder() {
         livePro: "Live Show Pro",
         fohMonPro: "FOH + MON Pro"
       },
-      equipmentTotal: "Total estimado de alquiler y servicios",
+      equipmentTotal: "Estimado de cotización",
       customQuote: "Cotización personalizada",
       quotedSeparately: "Se cotiza por separado",
       negotiable: "Por negociar",
@@ -1401,7 +1420,7 @@ function initRentalQuoteBuilder() {
       if (extraStageGrid) parts.push(`${extraStageGrid} StageGrid adicional${extraStageGrid > 1 ? "es" : ""} se calcula${extraStageGrid > 1 ? "n" : ""} a $500.000 COP por unidad / día.`);
       if (stageGridCount && !lv1Count) parts.push("StageGrid 4000 se calcula a $500.000 COP por unidad / día.");
       if (state.days > 1 && (wingCount || dl32Count || paCount || state.videoServer === "1")) parts.push("En WING, DL32, BetaThree y servidor de video, desde el segundo día se aplica el 70% de la tarifa del primer día.");
-      parts.push("El soporte técnico sobre los equipos suministrados está incluido. IVA, transporte, montaje y servicios indicados como cotización aparte no están incluidos en el total estimado.");
+      parts.push("El soporte técnico sobre los equipos suministrados está incluido. IVA, transporte, montaje y servicios indicados como cotización aparte no están incluidos en el total estimado. Este estimado no es un pago ni confirma disponibilidad o reserva.");
     } else {
       if (wingCount && dl32Count) parts.push("WING + 1 DL32 is billed at $500,000 COP for day one; a second DL32 is added separately at $250,000 COP for day one.");
       else if (wingCount) parts.push("Standalone WING is billed at $300,000 COP for day one.");
@@ -1412,7 +1431,7 @@ function initRentalQuoteBuilder() {
       if (extraStageGrid) parts.push(`${extraStageGrid} additional StageGrid 4000 unit${extraStageGrid > 1 ? "s are" : " is"} billed at $500,000 COP per unit / day.`);
       if (stageGridCount && !lv1Count) parts.push("StageGrid 4000 is billed at $500,000 COP per unit / day.");
       if (state.days > 1 && (wingCount || dl32Count || paCount || state.videoServer === "1")) parts.push("For WING, DL32, BetaThree and the video server, day two onward is billed at 70% of the day-one rate.");
-      parts.push("Technical support for supplied equipment is included. VAT, transport, setup and services marked as separately quoted are not included in the estimated total.");
+      parts.push("Technical support for supplied equipment is included. VAT, transport, setup and services marked as separately quoted are not included in the estimated total. This estimate is not a payment and does not confirm availability or a reservation.");
     }
     return parts.join(" ");
   };
@@ -1459,6 +1478,12 @@ function initRentalQuoteBuilder() {
     const state = readState();
     const configuration = resolveConfiguration(state, lang);
 
+    if (cartEyebrow) cartEyebrow.textContent = copy[lang].drawerEyebrow;
+    if (cartTitle) cartTitle.textContent = copy[lang].drawerTitle;
+    if (priceLabel) priceLabel.textContent = copy[lang].equipmentTotal;
+    if (cartClose) cartClose.setAttribute("aria-label", copy[lang].closeRequest);
+    if (cartBackdrop) cartBackdrop.setAttribute("aria-label", copy[lang].closeRequest);
+
     summaryTitle.textContent = activePreset ? copy[lang].packages[activePreset] : (lang === "es" ? "Tu selección" : "Your selection");
     const renderedItems = configuration.items.map((item) => {
       const listItem = document.createElement("li");
@@ -1480,7 +1505,7 @@ function initRentalQuoteBuilder() {
     summaryPriceValue.textContent = configuration.customQuote ? copy[lang].customQuote : formatCop(configuration.total);
     summaryPriceDetail.textContent = state.days === 1 ? copy[lang].oneDay : copy[lang].multipleDays.replace("{days}", state.days);
     pricingNote.textContent = buildPricingExplanation(state, configuration, lang);
-    requestButton.textContent = lang === "es" ? "Enviar solicitud de alquiler" : "Send rental request";
+    requestButton.textContent = copy[lang].submit;
     summaryWarning.hidden = !configuration.warning;
     summaryWarning.textContent = configuration.warning;
     updateCartControls(lang);
@@ -1692,11 +1717,7 @@ pushAnalyticsEvent("generate_lead", {
       ? "yes"
       : "no"
 });
-      alert(
-        lang === "es"
-          ? "Solicitud de alquiler recibida. Te contactaré con la confirmación y cotización."
-          : "Rental request received. I'll contact you with confirmation and the quote."
-      );
+      alert(copy[lang].success);
 
       closeCart();
     } catch (error) {
@@ -1724,11 +1745,7 @@ pushAnalyticsEvent("generate_lead", {
 requestButton.disabled = false;
 requestButton.removeAttribute("aria-disabled");
 
-      requestButton.textContent =
-        originalText ||
-        (lang === "es"
-          ? "Enviar solicitud de alquiler"
-          : "Send rental request");
+      requestButton.textContent = originalText || copy[lang].submit;
     }
   });
    
