@@ -24,6 +24,17 @@ html.showday-active .seo-header-logo img {
   filter: none;
 }
 
+/* Dark client marks keep their original artwork while receiving a neutral
+   Show Day surface so they do not disappear into the red/dark card treatment. */
+html.showday-active .client-strip-card:has(.client-logo[alt="Anima Producciones"]) .client-logo-frame,
+html.showday-active .client-strip-card:has(.client-logo[alt="Sonique"]) .client-logo-frame {
+  overflow: hidden;
+  border: 1px solid rgba(244, 245, 247, 0.34);
+  border-radius: 10px;
+  background: rgba(244, 245, 247, 0.9);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.16);
+}
+
 /* Keep the copyright SD.Live mark branded while suppressing the literal period glyph
    that previously leaked below the line through the generic footer span color rule. */
 .site-footer .footer-bottom .brand-wordmark-text__dot {
