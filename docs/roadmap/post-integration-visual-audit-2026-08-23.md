@@ -3,188 +3,117 @@
 **Created:** 2026-08-23 — America/Bogota  
 **Updated:** 2026-08-23 — America/Bogota  
 **Status:** **ACTIVE**  
-**Trigger conditions already completed:** controlled Admin create PASS + Site Schedule ongoing/future source filter PASS.
+**Current verified runtime:** through PR #116 (`a48a92c0c6f0d0c38765b04e0833db692456c3e9`).
 
 ## Purpose
 
-Recent work materially changed connected public/Admin surfaces: Calendar, Site Schedule, automatic Show Day, website-only Location, shared Home-style headers on secondary pages, mobile Calendar/Agenda, Footer and Admin workspace separation.
+Recent work materially changed connected public/Admin surfaces: Calendar, Site Schedule, automatic Show Day, website-only Location, shared Home-style headers, mobile Calendar/Agenda, Footer, Rental quote UX and Admin workspace separation.
 
-Functional smoke does not equal visual coherence. This audit therefore treats **desktop and mobile as separate first-class layouts** and reviews both **normal and Show Day** states before the visual stabilization milestone can close.
+Functional smoke does not equal visual coherence. This audit treats **desktop and mobile as separate first-class layouts** and requires both **normal and Show Day** states before stabilization can close.
 
 ## Sequencing — locked
 
-The active sequence is:
-
 1. ~~Google OAuth Sheets write authorization~~ **PASS**;
-2. ~~controlled Calendar create → Google Sheet → AppSheet smoke~~ **PASS** after PR #99 row-safety recovery/hardening;
+2. ~~controlled Calendar create → Google Sheet → AppSheet smoke~~ **PASS** after PR #99 row-safety hardening;
 3. ~~Site Schedule source-list ongoing/future cleanup~~ **PASS — PR #100**;
-4. **run this detailed public + Admin visual audit — ACTIVE**;
+4. **detailed public + Admin visual audit — ACTIVE**;
 5. fix P0/P1 visual regressions before closing stabilization;
 6. preserve P2/P3 findings explicitly and implement them in coherent order;
 7. only after audit closeout continue controlled Calendar edit/workflow actions and unrelated roadmap items.
 
-**Priority discipline:** findings discovered while reviewing the current surface may be fixed as part of the audit. Do not abandon the audit to start unrelated milestones merely because a new idea appears. Conversely, do not forget a valid P2/P3 finding; record it and implement it when its turn comes.
+Valid future ideas may be recorded during the audit but do not become active automatically.
 
 ## Current progress snapshot
 
 ### Closed during the audit
 
-- **PR #101 — footer legal placement:** Privacy + Cookie preferences moved to the bottom legal area.
-- **PR #102 — Show Day footer brand:** footer logo follows Show Day; dot blinks on the same recording cadence as the header and respects reduced motion.
-- **PR #103 — footer balance:** desktop footer layout rebalanced and long Site links split more cleanly.
-- **PR #104 — copyright mark regression:** restored the branded `SD.Live` point while eliminating the stray literal period below the line.
-- **PR #105 — mobile Show Day Location spacing:** added a 2 px mobile-only Show Day offset below the logo. Production user check: **A / PASS**.
+- **PR #101:** Privacy + Cookie preferences moved to bottom legal footer area.
+- **PR #102:** footer logo follows Show Day; dot blinks with header cadence and respects reduced motion.
+- **PR #103:** desktop footer layout rebalanced.
+- **PR #104:** branded `SD.Live` copyright point restored without stray literal period.
+- **PR #105:** mobile Show Day Location spacing +2 px; production user QA PASS.
 
-### Current open findings
+### Rental quote drawer — CLOSED for currently testable Show Day matrix
 
-These are part of the active audit; they are not permission to reorder the broader roadmap.
+**PR #107:** reframed the Rental drawer as a **quotation/request flow**, not ecommerce checkout.
 
-#### Rental quote drawer/header clarity — OPEN
+Key UX contract:
 
-Observed on mobile:
+- Rental quote / Cotización;
+- Build your request / Arma tu solicitud;
+- Review quote / Revisar solicitud;
+- Request rental quote / Solicitar cotización;
+- Estimated quote total / Estimado de cotización;
+- explicit note that estimate is not payment and does not confirm availability/reservation.
 
-- header hierarchy is too tall/verbose;
-- current visible stack effectively reads four lines: `Carrito de alquiler` + `Arma tu / solicitud de / alquiler`;
-- the experience still reads too much like an ecommerce cart/checkout even though the user is actually requesting a quote.
+Backend pricing/quote ownership and `rental@sdlive.show` routing remain unchanged.
 
-Required direction:
+**PR #108:** restored the original shopping-cart icon after the temporary request/document icon was rejected.
 
-- compact the drawer header hierarchy;
-- make the flow unmistakably a **rental quotation/request**, not an instant purchase;
-- preserve transactional ownership: backend pricing/quote logic remains authoritative;
-- preserve notification destination `rental@sdlive.show`;
-- do not change inventory IDs, pricing math or persistence just to solve copy/layout.
+Verified automatic Show Day QA:
 
-Provisional severity: **P2 UX clarity/polish**, unless a deeper usability problem is found during interaction QA.
+- mobile / ES — PASS;
+- desktop / ES — PASS;
+- mobile / EN — PASS;
+- desktop / EN — PASS.
 
-#### Trusted By / supported-brand contrast — OPEN VERIFY/FIX
+Normal-mode Rental verification remains explicitly pending because Show Day is currently automatic and active.
 
-User observed at least two brand marks with insufficient contrast in mobile Show Day and suspects desktop also suffers.
+### Trusted By / dark client-logo contrast — CLOSED for accepted treatment
 
-Required verification matrix before changing assets/styles:
+User identified **Anima Producciones** and **Sonique** as the problematic dark marks.
 
-- mobile normal;
-- mobile Show Day;
-- desktop normal;
-- desktop Show Day.
+History:
 
-Apply the smallest brand-safe treatment that improves legibility without repainting logos arbitrarily or introducing a new decorative palette.
+- PR #111: neutral plate attempt;
+- PR #112: plate + glow refinement;
+- user rejected the visual direction;
+- PR #114: removed plate/gradient/glow completely;
+- PR #115: applied `brightness(0) invert(1)` only to Anima + Sonique in Show Day; user QA PASS;
+- PR #116: made the accepted white treatment mode-independent.
 
-#### Admin visual audit — OPEN
+Final contract:
 
-Still deliberately required for:
+- Anima + Sonique render white in normal + Show Day;
+- original Cloudflare R2 assets remain untouched;
+- no other client logos are affected;
+- no plate, border, gradient or glow remains.
 
-- `/admin/` Dashboard;
-- `/admin/finance/` Finance;
-- `/admin/calendar/` Calendar / Operations;
-- `/admin/calendar/site-schedule/` Site Schedule;
-- `/admin/editor/` Site Editor.
+Show Day mobile production QA after PR #116 — PASS. Normal-mode visual verification remains pending when normal mode becomes observable.
 
-Admin audit remains a first-class part of this milestone and cannot be skipped because public mobile has received more screenshots so far.
+### Documentation/future backlog captured during audit
 
-## Preserved future Editor / card-system backlog — RECORDED, NOT ACTIVE
+- **PR #109:** reconciled Show Day docs to dynamic Site Schedule architecture; future authenticated Admin override recommended `Auto / Force On / Force Off`, reversible and ideally TTL-based.
+- **PR #110:** recorded consistent testimonial card geometry/long-copy handling and generic Editor collection reordering.
+- **PR #113:** recorded **Attio** as future CRM candidate and **Dapta.ai** as future AI chatbot/agent candidate with pricing/integration/source-of-truth evaluation guardrails.
 
-The following ideas are intentionally preserved for later implementation and **do not change the current visual-audit sequence**.
+These are not active milestones.
 
-### Testimonials — consistent card geometry + long-copy handling
+## Current open findings
 
-Desired outcome:
+### Remaining public matrix — OPEN
 
-- testimonial cards should present a **consistent visual height/geometry** within the same layout so one long quote does not create an awkward oversized card beside shorter ones;
-- long testimonials must remain fully accessible without silently truncating or deleting approved copy;
-- preferred UX direction is a restrained line-clamp/preview with an obvious **Read more / Leer más** affordance that reveals the full quote elegantly (inline expansion, controlled overlay/modal or equivalent pattern to be validated when implemented);
-- expansion/collapse must be keyboard/touch accessible, preserve focus, work on mobile and desktop, and avoid destructive layout jumps or horizontal overflow;
-- EN/ES variants may have different text lengths, so the solution must be content-resilient rather than tuned to one language;
-- do not force every testimonial to the height of the single longest quote if a more elegant progressive-disclosure pattern preserves a balanced layout.
-
-### Generic Editor collection/card reordering
-
-Reordering should become a **consistent first-class Editor capability** across every collection-like section where item order is meaningful, rather than being implemented ad hoc section by section.
-
-Scope includes, where applicable:
-
-- Testimonials;
-- Trusted By / client cards;
-- Supported Brands / marcas atendidas;
-- Services;
-- Selected Work / project cards;
-- Rental presentation cards/items that are presentation-owned by CMS;
-- any future repeatable card/list collection added to the Editor.
-
-Required direction:
-
-- preserve existing section-specific reorder behavior where it already works, but converge toward one shared interaction model;
-- every applicable collection should expose a clear, intuitive way to reorder items in Admin;
-- prefer explicit drag handles and/or accessible move up/down controls rather than making entire cards accidentally draggable;
-- keyboard-accessible reordering is required; touch behavior must be deliberate and comfortable on mobile Admin;
-- order changes belong to Draft until Publish under the existing Draft → Published contract;
-- reordering must not mutate unrelated item data, IDs, media ownership or transactional/backend-owned fields;
-- where a collection has market/language variants, ordering semantics must be defined deliberately rather than creating hidden divergence by accident.
-
-This is a future **Editor UX/systemization** milestone, not permission to interrupt the current Rental/Trusted/Admin audit sequence.
-
-## Public site — normal mode
-
-Audit every current public route family, not only Home:
+Continue deliberate route-family checks across:
 
 - `/`;
 - `/en/`;
 - `/es-co/`;
 - `/theatre-sound-design-audio-post`;
 - `/audio-eventos-streaming-teatro-bogota`;
-- `/alquiler-sonido-wing-midas-dl32-bogota`;
-- nested/current Rental/service landing variants present in the repository.
+- current Rental/service landing variants present in the repository.
 
-For each applicable route inspect:
+Required branches where applicable:
 
-- shared Home-style header structure;
-- canonical SD.Live logo sizing, alignment and contrast;
-- brand Location line in normal mode;
-- primary navigation order, spacing, hover/focus states and anchor destinations;
-- EN/ES controls and persistence;
-- Start Project CTA placement and state;
-- mobile menu open/close behavior, scroll locking and tap targets;
-- sticky/header transitions while scrolling;
-- hero top spacing below the shared header;
-- typography hierarchy, line breaks and readable measure;
-- section spacing, card alignment, glass panels and borders;
-- CTA consistency;
-- footer consistency;
-- WhatsApp control position and safe-area behavior;
-- Rental quote/cart control position and overlap on Colombia-facing surfaces;
-- horizontal overflow, clipping and accidental page-width expansion;
-- anchor offsets so content is not hidden behind the header;
-- focus rings and keyboard navigation on desktop;
-- touch feedback and no hover-only affordances on mobile.
+- desktop + mobile;
+- normal + Show Day;
+- EN/ES;
+- COL/INT.
 
-## Public site — Show Day active
+Do not falsely mark normal-mode checks PASS while automatic Show Day prevents observing normal mode.
 
-Repeat relevant routes with automatic Show Day active and a real Site Schedule Location.
+### Admin visual audit — OPEN
 
-Verify:
-
-- no legacy manual Show Day toggle;
-- ON AIR state coherent across Home and secondary pages;
-- Show Day logo treatment consistent;
-- configured Location has deliberate spacing and does not wrap/collide;
-- red/orange Show Day palette is complete rather than mixed unintentionally with normal violet;
-- buttons, borders, highlights, links and active controls retain readable contrast;
-- Rental quote/cart, WhatsApp and language controls do not clash with Show Day styling;
-- shared header replacement does not create duplicate IDs/controls/spacing;
-- switching language preserves Show Day state;
-- direct entry to secondary routes still feels like the same visual system;
-- footer logo/copyright/legal layout remains coherent in Show Day.
-
-Known low-priority polish to measure during this audit:
-
-- normal-violet → Show Day red startup popping;
-- static normal favicon while Show Day is active.
-
-Those are already approved backlog, not reasons to interrupt current audit order.
-
-## Admin / Control Center audit
-
-Audit all current private workspaces behind Cloudflare Access:
+Still required for:
 
 - `/admin/` Dashboard;
 - `/admin/finance/` Finance;
@@ -192,137 +121,157 @@ Audit all current private workspaces behind Cloudflare Access:
 - `/admin/calendar/site-schedule/` Site Schedule;
 - `/admin/editor/` Site Editor.
 
-### Shared Admin checks
+Admin audit remains first-class and cannot be skipped because more public mobile QA has already occurred.
 
-- shared violet Admin palette/tokens remain consistent;
-- no stray blue/lime/orange decorative accents except semantic status colors;
-- header/workspace navigation alignment and active state;
-- responsive width/centering and max-width behavior;
-- panel spacing, border radii and elevation consistency;
+## Preserved future Editor / card-system backlog — RECORDED, NOT ACTIVE
+
+### Testimonials — consistent geometry + long-copy handling
+
+- testimonial cards should present consistent visual geometry;
+- long quotes must remain fully accessible;
+- preferred direction: restrained preview/line clamp + obvious **Read more / Leer más** progressive disclosure;
+- expansion must work keyboard/touch, preserve focus and avoid destructive layout jumps;
+- EN/ES text-length differences must be handled naturally;
+- do not force every card to the height of the single longest quote if progressive disclosure provides a better layout.
+
+### Generic Editor collection/card reordering
+
+Reordering should become a consistent first-class Editor capability across meaningful repeatable collections, including:
+
+- Testimonials;
+- Trusted By/client cards;
+- Supported Brands;
+- Services;
+- Selected Work/project cards;
+- CMS-owned Rental presentation collections;
+- future repeatable card/list collections.
+
+Preserve Draft → Published, item IDs, media ownership and backend-owned/transactional fields. Prefer explicit drag handles and/or accessible move up/down controls rather than making entire cards accidentally draggable.
+
+## Future Calendar UX backlog discovered during audit — RECORDED, NOT ACTIVE
+
+Admin Calendar **Agenda mode** should eventually expose a toggle between:
+
+- **Full Month** — every effective Agenda item in the selected month, including past items;
+- **Current + Future** — ongoing + future only, hiding items whose effective end is before today.
+
+Future implementation rules:
+
+- evaluate today in **America/Bogota**;
+- presentation/filter only;
+- do not delete/mutate historical `REGISTRO`, AppSheet or Site Schedule data;
+- ongoing multi-day work remains visible;
+- default option is TBD during implementation;
+- desktop/mobile behavior and accessibility must be deliberate.
+
+## Public site — visual checklist
+
+For each applicable route inspect:
+
+- shared Home-style header structure;
+- canonical SD.Live logo sizing/alignment/contrast;
+- Location behavior;
+- navigation order, spacing, hover/focus states and destinations;
+- EN/ES controls and persistence;
+- CTA placement/state;
+- mobile menu behavior and scroll locking;
+- header/hero spacing;
+- typography hierarchy and line breaks;
+- section/card spacing, borders and glass surfaces;
+- footer consistency;
+- WhatsApp and Rental floating controls/safe areas;
+- horizontal overflow/clipping;
+- anchor offsets;
+- keyboard focus on desktop;
+- touch feedback and no hover-only critical interactions on mobile.
+
+### Show Day-specific checks
+
+- no visitor-facing manual Show Day toggle;
+- ON AIR/Location coherent across Home + secondary pages;
+- complete red/orange Show Day palette without accidental mixed normal accents;
+- readable buttons/borders/links/controls;
+- language changes preserve Show Day state;
+- footer and secondary routes remain visually part of the same system.
+
+Approved low-priority polish to observe but not prioritize now:
+
+- normal-violet → Show Day-red startup pop;
+- static normal favicon during Show Day.
+
+## Admin / Control Center audit
+
+Shared checks:
+
+- shared violet Admin tokens consistent;
+- semantic colors only for status;
+- workspace navigation alignment/active state;
+- responsive width/centering;
+- panel spacing/radii/elevation;
 - button hierarchy and disabled/loading/error states;
-- text contrast and muted-label readability;
+- text contrast/muted labels;
 - no horizontal overflow;
-- no control hidden behind browser safe areas or sticky elements;
-- keyboard focus order on desktop;
-- tap targets and spacing on mobile;
-- loading states avoid large layout shifts;
-- empty/error/offline states remain legible and branded.
+- safe-area/sticky-element collisions;
+- keyboard focus order;
+- mobile tap targets;
+- loading/empty/error/offline states.
 
 ### Calendar / Operations specific
 
 Desktop and mobile separately:
 
-- month grid proportions/date-cell readability;
-- multi-day/effective Site Schedule blocks across week boundaries;
+- month-grid proportions/date readability;
+- multi-day/effective blocks across week boundaries;
 - event truncation/overflow;
 - today state;
 - `Next` hierarchy;
 - Calendar/Agenda selector;
 - month navigation;
-- create form layout/validation;
-- modal/sheet scrolling on small screens;
+- create form validation/layout;
+- modal/sheet scrolling;
 - long client/project/role strings;
-- currency/state chips where shown;
-- month transitions and multiple events/day.
+- multiple events/day.
 
 ### Site Schedule specific
 
 - source-work density/search;
-- selected-work state;
-- original source-range summary;
-- segment cards/add-remove controls;
+- selected-work state/source-range summary;
+- segment cards/add-remove;
 - date inputs;
-- Show Day hierarchy;
-- Location visibility/required feedback;
+- Show Day + Location hierarchy/validation;
 - Save / Use REGISTRO dates;
 - overlap/outside-range/backwards/missing-Location errors;
 - saved state after reload;
 - mobile editing without horizontal scroll.
 
-## Site Schedule source-list cleanup — CLOSED/PASS
+## Device / language matrix
 
-PR #100 implemented the editor-only filter in **America/Bogota**:
+Desktop minimums: ~1440, ~1280, ~1024 px.  
+Mobile minimums: iPhone-class ~390–393, larger ~430, narrow ~360 where useful.
 
-- ongoing: `sourceStartDate <= today <= sourceEndDate` → visible;
-- future: `sourceStartDate > today` → visible;
-- past: `sourceEndDate < today` → hidden from Split Work selector.
-
-Boundaries preserved:
-
-- no deletion of historical overrides;
-- historical Calendar may still show past events;
-- `REGISTRO` unchanged;
-- AppSheet unchanged;
-- Finance timing / Issue #83 unchanged;
-- search only runs across the eligible ongoing/future set.
-
-Production user check: **A / PASS**.
-
-## Desktop matrix
-
-Minimum deliberate widths:
-
-- large desktop ~1440 px;
-- standard desktop/laptop ~1280 px;
-- compact desktop/tablet-landscape boundary ~1024 px.
-
-At minimum smoke Safari + Chrome where available. Differences in sticky headers, form controls, date inputs, backdrop/filter rendering and font metrics should be logged.
-
-## Mobile matrix
-
-Minimum deliberate checks:
-
-- iPhone-class ~390–393 px Safari;
-- larger iPhone-class ~430 px where available;
-- narrow Android-class ~360 px Chrome/equivalent emulation where useful.
-
-Inspect top-of-page and scrolled states, safe areas, browser chrome resizing, sticky headers, modals/drawers, keyboards over forms and touch comfort.
-
-## Language / market matrix
-
-Where supported:
-
-- EN and ES;
-- Colombia and International;
-- normal and Show Day.
-
-The goal is not mechanical screenshot multiplication; it is to ensure no conditional branch retained an old header, palette, spacing model or obsolete control.
+At minimum compare Safari + Chrome where available. Review EN/ES, COL/INT and normal/Show Day branches where supported; the purpose is branch coverage, not mechanical screenshot multiplication.
 
 ## Severity rubric
 
-- **P0:** blocks use, hides critical controls/data, severe overlap, broken navigation, inaccessible form/drawer or visually corrupt production.
-- **P1:** major brand/layout regression, route/header inconsistency, mobile unusability, major overflow, incorrect conditional UI or misleading state.
-- **P2:** noticeable alignment/spacing/typography/UX clarity defect that reduces polish but does not block workflow.
-- **P3:** small cosmetic refinement with low impact.
+- **P0:** blocks use, hides critical controls/data, severe overlap/broken navigation/inaccessible UI.
+- **P1:** major brand/layout regression, route/header inconsistency, mobile unusability, major overflow or misleading state.
+- **P2:** noticeable alignment/spacing/typography/UX clarity defect reducing polish but not blocking workflow.
+- **P3:** small cosmetic refinement.
 
-P0/P1 must be fixed before the audit closes. P2/P3 remain explicitly tracked and may be grouped into coherent polish PRs.
-
-## Finding format
-
-Each logged issue should include:
-
-- route/workspace;
-- state (normal/Show Day, EN/ES, COL/INT when relevant);
-- browser/device/viewport;
-- screenshot or concise visual evidence;
-- reproduction steps;
-- expected contract;
-- actual result;
-- severity;
-- likely owning CSS/JS/component when known;
-- fix PR + post-fix desktop/mobile smoke.
+P0/P1 must close before audit completion. P2/P3 remain tracked and can be grouped later.
 
 ## Exit criteria
 
 The audit closes only when:
 
-- all public route families are deliberately reviewed desktop + mobile;
+- all current public route families are deliberately reviewed desktop + mobile;
+- normal + Show Day branches are reviewed where applicable;
+- EN/ES + COL/INT conditional branches receive representative validation;
 - all current Admin workspaces are deliberately reviewed desktop + mobile;
-- Show Day active and normal states are both covered;
-- EN/ES and COL/INT branches are sampled where applicable;
-- every P0/P1 finding is fixed and production-smoked;
-- remaining P2/P3 items are explicitly preserved;
-- Site Schedule selector no longer shows completed source work — **already PASS**;
-- Rental quote drawer/header clarity is resolved or explicitly deferred with rationale/severity;
-- low-contrast Trusted By/supported-brand cases are verified in both modes/device classes and fixed if reproducible;
-- README / PROJECT_STATUS / roadmap/checkpoint evidence is updated at closeout.
+- all P0/P1 findings are fixed and re-smoked;
+- P2/P3 findings are preserved explicitly;
+- no source-of-truth boundary is weakened to solve a visual issue.
+
+## Current continuation
+
+Continue the remaining public matrix one manual QA action at a time, then the mandatory Admin desktop/mobile audit. Rental Show Day and the accepted Anima/Sonique treatment are closed; do not reopen them without regression evidence. Normal-mode-specific checks remain pending until normal mode is observable.
