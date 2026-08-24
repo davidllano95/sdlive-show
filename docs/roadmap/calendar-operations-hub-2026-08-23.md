@@ -36,7 +36,7 @@ Public-site work reuses the existing public brand/Show Day tokens.
 - **A — `Fecha trabajo`** = canonical start date;
 - **AB — `Fecha fin`** = canonical end date.
 
-`Fecha trabajo` was intentionally not renamed/moved because existing formulas/workflows depend on it.
+`Fecha trabajo` remains intentionally unmoved because existing formulas/workflows depend on it.
 
 ### Ownership map
 
@@ -94,56 +94,24 @@ PR #89 introduced authenticated `POST /api/admin/calendar/events` with:
 - no generic workflow-date/Valor Recibido write surface;
 - no D1 fallback.
 
-### OAuth authorization — resolved
+Google OAuth was re-authorized with Sheets write scope. The first real write exposed unsafe row reservation from `values.append`; the affected historical row was restored and PR #99 replaced that approach with safe occupancy scanning/direct row targeting.
 
-The existing OAuth client was re-authorized with:
+Final production smoke:
 
-`https://www.googleapis.com/auth/spreadsheets`
-
-The Worker refresh token was replaced and the production write boundary became available.
-
-### P0 row-safety incident and recovery
-
-The first write exposed a flaw in the original row reservation approach: `values.append` against the ID-only range selected an occupied early `REGISTRO` row and inherited stale workflow/payment cells.
-
-Recovery was completed before continuing:
-
-- the overwritten historical row was manually restored from the pre-smoke copy;
-- AppSheet sync confirmed the restored record;
-- no whole-row paste was used over formula-owned columns.
-
-PR #99 then hardened create:
-
-- removed `values.append` row reservation;
-- scans relevant source/workflow-owned fields for occupancy;
-- formula-only array columns do not mark rows occupied;
-- workflow-only residue does mark rows occupied;
-- writes directly to the first safe row after the last occupied source/workflow row;
-- idempotent replay remains supported;
-- response includes `rowNumber`;
-- Admin shows `✓ Event created · REGISTRO row N`.
-
-### Final production smoke — PASS
-
-A controlled create wrote to `REGISTRO` row 67, contained no inherited evaluation/signature/payment/Valor Recibido values, synced to AppSheet cleanly and therefore closed controlled create as **PASS**.
+- controlled create wrote to `REGISTRO` row 67;
+- no inherited workflow/payment/Valor Recibido values;
+- AppSheet sync clean;
+- Admin confirmation shows `✓ Event created · REGISTRO row N`.
 
 Generic Finance Phase 3 remains blocked.
 
 ## 7. Site Schedule — CLOSED/PASS
 
-### Decision
+Canonical `REGISTRO` dates remain untouched. Site Schedule exists exclusively for website/Admin Calendar presentation.
 
-Canonical `REGISTRO` dates remain untouched. Site Schedule is exclusively for how work is represented on the website/Admin Calendar.
+Storage:
 
-### Storage
-
-Site Schedule uses dedicated D1 application table:
-
-- `site_schedule_state`.
-
-It does not depend on CMS content-entry/revision contracts.
-
-### Block contract
+- D1 `site_schedule_state`.
 
 Each block owns:
 
@@ -154,48 +122,31 @@ Each block owns:
 
 Rules:
 
-- segments stay inside original source range;
+- segments remain inside original source range;
 - segments cannot overlap;
 - Location max length is validated;
 - Location required if `Show Day=true`;
 - split dates, Show Day and Location never write to Sheets/AppSheet.
 
-### Calendar behavior
+Calendar behavior:
 
 - normal `GET /api/admin/calendar/events` applies Site Schedule overrides;
 - `?view=source` returns canonical source spans;
-- if no override exists, source span is displayed;
+- without override, source span is displayed;
 - Calendar `Next` consumes effective displayed blocks;
 - D1 read failure falls back safely to source spans.
 
-### Production RENT split — PASS
-
-Real RENT source span Aug 4–28 was saved as:
-
-- Aug 4–9;
-- Aug 14–17;
-- Aug 20–24;
-- Aug 27–28.
-
-Calendar correctly shows gaps and `Next` follows effective block dates.
+Real RENT source span Aug 4–28 was saved as Aug 4–9, Aug 14–17, Aug 20–24 and Aug 27–28. Calendar correctly shows gaps and `Next` follows effective block dates.
 
 ### Split Work source filter — PASS
 
-PR #100 now shows only ongoing/future source work in **America/Bogota**:
+PR #100 shows only ongoing/future source work in **America/Bogota**:
 
 - ongoing: `sourceStartDate <= today <= sourceEndDate`;
 - future: `sourceStartDate > today`;
-- past: `sourceEndDate < today` hidden from the selector.
+- past: `sourceEndDate < today` hidden from selector.
 
-This is an editor usability filter only:
-
-- historical overrides remain persisted;
-- past Calendar data remains available;
-- `REGISTRO`/AppSheet unchanged;
-- search runs only against eligible source work;
-- Issue #83 Finance timing unchanged.
-
-Production user check: **A / PASS**.
+This is editor usability only; historical overrides/history remain preserved and `REGISTRO`/AppSheet are unchanged.
 
 ## 8. Automatic Show Day + Location — CLOSED/PASS
 
@@ -209,13 +160,13 @@ Behavior:
 - active only inside a block with `showDay=true` and Location;
 - safe/minimal public payload;
 - failure fails closed to normal mode;
-- legacy visitor manual Show Day toggle removed at edge;
+- legacy visitor manual Show Day toggle removed;
 - Location visible only while Show Day active;
 - secondary pages use the same Home-style header contract.
 
-Recent visual audit refinement:
+PR #105 added 2 px extra mobile-only separation between Show Day logo and Location; production user QA PASS.
 
-- PR #105 adds 2 px extra mobile-only separation between Show Day logo and Location; production user check **PASS**.
+Future Admin-only QA/control override remains backlog only, recommended `Auto / Force On / Force Off`, explicit/reversible and preferably TTL-based. It must never mutate canonical `REGISTRO` dates or persisted Site Schedule blocks.
 
 ## 9. Public header parity — PASS
 
@@ -229,7 +180,7 @@ PR #96 normalizes `.seo-header` secondary pages at the edge to the Home header c
 - Start Project CTA;
 - mobile navigation.
 
-Production theatre landing QA passed and secondary pages now feel like the same site.
+Production theatre landing QA passed.
 
 ## 10. Billing/reminder end-date follow-up — Issue #83 OPEN
 
@@ -246,27 +197,47 @@ Full contract:
 
 - `docs/roadmap/post-integration-visual-audit-2026-08-23.md`.
 
-Required scope remains:
+Current public progress through PR #116:
 
-- Home + every public route family;
-- normal + automatic Show Day;
-- desktop + mobile separately;
-- EN/ES and COL/INT branches where applicable;
-- Footer, Rental quote/cart, WhatsApp, headers, anchors, overflow, typography and brand contrast;
-- `/admin/`, Finance, Calendar, Site Schedule and Editor desktop/mobile;
-- P0/P1 fixed before audit close; P2/P3 explicitly preserved.
+- Rental quote drawer is now explicitly a quotation/request flow; Show Day mobile+desktop EN+ES QA PASS;
+- original Rental cart icon restored;
+- Anima Producciones + Sonique now render white in all modes via `brightness(0) invert(1)` on only those two logo elements; original R2 media untouched; Show Day mobile QA PASS;
+- normal-mode-specific QA remains pending while automatic Show Day is active;
+- remaining public route matrix and mandatory Admin desktop/mobile audit remain open.
 
-Current open public findings include Rental quote drawer/header clarity and verification of low-contrast Trusted By/supported-brand marks across both modes/device classes. Admin audit remains required and not yet closed.
+Do not use visual work to broaden into generic Finance writes or unrelated architecture changes.
 
-## 12. Known low-priority Show Day polish
+## 12. Future Admin Calendar Agenda scope toggle — RECORDED, NOT ACTIVE
 
-Approved backlog, not the current gate:
+When promoted later, **Agenda mode** should expose a simple toggle between:
 
-- dynamic favicon tied to authoritative Show Day state;
-- eliminate normal-violet → Show Day-red startup popping with prepaint/edge state.
+### Full Month
 
-## 13. Current next action
+Show every effective Agenda item in the selected month, including entries already in the past.
 
-**Continue the active visual audit in sequence.** The next open public item is Rental quotation drawer/header clarity. Compact it and make the quote-request nature explicit without changing backend pricing ownership or notification routing. Continue one manual production smoke at a time after each material visual fix.
+### Current + Future
 
-Do not use this as permission to broaden into generic Finance writes or unrelated architecture changes.
+Show ongoing + future effective items and hide entries whose **effective end** is before today.
+
+Implementation guardrails:
+
+- evaluate today in **America/Bogota**;
+- ongoing multi-day work remains visible while it is still active;
+- this is a presentation/filter control only;
+- do not delete, rewrite or hide data at the API/source level merely to support the toggle;
+- historical `REGISTRO`, AppSheet and Site Schedule records remain intact;
+- the chosen default (`Full Month` vs `Current + Future`) is deliberately **TBD** until implementation/UX review;
+- desktop and mobile should use the same semantic model, with accessible toggle labels/state.
+
+This future control is separate from the existing Site Schedule **Split Work source filter**, which already hides completed source work from the editor selector. Do not conflate the two behaviors.
+
+## 13. Other future vendor/system considerations
+
+- Attio is recorded as a future CRM candidate.
+- Dapta.ai is recorded as a future AI chatbot/agent candidate.
+- See `docs/roadmap/future-crm-ai-vendors-2026-08-23.md`.
+- Neither candidate may silently become Finance/`REGISTRO` source of truth or write formula-owned columns.
+
+## 14. Current next action
+
+**Continue the active visual audit in sequence.** Rental Show Day and the accepted Anima/Sonique contrast treatment are closed. Continue the remaining public matrix and then the mandatory Admin desktop/mobile review, one manual QA action at a time. Controlled Calendar edit/workflow expansion comes only after stabilization PASS.
