@@ -84,7 +84,7 @@
 
   activateCalendarWorkspace();
 
-  async function api(url) {
+  async function api(url, options = {}) {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 10000);
 
@@ -92,6 +92,11 @@
       const response = await fetch(url, {
         credentials: "same-origin",
         cache: "no-store",
+        ...options,
+        headers: {
+          Accept: "application/json",
+          ...(options.headers || {})
+        },
         signal: controller.signal
       });
 
@@ -100,7 +105,9 @@
 
       const data = await response.json();
       if (!response.ok || data?.ok === false) {
-        throw new Error(data?.error || `Request failed (${response.status})`);
+        const error = new Error(data?.error || `Request failed (${response.status})`);
+        error.fields = data?.fields || null;
+        throw error;
       }
       return data;
     } catch (error) {
@@ -121,6 +128,144 @@
       timeStyle: "short"
     }).format(date);
   }
+
+  function installShowDayControl() {
+    const metrics = document.querySelector(".metrics");
+    if (!metrics || document.getElementById("showDayQaControl")) return null;
+
+    const panel = document.createElement("section");
+    panel.className = "section panel showday-control";
+    panel.id = "showDayQaControl";
+    panel.innerHTML = `
+      <div class="section-head showday-control__head">
+        <div>
+          <span class="eyebrow">Visual QA</span>
+          <h3>Show Day mode</h3>
+        </div>
+        <span class="showday-control__status" id="showDayQaStatus">Loading…</span>
+      </div>
+      <p class="showday-control__intro">Temporarily override the public Show Day state to compare Normal and ON AIR layouts. Force modes expire at the end of today in Bogotá and never edit Site Schedule, REGISTRO or AppSheet.</p>
+      <div class="showday-control__row">
+        <div class="showday-mode-toggle" role="group" aria-label="Show Day QA mode">
+          <button type="button" data-showday-mode="auto" aria-pressed="true">Auto</button>
+          <button type="button" data-showday-mode="force_on" aria-pressed="false">Force On</button>
+          <button type="button" data-showday-mode="force_off" aria-pressed="false">Force Off</button>
+        </div>
+        <label class="showday-location" id="showDayLocationWrap" hidden>
+          <span>Test location</span>
+          <input id="showDayQaLocation" type="text" maxlength="160" autocomplete="off" placeholder="QA · Bogotá" />
+        </label>
+        <button class="button showday-control__apply" id="showDayQaApply" type="button">Apply mode</button>
+      </div>
+      <div class="showday-control__meta">
+        <span id="showDayQaDetail">Reading automatic state…</span>
+        <span id="showDayQaFeedback" role="status" aria-live="polite"></span>
+      </div>
+    `;
+    metrics.insertAdjacentElement("afterend", panel);
+    return panel;
+  }
+
+  const showDayPanel = installShowDayControl();
+  const showDayButtons = [...(showDayPanel?.querySelectorAll("[data-showday-mode]") || [])];
+  const showDayLocationWrap = document.getElementById("showDayLocationWrap");
+  const showDayLocation = document.getElementById("showDayQaLocation");
+  const showDayApply = document.getElementById("showDayQaApply");
+  const showDayStatus = document.getElementById("showDayQaStatus");
+  const showDayDetail = document.getElementById("showDayQaDetail");
+  const showDayFeedback = document.getElementById("showDayQaFeedback");
+  let selectedShowDayMode = "auto";
+
+  function setShowDaySelection(mode) {
+    selectedShowDayMode = ["auto", "force_on", "force_off"].includes(mode) ? mode : "auto";
+    showDayButtons.forEach((button) => {
+      const selected = button.dataset.showdayMode === selectedShowDayMode;
+      button.classList.toggle("is-selected", selected);
+      button.setAttribute("aria-pressed", String(selected));
+    });
+    if (showDayLocationWrap) showDayLocationWrap.hidden = selectedShowDayMode !== "force_on";
+  }
+
+  function renderShowDayState(data) {
+    const mode = data?.override?.mode || "auto";
+    const effective = data?.effective || {};
+    setShowDaySelection(mode);
+
+    if (mode === "force_on" && showDayLocation) {
+      showDayLocation.value = data.override?.location || "";
+    }
+
+    if (showDayStatus) {
+      if (mode === "force_on") showDayStatus.textContent = "Forced ON";
+      else if (mode === "force_off") showDayStatus.textContent = "Forced OFF";
+      else showDayStatus.textContent = effective.active ? "Auto · ON AIR" : "Auto · Normal";
+      showDayStatus.classList.toggle("is-forced", mode !== "auto");
+    }
+
+    if (showDayDetail) {
+      const automaticLabel = data?.automatic?.active
+        ? `Automatic: ON AIR${data.automatic.location ? ` · ${data.automatic.location}` : ""}`
+        : "Automatic: Normal";
+      showDayDetail.textContent = mode === "auto"
+        ? automaticLabel
+        : `${automaticLabel} · override expires after ${data.date} Bogotá`;
+    }
+  }
+
+  showDayButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      setShowDaySelection(button.dataset.showdayMode);
+      if (showDayFeedback) showDayFeedback.textContent = "";
+      if (selectedShowDayMode === "force_on") showDayLocation?.focus();
+    });
+  });
+
+  async function loadShowDayControl() {
+    if (!showDayPanel) return;
+    try {
+      const data = await api("/api/admin/showday-override");
+      renderShowDayState(data);
+    } catch (error) {
+      if (showDayStatus) showDayStatus.textContent = "Unavailable";
+      if (showDayDetail) showDayDetail.textContent = error.message;
+    }
+  }
+
+  showDayApply?.addEventListener("click", async () => {
+    const location = showDayLocation?.value?.trim() || "";
+    if (selectedShowDayMode === "force_on" && !location) {
+      if (showDayFeedback) showDayFeedback.textContent = "Add a test location before forcing Show Day on.";
+      showDayLocation?.focus();
+      return;
+    }
+
+    const originalLabel = showDayApply.textContent;
+    showDayApply.disabled = true;
+    showDayApply.textContent = "Applying…";
+    if (showDayFeedback) showDayFeedback.textContent = "";
+
+    try {
+      const data = await api("/api/admin/showday-override", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          mode: selectedShowDayMode,
+          location: selectedShowDayMode === "force_on" ? location : ""
+        })
+      });
+      renderShowDayState(data);
+      if (showDayFeedback) showDayFeedback.textContent = "Applied to the public site.";
+    } catch (error) {
+      if (showDayFeedback) {
+        showDayFeedback.textContent = error?.fields?.location === "required_for_force_on"
+          ? "A test location is required for Force On."
+          : error.message;
+      }
+    } finally {
+      showDayApply.disabled = false;
+      showDayApply.textContent = originalLabel;
+    }
+  });
 
   async function load() {
     try {
@@ -198,4 +343,5 @@
   }
 
   load();
+  loadShowDayControl();
 })();
