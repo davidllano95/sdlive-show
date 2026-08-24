@@ -24,10 +24,10 @@ html.showday-active .seo-header-logo img {
   filter: none;
 }
 
-/* Show Day only: render the dark Anima and Sonique client marks in white.
+/* Always render the dark Anima and Sonique client marks in white.
    The original R2 media remains untouched and every other client logo is unchanged. */
-html.showday-active .client-logo[alt="Anima Producciones"],
-html.showday-active .client-logo[alt="Sonique"] {
+.client-logo[alt="Anima Producciones"],
+.client-logo[alt="Sonique"] {
   filter: brightness(0) invert(1);
 }
 
