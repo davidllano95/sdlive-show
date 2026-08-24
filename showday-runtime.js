@@ -89,8 +89,14 @@
   function applyStatus(status) {
     const active = status?.active === true;
     const location = typeof status?.location === "string" ? status.location.trim() : "";
+    const source = status?.source === "admin-override" ? "admin-override" : "site-schedule";
+    const overrideMode = ["auto", "force_on", "force_off"].includes(status?.overrideMode)
+      ? status.overrideMode
+      : "auto";
+
     root.classList.toggle("showday-active", active);
-    root.dataset.showdaySource = "site-schedule";
+    root.dataset.showdaySource = source;
+    root.dataset.showdayOverride = overrideMode;
 
     if (workLocation) {
       workLocation.textContent = active && location ? location : originalWorkLocation;
@@ -129,7 +135,7 @@
       applyStatus(status);
     } catch (error) {
       console.warn("Automatic Show Day status unavailable; using normal mode.", error);
-      applyStatus({ active: false, location: "" });
+      applyStatus({ active: false, location: "", source: "site-schedule", overrideMode: "auto" });
     }
   }
 
