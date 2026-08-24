@@ -21,6 +21,11 @@ test("rental drawer is framed as a quote request instead of checkout", () => {
   assert.doesNotMatch(source, /cartTitle: "Carrito de alquiler"/);
 });
 
+test("rental trigger preserves the original cart icon", () => {
+  assert.doesNotMatch(source, /cartIcon\.innerHTML/);
+  assert.doesNotMatch(source, /M7 3\.5h7l3 3v14H7z/);
+});
+
 test("rental submission contract remains on the existing endpoint", () => {
   assert.match(source, /const RENTAL_PRICING = \{/);
   assert.match(source, /fetch\("\/api\/rental"/);
