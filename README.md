@@ -29,16 +29,18 @@ As of **2026-08-23 America/Bogota**:
 - Dedicated `/admin/finance/` workspace — **CLOSED/PASS**.
 - AppSheet multi-day source model — **PASS**.
 - Admin Calendar read-only — **CLOSED/PASS**.
-- Controlled Admin Calendar create — **CLOSED/PASS** after OAuth write authorization, PR #99 row-safety hardening and end-to-end Google Sheet/AppSheet smoke.
+- Controlled Admin Calendar create — **CLOSED/PASS** after OAuth write authorization, PR #99 row-safety hardening and E2E Sheet/AppSheet smoke.
 - Site Schedule + automatic Show Day + Location — **CLOSED/PASS**.
 - Site Schedule Split Work ongoing/future-only source filter — **PASS, PR #100**.
 - Shared Home-style header on secondary public pages — **PASS**.
-- **Active gate:** required post-integration detailed visual audit across public + Admin, desktop + mobile, normal + Show Day.
+- Rental quote drawer Show Day matrix — **PASS mobile+desktop, EN+ES** after PRs #107–#108.
+- Anima Producciones + Sonique contrast treatment — **PASS**; both render white in all modes via CSS inversion while original R2 media remains untouched, PR #116.
+- **Active gate:** required post-integration detailed visual audit across remaining public + Admin surfaces, desktop + mobile, normal + Show Day.
 - Generic Finance Phase 3 write-back — **BLOCKED**.
 
-Current continuation checkpoint:
+Current detailed checkpoint:
 
-- `docs/checkpoints/visual-audit-handoff-2026-08-23.md`
+- `docs/checkpoints/visual-audit-progress-pr116-2026-08-23.md`
 
 Full active audit contract:
 
@@ -78,6 +80,7 @@ If an important answer is unknown, investigate first.
 - Hero, Trusted By / Supported Brands, Testimonials, Core Home, Rental/Contact presentation and reusable Media Library are established.
 - Visual safeguards: `visual-safeguards.css` + `visual-safeguards.js`.
 - Global Select routes selection to owning CMS sections/items.
+- Managed logos/images should remain in R2; presentation-only contrast changes should not create duplicate media variants unless technically necessary.
 
 ### Private Admin / Control Center
 
@@ -133,37 +136,27 @@ Issue #83 remains open: billing/reminder eligibility should use the day after ca
 
 ## Controlled Admin create — CLOSED/PASS
 
-PR #89 introduced authenticated `POST /api/admin/calendar/events` with mapped source fields, server validation, durable AppSheet-compatible IDs, idempotent request IDs and formula/workflow protection.
-
-Google OAuth was re-authorized with Sheets write scope. The first real write then exposed a P0 row-reservation bug caused by using `values.append` against an ID-only range. The affected historical row was manually recovered and PR #99 replaced that strategy with safe occupancy scanning/direct row targeting.
+PR #89 introduced authenticated `POST /api/admin/calendar/events`. The first real write exposed an unsafe row-reservation behavior; the affected historical row was recovered and PR #99 replaced `values.append` with safe occupancy scanning/direct row targeting.
 
 Final production create smoke:
 
 - wrote to `REGISTRO` row 67;
 - did not inherit workflow/payment data;
 - synced cleanly to AppSheet;
-- visible Admin confirmation shows `✓ Event created · REGISTRO row N`.
-
-Controlled create is therefore **CLOSED/PASS**.
+- Admin confirmation shows `✓ Event created · REGISTRO row N`.
 
 ## Site Schedule + automatic Show Day — CLOSED/PASS
-
-Architecture:
 
 - canonical `REGISTRO`/AppSheet dates remain unchanged;
 - D1 `site_schedule_state` stores website-only display overrides;
 - source events may be split into non-overlapping website blocks;
 - each block owns Start, End, Show Day boolean and Location;
-- Location is required if Show Day is enabled;
-- Admin Calendar + `Next` consume effective blocks;
-- `?view=source` preserves canonical source spans;
 - public Show Day comes from `GET /api/site/showday-status` in America/Bogota;
 - failure fails closed to normal mode;
+- legacy visitor manual Show Day toggle is removed;
 - Site Schedule never writes split dates, Show Day or Location to Sheets/AppSheet.
 
-Real RENT source span was production-smoked as Aug 4–9, Aug 14–17, Aug 20–24 and Aug 27–28.
-
-PR #100 now filters the Site Schedule source selector to ongoing/future work only while preserving historical overrides and Calendar history.
+PR #100 filters the Site Schedule source selector to ongoing/future work only while preserving historical overrides and Calendar history.
 
 ## Visual audit — ACTIVE
 
@@ -175,32 +168,38 @@ The required audit covers:
 - EN/ES + COL/INT branches where applicable;
 - Admin Dashboard, Finance, Calendar, Site Schedule and Editor desktop/mobile.
 
-Findings use P0–P3. P0/P1 must close before stabilization PASS; P2/P3 stay explicitly tracked.
+Closed visual progress includes PRs #101–#116. Important recent closures:
 
-Recent closed visual findings:
+- Rental drawer now clearly communicates **rental quote request / cotización**, with estimate-not-payment/reservation language; Show Day mobile+desktop EN+ES QA PASS.
+- Original Rental shopping-cart icon restored.
+- Anima Producciones + Sonique dark-logo contrast resolved by permanent `brightness(0) invert(1)` on only those two marks; no plate/glow remains and R2 originals stay untouched.
+- Future Admin-only Show Day override, testimonial long-copy/card geometry and generic Editor reordering are documented backlog, not active work.
+- Attio (CRM) and Dapta.ai (AI chatbot/agent) are future vendor candidates only; see `docs/roadmap/future-crm-ai-vendors-2026-08-23.md`.
 
-- PR #101: Privacy/Cookie preferences moved to bottom footer legal area.
-- PR #102: footer logo follows Show Day; dot blinks.
-- PR #103: desktop footer rebalanced.
-- PR #104: branded copyright `SD.Live` dot restored without stray literal period.
-- PR #105: mobile Show Day Location separated 2 px farther below logo — production user QA PASS.
+Still open:
 
-Current open visual findings:
+- normal-mode-specific production checks that cannot be observed while automatic Show Day is active;
+- remaining public route-family matrix;
+- mandatory Admin desktop/mobile visual audit.
 
-- Rental drawer/header is too tall on mobile and should clearly communicate **rental quote request / cotización**, not ecommerce checkout.
-- Verify/fix low-contrast Trusted By/supported-brand marks across desktop/mobile and normal/Show Day.
-- Complete the remaining public route matrix.
-- Complete the Admin visual audit; it is mandatory and not optional.
+**Priority discipline:** continue the active audit one manual QA action at a time; do not reopen closed findings without regression evidence.
 
-**Priority discipline:** implement visual findings as the active audit reaches them; do not jump to unrelated milestones without reason.
+## Future Calendar UX backlog
+
+Admin Calendar **Agenda mode** should later expose a scope toggle:
+
+- **Full Month** — every effective Agenda item in the selected month, including past items;
+- **Current + Future** — ongoing + future only; hide items whose effective end is before today.
+
+This must be presentation/filter only, use America/Bogota for “today”, preserve ongoing multi-day work and never mutate/delete `REGISTRO`, AppSheet or Site Schedule history. Default selection remains TBD until implementation.
 
 ## Show Day low-priority polish
 
 Approved backlog, not current gate:
 
+- authenticated Admin-only temporary override, recommended `Auto / Force On / Force Off`;
 - dynamic Show Day favicon;
-- remove normal-violet → Show Day-red startup popping using authoritative prepaint/edge state;
-- favicon should use the same prepaint decision.
+- remove normal-violet → Show Day-red startup popping using authoritative prepaint/edge state.
 
 ## Rental / Contact invariants
 
@@ -217,61 +216,3 @@ Every new or modified UI reuses established brand tokens/palette. Do not introdu
 - Admin uses shared tokens from `admin/dashboard.css`.
 - Public site reuses the established normal/Show Day brand system.
 - Desktop + mobile visual smoke includes palette consistency.
-
-## Important files
-
-### Public/runtime
-
-- `index.html`
-- `styles.css`
-- `script.js`
-- `showday-edge.js`
-- `showday-runtime.js` / `showday-runtime.css`
-- `worker-router.js` / `public-form-rate-limit.js`
-- `site-schedule-api.js` / `site-schedule-store-v2.js`
-- `security-headers.js` / `_headers`
-
-### Admin
-
-- `admin/index.html` / `admin/dashboard.js`
-- `admin/dashboard.css`
-- `admin/finance/`
-- `admin/calendar/`
-- `admin/calendar/site-schedule/`
-- `admin/editor/`
-
-### Documentation
-
-- `PROJECT_STATUS.md` — current operational state.
-- `ROADMAP_MASTER_CHECKLIST.md` — detailed historical/future backlog.
-- `docs/roadmap/calendar-operations-hub-2026-08-23.md` — Calendar/AppSheet/Site Schedule handoff.
-- `docs/roadmap/post-integration-visual-audit-2026-08-23.md` — active audit contract.
-- `docs/checkpoints/visual-audit-handoff-2026-08-23.md` — exact current continuation point.
-- `docs/checkpoints/site-schedule-showday-2026-08-23.md` — closed Site Schedule/Show Day milestone.
-- `docs/checkpoints/calendar-create-oauth-write-gate-2026-08-23.md` — historical OAuth gate evidence; not current gate.
-
-## Development workflow
-
-```text
-main
-  ↓
-short-lived feature/fix/docs branch
-  ↓
-Pull Request
-  ↓
-CI
-  ↓
-squash merge
-  ↓
-production smoke where behavior changed
-  ↓
-close milestone / update evidence
-```
-
-Do not treat a feature-branch deployment as production.
-
-## Current gate
-
-**Continue the post-integration visual audit in sequence.** The next open public item is Rental quotation drawer/header clarity. After the public + Admin matrices are complete and all P0/P1 findings close, proceed to controlled Calendar edit/workflow actions.
-
-Do not change spreadsheet source of truth, D1 Finance architecture, formula ownership or generic Finance permissions as part of visual stabilization.
