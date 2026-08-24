@@ -72,6 +72,83 @@
   text-transform: none;
 }
 
+/* Footer audit: give the brand and navigation comparable visual weight on desktop.
+   The Site group uses two link columns so it no longer creates one tall, right-heavy stack. */
+.site-footer .footer-top {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.9fr) minmax(0, 1.55fr);
+  gap: clamp(52px, 7vw, 104px);
+  align-items: start;
+}
+
+.site-footer .footer-brand {
+  align-self: start;
+  padding-top: 2px;
+}
+
+.site-footer .footer-links {
+  display: grid;
+  grid-template-columns: minmax(0, 1.8fr) minmax(150px, 0.7fr);
+  gap: clamp(42px, 5vw, 74px);
+  align-items: start;
+}
+
+.site-footer .footer-links .footer-col:first-child {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 30px;
+  align-content: start;
+}
+
+.site-footer .footer-links .footer-col:first-child h4 {
+  grid-column: 1 / -1;
+}
+
+.site-footer .footer-bottom {
+  align-items: center;
+}
+
+/* Copyright is legal copy, not a display wordmark: keep SD.Live as a normal text mark
+   instead of rendering the decorative glowing brand dot in this single line. */
+.site-footer .footer-bottom .brand-wordmark-text__dot {
+  display: inline;
+  width: auto;
+  height: auto;
+  margin: 0;
+  border-radius: 0;
+  vertical-align: baseline;
+  background: none;
+  color: inherit;
+  box-shadow: none;
+  line-height: inherit;
+}
+
+@media (max-width: 900px) {
+  .site-footer .footer-top {
+    grid-template-columns: 1fr;
+    gap: 42px;
+  }
+
+  .site-footer .footer-links {
+    grid-template-columns: minmax(0, 1.5fr) minmax(150px, 0.7fr);
+  }
+}
+
+@media (max-width: 620px) {
+  .site-footer .footer-links,
+  .site-footer .footer-links .footer-col:first-child {
+    grid-template-columns: 1fr;
+  }
+
+  .site-footer .footer-links {
+    gap: 28px;
+  }
+
+  .site-footer .footer-links .footer-col:first-child h4 {
+    grid-column: auto;
+  }
+}
+
 .seo-footer .analytics-preferences-link {
   display: inline;
   margin: 0;
