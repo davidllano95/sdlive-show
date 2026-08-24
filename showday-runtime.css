@@ -92,7 +92,7 @@ html.showday-active .site-footer .footer-brand::after {
     margin-top: 4px;
   }
 
-  html.showday-active .brand-location {
+  .brand-location {
     transform: translateY(2px);
   }
 }
