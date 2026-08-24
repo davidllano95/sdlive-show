@@ -7,7 +7,10 @@ import {
 
 const SITE_SCHEDULE_VERSION = 1;
 const SITE_SCHEDULE_ROW_ID = 1;
+const SHOWDAY_OVERRIDE_ROW_ID = 1;
+const SHOWDAY_OVERRIDE_MODES = new Set(["auto", "force_on", "force_off"]);
 let schemaPromise = null;
+let showDayOverrideSchemaPromise = null;
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -32,6 +35,18 @@ function emptySchedule() {
   return {
     version: SITE_SCHEDULE_VERSION,
     overrides: {}
+  };
+}
+
+function emptyShowDayOverride() {
+  return {
+    mode: "auto",
+    storedMode: "auto",
+    location: "",
+    expiresOn: null,
+    expired: false,
+    updatedAt: null,
+    actorEmail: ""
   };
 }
 
@@ -83,6 +98,31 @@ async function ensureSiteScheduleSchema(env) {
   }
 
   return schemaPromise;
+}
+
+async function ensureShowDayOverrideSchema(env) {
+  if (!env?.CMS_DB) throw new Error("CMS_DB binding unavailable");
+
+  if (!showDayOverrideSchemaPromise) {
+    showDayOverrideSchemaPromise = env.CMS_DB
+      .prepare(`
+        CREATE TABLE IF NOT EXISTS showday_override_state (
+          id INTEGER PRIMARY KEY,
+          mode TEXT NOT NULL DEFAULT 'auto',
+          location TEXT NOT NULL DEFAULT '',
+          expires_on TEXT,
+          updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          actor_email TEXT
+        )
+      `)
+      .run()
+      .catch((error) => {
+        showDayOverrideSchemaPromise = null;
+        throw error;
+      });
+  }
+
+  return showDayOverrideSchemaPromise;
 }
 
 export async function readSiteScheduleV2(env) {
@@ -138,6 +178,137 @@ export async function persistSiteScheduleV2(env, schedule, userEmail) {
     .run();
 
   return readSiteScheduleV2(env);
+}
+
+export function normalizeShowDayOverrideInput(payload, todayIso = bogotaDateIso()) {
+  const body = payload && typeof payload === "object" && !Array.isArray(payload)
+    ? payload
+    : {};
+  const mode = cleanString(body.mode).toLowerCase();
+  const location = cleanString(body.location);
+  const errors = {};
+
+  if (!SHOWDAY_OVERRIDE_MODES.has(mode)) errors.mode = "invalid";
+  if (location.length > 160) errors.location = "too_long";
+  if (mode === "force_on" && !location) errors.location = "required_for_force_on";
+
+  if (Object.keys(errors).length) {
+    return { ok: false, errors, value: null };
+  }
+
+  return {
+    ok: true,
+    errors: {},
+    value: {
+      mode,
+      location: mode === "force_on" ? location : "",
+      expiresOn: mode === "auto" ? null : todayIso
+    }
+  };
+}
+
+export async function readShowDayOverrideV2(env, todayIso = bogotaDateIso()) {
+  await ensureShowDayOverrideSchema(env);
+
+  const row = await env.CMS_DB
+    .prepare(`
+      SELECT mode, location, expires_on, updated_at, actor_email
+      FROM showday_override_state
+      WHERE id = ?
+      LIMIT 1
+    `)
+    .bind(SHOWDAY_OVERRIDE_ROW_ID)
+    .first();
+
+  if (!row) return emptyShowDayOverride();
+
+  const storedMode = SHOWDAY_OVERRIDE_MODES.has(cleanString(row.mode))
+    ? cleanString(row.mode)
+    : "auto";
+  const expiresOn = validIsoDate(row.expires_on);
+  const expired = storedMode !== "auto" && (!expiresOn || todayIso > expiresOn);
+  const mode = expired ? "auto" : storedMode;
+
+  return {
+    mode,
+    storedMode,
+    location: mode === "force_on" ? cleanString(row.location) : "",
+    expiresOn,
+    expired,
+    updatedAt: row.updated_at || null,
+    actorEmail: cleanString(row.actor_email)
+  };
+}
+
+export async function persistShowDayOverrideV2(env, value, userEmail) {
+  await ensureShowDayOverrideSchema(env);
+
+  const actorEmail = cleanString(userEmail).slice(0, 320);
+  await env.CMS_DB
+    .prepare(`
+      INSERT INTO showday_override_state (
+        id,
+        mode,
+        location,
+        expires_on,
+        updated_at,
+        actor_email
+      )
+      VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, ?)
+      ON CONFLICT(id) DO UPDATE SET
+        mode = excluded.mode,
+        location = excluded.location,
+        expires_on = excluded.expires_on,
+        updated_at = CURRENT_TIMESTAMP,
+        actor_email = excluded.actor_email
+    `)
+    .bind(
+      SHOWDAY_OVERRIDE_ROW_ID,
+      value.mode,
+      value.location || "",
+      value.expiresOn || null,
+      actorEmail
+    )
+    .run();
+
+  return readShowDayOverrideV2(env);
+}
+
+export function resolveShowDayStatus(automaticStatus, override) {
+  const automatic = automaticStatus && typeof automaticStatus === "object"
+    ? automaticStatus
+    : { active: false, location: "", activeCount: 0 };
+  const state = override && typeof override === "object"
+    ? override
+    : emptyShowDayOverride();
+
+  if (state.mode === "force_on") {
+    return {
+      active: true,
+      location: cleanString(state.location),
+      activeCount: 1,
+      source: "admin-override",
+      overrideMode: "force_on"
+    };
+  }
+
+  if (state.mode === "force_off") {
+    return {
+      active: false,
+      location: "",
+      activeCount: 0,
+      source: "admin-override",
+      overrideMode: "force_off"
+    };
+  }
+
+  return {
+    active: automatic.active === true,
+    location: cleanString(automatic.location),
+    activeCount: Number(automatic.activeCount) || 0,
+    source: "site-schedule",
+    overrideMode: "auto"
+  };
 }
 
 function displayEventsFromSchedule(sourceEvents, schedule, { applyOverrides = true } = {}) {
@@ -250,11 +421,65 @@ async function verify(request, env, verifyAdmin) {
   return user?.email ? user : null;
 }
 
+async function automaticShowDaySnapshot(env, todayIso) {
+  const current = await readSiteScheduleV2(env);
+  return showDayStatusForSchedule(current.schedule, todayIso);
+}
+
 async function handleAdmin(request, env, verifyAdmin) {
   const user = await verify(request, env, verifyAdmin);
   if (!user) return json({ ok: false, error: "Unauthorized" }, 403);
 
   const path = new URL(request.url).pathname.replace(/\/+$/, "") || "/";
+
+  if (path === "/api/admin/showday-override") {
+    const today = bogotaDateIso();
+
+    if (request.method === "GET") {
+      const override = await readShowDayOverrideV2(env, today);
+      const automatic = await automaticShowDaySnapshot(env, today);
+      return json({
+        ok: true,
+        date: today,
+        timeZone: "America/Bogota",
+        override,
+        automatic,
+        effective: resolveShowDayStatus(automatic, override)
+      });
+    }
+
+    if (request.method !== "PUT") {
+      return json({ ok: false, error: "Method not allowed" }, 405);
+    }
+
+    let body;
+    try {
+      body = await readJsonBody(request);
+    } catch (error) {
+      return json({ ok: false, error: error.message || "Invalid JSON body" }, 400);
+    }
+
+    const normalized = normalizeShowDayOverrideInput(body, today);
+    if (!normalized.ok) {
+      return json({
+        ok: false,
+        error: "Invalid Show Day override",
+        fields: normalized.errors
+      }, 400);
+    }
+
+    const override = await persistShowDayOverrideV2(env, normalized.value, user.email);
+    const automatic = await automaticShowDaySnapshot(env, today);
+    return json({
+      ok: true,
+      saved: true,
+      date: today,
+      timeZone: "America/Bogota",
+      override,
+      automatic,
+      effective: resolveShowDayStatus(automatic, override)
+    });
+  }
 
   if (path === "/api/admin/site-schedule" && request.method === "GET") {
     const current = await readSiteScheduleV2(env);
@@ -316,30 +541,38 @@ async function handleAdmin(request, env, verifyAdmin) {
 }
 
 async function handlePublic(env) {
+  const today = bogotaDateIso();
+  let automatic = { active: false, location: "", activeCount: 0 };
+  let override = emptyShowDayOverride();
+  let scheduleDegraded = false;
+  let overrideDegraded = false;
+
   try {
-    const current = await readSiteScheduleV2(env);
-    const today = bogotaDateIso();
-    const status = showDayStatusForSchedule(current.schedule, today);
-    return json({
-      ok: true,
-      active: status.active,
-      location: status.location,
-      activeCount: status.activeCount,
-      date: today,
-      timeZone: "America/Bogota"
-    });
+    automatic = await automaticShowDaySnapshot(env, today);
   } catch (error) {
-    console.error("Show Day V2 status unavailable; failing closed to normal mode", error);
-    return json({
-      ok: true,
-      active: false,
-      location: "",
-      activeCount: 0,
-      date: bogotaDateIso(),
-      timeZone: "America/Bogota",
-      degraded: true
-    });
+    scheduleDegraded = true;
+    console.error("Show Day V2 schedule status unavailable; automatic mode fails closed", error);
   }
+
+  try {
+    override = await readShowDayOverrideV2(env, today);
+  } catch (error) {
+    overrideDegraded = true;
+    console.error("Show Day override unavailable; falling back to automatic mode", error);
+  }
+
+  const status = resolveShowDayStatus(automatic, override);
+  return json({
+    ok: true,
+    active: status.active,
+    location: status.location,
+    activeCount: status.activeCount,
+    source: status.source,
+    overrideMode: status.overrideMode,
+    date: today,
+    timeZone: "America/Bogota",
+    degraded: scheduleDegraded || overrideDegraded
+  });
 }
 
 export async function handleSiteScheduleApiV2(
@@ -356,14 +589,18 @@ export async function handleSiteScheduleApiV2(
     return handlePublic(env);
   }
 
-  if (path === "/api/admin/site-schedule" || path.startsWith("/api/admin/site-schedule/events/")) {
+  if (
+    path === "/api/admin/showday-override" ||
+    path === "/api/admin/site-schedule" ||
+    path.startsWith("/api/admin/site-schedule/events/")
+  ) {
     try {
       return await handleAdmin(request, env, verifyAdmin);
     } catch (error) {
       console.error("Site Schedule V2 operation failed", error);
       return json({
         ok: false,
-        error: "Could not update Site Schedule",
+        error: "Could not update Site Schedule / Show Day state",
         code: "site_schedule_d1_write_failed",
         detail: String(error?.message || error).slice(0, 400)
       }, 503);
