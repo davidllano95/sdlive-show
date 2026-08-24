@@ -25,6 +25,9 @@ test("Calendar uses the protected Admin API for read and controlled create", () 
   assert.ok(calendarScript.includes('api("/api/admin/calendar/events")'));
   assert.ok(calendarScript.includes('method: "POST"'));
   assert.ok(calendarScript.includes("createRequestId"));
+  assert.ok(calendarScript.includes("calendarCreateToast"));
+  assert.ok(calendarScript.includes("✓ Event created"));
+  assert.ok(calendarScript.includes("REGISTRO row"));
   assert.ok(router.includes('path === "/api/admin/calendar/events"'));
   assert.ok(router.includes("handleCalendarApi"));
 });
@@ -70,6 +73,8 @@ test("Calendar and create UI reuse the shared Admin brand palette", () => {
   assert.ok(calendarStyles.includes("rgba(var(--accent-rgb)"));
   assert.ok(calendarStyles.includes(".work-dialog"));
   assert.ok(calendarStyles.includes(".work-field input:focus"));
+  assert.ok(calendarScript.includes("rgba(var(--accent-rgb),.42)"));
+  assert.ok(calendarScript.includes("var(--panel)"));
   assert.ok(mobileMonthStyles.includes("background: var(--accent)"));
   assert.equal(calendarStyles.includes("#dfff69"), false);
   assert.equal(calendarStyles.includes("136, 162, 255"), false);
