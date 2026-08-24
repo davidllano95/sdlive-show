@@ -78,10 +78,34 @@
     return event?.eventKey ? schedule?.overrides?.[event.eventKey] || null : null;
   }
 
+  function todayInBogotaIso(now = new Date()) {
+    const parts = new Intl.DateTimeFormat("en-US", {
+      timeZone: "America/Bogota",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit"
+    }).formatToParts(now);
+    const values = Object.fromEntries(
+      parts
+        .filter((part) => part.type !== "literal")
+        .map((part) => [part.type, part.value])
+    );
+    return `${values.year}-${values.month}-${values.day}`;
+  }
+
+  function isCurrentOrFutureSourceEvent(event, today = todayInBogotaIso()) {
+    const startDate = String(event?.startDate || "");
+    const endDate = String(event?.endDate || startDate);
+    if (!startDate || !endDate) return false;
+    return endDate >= today;
+  }
+
   function renderEventList() {
     if (!eventList) return;
     const query = String(eventSearch?.value || "").trim().toLowerCase();
-    const filtered = sourceEvents.filter((event) => {
+    const today = todayInBogotaIso();
+    const eligible = sourceEvents.filter((event) => isCurrentOrFutureSourceEvent(event, today));
+    const filtered = eligible.filter((event) => {
       if (!query) return true;
       return [event.client, event.project, event.role, event.startDate, event.endDate]
         .some((value) => String(value || "").toLowerCase().includes(query));
@@ -91,7 +115,7 @@
     if (!filtered.length) {
       const empty = document.createElement("p");
       empty.className = "schedule-list-empty";
-      empty.textContent = "No matching work.";
+      empty.textContent = query ? "No matching ongoing or future work." : "No ongoing or future work.";
       eventList.appendChild(empty);
       return;
     }
