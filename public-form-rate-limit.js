@@ -108,6 +108,7 @@ export default {
 
     if (
       path === "/api/site/showday-status" ||
+      path === "/api/admin/showday-override" ||
       path === "/api/admin/site-schedule" ||
       path.startsWith("/api/admin/site-schedule/events/")
     ) {
