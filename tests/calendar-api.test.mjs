@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import {
   EXPECTED_CALENDAR_HEADERS,
   handleCalendarApi,
+  nextCreateRowNumber,
   normalizeCalendarRows,
   normalizeCreateWorkPayload,
   sheetDateToIso,
@@ -193,7 +194,7 @@ test("Controlled create validates source fields and defaults one-day end date", 
   assert.equal(invalid.errors.contactNumber, "digits_only");
 });
 
-test("Controlled create requires every mapped source column but not formula columns", () => {
+test("Controlled create requires source row-safety columns but not formula columns", () => {
   const exact = validateCalendarCreateHeaders([...EXPECTED_CALENDAR_HEADERS]);
   assert.equal(exact.ok, true);
   assert.deepEqual(exact.missingFields, []);
@@ -202,15 +203,53 @@ test("Controlled create requires every mapped source column but not formula colu
   headers[8] = "Different formula helper";
   assert.equal(validateCalendarCreateHeaders(headers).ok, true);
 
-  headers[17] = "Private notes moved away";
-  const missingNotes = validateCalendarCreateHeaders(headers);
-  assert.equal(missingNotes.ok, false);
-  assert.deepEqual(missingNotes.missingFields, ["Notas"]);
+  headers[14] = "Payment date moved away";
+  const missingPaymentDate = validateCalendarCreateHeaders(headers);
+  assert.equal(missingPaymentDate.ok, false);
+  assert.deepEqual(missingPaymentDate.missingFields, ["Fecha pago"]);
 });
 
-test("POST create writes only mapped source columns and never formula-owned columns", async () => {
+test("Safe row selection skips every occupied source row including workflow-only residue", () => {
+  const persisted = row({
+    "Fecha trabajo": "2025-11-01",
+    Cliente: "U. El Rosario",
+    "Proyecto / Show": "In The Heights",
+    Estado: "Pagado",
+    ID: "existing-id"
+  });
+  const workflowResidue = row({
+    "Fecha pago": "2026-01-23",
+    "Valor Recibido": 850000
+  });
+
+  assert.equal(nextCreateRowNumber([], undefined), 2);
+  assert.equal(nextCreateRowNumber([persisted]), 3);
+  assert.equal(nextCreateRowNumber([persisted, workflowResidue]), 4);
+});
+
+test("POST create writes only mapped source columns into a fresh row after existing data", async () => {
   const calls = [];
   let batchBody = null;
+
+  const persisted = row({
+    "Fecha trabajo": "2025-11-01",
+    Cliente: "U. El Rosario",
+    "Proyecto / Show": "In The Heights",
+    Rol: "A2",
+    Moneda: "COP",
+    "Valor bruto": 840000,
+    Estado: "Pagado",
+    "Fecha pago": "2026-01-23",
+    ID: "existing-id",
+    "Valor Recibido": 850000,
+    "Fecha fin": "2025-11-01"
+  });
+  const workflowResidue = row({
+    "Fecha evaluación": "2025-12-18",
+    "Fecha firma": "2025-12-18",
+    "Fecha pago": "2026-01-23",
+    "Valor Recibido": 850000
+  });
 
   const fetchImpl = async (url, options = {}) => {
     calls.push({ url: String(url), method: options.method || "GET" });
@@ -220,11 +259,11 @@ test("POST create writes only mapped source columns and never formula-owned colu
     }
 
     if ((options.method || "GET") === "GET" && String(url).includes("sheets.googleapis.com")) {
-      return jsonResponse({ values: [[...EXPECTED_CALENDAR_HEADERS]] });
+      return jsonResponse({ values: [[...EXPECTED_CALENDAR_HEADERS], persisted, workflowResidue] });
     }
 
     if (String(url).includes(":append")) {
-      return jsonResponse({ updates: { updatedRange: "REGISTRO!X2" } });
+      throw new Error("Calendar create must never use values.append for row reservation");
     }
 
     if (String(url).endsWith("/values:batchUpdate")) {
@@ -251,23 +290,24 @@ test("POST create writes only mapped source columns and never formula-owned colu
   assert.equal(data.ok, true);
   assert.equal(data.created, true);
   assert.equal(data.state, "Pendiente Envio");
+  assert.equal(data.rowNumber, 4);
   assert.ok(batchBody);
 
   const ranges = batchBody.data.map((entry) => entry.range);
-  for (const expectedRange of ["REGISTRO!A2", "REGISTRO!D2", "REGISTRO!E2", "REGISTRO!F2", "REGISTRO!G2", "REGISTRO!H2", "REGISTRO!K2", "REGISTRO!P2", "REGISTRO!R2", "REGISTRO!X2", "REGISTRO!AA2", "REGISTRO!AB2"]) {
+  for (const expectedRange of ["REGISTRO!A4", "REGISTRO!D4", "REGISTRO!E4", "REGISTRO!F4", "REGISTRO!G4", "REGISTRO!H4", "REGISTRO!K4", "REGISTRO!P4", "REGISTRO!R4", "REGISTRO!X4", "REGISTRO!AA4", "REGISTRO!AB4"]) {
     assert.ok(ranges.includes(expectedRange), `missing ${expectedRange}`);
   }
 
   for (const forbidden of ["B", "C", "I", "J", "Q", "S", "T", "U", "V", "W", "Z"]) {
-    assert.equal(ranges.some((range) => range === `REGISTRO!${forbidden}2`), false, `formula column ${forbidden} was written`);
+    assert.equal(ranges.some((range) => range === `REGISTRO!${forbidden}4`), false, `formula column ${forbidden} was written`);
   }
 
-  const stateWrite = batchBody.data.find((entry) => entry.range === "REGISTRO!K2");
+  const stateWrite = batchBody.data.find((entry) => entry.range === "REGISTRO!K4");
   assert.deepEqual(stateWrite.values, [["Pendiente Envio"]]);
-  assert.equal(calls.filter((call) => call.url.includes(":append")).length, 1);
+  assert.equal(calls.some((call) => call.url.includes(":append")), false);
 });
 
-test("POST create reuses an existing idempotent row instead of appending a duplicate", async () => {
+test("POST create reuses an existing idempotent row instead of creating a duplicate", async () => {
   const normalized = normalizeCreateWorkPayload(validCreatePayload);
   assert.equal(normalized.ok, true);
 
@@ -286,7 +326,6 @@ test("POST create reuses an existing idempotent row instead of appending a dupli
     "NUM CONTACTO": "3001234567"
   });
 
-  let appendCalls = 0;
   let batchCalls = 0;
   const fetchImpl = async (url, options = {}) => {
     if (String(url).includes("oauth2.googleapis.com/token")) {
@@ -296,8 +335,7 @@ test("POST create reuses an existing idempotent row instead of appending a dupli
       return jsonResponse({ values: [[...EXPECTED_CALENDAR_HEADERS], existing] });
     }
     if (String(url).includes(":append")) {
-      appendCalls += 1;
-      return jsonResponse({ updates: { updatedRange: "REGISTRO!X3" } });
+      throw new Error("Idempotent replay must not append");
     }
     if (String(url).endsWith("/values:batchUpdate")) {
       batchCalls += 1;
@@ -321,6 +359,6 @@ test("POST create reuses an existing idempotent row instead of appending a dupli
   assert.equal(response.status, 200);
   assert.equal(data.created, false);
   assert.equal(data.idempotentReplay, true);
-  assert.equal(appendCalls, 0);
+  assert.equal(data.rowNumber, 2);
   assert.equal(batchCalls, 1);
 });
