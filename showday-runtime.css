@@ -24,6 +24,23 @@ html.showday-active .seo-header-logo img {
   filter: none;
 }
 
+/* Keep the copyright SD.Live mark branded while suppressing the literal period glyph
+   that previously leaked below the line through the generic footer span color rule. */
+.site-footer .footer-bottom .brand-wordmark-text__dot {
+  display: inline-block;
+  width: 0.18em;
+  height: 0.18em;
+  margin: 0 0.065em;
+  overflow: hidden;
+  border-radius: 50%;
+  vertical-align: middle;
+  background: var(--color-accent);
+  color: transparent;
+  box-shadow: 0 0 0.22em rgba(var(--color-accent-rgb), 0.22);
+  line-height: 1;
+  text-indent: -999px;
+}
+
 html.showday-active .site-footer .footer-brand {
   position: relative;
 }
