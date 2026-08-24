@@ -18,7 +18,11 @@ test("footer copyright keeps the branded floating dot without rendering the lite
   assert.match(match[1], /text-indent:\s*-999px;/);
 });
 
-test("Show Day runtime version is bumped so the footer fix is not masked by cached CSS", async () => {
+test("Show Day runtime assets keep an explicit cache-busting version", async () => {
   const edge = await readFile(path.join(ROOT, "showday-edge.js"), "utf8");
-  assert.match(edge, /SHOWDAY_RUNTIME_VERSION\s*=\s*"20260823-3"/);
+  const version = edge.match(/SHOWDAY_RUNTIME_VERSION\s*=\s*"(20\d{6}-\d+)"/)?.[1];
+
+  assert.ok(version, "missing dated Show Day runtime version");
+  assert.match(edge, /showday-runtime\.css\?v=\$\{SHOWDAY_RUNTIME_VERSION\}/);
+  assert.match(edge, /showday-runtime\.js\?v=\$\{SHOWDAY_RUNTIME_VERSION\}/);
 });
