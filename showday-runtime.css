@@ -24,6 +24,13 @@ html.showday-active .seo-header-logo img {
   filter: none;
 }
 
+/* Show Day only: render the dark Anima and Sonique client marks in white.
+   The original R2 media remains untouched and every other client logo is unchanged. */
+html.showday-active .client-logo[alt="Anima Producciones"],
+html.showday-active .client-logo[alt="Sonique"] {
+  filter: brightness(0) invert(1);
+}
+
 /* Keep the copyright SD.Live mark branded while suppressing the literal period glyph
    that previously leaked below the line through the generic footer span color rule. */
 .site-footer .footer-bottom .brand-wordmark-text__dot {
