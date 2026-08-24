@@ -7,6 +7,9 @@
 > **Rule:** a checked item here means evidence exists elsewhere in the repo/production. A pending item remains backlog/future work unless `PROJECT_STATUS.md` explicitly promotes it to **F — Active Gate / Approved Work**.
 
 Last reconciliation: **2026-08-22 — America/Bogota**
+
+**Targeted correction — 2026-08-23:** Section 16 now reflects the verified production architecture: Show Day is automatic/dynamic from Site Schedule + America/Bogota date. An authenticated Admin-only manual override for QA/control is preserved as future backlog. Other historical status blocks in this reconciliation remain lower-precedence than `PROJECT_STATUS.md` and current code/production behavior.
+
 Runtime production baseline checked against: `2c0fe574a0ab37ceb00cf84b31cbf1b68e1746c4`; Security B is production-smoked. The finance audit is documentation/operational evidence outside the SD.Live runtime and does not change this runtime baseline. Query GitHub live for current `main` HEAD because docs-only commits may advance HEAD without changing runtime.
 
 ## Legend
@@ -330,15 +333,24 @@ Pending:
 
 ## 16. Automatic Show Day Mode
 
-**Status: 🟡 B — manual Show Day exists; automation does not.**
+**Status: ✅/⏳ A/D — automatic/dynamic Show Day is production PASS; Admin override remains backlog.**
 
-- ⏳ Connect Google Calendar/AppSheet/project calendar source.
-- ⏳ Detect show/event today.
-- ⏳ Auto-enable Show Day Mode.
-- ⏳ Auto-disable after event.
-- ⏳ Configurable activation window (for example 3h before → 2h after).
-- ⏳ Manual Admin override.
-- ⏳ P3.0 accessibility finding: improve contrast of the Show Day Mode control using a local accessible token, not a global muted-color change.
+Implemented / verified:
+
+- ✅ Public Show Day state is dynamic and authoritative from D1 Site Schedule (`site_schedule_state`) + the current America/Bogota date, exposed through `GET /api/site/showday-status`.
+- ✅ Each effective Site Schedule block owns Start, End, Show Day and Location; public Show Day activates only when today falls inside an eligible `Show Day=true` block with Location.
+- ✅ The legacy visitor-facing manual Show Day toggle was removed; endpoint/runtime failure fails closed to normal mode.
+- ✅ Home and secondary public pages consume the same automatic Show Day + Location contract.
+- ✅ Canonical `REGISTRO` / AppSheet dates are not modified by Site Schedule display blocks.
+
+Pending / future:
+
+- ⏳ **Admin-only manual Show Day override for QA/control:** add an authenticated Dashboard control that can temporarily force Show Day **ON** or **OFF**, while **Auto** remains the default authoritative mode.
+- ⏳ The override must be visually explicit, reversible and preferably expiring/TTL-based; it must not silently rewrite canonical `REGISTRO` dates or mutate Site Schedule blocks.
+- ⏳ Define override scope/auditability before implementation (recommended model: `Auto / Force On / Force Off`; if forced ON needs a test Location, make that test state explicit and separate from persisted Site Schedule data).
+- ⏳ Dynamic favicon tied to the authoritative/overridden Show Day state.
+- ⏳ Remove normal-violet → Show Day-red startup popping by resolving the authoritative state before visible paint.
+- ⏳ Any future Admin override control must preserve accessible contrast/focus using the established Admin tokens.
 
 ## 17. Calendar
 
