@@ -1054,15 +1054,9 @@ function initRentalQuoteBuilder() {
   const requestButton = document.getElementById("quoteRequestBtn");
   const presetButtons = Array.from(document.querySelectorAll("[data-rental-preset]"));
   const equipmentCards = Array.from(document.querySelectorAll("[data-rental-item]"));
-  const cartIcon = cartToggle?.querySelector(".rental-cart-toggle__icon");
   let activePreset = null;
   let closeTimer = 0;
   let previousCartUnits = 0;
-
-  if (cartIcon) {
-    cartIcon.setAttribute("viewBox", "0 0 24 24");
-    cartIcon.innerHTML = '<path d="M7 3.5h7l3 3v14H7zM14 3.5v3h3M9.5 11h5M9.5 14.5h5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7"/>';
-  }
 
   const cartItems = {
     wing: { field: "wing", max: 1 },
