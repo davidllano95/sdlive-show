@@ -2,6 +2,7 @@
   const TESTIMONIAL_COLLAPSE_CLASS = "testimonial-quote--collapsible";
   const TESTIMONIAL_EXPANDED_CLASS = "is-expanded";
   const TESTIMONIAL_SHARED_EXPANDED_CLASS = "testimonial-quote--shared-expanded";
+  const TESTIMONIAL_GROUP_EXPANDED_CLASS = "has-synced-testimonial-expansion";
   const TESTIMONIAL_OVERFLOW_TOLERANCE = 2;
   let activeTestimonialQuoteId = null;
   let testimonialResizeFrame = 0;
@@ -57,6 +58,25 @@
     return Array.from(document.querySelectorAll(".testimonials--public .testimonial-card"));
   }
 
+  function testimonialSection() {
+    return document.querySelector(".testimonials--public");
+  }
+
+  function setTestimonialExpandedLayout(expanded) {
+    testimonialSection()?.classList.toggle(TESTIMONIAL_GROUP_EXPANDED_CLASS, expanded);
+  }
+
+  function preserveViewportAfterCollapse(anchorButton, anchorTop) {
+    if (!anchorButton?.isConnected || !Number.isFinite(anchorTop)) return;
+
+    window.requestAnimationFrame(() => {
+      if (!anchorButton.isConnected) return;
+      const nextTop = anchorButton.getBoundingClientRect().top;
+      const delta = nextTop - anchorTop;
+      if (Math.abs(delta) > 1) window.scrollBy(0, delta);
+    });
+  }
+
   function ensureTestimonialDisclosure(card, index) {
     const quote = card.querySelector(":scope > p");
     if (!quote) return;
@@ -73,7 +93,7 @@
 
       button.addEventListener("click", () => {
         if (activeTestimonialQuoteId === quote.id) {
-          collapseTestimonialGroup();
+          collapseTestimonialGroup(button);
           return;
         }
 
@@ -82,8 +102,10 @@
     }
   }
 
-  function collapseTestimonialGroup() {
+  function collapseTestimonialGroup(anchorButton = null) {
+    const anchorTop = anchorButton?.getBoundingClientRect?.().top;
     activeTestimonialQuoteId = null;
+    setTestimonialExpandedLayout(false);
 
     testimonialCards().forEach((card) => {
       const quote = card.querySelector(":scope > p");
@@ -101,6 +123,8 @@
       button.setAttribute("aria-expanded", "false");
       button.textContent = testimonialButtonLabel(false);
     });
+
+    preserveViewportAfterCollapse(anchorButton, anchorTop);
   }
 
   function expandTestimonialGroup(activeQuote) {
@@ -108,6 +132,7 @@
 
     const targetHeight = activeQuote.scrollHeight;
     activeTestimonialQuoteId = activeQuote.id;
+    setTestimonialExpandedLayout(true);
 
     testimonialCards().forEach((card) => {
       const quote = card.querySelector(":scope > p");
