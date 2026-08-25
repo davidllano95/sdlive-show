@@ -145,12 +145,73 @@ test("finance summary preserves collection rules and COP/USD separation", () => 
   assert.equal(summary.receivables.priority[0].daysUnpaid, 20);
   assert.equal(summary.receivables.priority[1].client, "Cliente COP");
 
+  assert.deepEqual(summary.liventxSigningReview, {
+    reviewDay: 20,
+    active: true,
+    count: 1
+  });
+  assert.equal(summary.workQueues.liventxReadyToSign.length, 1);
+  assert.equal(summary.workQueues.liventxReadyToSign[0].project, "Needs signature");
+  assert.equal(summary.workQueues.liventxReadyToSign[0].evaluationDate, "2026-08-07");
+  assert.deepEqual(summary.workQueues.liventxReadyToSign[0].reasonCodes, ["missing_signature"]);
+
   assert.deepEqual(summary.received, {
     paidCount: 2,
     amountByCurrency: { COP: 950, USD: 0 },
     feesByCurrency: { COP: 50, USD: 25 },
     missingReceivedAmountCount: 1
   });
+});
+
+test("LiventX signing queue remains visible before the 20th and becomes active on the 20th", () => {
+  const before = buildFinanceSummary(SAMPLE_ROWS, {
+    now: new Date("2026-08-19T16:00:00Z")
+  });
+  const onReviewDay = buildFinanceSummary(SAMPLE_ROWS, {
+    now: new Date("2026-08-20T16:00:00Z")
+  });
+
+  assert.equal(before.liventxSigningReview.active, false);
+  assert.equal(before.liventxSigningReview.count, 1);
+  assert.equal(before.workQueues.liventxReadyToSign.length, 1);
+  assert.equal(onReviewDay.liventxSigningReview.active, true);
+  assert.equal(onReviewDay.liventxSigningReview.count, 1);
+});
+
+test("ambiguous Google-style M/D payment dates do not create false negative durations", () => {
+  const summary = buildFinanceSummary([
+    row({
+      "Fecha trabajo": "2/1/2026",
+      "Cliente": "Alvaro Llano",
+      "Proyecto / Show": "Congreso Iglesia",
+      "Moneda": "COP",
+      "Valor bruto": 2200000,
+      "Valor Neto": 2200000,
+      "Estado": "Pagado",
+      "Fecha cuenta enviada": "2/4/2026",
+      "Fecha pago": "2/19/2026",
+      "Valor Recibido": 2200000,
+      "ID": "alvaro"
+    }),
+    row({
+      "Fecha trabajo": "5/8/2026",
+      "Cliente": "Alejandro Puentes",
+      "Proyecto / Show": "Festival parque Simón Bolívar",
+      "Moneda": "COP",
+      "Valor bruto": 700000,
+      "Valor Neto": 693238,
+      "Estado": "Pagado",
+      "Fecha cuenta enviada": "5/11/2026",
+      "Fecha pago": "5/14/2026",
+      "Valor Recibido": 693238,
+      "ID": "alejandro"
+    })
+  ], {
+    now: new Date("2026-08-25T16:00:00Z")
+  });
+
+  assert.equal(summary.dataQuality.invalidPaymentDurationCount, 0);
+  assert.equal(summary.dataQuality.queues.invalidPaymentDuration.length, 0);
 });
 
 test("pending invoices become facturable only after Fecha fin has passed in Bogota", () => {
@@ -288,7 +349,7 @@ test("finance summary endpoint reads REGISTRO through Fecha fin and omits privat
   assert.match(calls[1].url, /REGISTRO/);
   assert.match(calls[1].url, /A1%3AAB3000/);
   assert.match(calls[1].url, /valueRenderOption=UNFORMATTED_VALUE/);
-  assert.match(calls[1].url, /dateTimeRenderOption=FORMATTED_STRING/);
+  assert.match(calls[1].url, /dateTimeRenderOption=SERIAL_NUMBER/);
 });
 
 test("finance summary remains admin-only", async () => {
