@@ -63,6 +63,45 @@ function cleanString(value) {
     : String(value).trim();
 }
 
+function normalizeHeader(value) {
+  return cleanString(value)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ")
+    .toLowerCase();
+}
+
+function financeFieldIndex(headers) {
+  if (!Array.isArray(headers)) return null;
+
+  const byNormalizedHeader = new Map();
+  headers.forEach((header, index) => {
+    const normalized = normalizeHeader(header);
+    if (normalized && !byNormalizedHeader.has(normalized)) {
+      byNormalizedHeader.set(normalized, index);
+    }
+  });
+
+  return Object.fromEntries(
+    EXPECTED_FINANCE_HEADERS.map((field) => [
+      field,
+      byNormalizedHeader.get(normalizeHeader(field))
+    ])
+  );
+}
+
+export function normalizeFinanceRows(headers, rows) {
+  const fieldIndex = financeFieldIndex(headers);
+  if (!fieldIndex || !Array.isArray(rows)) return [];
+
+  return rows
+    .map((row) => EXPECTED_FINANCE_HEADERS.map((field) => {
+      const index = fieldIndex[field];
+      return Number.isInteger(index) ? row?.[index] : "";
+    }))
+    .filter(hasPersistedId);
+}
+
 function numericValue(value) {
   if (value === "" || value === undefined || value === null) return null;
   const number = Number(value);
@@ -333,20 +372,16 @@ export function validateFinanceHeaders(headers) {
     };
   }
 
+  const fieldIndex = financeFieldIndex(headers);
   const mismatchAt = EXPECTED_FINANCE_HEADERS.findIndex(
-    (expected, index) => headers[index] !== expected
+    (field) => !Number.isInteger(fieldIndex?.[field])
   );
 
-  if (
-    mismatchAt !== -1 ||
-    headers.length !== EXPECTED_FINANCE_HEADERS.length
-  ) {
+  if (mismatchAt !== -1) {
     return {
       ok: false,
       columnCount: headers.length,
-      mismatchAt: mismatchAt === -1
-        ? Math.min(headers.length, EXPECTED_FINANCE_HEADERS.length)
-        : mismatchAt
+      mismatchAt
     };
   }
 
@@ -436,10 +471,11 @@ export async function readFinanceHeader(env, fetchImpl = fetch) {
 
 export async function readFinanceRows(env, fetchImpl = fetch) {
   const result = await readFinanceValues(env, FINANCE_DATA_RANGE, fetchImpl);
+  const headers = result.values[0];
   return {
     range: result.range,
-    headers: result.values[0],
-    rows: result.values.slice(1).filter(hasPersistedId)
+    headers,
+    rows: normalizeFinanceRows(headers, result.values.slice(1))
   };
 }
 
