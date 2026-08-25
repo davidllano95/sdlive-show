@@ -25,14 +25,22 @@
   bottom: max(24px, env(safe-area-inset-bottom));
 }
 
-/* Testimonial geometry: equal cards, restrained previews, accessible disclosure.
-   Let the grid own row height so Read less can collapse the card again. */
+/* Testimonial geometry: compact by default; while one quote is expanded, let shorter
+   cards finish naturally instead of stretching to the tallest card and creating dead space. */
 .testimonials--public .testimonial-card {
   display: flex;
   flex-direction: column;
   min-height: 0;
   height: auto;
   align-self: stretch;
+}
+
+.testimonials--public.has-synced-testimonial-expansion .testimonial-grid {
+  align-items: start;
+}
+
+.testimonials--public.has-synced-testimonial-expansion .testimonial-card {
+  align-self: start;
 }
 
 .testimonials--public .testimonial-card > p.testimonial-quote--collapsible {
@@ -84,17 +92,58 @@
   padding-top: 26px;
 }
 
-/* PA presentation: reduce the oversized hero frame while keeping the real speaker
-   objects centered. Specificity intentionally beats the legacy image-editor inline
-   defaults without changing rental pricing, inventory or the source image. */
-.equipment-card.equipment-card--wide[data-rental-item="pa"] .equipment-card-visual.equipment-card-visual--pa {
-  height: 440px !important;
+/* PA presentation: the BetaThree item now behaves like one card in a hypothetical
+   three-card desktop PA grid instead of a full-width hero. Rental data and imagery stay unchanged. */
+.equipment-card.equipment-card--wide[data-rental-item="pa"] {
+  margin-inline: auto;
 }
 
-.equipment-card.equipment-card--wide[data-rental-item="pa"] .equipment-card-visual--pa .equipment-pa-pair {
-  width: min(74%, 680px);
-  height: 94%;
-  transform: translateY(-20px) !important;
+.equipment-card.equipment-card--wide[data-rental-item="pa"] .equipment-card-body {
+  width: 100%;
+  padding: 24px 22px 26px;
+}
+
+.equipment-card.equipment-card--wide[data-rental-item="pa"] .equipment-card-body h4 {
+  font-size: clamp(22px, 2vw, 28px);
+}
+
+.equipment-card.equipment-card--wide[data-rental-item="pa"] .equipment-card-body p {
+  font-size: 14px;
+}
+
+@media (min-width: 1025px) {
+  .equipment-card.equipment-card--wide[data-rental-item="pa"] {
+    width: calc((100% - 40px) / 3);
+    max-width: 400px;
+  }
+
+  .equipment-card.equipment-card--wide[data-rental-item="pa"] .equipment-card-visual.equipment-card-visual--pa {
+    height: 280px !important;
+  }
+
+  .equipment-card.equipment-card--wide[data-rental-item="pa"] .equipment-card-visual--pa .equipment-pa-pair {
+    width: 82%;
+    height: 92%;
+    gap: 18px;
+    transform: translateY(-10px) !important;
+  }
+}
+
+@media (min-width: 721px) and (max-width: 1024px) {
+  .equipment-card.equipment-card--wide[data-rental-item="pa"] {
+    width: min(calc((100% - 20px) / 2), 440px);
+  }
+
+  .equipment-card.equipment-card--wide[data-rental-item="pa"] .equipment-card-visual.equipment-card-visual--pa {
+    height: 300px !important;
+  }
+
+  .equipment-card.equipment-card--wide[data-rental-item="pa"] .equipment-card-visual--pa .equipment-pa-pair {
+    width: 84%;
+    height: 92%;
+    gap: 18px;
+    transform: translateY(-12px) !important;
+  }
 }
 
 @media (max-width: 720px) {
@@ -146,14 +195,18 @@
     object-fit: contain;
   }
 
+  .equipment-card.equipment-card--wide[data-rental-item="pa"] {
+    width: 100%;
+  }
+
   .equipment-card.equipment-card--wide[data-rental-item="pa"] .equipment-card-visual.equipment-card-visual--pa {
-    height: 350px !important;
+    height: 280px !important;
   }
 
   .equipment-card.equipment-card--wide[data-rental-item="pa"] .equipment-card-visual--pa .equipment-pa-pair {
     width: 84%;
     height: 92%;
     gap: 18px;
-    transform: translateY(-14px) !important;
+    transform: translateY(-10px) !important;
   }
 }
