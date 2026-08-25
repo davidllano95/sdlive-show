@@ -41,7 +41,8 @@ function extractObject(source, constantName) {
       depth -= 1;
       if (depth === 0) {
         const literal = source.slice(objectStart, index + 1);
-        return vm.runInNewContext(`(${literal})`);
+        const value = vm.runInNewContext(`(${literal})`);
+        return JSON.parse(JSON.stringify(value));
       }
     }
   }
