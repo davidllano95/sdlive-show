@@ -66,6 +66,15 @@ test("testimonial collapse preserves the reader viewport around the disclosure c
   assert.match(runtime, /collapseTestimonialGroup\(anchorButton = null\)/);
 });
 
+test("testimonial language changes preserve active expansion before global scroll restoration", () => {
+  assert.match(runtime, /function refreshTestimonialsForLanguageChange\(\)/);
+  assert.match(runtime, /const preservedQuoteId = activeTestimonialQuoteId/);
+  assert.match(runtime, /testimonialQuoteNeedsDisclosure\(activeQuote\)/);
+  assert.match(runtime, /expandTestimonialGroup\(activeQuote\)/);
+  assert.match(runtime, /const langObserver = new MutationObserver\(\(\) => \{[\s\S]*refreshTestimonialsForLanguageChange\(\);[\s\S]*\}\);/);
+  assert.doesNotMatch(runtime, /langObserver[\s\S]{0,220}requestAnimationFrame\(syncTestimonials\)/);
+});
+
 test("final public mobile supported-brand layouts use simple stable grids", () => {
   assert.match(css, /#misiSupportedBrands \.supported-reveal-logos--misi\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\)/s);
   assert.match(css, /#wonderlustSupportedBrands \.supported-reveal-logos--wonderlust\s*\{[^}]*grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)/s);
