@@ -45,14 +45,25 @@ test("testimonial long copy uses accessible progressive disclosure and can shrin
   assert.match(css, /\.testimonials--public \.testimonial-card\s*\{[^}]*height:\s*auto;/s);
 });
 
-test("testimonial expansion synchronizes every quote to the active quote height", () => {
+test("testimonial expansion synchronizes quote reveal without forcing short cards to stretch", () => {
   assert.match(runtime, /function expandTestimonialGroup\(activeQuote\)/);
   assert.match(runtime, /const targetHeight = activeQuote\.scrollHeight/);
   assert.match(runtime, /const visibleHeight = Math\.min\(fullHeight, targetHeight\)/);
   assert.match(runtime, /fullHeight > targetHeight \+ TESTIMONIAL_OVERFLOW_TOLERANCE/);
   assert.match(runtime, /button\.hidden = !isActive && !hasMoreBeyondTarget/);
-  assert.match(runtime, /activeTestimonialQuoteId === quote\.id[\s\S]*collapseTestimonialGroup\(\)/);
-  assert.match(css, /testimonial-quote--shared-expanded\s*\{[^}]*display:\s*block;[^}]*overflow:\s*hidden;/s);
+  assert.match(runtime, /activeTestimonialQuoteId === quote\.id[\s\S]*collapseTestimonialGroup\(button\)/);
+  assert.match(runtime, /setTestimonialExpandedLayout\(true\)/);
+  assert.match(runtime, /setTestimonialExpandedLayout\(false\)/);
+  assert.match(css, /has-synced-testimonial-expansion \.testimonial-grid\s*\{[^}]*align-items:\s*start;/s);
+  assert.match(css, /has-synced-testimonial-expansion \.testimonial-card\s*\{[^}]*align-self:\s*start;/s);
+});
+
+test("testimonial collapse preserves the reader viewport around the disclosure control", () => {
+  assert.match(runtime, /function preserveViewportAfterCollapse\(anchorButton, anchorTop\)/);
+  assert.match(runtime, /anchorButton\.getBoundingClientRect\(\)\.top/);
+  assert.match(runtime, /window\.requestAnimationFrame/);
+  assert.match(runtime, /window\.scrollBy\(0, delta\)/);
+  assert.match(runtime, /collapseTestimonialGroup\(anchorButton = null\)/);
 });
 
 test("final public mobile supported-brand layouts use simple stable grids", () => {
@@ -61,10 +72,11 @@ test("final public mobile supported-brand layouts use simple stable grids", () =
   assert.match(css, /#wonderlustSupportedBrands[\s\S]*\.supported-brand-tile:last-child:not\(\.supported-brand-tile--featured\)[\s\S]*grid-column:\s*auto/);
 });
 
-test("PA visual frame is reduced on desktop and mobile without changing rental data", () => {
-  assert.match(css, /equipment-card--wide\[data-rental-item=\"pa\"\][\s\S]*height:\s*440px\s*!important/);
-  assert.match(css, /@media \(max-width: 720px\)[\s\S]*equipment-card--wide\[data-rental-item=\"pa\"\][\s\S]*height:\s*350px\s*!important/);
-  assert.match(css, /equipment-pa-pair[\s\S]*transform:\s*translateY\(-20px\)\s*!important/);
+test("PA is sized like one card in a three-card desktop grid", () => {
+  assert.match(css, /@media \(min-width: 1025px\)[\s\S]*equipment-card--wide\[data-rental-item=\"pa\"\][\s\S]*width:\s*calc\(\(100% - 40px\) \/ 3\)/);
+  assert.match(css, /@media \(min-width: 1025px\)[\s\S]*equipment-card--wide\[data-rental-item=\"pa\"\][\s\S]*max-width:\s*400px/);
+  assert.match(css, /@media \(min-width: 1025px\)[\s\S]*equipment-card--wide\[data-rental-item=\"pa\"\][\s\S]*height:\s*280px\s*!important/);
+  assert.match(css, /@media \(max-width: 720px\)[\s\S]*equipment-card--wide\[data-rental-item=\"pa\"\][\s\S]*height:\s*280px\s*!important/);
 });
 
 test("rental request is guarded in both browser UX and public backend edge", () => {
