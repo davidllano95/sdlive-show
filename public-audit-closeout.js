@@ -77,6 +77,29 @@
     });
   }
 
+  function testimonialQuoteNeedsDisclosure(quote) {
+    if (!quote) return false;
+
+    const hadCollapsed = quote.classList.contains(TESTIMONIAL_COLLAPSE_CLASS);
+    const hadExpanded = quote.classList.contains(TESTIMONIAL_EXPANDED_CLASS);
+    const hadSharedExpanded = quote.classList.contains(TESTIMONIAL_SHARED_EXPANDED_CLASS);
+    const previousMaxHeight = quote.style.maxHeight;
+
+    quote.classList.remove(TESTIMONIAL_EXPANDED_CLASS, TESTIMONIAL_SHARED_EXPANDED_CLASS);
+    quote.style.removeProperty("max-height");
+    quote.classList.add(TESTIMONIAL_COLLAPSE_CLASS);
+
+    const overflows = quote.scrollHeight > quote.clientHeight + TESTIMONIAL_OVERFLOW_TOLERANCE;
+
+    quote.classList.toggle(TESTIMONIAL_COLLAPSE_CLASS, hadCollapsed);
+    quote.classList.toggle(TESTIMONIAL_EXPANDED_CLASS, hadExpanded);
+    quote.classList.toggle(TESTIMONIAL_SHARED_EXPANDED_CLASS, hadSharedExpanded);
+    if (previousMaxHeight) quote.style.maxHeight = previousMaxHeight;
+    else quote.style.removeProperty("max-height");
+
+    return overflows;
+  }
+
   function ensureTestimonialDisclosure(card, index) {
     const quote = card.querySelector(":scope > p");
     if (!quote) return;
@@ -160,6 +183,24 @@
     collapseTestimonialGroup();
   }
 
+  function refreshTestimonialsForLanguageChange() {
+    const preservedQuoteId = activeTestimonialQuoteId;
+    testimonialCards().forEach((card, index) => ensureTestimonialDisclosure(card, index));
+
+    if (!preservedQuoteId) {
+      collapseTestimonialGroup();
+      return;
+    }
+
+    const activeQuote = document.getElementById(preservedQuoteId);
+    if (!activeQuote || !testimonialQuoteNeedsDisclosure(activeQuote)) {
+      collapseTestimonialGroup();
+      return;
+    }
+
+    expandTestimonialGroup(activeQuote);
+  }
+
   function refreshExpandedTestimonials() {
     if (!activeTestimonialQuoteId) return;
     const activeQuote = document.getElementById(activeTestimonialQuoteId);
@@ -236,7 +277,11 @@
     installRentalSelectionGuard();
 
     const langObserver = new MutationObserver(() => {
-      window.requestAnimationFrame(syncTestimonials);
+      // Run synchronously in the observer callback. The site's language runtime already
+      // schedules a final scroll-anchor correction in the next animation frame; waiting
+      // another frame here would make Testimonials resize after that correction and cause
+      // the visible jump that this audit is eliminating.
+      refreshTestimonialsForLanguageChange();
     });
     langObserver.observe(document.documentElement, {
       attributes: true,
