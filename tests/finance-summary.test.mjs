@@ -73,6 +73,7 @@ const SAMPLE_ROWS = [
   }),
   row({
     "Fecha trabajo": "2026-08-10",
+    "Fecha fin": "2026-08-10",
     "Cliente": "Por facturar",
     "Proyecto / Show": "Show B",
     "Moneda": "COP",
@@ -152,20 +153,32 @@ test("finance summary preserves collection rules and COP/USD separation", () => 
   });
 });
 
-test("pending invoices are facturable only after the work date has passed in Bogota", () => {
+test("pending invoices become facturable only after Fecha fin has passed in Bogota", () => {
   const summary = buildFinanceSummary([
     row({
-      "Fecha trabajo": "2026-08-22",
-      "Cliente": "Past event",
+      "Fecha trabajo": "2026-08-20",
+      "Fecha fin": "2026-08-22",
+      "Cliente": "Ended event",
       "Moneda": "COP",
       "Valor bruto": 1000,
       "Valor Neto": 900,
       "Estado": "Pendiente Envio",
-      "ID": "past"
+      "ID": "ended"
     }),
     row({
-      "Fecha trabajo": "2026-08-23",
-      "Cliente": "Today event",
+      "Fecha trabajo": "2026-08-20",
+      "Fecha fin": "2026-08-24",
+      "Cliente": "Ongoing event",
+      "Moneda": "USD",
+      "Valor bruto": 400,
+      "Valor Neto": 350,
+      "Estado": "Pendiente Envio",
+      "ID": "ongoing"
+    }),
+    row({
+      "Fecha trabajo": "2026-08-21",
+      "Fecha fin": "2026-08-23",
+      "Cliente": "Ends today",
       "Moneda": "COP",
       "Valor bruto": 2000,
       "Valor Neto": 1800,
@@ -174,6 +187,7 @@ test("pending invoices are facturable only after the work date has passed in Bog
     }),
     row({
       "Fecha trabajo": "2026-08-24",
+      "Fecha fin": "2026-08-25",
       "Cliente": "Future event",
       "Moneda": "USD",
       "Valor bruto": 300,
@@ -182,7 +196,18 @@ test("pending invoices are facturable only after the work date has passed in Bog
       "ID": "future"
     }),
     row({
+      "Fecha trabajo": "2026-08-22",
+      "Fecha fin": "",
+      "Cliente": "Legacy single-day",
+      "Moneda": "COP",
+      "Valor bruto": 600,
+      "Valor Neto": 550,
+      "Estado": "Pendiente Envio",
+      "ID": "legacy"
+    }),
+    row({
       "Fecha trabajo": "",
+      "Fecha fin": "",
       "Cliente": "Missing date",
       "Moneda": "USD",
       "Valor bruto": 200,
@@ -195,19 +220,25 @@ test("pending invoices are facturable only after the work date has passed in Bog
   });
 
   assert.deepEqual(summary.toInvoice, {
-    count: 1,
-    grossByCurrency: { COP: 1000, USD: 0 }
+    count: 2,
+    grossByCurrency: { COP: 1600, USD: 0 }
   });
-  assert.equal(summary.receivables.workflowBlockedCount, 3);
+  assert.deepEqual(summary.workQueues.toInvoice.map((item) => item.client), [
+    "Ended event",
+    "Legacy single-day"
+  ]);
+  assert.equal(summary.receivables.workflowBlockedCount, 4);
   assert.deepEqual(summary.receivables.workflowBlockedNetByCurrency, {
     COP: 1800,
-    USD: 455
+    USD: 805
   });
+  const blockedClients = summary.workQueues.blocked.map((item) => item.client).sort();
+  assert.deepEqual(blockedClients, ["Ends today", "Future event", "Missing date", "Ongoing event"]);
   assert.equal(summary.receivables.count, 0);
   assert.equal(summary.receivables.priority.length, 0);
 });
 
-test("finance summary endpoint reads REGISTRO only and omits private/raw fields", async () => {
+test("finance summary endpoint reads REGISTRO through Fecha fin and omits private/raw fields", async () => {
   const calls = [];
   const fetchImpl = async (url, options = {}) => {
     calls.push({ url: String(url), options });
@@ -220,7 +251,7 @@ test("finance summary endpoint reads REGISTRO only and omits private/raw fields"
     }
 
     return new Response(JSON.stringify({
-      range: "REGISTRO!A1:AA3000",
+      range: "REGISTRO!A1:AB3000",
       majorDimension: "ROWS",
       values: [[...EXPECTED_FINANCE_HEADERS], ...SAMPLE_ROWS]
     }), {
@@ -242,7 +273,7 @@ test("finance summary endpoint reads REGISTRO only and omits private/raw fields"
   const body = await response.json();
   assert.equal(body.ok, true);
   assert.equal(body.access, "read-only");
-  assert.equal(body.schema.columnCount, 27);
+  assert.equal(body.schema.columnCount, 28);
   assert.equal(body.summary.recordCount, 6);
   assert.equal(body.summary.receivables.netByCurrency.COP, 900);
   assert.equal(body.summary.receivables.netByCurrency.USD, 450);
@@ -255,7 +286,7 @@ test("finance summary endpoint reads REGISTRO only and omits private/raw fields"
 
   assert.equal(calls.length, 2);
   assert.match(calls[1].url, /REGISTRO/);
-  assert.match(calls[1].url, /A1%3AAA3000/);
+  assert.match(calls[1].url, /A1%3AAB3000/);
   assert.match(calls[1].url, /valueRenderOption=UNFORMATTED_VALUE/);
   assert.match(calls[1].url, /dateTimeRenderOption=FORMATTED_STRING/);
 });

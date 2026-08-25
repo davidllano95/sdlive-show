@@ -21,6 +21,7 @@ test("finance summary exposes read-only action queues with exact blockers", () =
   const summary = buildFinanceSummary([
     row({
       "Fecha trabajo": "2026-08-20",
+      "Fecha fin": "2026-08-22",
       "Cliente": "Invoice me",
       "Proyecto / Show": "Past show",
       "Moneda": "COP",
@@ -32,9 +33,10 @@ test("finance summary exposes read-only action queues with exact blockers", () =
       "NUM CONTACTO": "+57-secret"
     }),
     row({
-      "Fecha trabajo": "2026-08-23",
+      "Fecha trabajo": "2026-08-20",
+      "Fecha fin": "2026-08-23",
       "Cliente": "Today",
-      "Proyecto / Show": "Today show",
+      "Proyecto / Show": "Multi-day show ending today",
       "Moneda": "COP",
       "Valor bruto": 500,
       "Valor Neto": 450,
@@ -42,9 +44,10 @@ test("finance summary exposes read-only action queues with exact blockers", () =
       "ID": "secret-today-id"
     }),
     row({
-      "Fecha trabajo": "2026-08-24",
+      "Fecha trabajo": "2026-08-20",
+      "Fecha fin": "2026-08-24",
       "Cliente": "Future",
-      "Proyecto / Show": "Future show",
+      "Proyecto / Show": "Ongoing multi-day show",
       "Moneda": "USD",
       "Valor bruto": 300,
       "Valor Neto": 275,
@@ -53,6 +56,7 @@ test("finance summary exposes read-only action queues with exact blockers", () =
     }),
     row({
       "Fecha trabajo": "",
+      "Fecha fin": "",
       "Cliente": "Bad date",
       "Moneda": "USD",
       "Valor bruto": 200,
@@ -87,6 +91,7 @@ test("finance summary exposes read-only action queues with exact blockers", () =
 
   assert.equal(summary.workQueues.toInvoice.length, 1);
   assert.equal(summary.workQueues.toInvoice[0].client, "Invoice me");
+  assert.equal(summary.workQueues.toInvoice[0].endDate, "2026-08-22");
   assert.equal(summary.workQueues.toInvoice[0].action, "send_invoice");
   assert.equal(summary.workQueues.collectible.length, 1);
   assert.equal(summary.workQueues.collectible[0].client, "Regular client");
@@ -94,7 +99,9 @@ test("finance summary exposes read-only action queues with exact blockers", () =
   assert.equal(summary.workQueues.blocked.length, 4);
   const byClient = Object.fromEntries(summary.workQueues.blocked.map((item) => [item.client, item]));
   assert.deepEqual(byClient.Today.reasonCodes, ["work_date_today"]);
+  assert.equal(byClient.Today.endDate, "2026-08-23");
   assert.deepEqual(byClient.Future.reasonCodes, ["work_date_future"]);
+  assert.equal(byClient.Future.endDate, "2026-08-24");
   assert.deepEqual(byClient["Bad date"].reasonCodes, ["invalid_work_date"]);
   assert.deepEqual(byClient.LiventX.reasonCodes, ["missing_evaluation", "missing_signature"]);
 

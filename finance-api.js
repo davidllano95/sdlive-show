@@ -1,7 +1,7 @@
 const GOOGLE_TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token";
 const GOOGLE_SHEETS_API_BASE = "https://sheets.googleapis.com/v4/spreadsheets";
-const FINANCE_HEADER_RANGE = "REGISTRO!A1:AA1";
-const FINANCE_DATA_RANGE = "REGISTRO!A1:AA3000";
+const FINANCE_HEADER_RANGE = "REGISTRO!A1:AB1";
+const FINANCE_DATA_RANGE = "REGISTRO!A1:AB3000";
 const SUPPORTED_CURRENCIES = Object.freeze(["COP", "USD"]);
 
 export const EXPECTED_FINANCE_HEADERS = Object.freeze([
@@ -31,7 +31,8 @@ export const EXPECTED_FINANCE_HEADERS = Object.freeze([
   "ID",
   "Valor Recibido",
   "MES PAGO KEY",
-  "NUM CONTACTO"
+  "NUM CONTACTO",
+  "Fecha fin"
 ]);
 
 const FIELD_INDEX = Object.freeze(
@@ -195,10 +196,15 @@ function currentBogotaDateKey(now) {
 }
 
 function pendingInvoiceEligibility(row, todayKey) {
-  const workDateKey = sheetDateKey(recordCell(row, "Fecha trabajo"));
-  const invoiceReady = workDateKey !== null && workDateKey < todayKey;
+  const startDateKey = sheetDateKey(recordCell(row, "Fecha trabajo"));
+  const endDateKey = sheetDateKey(recordCell(row, "Fecha fin"));
+  const billingDateKey = endDateKey ?? startDateKey;
+  const invoiceReady = billingDateKey !== null && billingDateKey < todayKey;
   return {
-    workDateKey,
+    workDateKey: billingDateKey,
+    startDateKey,
+    endDateKey,
+    usesEndDate: endDateKey !== null,
     invoiceReady,
     workflowBlocked: !invoiceReady
   };
@@ -230,6 +236,7 @@ function collectionEligibility(row) {
 function publicWorkItem(row, currency, rawCurrency) {
   return {
     workDate: cleanString(recordCell(row, "Fecha trabajo")),
+    endDate: cleanString(recordCell(row, "Fecha fin")),
     client: cleanString(recordCell(row, "Cliente")),
     project: cleanString(recordCell(row, "Proyecto / Show")),
     currency: currency || rawCurrency || null,
@@ -594,8 +601,8 @@ export function buildFinanceSummary(rows, { now = new Date() } = {}) {
   });
 
   toInvoiceQueue.sort((a, b) => {
-    const dateA = sheetDateKey(a.workDate) ?? Number.MAX_SAFE_INTEGER;
-    const dateB = sheetDateKey(b.workDate) ?? Number.MAX_SAFE_INTEGER;
+    const dateA = sheetDateKey(a.endDate) ?? sheetDateKey(a.workDate) ?? Number.MAX_SAFE_INTEGER;
+    const dateB = sheetDateKey(b.endDate) ?? sheetDateKey(b.workDate) ?? Number.MAX_SAFE_INTEGER;
     if (dateA !== dateB) return dateA - dateB;
     return String(a.client).localeCompare(String(b.client));
   });
@@ -604,8 +611,8 @@ export function buildFinanceSummary(rows, { now = new Date() } = {}) {
     const daysA = a.daysUnpaid ?? -1;
     const daysB = b.daysUnpaid ?? -1;
     if (daysB !== daysA) return daysB - daysA;
-    const dateA = sheetDateKey(a.workDate) ?? Number.MAX_SAFE_INTEGER;
-    const dateB = sheetDateKey(b.workDate) ?? Number.MAX_SAFE_INTEGER;
+    const dateA = sheetDateKey(a.endDate) ?? sheetDateKey(a.workDate) ?? Number.MAX_SAFE_INTEGER;
+    const dateB = sheetDateKey(b.endDate) ?? sheetDateKey(b.workDate) ?? Number.MAX_SAFE_INTEGER;
     if (dateA !== dateB) return dateA - dateB;
     return String(a.client).localeCompare(String(b.client));
   });
