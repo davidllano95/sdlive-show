@@ -125,6 +125,31 @@ a,button{font:inherit}
   flex:none;
 }
 
+/* Admin v6.5 — primary workspace navigation order */
+.backoffice:not(.editor-backoffice) .app-nav > a[href="./"],
+.editor-backoffice .app-nav > a[href="../"],
+.app-nav > a[href="/admin/"] {
+  order:-50;
+}
+.app-nav > a[href="./finance/"],
+.app-nav > a[href="../finance/"],
+.app-nav > a[href="/admin/finance/"] {
+  order:-40;
+}
+.app-nav > a[href="./calendar/"],
+.app-nav > a[href="../calendar/"],
+.app-nav > a[href="/admin/calendar/"] {
+  order:-30;
+}
+.app-nav > a[href="./editor/"],
+.editor-backoffice .app-nav > a[href="./"],
+.app-nav > a[href="/admin/editor/"] {
+  order:-20;
+}
+.app-nav > a[href^="https://mail.google.com/"] {
+  order:-10;
+}
+
 /* Admin Show Day Visual QA override */
 .showday-control{margin:0 0 27px;background:linear-gradient(135deg,rgba(var(--accent-rgb),.08),transparent 48%),var(--panel)}
 .showday-control__head{align-items:center;margin-bottom:8px}
