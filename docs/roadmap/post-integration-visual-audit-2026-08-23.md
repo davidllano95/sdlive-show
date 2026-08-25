@@ -1,15 +1,30 @@
 # SD.Live — post-integration visual audit + stabilization
 
 **Created:** 2026-08-23 — America/Bogota  
-**Updated:** 2026-08-24 — America/Bogota  
+**Updated:** 2026-08-25 — America/Bogota  
 **Status:** **ACTIVE**  
-**Current verified runtime:** through PR #118 (`5edf69369329b6f1df5bebad654d2c3866b8790e`).
+**Current merged baseline:** through PR #122 (`55201d339c42806a9d5233949251bdcf54399423`).  
+**Current batch:** `fix/public-audit-closeout` — public-site closeout before resuming Admin audit.
 
 ## Purpose
 
 Recent work materially changed connected public/Admin surfaces: Calendar, Site Schedule, automatic Show Day, website-only Location, shared Home-style headers, mobile Calendar/Agenda, Footer, Rental quote UX and Admin workspace separation.
 
 Functional smoke does not equal visual coherence. This audit treats **desktop and mobile as separate first-class layouts** and requires both **normal and Show Day** states before stabilization can close.
+
+## Audit execution method — locked 2026-08-25
+
+To avoid patch-on-patch churn and forgotten findings:
+
+1. inspect a coherent surface/block;
+2. **record findings while auditing — do not fix each finding immediately**;
+3. finish the surface/block audit;
+4. reconcile findings against current `main` so stale/already-fixed items are removed;
+5. fix the remaining findings in one coherent batch with tests;
+6. run one production smoke for the merged runtime batch;
+7. continue to the next audit block.
+
+A P0 that prevents the audit from continuing may still justify an immediate exception. Otherwise the batch rule above is the default.
 
 ## Sequencing — locked
 
@@ -25,113 +40,76 @@ Valid future ideas may be recorded during the audit but do not become active aut
 
 ## Current progress snapshot
 
-### Closed during the audit
+### Closed / verified during the audit
 
 - **PR #101:** Privacy + Cookie preferences moved to bottom legal footer area.
 - **PR #102:** footer logo follows Show Day; dot blinks with header cadence and respects reduced motion.
 - **PR #103:** desktop footer layout rebalanced.
 - **PR #104:** branded `SD.Live` copyright point restored without stray literal period.
 - **PR #105:** mobile Show Day Location spacing +2 px; production user QA PASS.
-- **PR #118:** authenticated Admin Visual QA override added and production-smoked PASS. `Auto / Force On / Force Off` is stored separately from canonical Site Schedule/REGISTRO/AppSheet state; force modes expire at the end of the current America/Bogota date. Normal and Show Day are now deliberately observable during the audit.
+- **PR #107:** Rental drawer reframed as quotation/request flow, not ecommerce checkout.
+- **PR #108:** original shopping-cart icon restored after visual review.
+- **PR #115/#116:** Anima Producciones + Sonique accepted white treatment; no plate/glow/gradient and R2 originals unchanged.
+- **PR #118:** authenticated Admin Visual QA override (`Auto / Force On / Force Off`) added and production-smoked PASS; override remains separate from Site Schedule/REGISTRO/AppSheet and expires at Bogotá day-end.
+- **PR #120:** mobile header subtitle/Location keeps accepted +2 px spacing in both normal and Show Day; normal `Creative Audio` user QA PASS.
+- **PR #121:** `/theatre-sound-design-audio-post` secondary service cards no longer force square geometry/bottom-pinned lists; desktop user QA PASS.
+- **PR #122:** Admin primary navigation visual order normalized to `Dashboard → Finance → Calendar → Site Editor → Inbox`; merged with CI green. Full Admin audit remains open.
 
-### Rental quote drawer — CLOSED for Show Day matrix; normal matrix now testable
+### Public route/header matrix — REVIEWED
 
-**PR #107:** reframed the Rental drawer as a **quotation/request flow**, not ecommerce checkout.
+Representative manual QA completed across the current public route families with deliberate `Force Off` / `Force On` where applicable:
 
-Key UX contract:
+- Home/shared-header behavior — normal + Show Day observations completed during the audit;
+- `/theatre-sound-design-audio-post` — mobile + desktop, normal + Show Day header PASS; desktop service-card correction PASS;
+- `/audio-eventos-streaming-teatro-bogota` — mobile + desktop, normal + Show Day header PASS;
+- `/alquiler-sonido-wing-midas-dl32-bogota` — mobile + desktop, normal + Show Day header PASS;
+- `/en/` — mobile + desktop, normal + Show Day PASS;
+- `/es-co/` — mobile + desktop, normal + Show Day PASS;
+- `/en/audio-equipment-rental-bogota.html` — mobile + desktop, normal + Show Day PASS;
+- Anima Producciones + Sonique — normal mobile + desktop PASS; accepted Show Day treatment already PASS.
 
-- Rental quote / Cotización;
-- Build your request / Arma tu solicitud;
-- Review quote / Revisar solicitud;
-- Request rental quote / Solicitar cotización;
-- Estimated quote total / Estimado de cotización;
-- explicit note that estimate is not payment and does not confirm availability/reservation.
+This closes the previously pending normal-mode Rental and Anima/Sonique visual verification.
 
-Backend pricing/quote ownership and `rental@sdlive.show` routing remain unchanged.
+## Public-site closeout batch — ACTIVE before Admin audit resumes
 
-Verified Show Day QA:
+Current `main` was reconciled against the visual-audit/roadmap findings before making further Admin changes. The following still-current public findings are being closed together on `fix/public-audit-closeout`:
 
-- mobile / ES — PASS;
-- desktop / ES — PASS;
-- mobile / EN — PASS;
-- desktop / EN — PASS.
+### Visual / continuity / accessibility
 
-Normal-mode Rental verification remains pending, but is now directly testable using Admin `Force Off` without modifying Site Schedule or operational data.
+- increase contrast **locally** for `TRUSTED BY` without globally changing the muted token;
+- increase contrast **locally** for footer `SITE / CONNECT` labels;
+- correct footer label semantics without changing their visual hierarchy;
+- keep the non-blocking analytics-consent UX but replace the unnamed/incompatible dialog semantics with a named region;
+- remove invalid generic `aria-label` usage from Contact/Rental Turnstile container divs;
+- correct the English Wonderlust / Selected Work CTA so EN does not route into an ES landing;
+- expose the existing WhatsApp contact control consistently on public SEO/service landings and respect device safe areas;
+- promote the already-recorded testimonial geometry/long-copy finding into this public closeout: consistent card behavior plus keyboard/touch-accessible `Read more / Leer más` disclosure only when the quote actually overflows.
 
-### Trusted By / dark client-logo contrast — CLOSED for accepted treatment
+### Rental integrity findings promoted into the same closeout
 
-User identified **Anima Producciones** and **Sonique** as the problematic dark marks.
+These are not pricing changes; they prevent public audit debt from remaining hidden:
 
-History:
+- reject a Rental request when **zero equipment and zero services** are selected;
+- preserve valid **service-only** Rental requests;
+- add CI protection that asserts browser estimate pricing and backend-owned Worker pricing remain identical.
 
-- PR #111: neutral plate attempt;
-- PR #112: plate + glow refinement;
-- user rejected the visual direction;
-- PR #114: removed plate/gradient/glow completely;
-- PR #115: applied `brightness(0) invert(1)` only to Anima + Sonique in Show Day; user QA PASS;
-- PR #116: made the accepted white treatment mode-independent.
+**Invariant:** Rental pricing math, inventory limits, backend ownership and `rental@sdlive.show` routing must not change in this closeout.
 
-Final contract:
+After this batch merges and receives one production smoke, public-site closeout is considered ready and the audit resumes with Admin only.
 
-- Anima + Sonique render white in normal + Show Day;
-- original Cloudflare R2 assets remain untouched;
-- no other client logos are affected;
-- no plate, border, gradient or glow remains.
+## Admin visual audit — OPEN
 
-Show Day mobile production QA after PR #116 — PASS. Normal-mode visual verification remains pending and is now directly observable with Admin `Force Off`.
+Still required as a full block, using the new record-first/batch-fix method:
 
-### Documentation/future backlog captured during audit
-
-- **PR #109:** reconciled Show Day docs to dynamic Site Schedule architecture and recorded a future authenticated `Auto / Force On / Force Off` override. **Implemented by PR #118** as a temporary Admin Visual QA control with automatic end-of-day expiry.
-- **PR #110:** recorded consistent testimonial card geometry/long-copy handling and generic Editor collection reordering.
-- **PR #113:** recorded **Attio** as future CRM candidate and **Dapta.ai** as future AI chatbot/agent candidate with pricing/integration/source-of-truth evaluation guardrails.
-
-Items other than the completed Show Day QA override are not active milestones.
-
-## Current open findings
-
-### Remaining public matrix — OPEN
-
-Continue deliberate route-family checks across:
-
-- `/`;
-- `/en/`;
-- `/es-co/`;
-- `/theatre-sound-design-audio-post`;
-- `/audio-eventos-streaming-teatro-bogota`;
-- current Rental/service landing variants present in the repository.
-
-Required branches where applicable:
-
-- desktop + mobile;
-- normal + Show Day;
-- EN/ES;
-- COL/INT.
-
-Use the authenticated Admin Visual QA override to deliberately expose normal (`Force Off`) or Show Day (`Force On`) only when required for audit coverage. Return to `Auto` when deliberate forcing is no longer needed. The override must never be treated as canonical scheduling data.
-
-### Admin visual audit — OPEN
-
-Still required for:
-
-- `/admin/` Dashboard, including the new Visual QA Show Day control;
+- `/admin/` Dashboard, including Visual QA Show Day control;
 - `/admin/finance/` Finance;
 - `/admin/calendar/` Calendar / Operations;
 - `/admin/calendar/site-schedule/` Site Schedule;
 - `/admin/editor/` Site Editor.
 
-Admin audit remains first-class and cannot be skipped because more public mobile QA has already occurred.
+Do **not** fix each new Admin finding while walking these pages. Record all findings first, reconcile them against `main`, then implement one coherent Admin stabilization batch.
 
 ## Preserved future Editor / card-system backlog — RECORDED, NOT ACTIVE
-
-### Testimonials — consistent geometry + long-copy handling
-
-- testimonial cards should present consistent visual geometry;
-- long quotes must remain fully accessible;
-- preferred direction: restrained preview/line clamp + obvious **Read more / Leer más** progressive disclosure;
-- expansion must work keyboard/touch, preserve focus and avoid destructive layout jumps;
-- EN/ES text-length differences must be handled naturally;
-- do not force every card to the height of the single longest quote if progressive disclosure provides a better layout.
 
 ### Generic Editor collection/card reordering
 
@@ -162,6 +140,21 @@ Future implementation rules:
 - ongoing multi-day work remains visible;
 - default option is TBD during implementation;
 - desktop/mobile behavior and accessibility must be deliberate.
+
+## Future Show Day concurrency backlog — RECORDED, NOT ACTIVE
+
+The current automatic resolver can detect multiple active Show Day blocks (`activeCount`) but the public header exposes only one Location. Current ordering is deterministic but is not an explicit business-priority rule.
+
+Observed real case: a Rental and a separate artist/show can occur on the same day.
+
+Preferred future direction:
+
+- explicit presentation priority such as **Primary / Secondary** for Show Day blocks;
+- the header uses the active Primary block;
+- Secondary activity remains represented in Calendar/Site Schedule without competing for the public header;
+- if more than one Primary block is active simultaneously, Admin should surface a clear conflict instead of resolving it silently by technical sort order;
+- do not solve this by showing multiple cramped Locations in the public header;
+- preserve Site Schedule as the website-only presentation source and never write this priority into REGISTRO/AppSheet unless a future architecture decision explicitly changes ownership.
 
 ## Public site — visual checklist
 
@@ -288,4 +281,4 @@ The audit closes only when:
 
 ## Current continuation
 
-The Admin Show Day QA override is production-smoked PASS and removes the previous observability blocker. Continue the remaining public matrix one manual QA action at a time, using `Force Off` for deliberate normal-mode checks and `Force On` only when a Show Day branch must be observed. Then complete the mandatory Admin desktop/mobile audit. Rental Show Day and the accepted Anima/Sonique Show Day treatment are closed; normal-mode verification for those surfaces remains pending and is now directly testable.
+Finish `fix/public-audit-closeout`, merge only with CI green, then perform exactly one representative public production smoke. After that, resume the **Admin visual audit as one record-first block**. Do not return to piecemeal Admin fixes until the full Admin finding set has been collected and reconciled.

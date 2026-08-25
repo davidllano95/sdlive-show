@@ -1,0 +1,82 @@
+/* SD.Live — public audit closeout
+   Centralized public-only refinements discovered during the post-integration audit. */
+
+:root {
+  --color-muted-readable: rgba(244, 245, 247, 0.66);
+}
+
+/* Keep local labels readable without globally brightening every muted token. */
+.trusted-label,
+.site-footer .footer-heading,
+.site-footer .footer-col h4 {
+  color: var(--color-muted-readable);
+}
+
+.site-footer .footer-heading {
+  margin: 0 0 14px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+/* Keep the existing WhatsApp control clear of device safe areas on every public route. */
+.whatsapp-float {
+  right: max(24px, env(safe-area-inset-right));
+  bottom: max(24px, env(safe-area-inset-bottom));
+}
+
+/* Testimonial geometry: equal cards, restrained previews, accessible disclosure. */
+.testimonials--public .testimonial-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.testimonials--public .testimonial-card > p.testimonial-quote--collapsible {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 7;
+  overflow: hidden;
+}
+
+.testimonials--public .testimonial-card > p.testimonial-quote--collapsible.is-expanded {
+  display: block;
+  overflow: visible;
+}
+
+.testimonial-disclosure {
+  align-self: center;
+  min-height: 36px;
+  margin: 16px auto 0;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--color-accent);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.testimonial-disclosure:hover {
+  background: rgba(var(--color-accent-rgb), 0.08);
+  color: var(--color-text);
+}
+
+.testimonial-disclosure[hidden] {
+  display: none;
+}
+
+.testimonials--public .testimonial-author {
+  margin-top: auto;
+  padding-top: 26px;
+}
+
+@media (max-width: 720px) {
+  .testimonials--public .testimonial-card > p.testimonial-quote--collapsible {
+    -webkit-line-clamp: 8;
+  }
+}

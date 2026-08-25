@@ -7,6 +7,7 @@ import {
   handleSiteScheduleApiV2
 } from "./site-schedule-store-v2.js";
 import { applyShowDayRuntime } from "./showday-edge.js";
+import { rentalRequestHasSelection } from "./rental-request-validation.js";
 
 const PUBLIC_FORM_LIMITS = {
   "/api/contact": {
@@ -101,6 +102,24 @@ export async function enforcePublicFormRateLimit(request, env) {
   );
 }
 
+async function rejectEmptyRentalRequest(request, path) {
+  if (path !== "/api/rental" || request.method !== "POST") return null;
+
+  const contentType = String(request.headers.get("content-type") || "").toLowerCase();
+  if (!contentType.includes("application/json")) return null;
+
+  const body = await request.clone().json().catch(() => null);
+  if (!body || rentalRequestHasSelection(body)) return null;
+
+  return jsonResponse(
+    {
+      ok: false,
+      error: "Select at least one equipment item or service"
+    },
+    400
+  );
+}
+
 export default {
   async fetch(request, env) {
     const path = normalizedPath(request);
@@ -150,6 +169,9 @@ export default {
 
     const limited = await enforcePublicFormRateLimit(request, env);
     if (limited) return limited;
+
+    const emptyRental = await rejectEmptyRentalRequest(request, path);
+    if (emptyRental) return emptyRental;
 
     const response = await appWorker.fetch(request, env);
     if (request.method === "GET" && !path.startsWith("/admin")) {
