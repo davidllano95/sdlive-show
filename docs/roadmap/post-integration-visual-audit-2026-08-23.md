@@ -3,7 +3,8 @@
 **Created:** 2026-08-23 — America/Bogota  
 **Updated:** 2026-08-25 — America/Bogota  
 **Status:** **ACTIVE**  
-**Current merged baseline:** through PR #127 (`898edb0359a4f8afd159d1fc34d9713f3932502d`).
+**Current merged baseline:** through PR #122 (`55201d339c42806a9d5233949251bdcf54399423`).  
+**Current batch:** `fix/public-audit-closeout` — public-site closeout before resuming Admin audit.
 
 ## Purpose
 
@@ -53,9 +54,6 @@ Valid future ideas may be recorded during the audit but do not become active aut
 - **PR #120:** mobile header subtitle/Location keeps accepted +2 px spacing in both normal and Show Day; normal `Creative Audio` user QA PASS.
 - **PR #121:** `/theatre-sound-design-audio-post` secondary service cards no longer force square geometry/bottom-pinned lists; desktop user QA PASS.
 - **PR #122:** Admin primary navigation visual order normalized to `Dashboard → Finance → Calendar → Site Editor → Inbox`; merged with CI green. Full Admin audit remains open.
-- **PR #123:** public closeout batch addressed contrast, footer/consent/Turnstile accessibility, EN CTA continuity, shared WhatsApp, Rental empty-request protection and pricing-parity CI.
-- **PR #125:** reduced oversized PA framing and normalized Misi/Wonderlust Supported Brands layouts on mobile; first testimonial collapse defect addressed.
-- **PR #127:** Testimonials now use synchronized progressive expansion: the active quote defines a shared visible-text height, other testimonials reveal only up to that limit, and `Read less / Leer menos` collapses the whole group. CI green; production smoke pending.
 
 ### Public route/header matrix — REVIEWED
 
@@ -70,22 +68,38 @@ Representative manual QA completed across the current public route families with
 - `/en/audio-equipment-rental-bogota.html` — mobile + desktop, normal + Show Day PASS;
 - Anima Producciones + Sonique — normal mobile + desktop PASS; accepted Show Day treatment already PASS.
 
-## Public-site closeout — FINAL SMOKE PENDING
+This closes the previously pending normal-mode Rental and Anima/Sonique visual verification.
 
-Public findings from the active audit have been reconciled and implemented through PR #127. One representative production smoke remains for the final Testimonials interaction and the PR #125 mobile/Rental visual corrections.
+## Public-site closeout batch — ACTIVE before Admin audit resumes
 
-Required final public smoke:
+Current `main` was reconciled against the visual-audit/roadmap findings before making further Admin changes. The following still-current public findings are being closed together on `fix/public-audit-closeout`:
 
-- mobile Home;
-- Trusted By → Misi + Wonderlust Supported Brands;
-- Rental → PA card framing;
-- Testimonials → expand one quote, verify all others reveal text only to the same active quote height, then `Read less / Leer menos` and verify the whole group collapses.
+### Visual / continuity / accessibility
 
-If this smoke passes, the public-site block is closed and the audit continues with Admin only.
+- increase contrast **locally** for `TRUSTED BY` without globally changing the muted token;
+- increase contrast **locally** for footer `SITE / CONNECT` labels;
+- correct footer label semantics without changing their visual hierarchy;
+- keep the non-blocking analytics-consent UX but replace the unnamed/incompatible dialog semantics with a named region;
+- remove invalid generic `aria-label` usage from Contact/Rental Turnstile container divs;
+- correct the English Wonderlust / Selected Work CTA so EN does not route into an ES landing;
+- expose the existing WhatsApp contact control consistently on public SEO/service landings and respect device safe areas;
+- promote the already-recorded testimonial geometry/long-copy finding into this public closeout: consistent card behavior plus keyboard/touch-accessible `Read more / Leer más` disclosure only when the quote actually overflows.
+
+### Rental integrity findings promoted into the same closeout
+
+These are not pricing changes; they prevent public audit debt from remaining hidden:
+
+- reject a Rental request when **zero equipment and zero services** are selected;
+- preserve valid **service-only** Rental requests;
+- add CI protection that asserts browser estimate pricing and backend-owned Worker pricing remain identical.
+
+**Invariant:** Rental pricing math, inventory limits, backend ownership and `rental@sdlive.show` routing must not change in this closeout.
+
+After this batch merges and receives one production smoke, public-site closeout is considered ready and the audit resumes with Admin only.
 
 ## Admin visual audit — OPEN
 
-Still required as a full block, using the record-first/batch-fix method:
+Still required as a full block, using the new record-first/batch-fix method:
 
 - `/admin/` Dashboard, including Visual QA Show Day control;
 - `/admin/finance/` Finance;
@@ -94,8 +108,6 @@ Still required as a full block, using the record-first/batch-fix method:
 - `/admin/editor/` Site Editor.
 
 Do **not** fix each new Admin finding while walking these pages. Record all findings first, reconcile them against `main`, then implement one coherent Admin stabilization batch.
-
-Current Admin ledger: **Issue #126**. Mandatory requirement already recorded: Site Editor image resize/scale controls must allow up to **250%**.
 
 ## Preserved future Editor / card-system backlog — RECORDED, NOT ACTIVE
 
@@ -269,4 +281,4 @@ The audit closes only when:
 
 ## Current continuation
 
-Perform the single final public production smoke described above. If PASS, close the public-site block and resume the Admin visual audit using Issue #126 as the live finding ledger. Do not fix Admin findings piecemeal; batch them after the full Admin review.
+Finish `fix/public-audit-closeout`, merge only with CI green, then perform exactly one representative public production smoke. After that, resume the **Admin visual audit as one record-first block**. Do not return to piecemeal Admin fixes until the full Admin finding set has been collected and reconciled.
