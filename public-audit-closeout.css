@@ -12,6 +12,13 @@
   color: var(--color-muted-readable);
 }
 
+.site-footer .footer-heading {
+  margin: 0 0 14px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
 /* Keep the existing WhatsApp control clear of device safe areas on every public route. */
 .whatsapp-float {
   right: max(24px, env(safe-area-inset-right));
