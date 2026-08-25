@@ -129,10 +129,16 @@
     if (warning) warning.setAttribute("role", "status");
 
     requestButton.addEventListener("click", (event) => {
-      if (rentalHasSelection()) return;
+      if (rentalHasSelection()) {
+        requestButton.removeAttribute("aria-describedby");
+        return;
+      }
 
       event.preventDefault();
       event.stopImmediatePropagation();
+
+      // openCart() re-renders the Rental summary, so show the validation message after it.
+      window.__openRentalCart?.();
 
       if (warning) {
         warning.hidden = false;
@@ -141,8 +147,6 @@
           : "Select at least one equipment item or service before sending the request.";
         requestButton.setAttribute("aria-describedby", warning.id);
       }
-
-      window.__openRentalCart?.();
     }, true);
   }
 
