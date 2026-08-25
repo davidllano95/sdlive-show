@@ -76,6 +76,16 @@ test("finance summary exposes read-only action queues with exact blockers", () =
       "ID": "secret-liventx-id"
     }),
     row({
+      "Fecha trabajo": "2026-08-04",
+      "Cliente": "LiventX",
+      "Proyecto / Show": "Ready to sign",
+      "Moneda": "USD",
+      "Valor Neto": 625,
+      "Estado": "Evaluada",
+      "Fecha evaluación": "2026-08-18",
+      "ID": "secret-liventx-sign-id"
+    }),
+    row({
       "Fecha trabajo": "2026-08-02",
       "Cliente": "Regular client",
       "Proyecto / Show": "Collect now",
@@ -105,13 +115,20 @@ test("finance summary exposes read-only action queues with exact blockers", () =
   assert.deepEqual(byClient["Bad date"].reasonCodes, ["invalid_work_date"]);
   assert.deepEqual(byClient.LiventX.reasonCodes, ["missing_evaluation", "missing_signature"]);
 
+  assert.equal(summary.liventxSigningReview.active, true);
+  assert.equal(summary.liventxSigningReview.count, 1);
+  assert.equal(summary.workQueues.liventxReadyToSign.length, 1);
+  assert.equal(summary.workQueues.liventxReadyToSign[0].project, "Ready to sign");
+  assert.equal(summary.workQueues.liventxReadyToSign[0].evaluationDate, "2026-08-18");
+  assert.equal(summary.workQueues.liventxReadyToSign[0].action, "sign_invoice");
+
   const serialized = JSON.stringify(summary.workQueues);
   assert.equal(serialized.includes("secret-"), false);
   assert.equal(serialized.includes("private note"), false);
   assert.equal(serialized.includes("+57-secret"), false);
 });
 
-test("dedicated Finance workspace loads branded card and aging worklists lazily", async () => {
+test("dedicated Finance workspace loads branded card, LiventX signing review and aging worklists lazily", async () => {
   const [html, script, styles] = await Promise.all([
     readFile(new URL("../admin/finance/index.html", import.meta.url), "utf8"),
     readFile(new URL("../admin/finance-action-worklists.js", import.meta.url), "utf8"),
@@ -119,10 +136,15 @@ test("dedicated Finance workspace loads branded card and aging worklists lazily"
   ]);
 
   assert.match(html, /finance-action-worklists\.css\?v=20260823-3/);
-  assert.match(html, /finance-action-worklists\.js\?v=20260823-3/);
+  assert.match(html, /finance-action-worklists\.js\?v=20260825-1/);
   assert.match(script, /financeToInvoiceCount/);
   assert.match(script, /financeReceivableCount/);
   assert.match(script, /financeBlockedCount/);
+  assert.match(script, /financeLiventXSigningCard/);
+  assert.match(script, /liventxReadyToSign/);
+  assert.match(script, /liventxReviewActive/);
+  assert.match(script, /sign_invoice: "Sign the invoice"/);
+  assert.match(script, /sign_invoice: "Firmar la factura"/);
   assert.match(script, /data\?\.summary\?\.workQueues/);
   assert.match(script, /missing_evaluation: "Send evaluation"/);
   assert.match(script, /missing_signature: "Sign invoice"/);

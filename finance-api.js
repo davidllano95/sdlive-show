@@ -3,6 +3,7 @@ const GOOGLE_SHEETS_API_BASE = "https://sheets.googleapis.com/v4/spreadsheets";
 const FINANCE_HEADER_RANGE = "REGISTRO!A1:AB1";
 const FINANCE_DATA_RANGE = "REGISTRO!A1:AB3000";
 const SUPPORTED_CURRENCIES = Object.freeze(["COP", "USD"]);
+const LIVENTX_SIGNING_REVIEW_DAY = 20;
 
 export const EXPECTED_FINANCE_HEADERS = Object.freeze([
   "Fecha trabajo",
@@ -188,12 +189,14 @@ function sheetDateKey(value) {
     const first = Number(match[1]);
     const second = Number(match[2]);
     const year = Number(match[3]);
-    let day = first;
-    let month = second;
+    let month = first;
+    let day = second;
 
-    if (first <= 12 && second > 12) {
-      month = first;
-      day = second;
+    // Finance historically received Google Sheets formatted strings in M/D/YYYY.
+    // Only flip to D/M when the first component cannot be a month.
+    if (first > 12 && second <= 12) {
+      day = first;
+      month = second;
     }
 
     return dateKey(year, month, day);
@@ -206,6 +209,15 @@ function sheetDateKey(value) {
     parsed.getUTCMonth() + 1,
     parsed.getUTCDate()
   );
+}
+
+function displaySheetDate(value) {
+  const key = sheetDateKey(value);
+  if (!Number.isInteger(key)) return cleanString(value);
+  const year = Math.floor(key / 10000);
+  const month = Math.floor((key % 10000) / 100);
+  const day = key % 100;
+  return `${String(year).padStart(4, "0")}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 }
 
 function dateKeyUtcDay(key) {
@@ -274,8 +286,8 @@ function collectionEligibility(row) {
 
 function publicWorkItem(row, currency, rawCurrency) {
   return {
-    workDate: cleanString(recordCell(row, "Fecha trabajo")),
-    endDate: cleanString(recordCell(row, "Fecha fin")),
+    workDate: displaySheetDate(recordCell(row, "Fecha trabajo")),
+    endDate: displaySheetDate(recordCell(row, "Fecha fin")),
     client: cleanString(recordCell(row, "Cliente")),
     project: cleanString(recordCell(row, "Proyecto / Show")),
     currency: currency || rawCurrency || null,
@@ -294,8 +306,8 @@ function publicQualityItem(row, currency, rawCurrency) {
     grossAmount: grossAmount === null ? null : roundMoney(grossAmount),
     netAmount: netAmount === null ? null : roundMoney(netAmount),
     receivedAmount: receivedAmount === null ? null : roundMoney(receivedAmount),
-    invoiceSentDate: cleanString(recordCell(row, "Fecha cuenta enviada")),
-    paymentDate: cleanString(recordCell(row, "Fecha pago")),
+    invoiceSentDate: displaySheetDate(recordCell(row, "Fecha cuenta enviada")),
+    paymentDate: displaySheetDate(recordCell(row, "Fecha pago")),
     daysUnpaid
   };
 }
@@ -432,7 +444,7 @@ async function readFinanceValues(env, range, fetchImpl = fetch) {
   const params = new URLSearchParams({
     majorDimension: "ROWS",
     valueRenderOption: "UNFORMATTED_VALUE",
-    dateTimeRenderOption: "FORMATTED_STRING"
+    dateTimeRenderOption: "SERIAL_NUMBER"
   });
   const url = `${GOOGLE_SHEETS_API_BASE}/${spreadsheet}/values/${encodedRange}?${params}`;
 
@@ -491,6 +503,7 @@ export function buildFinanceSummary(rows, { now = new Date() } = {}) {
   const priority = [];
   const toInvoiceQueue = [];
   const blockedQueue = [];
+  const liventxReadyToSignQueue = [];
   const qualityQueues = {
     missingReceivedAmount: [],
     unsupportedCurrency: [],
@@ -516,6 +529,26 @@ export function buildFinanceSummary(rows, { now = new Date() } = {}) {
 
     const state = recordCell(row, "Estado");
     const netAmount = numericValue(recordCell(row, "Valor Neto"));
+    const isLiventX = cleanString(recordCell(row, "Cliente")).toLowerCase() === "liventx";
+    const evaluatedAt = cleanString(recordCell(row, "Fecha evaluación"));
+    const signedAt = cleanString(recordCell(row, "Fecha firma"));
+
+    if (
+      isLiventX &&
+      !isPaidState(state) &&
+      !isPendingInvoiceState(state) &&
+      evaluatedAt &&
+      !signedAt
+    ) {
+      liventxReadyToSignQueue.push({
+        ...publicWorkItem(row, currency, rawCurrency),
+        netAmount: netAmount === null ? null : roundMoney(netAmount),
+        invoiceSentDate: displaySheetDate(recordCell(row, "Fecha cuenta enviada")),
+        evaluationDate: displaySheetDate(recordCell(row, "Fecha evaluación")),
+        reasonCodes: ["missing_signature"],
+        action: "sign_invoice"
+      });
+    }
 
     if (isPendingInvoiceState(state)) {
       const eligibility = pendingInvoiceEligibility(row, todayKey);
@@ -594,7 +627,7 @@ export function buildFinanceSummary(rows, { now = new Date() } = {}) {
       blockedQueue.push({
         ...publicWorkItem(row, currency, rawCurrency),
         netAmount: netAmount === null ? null : roundMoney(netAmount),
-        invoiceSentDate: sentAt,
+        invoiceSentDate: displaySheetDate(recordCell(row, "Fecha cuenta enviada")),
         daysUnpaid,
         reasonCodes: blockedReasonCodes(row, { todayKey })
       });
@@ -617,13 +650,13 @@ export function buildFinanceSummary(rows, { now = new Date() } = {}) {
     agingMap.set(agingBucket, aging);
 
     priority.push({
-      workDate: cleanString(recordCell(row, "Fecha trabajo")),
+      workDate: displaySheetDate(recordCell(row, "Fecha trabajo")),
       client: cleanString(recordCell(row, "Cliente")),
       project: cleanString(recordCell(row, "Proyecto / Show")),
       currency: currency || rawCurrency || null,
       netAmount: netAmount === null ? null : roundMoney(netAmount),
       state: cleanString(state),
-      invoiceSentDate: sentAt,
+      invoiceSentDate: displaySheetDate(recordCell(row, "Fecha cuenta enviada")),
       daysUnpaid,
       aging: agingBucket
     });
@@ -651,6 +684,16 @@ export function buildFinanceSummary(rows, { now = new Date() } = {}) {
     const dateB = sheetDateKey(b.endDate) ?? sheetDateKey(b.workDate) ?? Number.MAX_SAFE_INTEGER;
     if (dateA !== dateB) return dateA - dateB;
     return String(a.client).localeCompare(String(b.client));
+  });
+
+  liventxReadyToSignQueue.sort((a, b) => {
+    const evaluationA = sheetDateKey(a.evaluationDate) ?? Number.MAX_SAFE_INTEGER;
+    const evaluationB = sheetDateKey(b.evaluationDate) ?? Number.MAX_SAFE_INTEGER;
+    if (evaluationA !== evaluationB) return evaluationA - evaluationB;
+    const dateA = sheetDateKey(a.endDate) ?? sheetDateKey(a.workDate) ?? Number.MAX_SAFE_INTEGER;
+    const dateB = sheetDateKey(b.endDate) ?? sheetDateKey(b.workDate) ?? Number.MAX_SAFE_INTEGER;
+    if (dateA !== dateB) return dateA - dateB;
+    return String(a.project).localeCompare(String(b.project));
   });
 
   Object.values(qualityQueues).forEach((queue) => {
@@ -683,10 +726,16 @@ export function buildFinanceSummary(rows, { now = new Date() } = {}) {
       aging,
       priority: priority.slice(0, 10)
     },
+    liventxSigningReview: {
+      reviewDay: LIVENTX_SIGNING_REVIEW_DAY,
+      active: (todayKey % 100) >= LIVENTX_SIGNING_REVIEW_DAY,
+      count: liventxReadyToSignQueue.length
+    },
     workQueues: {
       toInvoice: toInvoiceQueue,
       collectible: priority,
-      blocked: blockedQueue
+      blocked: blockedQueue,
+      liventxReadyToSign: liventxReadyToSignQueue
     },
     received: {
       paidCount,

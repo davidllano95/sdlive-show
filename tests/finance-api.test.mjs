@@ -14,7 +14,7 @@ const ENV = {
   GOOGLE_FINANCE_SPREADSHEET_ID: "spreadsheet-id"
 };
 
-test("finance schema validator requires the documented REGISTRO header order", () => {
+test("finance schema validator requires the documented REGISTRO fields", () => {
   assert.deepEqual(validateFinanceHeaders([...EXPECTED_FINANCE_HEADERS]), {
     ok: true,
     columnCount: 28,
@@ -117,6 +117,8 @@ test("finance health exchanges refresh token and reads REGISTRO through Fecha fi
     /sheets\.googleapis\.com\/v4\/spreadsheets\/spreadsheet-id\/values\/REGISTRO/
   );
   assert.match(calls[1].url, /A1%3AAB1/);
+  assert.match(calls[1].url, /valueRenderOption=UNFORMATTED_VALUE/);
+  assert.match(calls[1].url, /dateTimeRenderOption=SERIAL_NUMBER/);
   assert.equal(
     calls[1].options.headers.Authorization,
     "Bearer temporary-access-token"

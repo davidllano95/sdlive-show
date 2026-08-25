@@ -16,6 +16,7 @@
       toInvoice: "To invoice",
       collectible: "Collectible now",
       blocked: "Workflow blocked",
+      liventxReadyToSign: "LiventX · Ready to sign",
       aging: "Aging",
       close: "Close",
       loading: "Loading work list…",
@@ -23,6 +24,7 @@
       empty: "Nothing is pending in this queue.",
       workDate: "Work date",
       sentDate: "Invoice sent",
+      evaluationDate: "Evaluation",
       daysUnpaid: "Days unpaid",
       gross: "Gross",
       net: "Net",
@@ -33,8 +35,10 @@
       openToInvoice: "Open To invoice work list",
       openCollectible: "Open Collectible now work list",
       openBlocked: "Open Workflow blocked work list",
+      openLiventXReadyToSign: "Open LiventX ready-to-sign work list",
       openAging: "Open aging bucket",
       send_invoice: "Send the invoice / account for payment",
+      sign_invoice: "Sign the invoice",
       collect: "Follow up and collect payment",
       invalid_work_date: "Correct the work date before invoicing",
       work_date_today: "Wait until tomorrow; today’s work is not invoice-ready yet",
@@ -42,12 +46,16 @@
       missing_evaluation: "Send evaluation",
       missing_signature: "Sign invoice",
       invoice_not_ready: "Complete the invoicing prerequisites",
-      workflow_incomplete: "Complete the pending workflow"
+      workflow_incomplete: "Complete the pending workflow",
+      liventxReviewActive: "Monthly signing review is active",
+      liventxReviewScheduled: "Monthly signing review opens on day 20",
+      liventxReviewEmpty: "No LiventX items are ready to sign"
     },
     es: {
       toInvoice: "Por facturar",
       collectible: "Cobrable ahora",
       blocked: "Flujo bloqueado",
+      liventxReadyToSign: "LiventX · Listo para firmar",
       aging: "Antigüedad",
       close: "Cerrar",
       loading: "Cargando lista de trabajo…",
@@ -55,6 +63,7 @@
       empty: "No hay nada pendiente en esta lista.",
       workDate: "Fecha de trabajo",
       sentDate: "Cuenta enviada",
+      evaluationDate: "Evaluación",
       daysUnpaid: "Días sin pagar",
       gross: "Bruto",
       net: "Neto",
@@ -65,8 +74,10 @@
       openToInvoice: "Abrir lista de Por facturar",
       openCollectible: "Abrir lista de Cobrable ahora",
       openBlocked: "Abrir lista de Flujo bloqueado",
+      openLiventXReadyToSign: "Abrir lista de LiventX lista para firmar",
       openAging: "Abrir rango de antigüedad",
       send_invoice: "Enviar la cuenta de cobro / factura",
+      sign_invoice: "Firmar la factura",
       collect: "Hacer seguimiento y cobrar",
       invalid_work_date: "Corregir la fecha de trabajo antes de facturar",
       work_date_today: "Esperar hasta mañana; el trabajo de hoy aún no está listo para facturar",
@@ -74,7 +85,10 @@
       missing_evaluation: "Enviar evaluación",
       missing_signature: "Firmar factura",
       invoice_not_ready: "Completar los requisitos antes de facturar",
-      workflow_incomplete: "Completar el flujo pendiente"
+      workflow_incomplete: "Completar el flujo pendiente",
+      liventxReviewActive: "La revisión mensual de firmas está activa",
+      liventxReviewScheduled: "La revisión mensual de firmas se activa el día 20",
+      liventxReviewEmpty: "No hay registros de LiventX listos para firmar"
     }
   });
 
@@ -84,6 +98,8 @@
   let subtitleNode = null;
   let listNode = null;
   let closeButton = null;
+  let latestDashboardData = null;
+  let liventxCardLoadStarted = false;
 
   function language() {
     return window.SDLiveFinanceI18n?.language === "es" ? "es" : "en";
@@ -142,6 +158,7 @@
   function actionLabels(queue, item) {
     const t = copy();
     if (queue === "toInvoice") return [t.send_invoice];
+    if (queue === "liventxReadyToSign") return [t.sign_invoice];
     if (queue === "collectible") return [t.collect];
     if (queue === "aging" && item?.workflowType === "collectible") return [t.collect];
     const codes = Array.isArray(item?.reasonCodes) && item.reasonCodes.length
@@ -172,8 +189,11 @@
     const actions = actionLabels(queue, item)
       .map((label) => `<li>${escapeHtml(label)}</li>`)
       .join("");
-    const sent = queue === "collectible" || queue === "aging" || (queue === "blocked" && item?.invoiceSentDate)
+    const sent = queue === "collectible" || queue === "aging" || queue === "liventxReadyToSign" || (queue === "blocked" && item?.invoiceSentDate)
       ? `<span><b>${escapeHtml(t.sentDate)}</b>${escapeHtml(safeText(item?.invoiceSentDate))}</span>`
+      : "";
+    const evaluated = queue === "liventxReadyToSign"
+      ? `<span><b>${escapeHtml(t.evaluationDate)}</b>${escapeHtml(safeText(item?.evaluationDate))}</span>`
       : "";
     const hasDays = item?.daysUnpaid !== null && item?.daysUnpaid !== undefined && item?.daysUnpaid !== "" && Number.isFinite(Number(item.daysUnpaid));
     const days = hasDays
@@ -193,6 +213,7 @@
           <span><b>${escapeHtml(t.workDate)}</b>${escapeHtml(safeText(item?.workDate))}</span>
           <span><b>${escapeHtml(itemAmountLabel(queue))}</b>${escapeHtml(itemAmount(queue, item))}</span>
           ${sent}
+          ${evaluated}
           ${days}
           ${workflowMarkup(queue, item)}
         </div>
@@ -237,6 +258,63 @@
     return copy()[queue] || queue;
   }
 
+  function ensureLiventXSigningCard() {
+    const metrics = document.querySelector(".finance-metrics");
+    if (!metrics) return null;
+
+    let card = document.getElementById("financeLiventXSigningCard");
+    if (card) return card;
+
+    card = document.createElement("article");
+    card.id = "financeLiventXSigningCard";
+    card.className = "finance-card finance-card--accent";
+    card.style.marginTop = "9px";
+    card.innerHTML = `
+      <span class="finance-card__label" id="financeLiventXSignLabel">LiventX · Ready to sign</span>
+      <strong id="financeLiventXSignCount">—</strong>
+      <div class="finance-money" id="financeLiventXSignStatus">Loading…</div>
+      <small id="financeLiventXSignHint">Monthly signing review opens on day 20</small>
+    `;
+    metrics.insertAdjacentElement("afterend", card);
+    makeInteractive(card, "liventxReadyToSign");
+    return card;
+  }
+
+  function updateLiventXSigningCard(data) {
+    const card = ensureLiventXSigningCard();
+    if (!card) return false;
+
+    const t = copy();
+    const review = data?.summary?.liventxSigningReview || {};
+    const rows = Array.isArray(data?.summary?.workQueues?.liventxReadyToSign)
+      ? data.summary.workQueues.liventxReadyToSign
+      : [];
+    const count = Number.isFinite(Number(review.count)) ? Number(review.count) : rows.length;
+
+    const label = card.querySelector("#financeLiventXSignLabel");
+    const countNode = card.querySelector("#financeLiventXSignCount");
+    const status = card.querySelector("#financeLiventXSignStatus");
+    const hint = card.querySelector("#financeLiventXSignHint");
+
+    if (label) label.textContent = t.liventxReadyToSign;
+    if (countNode) countNode.textContent = String(count);
+    if (status) {
+      status.textContent = count
+        ? (review.active ? t.liventxReviewActive : t.liventxReviewScheduled)
+        : t.liventxReviewEmpty;
+    }
+    if (hint) {
+      const reviewDay = Number(review.reviewDay || 20);
+      hint.textContent = review.active
+        ? (language() === "es" ? `Revisión del día ${reviewDay}: abre la lista y firma los pendientes.` : `Day ${reviewDay} review: open the list and sign the pending items.`)
+        : (language() === "es" ? `Revisión mensual programada para el día ${reviewDay}.` : `Monthly review scheduled for day ${reviewDay}.`);
+    }
+
+    card.classList.toggle("finance-card--warning", Boolean(review.active && count));
+    card.setAttribute("aria-label", t.openLiventXReadyToSign);
+    return true;
+  }
+
   function updateCardLabels() {
     const t = copy();
     CARD_TARGETS.forEach(({ countId, queue }) => {
@@ -249,6 +327,8 @@
           : "openBlocked";
       card.setAttribute("aria-label", t[key]);
     });
+    const liventxCard = document.getElementById("financeLiventXSigningCard");
+    if (liventxCard) liventxCard.setAttribute("aria-label", t.openLiventXReadyToSign);
     if (closeButton) closeButton.setAttribute("aria-label", t.close);
   }
 
@@ -259,14 +339,27 @@
     });
     const data = await response.json().catch(() => null);
     if (!response.ok || data?.ok === false) throw new Error(data?.error || "Finance source unavailable");
+    latestDashboardData = data;
     return data;
   }
 
   async function loadQueue(queue) {
     const data = await loadDashboard();
+    updateLiventXSigningCard(data);
     return Array.isArray(data?.summary?.workQueues?.[queue])
       ? data.summary.workQueues[queue]
       : [];
+  }
+
+  async function refreshLiventXSigningCard() {
+    try {
+      const data = await loadDashboard();
+      updateLiventXSigningCard(data);
+    } catch {
+      const card = ensureLiventXSigningCard();
+      const status = card?.querySelector("#financeLiventXSignStatus");
+      if (status) status.textContent = copy().error;
+    }
   }
 
   function agingRows(data, currency, bucketKey) {
@@ -327,6 +420,7 @@
     setLoadingDialog(title, trigger);
     try {
       const data = await loadDashboard();
+      updateLiventXSigningCard(data);
       const rows = agingRows(data, currency, bucketKey);
       renderDialogRows("aging", rows, currency);
     } catch {
@@ -374,8 +468,13 @@
       makeInteractive(card, queue);
       attached += 1;
     });
+    const liventxCard = ensureLiventXSigningCard();
+    if (liventxCard && !liventxCardLoadStarted) {
+      liventxCardLoadStarted = true;
+      refreshLiventXSigningCard();
+    }
     if (attached) updateCardLabels();
-    return attached === CARD_TARGETS.length;
+    return attached === CARD_TARGETS.length && Boolean(liventxCard);
   }
 
   function agingTarget(bar) {
@@ -443,6 +542,7 @@
       if (event.target.closest(".finance-language-control button[data-lang]")) {
         window.setTimeout(() => {
           updateCardLabels();
+          updateLiventXSigningCard(latestDashboardData);
           decorateAgingBars();
         }, 0);
       }
