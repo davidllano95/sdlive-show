@@ -34,13 +34,27 @@ test("English Wonderlust CTA is redirected to an English destination", () => {
   assert.match(edge, /setAttribute\("href", "\/en\/"\)/);
 });
 
-test("testimonial long copy uses accessible progressive disclosure", () => {
+test("testimonial long copy uses accessible progressive disclosure and can shrink again", () => {
   assert.match(css, /-webkit-line-clamp:\s*7/);
   assert.match(runtime, /Read more/);
   assert.match(runtime, /Leer más/);
   assert.match(runtime, /aria-controls/);
   assert.match(runtime, /aria-expanded/);
   assert.match(runtime, /scrollHeight > quote\.clientHeight/);
+  assert.match(css, /\.testimonials--public \.testimonial-card\s*\{[^}]*min-height:\s*0;/s);
+  assert.match(css, /\.testimonials--public \.testimonial-card\s*\{[^}]*height:\s*auto;/s);
+});
+
+test("final public mobile supported-brand layouts use simple stable grids", () => {
+  assert.match(css, /#misiSupportedBrands \.supported-reveal-logos--misi\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\)/s);
+  assert.match(css, /#wonderlustSupportedBrands \.supported-reveal-logos--wonderlust\s*\{[^}]*grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)/s);
+  assert.match(css, /#wonderlustSupportedBrands[\s\S]*\.supported-brand-tile:last-child:not\(\.supported-brand-tile--featured\)[\s\S]*grid-column:\s*auto/);
+});
+
+test("PA visual frame is reduced on desktop and mobile without changing rental data", () => {
+  assert.match(css, /equipment-card--wide\[data-rental-item=\"pa\"\][\s\S]*height:\s*440px\s*!important/);
+  assert.match(css, /@media \(max-width: 720px\)[\s\S]*equipment-card--wide\[data-rental-item=\"pa\"\][\s\S]*height:\s*350px\s*!important/);
+  assert.match(css, /equipment-pa-pair[\s\S]*transform:\s*translateY\(-20px\)\s*!important/);
 });
 
 test("rental request is guarded in both browser UX and public backend edge", () => {
