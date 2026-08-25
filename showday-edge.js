@@ -1,4 +1,5 @@
 const SHOWDAY_RUNTIME_VERSION = "20260824-2";
+const PUBLIC_AUDIT_RUNTIME_VERSION = "20260825-1";
 
 const SHARED_PUBLIC_HEADER_HTML = `
 <header class="site-header" id="siteHeader" data-sdlive-shared-public-header>
@@ -47,18 +48,35 @@ const SHARED_PUBLIC_HEADER_HTML = `
   </div>
 </header>`;
 
+const PUBLIC_WHATSAPP_HTML = `
+<a aria-label="WhatsApp: @samd.llano95" class="whatsapp-float" href="https://wa.me/573192473948" id="whatsappFloat" rel="noopener" target="_blank">
+  <svg aria-hidden="true" fill="#06070b" height="26" viewBox="0 0 24 24" width="26">
+    <path d="M12 2C6.48 2 2 6.48 2 12c0 1.85.5 3.58 1.36 5.07L2 22l5.08-1.33A9.94 9.94 0 0012 22c5.52 0 10-4.48 10-10S17.52 2 12 2zm0 18c-1.6 0-3.1-.43-4.4-1.18l-.31-.18-3.02.79.81-2.94-.2-.32A7.94 7.94 0 014 12c0-4.41 3.59-8 8-8s8 3.59 8 8-3.59 8-8 8zm4.36-5.61c-.24-.12-1.43-.7-1.65-.78-.22-.08-.38-.12-.54.12-.16.24-.62.78-.76.94-.14.16-.28.18-.52.06-.24-.12-1.01-.37-1.92-1.18-.71-.63-1.19-1.42-1.33-1.66-.14-.24-.01-.37.11-.49.11-.11.24-.28.36-.42.12-.14.16-.24.24-.4.08-.16.04-.3-.02-.42-.06-.12-.54-1.3-.74-1.78-.19-.46-.39-.4-.54-.41-.14-.01-.3-.01-.46-.01-.16 0-.42.06-.64.3-.22.24-.84.82-.84 2s.86 2.32.98 2.48c.12.16 1.7 2.6 4.12 3.64.58.25 1.03.4 1.38.51.58.18 1.11.16 1.53.1.47-.07 1.43-.58 1.63-1.15.2-.57.2-1.05.14-1.15-.06-.1-.22-.16-.46-.28z"></path>
+  </svg>
+</a>`;
+
 export function applyShowDayRuntime(response) {
   const contentType = response?.headers?.get("content-type") || "";
   if (!response || !response.ok || !contentType.includes("text/html")) return response;
+
+  const responseLanguage = String(response.headers.get("Content-Language") || "en").toLowerCase();
+  const isSpanishResponse = responseLanguage.startsWith("es");
 
   return new HTMLRewriter()
     .on("head", {
       element(element) {
         element.append(
           `<link rel="stylesheet" href="/showday-runtime.css?v=${SHOWDAY_RUNTIME_VERSION}" data-sdlive-showday-runtime/>` +
-          `<script defer src="/showday-runtime.js?v=${SHOWDAY_RUNTIME_VERSION}" data-sdlive-showday-runtime></script>`,
+          `<script defer src="/showday-runtime.js?v=${SHOWDAY_RUNTIME_VERSION}" data-sdlive-showday-runtime></script>` +
+          `<link rel="stylesheet" href="/public-audit-closeout.css?v=${PUBLIC_AUDIT_RUNTIME_VERSION}" data-sdlive-public-audit/>` +
+          `<script defer src="/public-audit-closeout.js?v=${PUBLIC_AUDIT_RUNTIME_VERSION}" data-sdlive-public-audit></script>`,
           { html: true }
         );
+      }
+    })
+    .on("body.seo-page", {
+      element(element) {
+        element.append(PUBLIC_WHATSAPP_HTML, { html: true });
       }
     })
     .on(".seo-header", {
@@ -69,6 +87,23 @@ export function applyShowDayRuntime(response) {
     .on("#showdayToggle", {
       element(element) {
         element.remove();
+      }
+    })
+    .on("#contactTurnstile, #rentalTurnstile", {
+      element(element) {
+        element.removeAttribute("aria-label");
+      }
+    })
+    .on(".quick-view-btn", {
+      element(element) {
+        const englishLabel = element.getAttribute("data-en") || "";
+        const englishHref = element.getAttribute("data-en-href") || "";
+        if (!englishLabel.startsWith("Explore live and broadcast audio")) return;
+
+        element.setAttribute("data-en-href", "/en/");
+        if (!isSpanishResponse && (!englishHref || englishHref.includes("audio-eventos-streaming-teatro-bogota"))) {
+          element.setAttribute("href", "/en/");
+        }
       }
     })
     .transform(response);
