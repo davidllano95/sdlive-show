@@ -42,6 +42,12 @@
   overflow: hidden;
 }
 
+.testimonials--public .testimonial-card > p.testimonial-quote--shared-expanded {
+  display: block;
+  -webkit-line-clamp: unset;
+  overflow: hidden;
+}
+
 .testimonials--public .testimonial-card > p.testimonial-quote--collapsible.is-expanded {
   display: block;
   overflow: visible;
