@@ -1,6 +1,10 @@
 (() => {
   const TESTIMONIAL_COLLAPSE_CLASS = "testimonial-quote--collapsible";
   const TESTIMONIAL_EXPANDED_CLASS = "is-expanded";
+  const TESTIMONIAL_SHARED_EXPANDED_CLASS = "testimonial-quote--shared-expanded";
+  const TESTIMONIAL_OVERFLOW_TOLERANCE = 2;
+  let activeTestimonialQuoteId = null;
+  let testimonialResizeFrame = 0;
 
   function currentLanguage() {
     return String(document.documentElement.lang || "en").toLowerCase().startsWith("es")
@@ -49,6 +53,10 @@
     return expanded ? "Read less" : "Read more";
   }
 
+  function testimonialCards() {
+    return Array.from(document.querySelectorAll(".testimonials--public .testimonial-card"));
+  }
+
   function ensureTestimonialDisclosure(card, index) {
     const quote = card.querySelector(":scope > p");
     if (!quote) return;
@@ -64,32 +72,77 @@
       quote.insertAdjacentElement("afterend", button);
 
       button.addEventListener("click", () => {
-        const expanded = quote.classList.toggle(TESTIMONIAL_EXPANDED_CLASS);
-        button.setAttribute("aria-expanded", String(expanded));
-        button.textContent = testimonialButtonLabel(expanded);
+        if (activeTestimonialQuoteId === quote.id) {
+          collapseTestimonialGroup();
+          return;
+        }
+
+        expandTestimonialGroup(quote);
       });
     }
+  }
 
-    quote.classList.remove(TESTIMONIAL_EXPANDED_CLASS, TESTIMONIAL_COLLAPSE_CLASS);
-    button.hidden = true;
-    button.setAttribute("aria-expanded", "false");
-    button.textContent = testimonialButtonLabel(false);
+  function collapseTestimonialGroup() {
+    activeTestimonialQuoteId = null;
 
-    quote.classList.add(TESTIMONIAL_COLLAPSE_CLASS);
-    const overflows = quote.scrollHeight > quote.clientHeight + 2;
+    testimonialCards().forEach((card) => {
+      const quote = card.querySelector(":scope > p");
+      const button = card.querySelector(":scope > .testimonial-disclosure");
+      if (!quote || !button) return;
 
-    if (!overflows) {
-      quote.classList.remove(TESTIMONIAL_COLLAPSE_CLASS);
-      return;
-    }
+      quote.classList.remove(TESTIMONIAL_EXPANDED_CLASS, TESTIMONIAL_SHARED_EXPANDED_CLASS);
+      quote.style.removeProperty("max-height");
+      quote.classList.add(TESTIMONIAL_COLLAPSE_CLASS);
 
-    button.hidden = false;
+      const overflows = quote.scrollHeight > quote.clientHeight + TESTIMONIAL_OVERFLOW_TOLERANCE;
+      if (!overflows) quote.classList.remove(TESTIMONIAL_COLLAPSE_CLASS);
+
+      button.hidden = !overflows;
+      button.setAttribute("aria-expanded", "false");
+      button.textContent = testimonialButtonLabel(false);
+    });
+  }
+
+  function expandTestimonialGroup(activeQuote) {
+    if (!activeQuote?.id) return;
+
+    const targetHeight = activeQuote.scrollHeight;
+    activeTestimonialQuoteId = activeQuote.id;
+
+    testimonialCards().forEach((card) => {
+      const quote = card.querySelector(":scope > p");
+      const button = card.querySelector(":scope > .testimonial-disclosure");
+      if (!quote || !button) return;
+
+      const fullHeight = quote.scrollHeight;
+      const visibleHeight = Math.min(fullHeight, targetHeight);
+      const isActive = quote.id === activeTestimonialQuoteId;
+      const hasMoreBeyondTarget = fullHeight > targetHeight + TESTIMONIAL_OVERFLOW_TOLERANCE;
+
+      quote.classList.remove(TESTIMONIAL_COLLAPSE_CLASS, TESTIMONIAL_EXPANDED_CLASS);
+      quote.classList.add(TESTIMONIAL_SHARED_EXPANDED_CLASS);
+      quote.style.maxHeight = `${visibleHeight}px`;
+      if (isActive) quote.classList.add(TESTIMONIAL_EXPANDED_CLASS);
+
+      button.hidden = !isActive && !hasMoreBeyondTarget;
+      button.setAttribute("aria-expanded", String(isActive));
+      button.textContent = testimonialButtonLabel(isActive);
+    });
   }
 
   function syncTestimonials() {
-    document.querySelectorAll(".testimonials--public .testimonial-card").forEach(
-      (card, index) => ensureTestimonialDisclosure(card, index)
-    );
+    testimonialCards().forEach((card, index) => ensureTestimonialDisclosure(card, index));
+    collapseTestimonialGroup();
+  }
+
+  function refreshExpandedTestimonials() {
+    if (!activeTestimonialQuoteId) return;
+    const activeQuote = document.getElementById(activeTestimonialQuoteId);
+    if (!activeQuote) {
+      collapseTestimonialGroup();
+      return;
+    }
+    expandTestimonialGroup(activeQuote);
   }
 
   function rentalHasSelection() {
@@ -163,6 +216,12 @@
     langObserver.observe(document.documentElement, {
       attributes: true,
       attributeFilter: ["lang"]
+    });
+
+    window.addEventListener("resize", () => {
+      if (!activeTestimonialQuoteId) return;
+      window.cancelAnimationFrame(testimonialResizeFrame);
+      testimonialResizeFrame = window.requestAnimationFrame(refreshExpandedTestimonials);
     });
 
     if (!document.querySelector(".analytics-consent-banner")) {

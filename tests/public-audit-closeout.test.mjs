@@ -45,6 +45,16 @@ test("testimonial long copy uses accessible progressive disclosure and can shrin
   assert.match(css, /\.testimonials--public \.testimonial-card\s*\{[^}]*height:\s*auto;/s);
 });
 
+test("testimonial expansion synchronizes every quote to the active quote height", () => {
+  assert.match(runtime, /function expandTestimonialGroup\(activeQuote\)/);
+  assert.match(runtime, /const targetHeight = activeQuote\.scrollHeight/);
+  assert.match(runtime, /const visibleHeight = Math\.min\(fullHeight, targetHeight\)/);
+  assert.match(runtime, /fullHeight > targetHeight \+ TESTIMONIAL_OVERFLOW_TOLERANCE/);
+  assert.match(runtime, /button\.hidden = !isActive && !hasMoreBeyondTarget/);
+  assert.match(runtime, /activeTestimonialQuoteId === quote\.id[\s\S]*collapseTestimonialGroup\(\)/);
+  assert.match(css, /testimonial-quote--shared-expanded\s*\{[^}]*display:\s*block;[^}]*overflow:\s*hidden;/s);
+});
+
 test("final public mobile supported-brand layouts use simple stable grids", () => {
   assert.match(css, /#misiSupportedBrands \.supported-reveal-logos--misi\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\)/s);
   assert.match(css, /#wonderlustSupportedBrands \.supported-reveal-logos--wonderlust\s*\{[^}]*grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)/s);
