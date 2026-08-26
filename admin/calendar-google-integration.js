@@ -14,7 +14,7 @@
   status.className = "calendar-google-status";
   status.setAttribute("role", "status");
   status.setAttribute("aria-live", "polite");
-  status.innerHTML = '<i aria-hidden="true"></i><span>sam@sdlive.show · projection + overlay</span>';
+  status.innerHTML = '<i aria-hidden="true"></i><span>sam@sdlive.show · work projection + reminders overlay</span>';
 
   const createButton = document.getElementById("openCreateWork");
   if (createButton) actions.insertBefore(syncButton, createButton);
