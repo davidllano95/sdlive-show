@@ -13,13 +13,14 @@ import { validateRentalPresentationExtras } from "./rental-presentation-contract
 import {
   googleCalendarDiagnostic,
   mergeGoogleCalendarOverlayResponse,
-  projectCreatedWorkToGoogleCalendar,
-  syncRegistroToGoogleCalendar
+  projectCreatedWorkToGoogleCalendar
 } from "./google-calendar-integration.js";
+import { syncCalendarProjectionToGoogleCalendar } from "./site-schedule-google-projection.js";
 
 const PUBLIC_HOME_PATHS = new Set(["/", "/en", "/es-co"]);
 const ADMIN_CALENDAR_PATH = "/api/admin/calendar/events";
 const ADMIN_CALENDAR_SYNC_PATH = "/api/admin/calendar/google-sync";
+const ADMIN_SITE_SCHEDULE_EVENT_PREFIX = "/api/admin/site-schedule/events/";
 
 function normalizedPath(request) {
   const url = new URL(request.url);
@@ -86,10 +87,10 @@ async function handleGoogleCalendarSync(request, env) {
   if (!user?.email) return json({ ok: false, error: "Unauthorized" }, 403);
 
   try {
-    const result = await syncRegistroToGoogleCalendar(env);
+    const result = await syncCalendarProjectionToGoogleCalendar(env);
     return json({
       ok: true,
-      source: "REGISTRO",
+      source: "REGISTRO + Site Schedule",
       projection: "Google Calendar",
       actor: user.email,
       ...result
@@ -138,8 +139,28 @@ async function decorateCreatedWorkResponse(response, env, payload) {
   }
 }
 
+function scheduleGoogleSyncAfterSiteScheduleMutation(path, request, response, env, ctx) {
+  if (
+    !path.startsWith(ADMIN_SITE_SCHEDULE_EVENT_PREFIX) ||
+    !["PUT", "DELETE"].includes(request.method) ||
+    !response?.ok ||
+    typeof ctx?.waitUntil !== "function"
+  ) {
+    return;
+  }
+
+  ctx.waitUntil(
+    syncCalendarProjectionToGoogleCalendar(env).catch((error) => {
+      // Site Schedule remains canonical for website presentation. A Google
+      // Calendar projection failure must never turn a successful schedule save
+      // into an error or write anything back to REGISTRO/AppSheet.
+      console.error("[SD.Live] Site Schedule saved but Google Calendar projection failed", error);
+    })
+  );
+}
+
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const path = normalizedPath(request);
     const url = new URL(request.url);
 
@@ -167,6 +188,8 @@ export default {
       : null;
 
     const response = await baseWorker.fetch(request, env);
+
+    scheduleGoogleSyncAfterSiteScheduleMutation(path, request, response, env, ctx);
 
     if (path === ADMIN_CALENDAR_PATH && request.method === "GET") {
       // Site Schedule deliberately consumes ?view=source. Keep that route
