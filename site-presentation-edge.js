@@ -43,12 +43,16 @@ function tagsHtml(tags) {
   return (tags || []).slice(0, 12).map((tag) => `<li>${escapeText(tag)}</li>`).join("");
 }
 
-export function applySitePresentation(response, published) {
+export function applySitePresentation(response, published, languageHint = "") {
   const type = response.headers.get("Content-Type") || "";
   if (!response.ok || !type.includes("text/html") || !published?.content) return response;
 
   const content = published.content;
-  const lang = String(response.headers.get("Content-Language") || "en").toLowerCase().startsWith("es") ? "es" : "en";
+  const lang = languageHint === "es"
+    ? "es"
+    : languageHint === "en"
+      ? "en"
+      : String(response.headers.get("Content-Language") || "en").toLowerCase().startsWith("es") ? "es" : "en";
   const managedTargets = new Set(SITE_PRESENTATION_ALLOWED_ANCHORS);
 
   const rewriter = new HTMLRewriter()
