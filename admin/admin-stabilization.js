@@ -143,8 +143,25 @@
     document.body.appendChild(gate);
   }
 
+  function loadEditorExtensions() {
+    if (!document.querySelector(".editor-backoffice")) return;
+    const scripts = [
+      "/admin/editor/site-presentation-editor.js?v=20260825-1",
+      "/admin/editor/admin-stabilization-cms.js?v=20260825-1",
+      "/admin/editor/rental-stabilization-editor.js?v=20260825-1"
+    ];
+    scripts.forEach((src) => {
+      if (document.querySelector(`script[src="${src}"]`)) return;
+      const script = document.createElement("script");
+      script.src = src;
+      script.defer = true;
+      document.body.appendChild(script);
+    });
+  }
+
   normalizeNavigation();
   normalizeContextActions();
   createMobileNavigation();
   createEditorMobileGate();
+  loadEditorExtensions();
 })();
