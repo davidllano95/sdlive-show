@@ -320,7 +320,7 @@ export function normalizeGoogleCalendarOverlay(items) {
       startDate: dates.startDate,
       endDate: dates.endDate,
       client: "Google Calendar",
-      project: summary,
+      project: `GCal · ${summary}`,
       role: "",
       currency: "",
       state: "Calendar",
@@ -375,9 +375,12 @@ export async function syncRegistroToGoogleCalendar(env, { fetchImpl = fetch, now
 
   for (const event of source) {
     const existing = existingByRegistroId.get(event.id) || null;
-    if (writes >= MAX_SYNC_WRITES && !existing) {
-      result.capped = true;
-      continue;
+    if (writes >= MAX_SYNC_WRITES) {
+      const desired = googleProjectionResource(event);
+      if (!existing || comparableGoogleEvent(existing) !== comparableGoogleEvent(desired)) {
+        result.capped = true;
+        continue;
+      }
     }
     try {
       const action = await upsertGoogleCalendarProjection(env, event, {
