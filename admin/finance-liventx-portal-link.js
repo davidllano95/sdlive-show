@@ -21,12 +21,15 @@
 
   function configureLink(link, label) {
     const t = copy();
-    link.href = PORTAL_URL;
-    link.target = "_blank";
-    link.rel = "noopener noreferrer";
-    link.textContent = label;
-    link.setAttribute("aria-label", t.aria);
-    link.addEventListener("click", (event) => event.stopPropagation());
+    if (link.href !== `${PORTAL_URL}/`) link.href = PORTAL_URL;
+    if (link.target !== "_blank") link.target = "_blank";
+    if (link.rel !== "noopener noreferrer") link.rel = "noopener noreferrer";
+    if (link.textContent !== label) link.textContent = label;
+    if (link.getAttribute("aria-label") !== t.aria) link.setAttribute("aria-label", t.aria);
+    if (!link.dataset.financePortalBound) {
+      link.dataset.financePortalBound = "true";
+      link.addEventListener("click", (event) => event.stopPropagation());
+    }
   }
 
   function ensureCardLink() {
@@ -76,19 +79,35 @@
     syncDialogLink();
   }
 
+  function scheduleDialogSync() {
+    window.setTimeout(syncDialogLink, 0);
+  }
+
   function start() {
     sync();
-    const observer = new MutationObserver(sync);
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true,
-      attributes: true,
-      attributeFilter: ["hidden"]
-    });
 
     document.addEventListener("click", (event) => {
       if (event.target.closest(".finance-language-control button[data-lang]")) {
         window.setTimeout(sync, 0);
+        return;
+      }
+
+      if (
+        event.target.closest("#financeLiventXSigningCard") ||
+        event.target.closest('[data-finance-action-queue="liventxReadyToSign"]') ||
+        event.target.closest("[data-finance-action-close]")
+      ) {
+        scheduleDialogSync();
+      }
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" && event.key !== " ") return;
+      if (
+        event.target.closest?.("#financeLiventXSigningCard") ||
+        event.target.closest?.('[data-finance-action-queue="liventxReadyToSign"]')
+      ) {
+        scheduleDialogSync();
       }
     });
   }
