@@ -10,8 +10,16 @@ import {
 } from "./media-presentation-edge.js";
 import { applyRentalPresentationRuntime } from "./rental-presentation-edge.js";
 import { validateRentalPresentationExtras } from "./rental-presentation-contract.js";
+import {
+  googleCalendarDiagnostic,
+  mergeGoogleCalendarOverlayResponse,
+  projectCreatedWorkToGoogleCalendar,
+  syncRegistroToGoogleCalendar
+} from "./google-calendar-integration.js";
 
 const PUBLIC_HOME_PATHS = new Set(["/", "/en", "/es-co"]);
+const ADMIN_CALENDAR_PATH = "/api/admin/calendar/events";
+const ADMIN_CALENDAR_SYNC_PATH = "/api/admin/calendar/google-sync";
 
 function normalizedPath(request) {
   const url = new URL(request.url);
@@ -72,9 +80,71 @@ async function validateRentalPut(request) {
   }
 }
 
+async function handleGoogleCalendarSync(request, env) {
+  if (request.method !== "POST") return json({ ok: false, error: "Method not allowed" }, 405);
+  const user = await verifyAdminViaExistingApi(request, env);
+  if (!user?.email) return json({ ok: false, error: "Unauthorized" }, 403);
+
+  try {
+    const result = await syncRegistroToGoogleCalendar(env);
+    return json({
+      ok: true,
+      source: "REGISTRO",
+      projection: "Google Calendar",
+      actor: user.email,
+      ...result
+    });
+  } catch (error) {
+    console.error("[SD.Live] Google Calendar sync failed", error);
+    return json({
+      ok: false,
+      error: "Could not sync Google Calendar",
+      googleCalendar: {
+        ...googleCalendarDiagnostic(error),
+        calendarId: String(env?.GOOGLE_CALENDAR_ID || "").trim() || null
+      }
+    }, 503);
+  }
+}
+
+async function decorateCreatedWorkResponse(response, env, payload) {
+  if (!response?.ok || !(response.headers.get("content-type") || "").includes("application/json")) return response;
+  const data = await response.json().catch(() => null);
+  if (!data?.ok) return json(data || { ok: false, error: "Invalid Calendar response" }, response.status);
+
+  try {
+    const projection = await projectCreatedWorkToGoogleCalendar(env, payload || {});
+    return json({
+      ...data,
+      googleCalendar: {
+        available: true,
+        calendarId: String(env?.GOOGLE_CALENDAR_ID || "").trim() || null,
+        projection
+      }
+    }, response.status);
+  } catch (error) {
+    // REGISTRO is canonical. Never roll back or turn a successful work create
+    // into an error merely because the secondary Google Calendar projection is
+    // unavailable.
+    console.error("[SD.Live] Work created but Google Calendar projection failed", error);
+    return json({
+      ...data,
+      googleCalendar: {
+        ...googleCalendarDiagnostic(error),
+        calendarId: String(env?.GOOGLE_CALENDAR_ID || "").trim() || null,
+        projection: "degraded"
+      }
+    }, response.status);
+  }
+}
+
 export default {
   async fetch(request, env) {
     const path = normalizedPath(request);
+
+    if (path === ADMIN_CALENDAR_SYNC_PATH) {
+      return handleGoogleCalendarSync(request, env);
+    }
 
     if (
       path === "/api/content/site-presentation" ||
@@ -91,7 +161,19 @@ export default {
       if (invalid) return invalid;
     }
 
+    const calendarCreatePayload = path === ADMIN_CALENDAR_PATH && request.method === "POST"
+      ? await request.clone().json().catch(() => null)
+      : null;
+
     const response = await baseWorker.fetch(request, env);
+
+    if (path === ADMIN_CALENDAR_PATH && request.method === "GET") {
+      return mergeGoogleCalendarOverlayResponse(response, env);
+    }
+
+    if (path === ADMIN_CALENDAR_PATH && request.method === "POST") {
+      return decorateCreatedWorkResponse(response, env, calendarCreatePayload);
+    }
 
     if (
       !PUBLIC_HOME_PATHS.has(path) ||
