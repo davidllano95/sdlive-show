@@ -23,6 +23,7 @@ const PUBLIC_FORM_LIMITS = {
 
 const FINANCE_PAGE_PATH = "/admin/finance";
 const FINANCE_RUNTIME_VERSION = "20260825-2";
+const LIVENTX_PORTAL_RUNTIME_VERSION = "20260825-2";
 
 function normalizedPath(request) {
   const url = new URL(request.url);
@@ -88,6 +89,14 @@ function decorateFinanceAdminPage(response) {
         element.before(
           `<script src="/admin/finance-runtime-stability.js?v=${FINANCE_RUNTIME_VERSION}"></script>`,
           { html: true }
+        );
+      }
+    })
+    .on('script[src*="finance-liventx-portal-link.js"]', {
+      element(element) {
+        element.setAttribute(
+          "src",
+          `/admin/finance-liventx-portal-link.js?v=${LIVENTX_PORTAL_RUNTIME_VERSION}`
         );
       }
     })
