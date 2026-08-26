@@ -6,13 +6,13 @@
 |---|---|
 | Última reconciliación | **2026-08-25 — America/Bogota** |
 | Rama operativa | `main` |
-| `main` al reconciliar | **PR #137 · `44c852f6b9d4f11aaa31bb779b2339e7eefbd735`** |
+| `main` al reconciliar | **PR #141 · `159abff630188399ea9455ed4fe8911758f1fdf3`** |
 | Producción | `https://sdlive.show` |
 | Media pública | `https://media.sdlive.show` |
-| Estado macro | **Finance read-only + Calendar create + Site Schedule + automatic Show Day operativos; public stabilization muy avanzada; Admin visual audit aún abierto** |
+| Estado macro | **Finance read-only + Calendar create + Site Schedule + automatic Show Day operativos; Finance freeze recuperado/PASS; Admin visual audit aún abierto** |
 | Active Gate | **post-integration Admin visual audit + stabilization** |
 | Bloqueado | **Generic Finance Phase 3 write-back** |
-| Paso manual inmediato | **1 smoke en `/admin/finance/` para PR #137; luego continuar Admin audit record-first** |
+| Paso manual inmediato | **continuar Admin audit record-first desde `/admin/` desktop** |
 
 ## Precedencia
 
@@ -70,7 +70,7 @@ Overview ligero, health, navegación y Admin-only Show Day QA override.
 ### `/admin/finance/` — Finance
 Read-only sobre Google Sheets/API para SD.Live Track. COP/USD separados; no D1 Finance mirror; no generic write-back.
 
-Capacidades recientes:
+Capacidades actuales:
 
 - top queues: **Por facturar / Cobrable ahora / Flujo bloqueado**;
 - Aging drilldowns;
@@ -81,10 +81,25 @@ Capacidades recientes:
 - fechas Google Sheets normalizadas para evitar ambigüedad M/D vs D/M;
 - **LiventX · Listo para firmar**: evaluación presente + firma pendiente + no pagado;
 - revisión mensual LiventX activa desde el día **20**;
-- CTA al portal `https://proveedores.aoscentral.com` desde card y modal;
-- PR #137 agrega guard de transporte/timeout para que Finance no pueda quedar indefinidamente en `Connecting to SD.Live Track…`.
+- CTA al portal `https://proveedores.aoscentral.com` desde card y modal.
 
-**PR #137 está mergeado con CI verde; producción smoke todavía pendiente al momento de esta reconciliación.**
+### Finance reliability status — CLOSED/PASS
+
+Sequence:
+
+- **PR #137:** intentó endurecer timeouts/estado de conexión tras un hang de Finance.
+- **PR #139/#140:** redujeron capas, forzaron la ruta Finance por Worker y mejoraron diagnóstico/cache behavior.
+- **PR #141:** encontró la causa real del freeze del navegador: `finance-liventx-portal-link.js` instalaba un `MutationObserver` sobre todo `document.body` y su callback reescribía texto/atributos dentro del mismo subtree observado. Eso podía crear un ciclo mutación → callback → mutación, saturando el main thread; una vez saturado, Safari no podía ejecutar ni siquiera los timeouts, por eso el síntoma parecía un connection hang.
+
+PR #141:
+
+- elimina el DOM-wide observer;
+- usa eventos explícitos de click/keyboard/language;
+- hace idempotente la configuración de links;
+- cache-bustea el runtime afectado;
+- amplía tests de freeze para prohibir este patrón en los runtimes Finance.
+
+**Production smoke #141: PASS. `/admin/finance/` vuelve a cargar y la página permanece responsive. No pedir otro smoke para #141.**
 
 ### `/admin/calendar/` — Calendar / Operations
 
@@ -148,19 +163,16 @@ Issue #83 retains only the AppSheet/reminder follow-up: reminder/bot eligibility
 
 PR #134 fixed false `Duraciones de pago inválidas` caused by ambiguous formatted dates such as `2/4/2026` and `5/11/2026`.
 
-PR #137 then hardened transport after production showed a hanging connection:
+Current Finance date contract:
 
-- Finance uses the previously proven Sheets formatted-date transport;
-- only Finance date columns are normalized immediately back to numeric Sheets serials before Finance parsers consume them;
-- ambiguous Google-style slash dates are interpreted deterministically as M/D unless the first component cannot be a month;
-- upstream OAuth/Sheets requests have a bounded timeout;
-- the UI cannot remain forever in a fake `Connecting…` state.
-
-No Sheet/AppSheet writes or finance workflow ownership changed.
+- recognized date columns are normalized before calculations;
+- ambiguous Google-style slash dates use deterministic M/D unless the first component cannot be a month;
+- canonical date calculations remain timezone-aware where applicable;
+- no Sheet/AppSheet writes or finance workflow ownership changed.
 
 ## LiventX signing workflow
 
-Read-only Finance support now includes:
+Read-only Finance support includes:
 
 - queue `LiventX · Listo para firmar`;
 - eligibility: LiventX + evaluation date present + signature missing + not paid + not `Pendiente Envio`;
@@ -171,8 +183,6 @@ Read-only Finance support now includes:
 This does not write `Fecha firma`; signing still occurs in the external portal/current workflow.
 
 ## Public-site stabilization — current state
-
-The representative route/header matrix has been reviewed across desktop/mobile, EN/ES and normal/Show Day branches where applicable.
 
 Recent merged public fixes:
 
@@ -216,7 +226,7 @@ Automatic Show Day is CLOSED/PASS:
 - Admin-only Visual QA override `Auto / Force On / Force Off` exists and expires at Bogotá day-end;
 - override is separate from canonical Site Schedule and `REGISTRO`/AppSheet.
 
-Future concurrency backlog: support explicit **Primary / Secondary** presentation priority for simultaneous active Show Day blocks; multiple active Primary blocks should surface an Admin conflict rather than silently choosing by sort order.
+Future concurrency backlog: explicit **Primary / Secondary** presentation priority for simultaneous active Show Day blocks; multiple active Primary blocks should surface an Admin conflict rather than silently choosing by sort order.
 
 Low-priority polish: Show Day favicon and authoritative prepaint to remove normal-violet → red startup pop.
 
@@ -230,9 +240,13 @@ Future shared Admin/Finance engine for:
 
 - Cuenta de cobro;
 - Cotización;
-- Factura / invoice draft.
+- Factura / invoice draft;
+- reuse SD.Live Track/Finance/Rental/future CRM data;
+- branded PDF preview/export;
+- revisions/status lifecycle;
+- no second finance source of truth.
 
-It should reuse SD.Live Track/Finance/Rental/future CRM data, generate branded PDFs, preserve revisions/statuses and avoid a second finance source of truth. A locally generated PDF must **not** be represented as a DIAN-valid Colombian electronic invoice until legal/e-invoicing requirements and provider integration are explicitly designed and verified.
+A locally generated PDF must **not** be represented as a DIAN-valid Colombian electronic invoice until legal/e-invoicing requirements and provider integration are explicitly designed and verified.
 
 ### Other future items
 
@@ -246,18 +260,18 @@ It should reuse SD.Live Track/Finance/Rental/future CRM data, generate branded P
 ## Relevant docs
 
 - `README.md` — architecture/current operating overview.
+- `docs/checkpoints/handoff-pr141-2026-08-25.md` — latest checkpoint and exact continuation.
 - `docs/roadmap/post-integration-visual-audit-2026-08-23.md` — active audit contract.
 - `docs/roadmap/finance-phase2-real-use-2026-08-23.md` — Finance real-use history/current rules.
 - `docs/roadmap/future-finance-document-generator-2026-08-25.md` — future document generation.
 - `docs/roadmap/calendar-operations-hub-2026-08-23.md` — Calendar/AppSheet/Site Schedule handoff.
-- `docs/roadmap/future-crm-ai-vendors-2026-08-23.md` — future vendor candidates.
 - `ROADMAP_MASTER_CHECKLIST.md` — historical/future backlog; lower precedence than current-state docs above.
 
 ## Exact continuation point
 
-1. **Production smoke PR #137:** reload `/admin/finance/`. It must leave `Connecting to SD.Live Track…` and either load Finance normally or fail visibly within the bounded timeout. If it loads, verify the existing values/cards return.
-2. If PASS, record PR #137 production smoke PASS.
-3. Resume the **Admin visual audit record-first**, starting with `/admin/` desktop unless the user chooses another Admin surface.
-4. Keep adding findings to issue #126; do **not** fix each finding as discovered.
-5. After all 10 Admin desktop/mobile surfaces are reviewed, reconcile issue #126 against current `main` and implement one coherent Admin stabilization batch.
+1. Finance recovery through **PR #141 is production-smoked PASS**. Do not re-test it unless a new Finance regression appears.
+2. Resume the **Admin visual audit record-first** at `/admin/` desktop.
+3. Keep adding findings to issue #126; do **not** fix each finding as discovered.
+4. Continue the locked 10-surface desktop/mobile sequence one manual action at a time.
+5. After all 10 checks, reconcile issue #126 against current `main` and implement one coherent Admin stabilization batch.
 6. Only after Admin stabilization PASS continue controlled Calendar edit/workflow or unrelated future roadmap work.
