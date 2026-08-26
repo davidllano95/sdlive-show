@@ -27,3 +27,81 @@
   font-weight: 650;
   line-height: 1.4;
 }
+
+.finance-cycle-reminder {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin: 0 0 14px;
+  padding: 15px 16px;
+  border: 1px solid rgba(var(--accent-rgb), .28);
+  border-radius: 16px;
+  background:
+    linear-gradient(135deg, rgba(var(--accent-rgb), .11), transparent 55%),
+    rgba(255,255,255,.025);
+}
+
+.finance-cycle-reminder[data-collection-cycle="close"] {
+  border-color: rgba(233, 184, 106, .34);
+  background:
+    linear-gradient(135deg, rgba(233, 184, 106, .11), transparent 55%),
+    rgba(255,255,255,.025);
+}
+
+.finance-cycle-reminder__copy {
+  min-width: 0;
+}
+
+.finance-cycle-reminder__eyebrow,
+.finance-cycle-reminder__title,
+.finance-cycle-reminder__body {
+  display: block;
+}
+
+.finance-cycle-reminder__eyebrow {
+  margin-bottom: 4px;
+  color: var(--accent);
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.finance-cycle-reminder[data-collection-cycle="close"] .finance-cycle-reminder__eyebrow {
+  color: var(--amber);
+}
+
+.finance-cycle-reminder__title {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.finance-cycle-reminder__body {
+  margin: 4px 0 0;
+  color: var(--soft);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.finance-cycle-reminder__actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 7px;
+}
+
+@media (max-width: 720px) {
+  .finance-cycle-reminder {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .finance-cycle-reminder__actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .finance-cycle-reminder__actions .button {
+    justify-content: center;
+  }
+}
