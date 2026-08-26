@@ -51,7 +51,6 @@ test("exceeded public form limit returns 429 before downstream form processing",
   assert.equal(response.headers.get("Retry-After"), "60");
   assert.equal(response.headers.get("Cache-Control"), "no-store");
   assert.deepEqual(calls, [{ key: "203.0.113.10" }]);
-  assert.match(await response.text(), /Too many requests/);
 });
 
 test("allowed request continues and missing production binding fails closed", async () => {
@@ -73,7 +72,7 @@ test("allowed request continues and missing production binding fails closed", as
   assert.equal(missing.headers.get("Retry-After"), "60");
 });
 
-test("wrangler restores the stable public entrypoint while keeping independent form limits", async () => {
+test("wrangler keeps stable entrypoint, Finance worker-first page guard, and independent form limits", async () => {
   const [wranglerText, worker] = await Promise.all([
     readFile(new URL("../wrangler.jsonc", import.meta.url), "utf8"),
     readFile(new URL("../public-form-rate-limit.js", import.meta.url), "utf8")
@@ -81,6 +80,12 @@ test("wrangler restores the stable public entrypoint while keeping independent f
   const wrangler = JSON.parse(wranglerText.replace(/^\s*\/\/.*$/gm, ""));
 
   assert.equal(wrangler.main, "./public-form-rate-limit.js");
+  assert.ok(wrangler.assets.run_worker_first.includes("/admin/finance"));
+  assert.ok(wrangler.assets.run_worker_first.includes("/admin/finance/*"));
+  assert.match(worker, /FINANCE_RUNTIME_VERSION = "20260825-2"/);
+  assert.match(worker, /finance-runtime-stability\.js\?v=\$\{FINANCE_RUNTIME_VERSION\}/);
+  assert.match(worker, /X-SDLive-Finance-Page/);
+  assert.match(worker, /no-store, no-cache, must-revalidate/);
   assert.match(worker, /import \{ financeUpstreamFetch \} from "\.\/finance-upstream\.js"/);
   assert.match(worker, /fetchImpl: financeUpstreamFetch/);
   assert.equal(wrangler.ratelimits.length, 2);

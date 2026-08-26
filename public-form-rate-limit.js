@@ -21,6 +21,9 @@ const PUBLIC_FORM_LIMITS = {
   }
 };
 
+const FINANCE_PAGE_PATH = "/admin/finance";
+const FINANCE_RUNTIME_VERSION = "20260825-2";
+
 function normalizedPath(request) {
   const url = new URL(request.url);
   return url.pathname.length > 1
@@ -67,6 +70,38 @@ function jsonResponse(data, status, headers = {}) {
       "Cache-Control": "no-store",
       ...headers
     }
+  });
+}
+
+function decorateFinanceAdminPage(response) {
+  const type = response.headers.get("Content-Type") || "";
+  if (!response.ok || !type.includes("text/html")) return response;
+
+  const transformed = new HTMLRewriter()
+    .on('script[src*="finance-runtime-stability.js"]', {
+      element(element) {
+        element.remove();
+      }
+    })
+    .on('script[src*="finance-page.js"]', {
+      element(element) {
+        element.before(
+          `<script src="/admin/finance-runtime-stability.js?v=${FINANCE_RUNTIME_VERSION}"></script>`,
+          { html: true }
+        );
+      }
+    })
+    .transform(response);
+
+  const headers = new Headers(transformed.headers);
+  headers.set("Cache-Control", "no-store, no-cache, must-revalidate");
+  headers.set("Pragma", "no-cache");
+  headers.set("X-SDLive-Finance-Page", `worker-runtime-${FINANCE_RUNTIME_VERSION}`);
+
+  return new Response(transformed.body, {
+    status: transformed.status,
+    statusText: transformed.statusText,
+    headers
   });
 }
 
@@ -177,6 +212,9 @@ export default {
     if (emptyRental) return emptyRental;
 
     const response = await appWorker.fetch(request, env);
+    if (request.method === "GET" && path === FINANCE_PAGE_PATH) {
+      return decorateFinanceAdminPage(response);
+    }
     if (request.method === "GET" && !path.startsWith("/admin")) {
       return applyShowDayRuntime(response);
     }
