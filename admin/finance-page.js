@@ -85,6 +85,15 @@
     }
   }
 
+  function loadStabilization() {
+    if (document.querySelector('script[data-finance-stabilization]')) return;
+    const script = document.createElement("script");
+    script.src = "/admin/finance-stabilization.js?v=20260825-1";
+    script.dataset.financeStabilization = "true";
+    document.body.appendChild(script);
+  }
+
   loadIdentity();
   loadFinance();
+  loadStabilization();
 })();
