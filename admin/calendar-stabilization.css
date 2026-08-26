@@ -1,0 +1,32 @@
+@media (max-width: 820px) {
+  .calendar-content {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .calendar-content .calendar-welcome {
+    order: 0;
+  }
+
+  .calendar-content .calendar-panel {
+    order: 1;
+    margin-top: 2px;
+  }
+
+  .calendar-content .calendar-metrics {
+    order: 2;
+    margin: 14px 0 0;
+  }
+
+  .calendar-content .calendar-footnote {
+    order: 3;
+  }
+
+  .calendar-welcome {
+    padding-bottom: 10px;
+  }
+
+  .calendar-welcome__actions {
+    gap: 7px;
+  }
+}
