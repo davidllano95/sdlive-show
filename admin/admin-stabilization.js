@@ -141,7 +141,8 @@
   function loadPathExtensions() {
     const path = window.location.pathname;
     if (path === "/admin/calendar/" || path === "/admin/calendar") {
-      loadStyle("/admin/calendar-stabilization.css?v=20260825-1", "sdlive-calendar-stabilization");
+      loadStyle("/admin/calendar-stabilization.css?v=20260826-1", "sdlive-calendar-stabilization");
+      loadScript("/admin/calendar-google-integration.js?v=20260826-1", "sdlive-calendar-google-integration");
     }
     if (path.startsWith("/admin/calendar/site-schedule")) {
       loadStyle("/admin/site-schedule-stabilization.css?v=20260825-1", "sdlive-site-schedule-stabilization");
