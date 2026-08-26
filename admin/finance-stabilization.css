@@ -1,0 +1,29 @@
+.finance-metrics > #financeLiventXSigningCard {
+  margin-top: 0 !important;
+}
+
+#financeLiventXSigningCard[data-liventx-urgency="low"] {
+  border-color: rgba(101, 213, 154, .3);
+  background: linear-gradient(180deg, rgba(101, 213, 154, .09), rgba(0, 0, 0, .13));
+}
+
+#financeLiventXSigningCard[data-liventx-urgency="medium"] {
+  border-color: rgba(233, 184, 106, .34);
+  background: linear-gradient(180deg, rgba(233, 184, 106, .1), rgba(0, 0, 0, .13));
+}
+
+#financeLiventXSigningCard[data-liventx-urgency="high"] {
+  border-color: rgba(232, 121, 121, .38);
+  background: linear-gradient(180deg, rgba(232, 121, 121, .11), rgba(0, 0, 0, .13));
+}
+
+#financeLiventXSigningCard[data-liventx-urgency="low"] #financeLiventXSignHint { color: var(--green); }
+#financeLiventXSigningCard[data-liventx-urgency="medium"] #financeLiventXSignHint { color: var(--amber); }
+#financeLiventXSigningCard[data-liventx-urgency="high"] #financeLiventXSignHint { color: #ff9a82; }
+
+#financeLiventXSigningCard #financeLiventXSignHint {
+  display: block;
+  margin-top: 7px;
+  font-weight: 650;
+  line-height: 1.4;
+}

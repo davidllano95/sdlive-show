@@ -72,14 +72,17 @@ test("allowed request continues and missing production binding fails closed", as
   assert.equal(missing.headers.get("Retry-After"), "60");
 });
 
-test("wrangler keeps stable entrypoint, Finance worker-first page guard, and independent form limits", async () => {
-  const [wranglerText, worker] = await Promise.all([
+test("wrangler keeps stabilization wrapper, stable base worker, Finance page guard, and independent form limits", async () => {
+  const [wranglerText, worker, wrapper] = await Promise.all([
     readFile(new URL("../wrangler.jsonc", import.meta.url), "utf8"),
-    readFile(new URL("../public-form-rate-limit.js", import.meta.url), "utf8")
+    readFile(new URL("../public-form-rate-limit.js", import.meta.url), "utf8"),
+    readFile(new URL("../admin-stabilization-worker.js", import.meta.url), "utf8")
   ]);
   const wrangler = JSON.parse(wranglerText.replace(/^\s*\/\/.*$/gm, ""));
 
-  assert.equal(wrangler.main, "./public-form-rate-limit.js");
+  assert.equal(wrangler.main, "./admin-stabilization-worker.js");
+  assert.match(wrapper, /import baseWorker from "\.\/public-form-rate-limit\.js"/);
+  assert.match(wrapper, /baseWorker\.fetch\(/);
   assert.ok(wrangler.assets.run_worker_first.includes("/admin/finance"));
   assert.ok(wrangler.assets.run_worker_first.includes("/admin/finance/*"));
   assert.match(worker, /FINANCE_RUNTIME_VERSION = "20260825-2"/);

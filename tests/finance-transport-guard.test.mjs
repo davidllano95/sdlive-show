@@ -42,11 +42,12 @@ test("only Finance date columns are normalized", () => {
   assert.equal(normalized[1][4], serialFor(2026, 2, 1));
 });
 
-test("Finance stability runtime is a static asset loaded before page bootstrap", async () => {
-  const [runtime, html, wrangler] = await Promise.all([
+test("Finance stability runtime remains below the stabilization wrapper and before page bootstrap", async () => {
+  const [runtime, html, wrangler, wrapper] = await Promise.all([
     readFile(new URL("../admin/finance-runtime-stability.js", import.meta.url), "utf8"),
     readFile(new URL("../admin/finance/index.html", import.meta.url), "utf8"),
-    readFile(new URL("../wrangler.jsonc", import.meta.url), "utf8")
+    readFile(new URL("../wrangler.jsonc", import.meta.url), "utf8"),
+    readFile(new URL("../admin-stabilization-worker.js", import.meta.url), "utf8")
   ]);
 
   assert.match(runtime, /REQUEST_TIMEOUT_MS = 12000/);
@@ -58,5 +59,7 @@ test("Finance stability runtime is a static asset loaded before page bootstrap",
   const stabilityIndex = html.indexOf("finance-runtime-stability.js?v=20260825-1");
   const pageIndex = html.indexOf("finance-page.js?v=20260823-1");
   assert.ok(stabilityIndex > -1 && pageIndex > stabilityIndex);
-  assert.match(wrangler, /"main": "\.\/public-form-rate-limit\.js"/);
+  assert.match(wrangler, /"main": "\.\/admin-stabilization-worker\.js"/);
+  assert.match(wrapper, /import baseWorker from "\.\/public-form-rate-limit\.js"/);
+  assert.match(wrapper, /baseWorker\.fetch\(/);
 });

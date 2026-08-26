@@ -49,9 +49,12 @@ test("Finance dashboard resolves canonical fields by header name instead of fixe
   const headers = EXPECTED_FINANCE_HEADERS.filter((header) => header !== "Fecha fin");
   headers.splice(1, 0, "  FECHA FIN  ");
 
+  // This test verifies header-name resilience, not clock boundaries. Keep the
+  // end date deliberately far in the future so the assertion cannot become
+  // date-sensitive as the real calendar advances.
   const ongoing = rowFor(headers, {
     "Fecha trabajo": "2026-08-20",
-    "Fecha fin": "2026-08-26",
+    "Fecha fin": "2099-12-31",
     Cliente: "Multi-day client",
     "Proyecto / Show": "Ongoing run",
     Moneda: "COP",
@@ -97,6 +100,6 @@ test("Finance dashboard resolves canonical fields by header name instead of fixe
   assert.equal(body.summary.toInvoice.count, 0);
   assert.equal(body.summary.receivables.workflowBlockedCount, 1);
   assert.equal(body.summary.workQueues.blocked[0].client, "Multi-day client");
-  assert.equal(body.summary.workQueues.blocked[0].endDate, "2026-08-26");
+  assert.equal(body.summary.workQueues.blocked[0].endDate, "2099-12-31");
   assert.deepEqual(body.summary.workQueues.blocked[0].reasonCodes, ["work_date_future"]);
 });

@@ -51,3 +51,54 @@
   .module .arrow{display:none}
   .showday-control__head{align-items:flex-start;flex-direction:column}
 }
+
+/* Issue #126 — shared operational Admin stabilization. */
+:root{--admin-font:"Avenir Next","Helvetica Neue","Segoe UI",system-ui,-apple-system,BlinkMacSystemFont,sans-serif}
+html,body,button,a,input,textarea,select{font-family:var(--admin-font)!important}
+body{font-weight:400;letter-spacing:0}
+.app-nav__item,.button,.metric,.module,.panel,.system-pill,.identity{font-weight:400}
+.app-nav__item>span,.topbar h1,.welcome h2,.section-head h3,.metric strong,.module h4{font-weight:560!important}
+.eyebrow,.nav-label,.module-status,.secure{font-weight:600!important}
+.button,.showday-mode-toggle button{font-weight:550!important}
+
+/* Exact operational order; Site Editor remains desktop content tooling after Inbox. */
+.app-nav>a[href="./"],.app-nav>a[href="../"],.app-nav>a[href="/admin/"]{order:-50!important}
+.app-nav>a[href="./calendar/"],.app-nav>a[href="../calendar/"],.app-nav>a[href="/admin/calendar/"]{order:-40!important}
+.app-nav>a[href="./finance/"],.app-nav>a[href="../finance/"],.app-nav>a[href="/admin/finance/"]{order:-30!important}
+.app-nav>a[href^="https://mail.google.com/"]{order:-20!important}
+.app-nav>a[href="./editor/"],.app-nav>a[href="../editor/"],.app-nav>a[href="/admin/editor/"]{order:-10!important}
+.app-nav>.nav-label:nth-of-type(2)+.app-nav__item{display:none!important}
+
+.top-actions .button,.toolbar .tool-button,.toolbar .segment,.toolbar .icon-segment{min-height:36px}
+.top-actions .button--ghost,.top-actions a[href="/admin/"],.top-actions a[href="/admin/calendar/"],.top-actions a[href="../"],.top-actions a[href="./"]{border-color:var(--border)!important;background:rgba(255,255,255,.035)!important;color:var(--soft)!important}
+
+.admin-mobile-menu-toggle,.admin-mobile-menu-backdrop,.admin-editor-mobile-gate{display:none}
+
+@media(max-width:820px){
+  html,body{min-width:0!important;width:100%;overflow-x:hidden!important}
+  .backoffice:not(.editor-backoffice),.backoffice:not(.editor-backoffice).is-collapsed{display:block!important;min-height:100vh}
+  .backoffice:not(.editor-backoffice) .main{width:100%;min-width:0}
+  .backoffice:not(.editor-backoffice) .app-sidebar,.backoffice:not(.editor-backoffice).is-collapsed .app-sidebar{position:fixed!important;inset:0 auto 0 0!important;z-index:1100!important;width:min(84vw,310px)!important;height:100dvh!important;padding:18px 14px 14px!important;border-right:1px solid var(--border)!important;border-bottom:0!important;background:rgba(11,13,20,.985)!important;box-shadow:28px 0 70px rgba(0,0,0,.45);transform:translateX(-105%);transition:transform .2s ease;overflow-y:auto!important}
+  body.admin-mobile-nav-open .backoffice:not(.editor-backoffice) .app-sidebar{transform:translateX(0)}
+  .backoffice:not(.editor-backoffice) .brand,.backoffice:not(.editor-backoffice).is-collapsed .brand{min-height:45px;padding:0 7px 15px;border-bottom:1px solid var(--border)}
+  .backoffice:not(.editor-backoffice) .app-nav{display:flex!important;flex-direction:column!important;gap:4px!important;overflow:visible!important;padding:15px 0!important}
+  .backoffice:not(.editor-backoffice) .nav-label{display:block!important}
+  .backoffice:not(.editor-backoffice) .app-nav__item,.backoffice:not(.editor-backoffice).is-collapsed .app-nav__item{display:grid!important;width:100%!important;min-width:0!important;min-height:44px!important;grid-template-columns:22px minmax(0,1fr) auto!important;place-items:initial!important;align-items:center!important;padding:0 10px!important;border-radius:9px!important;font-size:12px!important}
+  .backoffice:not(.editor-backoffice) .app-nav__item span,.backoffice:not(.editor-backoffice).is-collapsed .app-nav__item span,.backoffice:not(.editor-backoffice) .app-nav__item small,.backoffice:not(.editor-backoffice).is-collapsed .app-nav__item small,.backoffice:not(.editor-backoffice) .brand-full,.backoffice:not(.editor-backoffice).is-collapsed .brand-full,.backoffice:not(.editor-backoffice) .brand span,.backoffice:not(.editor-backoffice).is-collapsed .brand span,.backoffice:not(.editor-backoffice) .secure,.backoffice:not(.editor-backoffice).is-collapsed .secure{display:initial!important}
+  .backoffice:not(.editor-backoffice) .brand-symbol,.backoffice:not(.editor-backoffice).is-collapsed .brand-symbol{display:none!important}
+  .backoffice:not(.editor-backoffice) .app-nav>a[href="./editor/"],.backoffice:not(.editor-backoffice) .app-nav>a[href="../editor/"],.backoffice:not(.editor-backoffice) .app-nav>a[href="/admin/editor/"]{display:none!important}
+  .backoffice:not(.editor-backoffice) .app-nav__item.is-disabled{display:none!important}
+  .backoffice:not(.editor-backoffice) .sidebar-bottom,.backoffice:not(.editor-backoffice).is-collapsed .sidebar-bottom{display:flex!important;justify-content:flex-start!important}
+  .backoffice:not(.editor-backoffice) #collapseSidebar{display:none!important}
+  .admin-mobile-menu-toggle{position:fixed;top:max(12px,env(safe-area-inset-top));left:max(12px,env(safe-area-inset-left));z-index:1205;width:42px;height:42px;display:grid;place-items:center;border:1px solid var(--border);border-radius:11px;background:rgba(11,13,20,.94);color:var(--text);box-shadow:0 10px 30px rgba(0,0,0,.28);cursor:pointer}
+  .admin-mobile-menu-toggle svg{width:20px;height:20px;fill:currentColor}
+  .admin-mobile-menu-backdrop{position:fixed;inset:0;z-index:1090;display:block;border:0;padding:0;background:rgba(3,4,7,.62);opacity:0;pointer-events:none;transition:opacity .2s ease}
+  body.admin-mobile-nav-open .admin-mobile-menu-backdrop{opacity:1;pointer-events:auto}
+  .backoffice:not(.editor-backoffice) .topbar{position:sticky!important;top:0!important;min-height:68px!important;height:auto!important;padding:10px 12px 10px 66px!important;gap:10px!important;align-items:center!important;flex-direction:row!important}
+  .backoffice:not(.editor-backoffice) .topbar>div:first-child{min-width:0}
+  .backoffice:not(.editor-backoffice) .topbar h1{font-size:18px!important;line-height:1.1}
+  .backoffice:not(.editor-backoffice) .top-actions{width:auto!important;min-width:0;display:flex!important;gap:6px!important;flex-wrap:wrap;justify-content:flex-end;margin-left:auto}
+  .backoffice:not(.editor-backoffice) .top-actions .identity{display:none!important}
+  .backoffice:not(.editor-backoffice) .top-actions .button{width:auto!important;min-height:34px!important;height:auto!important;padding:7px 9px!important;font-size:9px!important;white-space:nowrap}
+  .backoffice:not(.editor-backoffice) .content{width:100%!important;max-width:none!important;padding-left:14px!important;padding-right:14px!important}
+}

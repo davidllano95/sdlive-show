@@ -85,6 +85,23 @@
     }
   }
 
+  function loadStabilization() {
+    if (document.querySelector('script[data-finance-stabilization]')) return;
+
+    const rules = document.createElement("script");
+    rules.src = "/admin/finance-cycle-rules.js?v=20260826-1";
+    rules.dataset.financeCycleRules = "true";
+    rules.onload = () => {
+      if (document.querySelector('script[data-finance-stabilization]')) return;
+      const script = document.createElement("script");
+      script.src = "/admin/finance-stabilization.js?v=20260826-1";
+      script.dataset.financeStabilization = "true";
+      document.body.appendChild(script);
+    };
+    document.body.appendChild(rules);
+  }
+
   loadIdentity();
   loadFinance();
+  loadStabilization();
 })();

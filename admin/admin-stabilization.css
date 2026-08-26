@@ -1,0 +1,377 @@
+/* SD.Live Admin stabilization layer — issue #126
+   Shared presentation only. No business/data ownership lives here. */
+
+:root {
+  --admin-font: "Avenir Next", "Helvetica Neue", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+html,
+body,
+button,
+a,
+input,
+textarea,
+select {
+  font-family: var(--admin-font) !important;
+}
+
+body {
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
+.app-nav__item,
+.button,
+.tool-button,
+.editor-button,
+.segment,
+.icon-segment,
+.section-link,
+.metric,
+.module,
+.panel,
+.system-pill,
+.identity,
+.field,
+.inspector,
+.preview-meta,
+.calendar-shell,
+.schedule-shell {
+  font-weight: 400;
+}
+
+.app-nav__item > span,
+.topbar h1,
+.welcome h2,
+.section-head h3,
+.metric strong,
+.module h4,
+.inspector h2,
+.editor-section > summary {
+  font-weight: 560 !important;
+}
+
+.eyebrow,
+.nav-label,
+.module-status,
+.editor-panel-label,
+.field-language,
+.editor-state-chip,
+.secure,
+.secure-badge {
+  font-weight: 600 !important;
+}
+
+.button,
+.tool-button,
+.editor-button,
+.segment,
+.icon-segment,
+.section-link,
+.showday-mode-toggle button {
+  font-weight: 550 !important;
+}
+
+/* Primary operational navigation: Dashboard → Calendar → Finance → Inbox.
+   Site Editor remains available on desktop, after the operational set. */
+.app-nav > a[href="./"],
+.app-nav > a[href="../"],
+.app-nav > a[href="/admin/"] { order: -50 !important; }
+
+.app-nav > a[href="./calendar/"],
+.app-nav > a[href="../calendar/"],
+.app-nav > a[href="/admin/calendar/"] { order: -40 !important; }
+
+.app-nav > a[href="./finance/"],
+.app-nav > a[href="../finance/"],
+.app-nav > a[href="/admin/finance/"] { order: -30 !important; }
+
+.app-nav > a[href^="https://mail.google.com/"] { order: -20 !important; }
+
+.app-nav > a[href="./editor/"],
+.editor-backoffice .app-nav > a[href="./"],
+.app-nav > a[href="/admin/editor/"] { order: -10 !important; }
+
+/* Media Library is Editor-owned. Do not present the legacy disabled Media row
+   as a global Admin workspace. */
+.app-nav > .nav-label:nth-of-type(2) + .app-nav__item {
+  display: none !important;
+}
+
+/* Contextual actions share one visual contract. Parent/back actions stay quiet;
+   one primary page action may remain filled. */
+.top-actions,
+.toolbar {
+  align-items: center;
+}
+
+.top-actions .button,
+.toolbar .tool-button,
+.toolbar .segment,
+.toolbar .icon-segment {
+  min-height: 36px;
+}
+
+.top-actions .button--ghost,
+.top-actions a[href="/admin/"],
+.top-actions a[href="/admin/calendar/"],
+.top-actions a[href="../"],
+.top-actions a[href="./"] {
+  border-color: var(--border) !important;
+  background: rgba(255,255,255,.035) !important;
+  color: var(--soft) !important;
+}
+
+/* Editor visual selection is status chrome, not a blocking card. */
+.editor-backoffice .selection-card {
+  position: relative;
+  margin: 0 0 8px !important;
+  padding: 8px 10px !important;
+  max-height: 78px;
+  overflow: hidden;
+  border-style: dashed !important;
+  background: rgba(160,137,229,.045) !important;
+}
+
+.editor-backoffice .selection-card__hint {
+  display: none !important;
+}
+
+.editor-backoffice .selection-card code {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Mobile operational shell. The full Site Editor is intentionally not a
+   phone workspace. */
+.admin-mobile-menu-toggle,
+.admin-mobile-menu-backdrop,
+.admin-editor-mobile-gate {
+  display: none;
+}
+
+@media (max-width: 820px) {
+  html,
+  body {
+    min-width: 0 !important;
+    width: 100%;
+    overflow-x: hidden !important;
+  }
+
+  .backoffice:not(.editor-backoffice) {
+    display: block !important;
+    min-height: 100vh;
+  }
+
+  .backoffice:not(.editor-backoffice) .main {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .backoffice:not(.editor-backoffice) .app-sidebar {
+    position: fixed !important;
+    inset: 0 auto 0 0 !important;
+    z-index: 1100 !important;
+    width: min(84vw, 310px) !important;
+    height: 100dvh !important;
+    padding: 18px 14px 14px !important;
+    border-right: 1px solid var(--border) !important;
+    background: rgba(11,13,20,.985) !important;
+    box-shadow: 28px 0 70px rgba(0,0,0,.45);
+    transform: translateX(-105%);
+    transition: transform .2s ease;
+    overflow-y: auto;
+  }
+
+  body.admin-mobile-nav-open .backoffice:not(.editor-backoffice) .app-sidebar {
+    transform: translateX(0);
+  }
+
+  .backoffice:not(.editor-backoffice) .app-nav {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 4px !important;
+    overflow: visible !important;
+    padding: 15px 0 !important;
+  }
+
+  .backoffice:not(.editor-backoffice) .app-nav__item {
+    display: grid !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 44px !important;
+    grid-template-columns: 22px minmax(0,1fr) auto !important;
+    place-items: initial !important;
+    align-items: center !important;
+    padding: 0 10px !important;
+    border-radius: 9px !important;
+    font-size: 12px !important;
+  }
+
+  .backoffice:not(.editor-backoffice) .app-nav__item span,
+  .backoffice:not(.editor-backoffice) .app-nav__item small,
+  .backoffice:not(.editor-backoffice) .nav-label,
+  .backoffice:not(.editor-backoffice) .brand-full,
+  .backoffice:not(.editor-backoffice) .brand span,
+  .backoffice:not(.editor-backoffice) .secure {
+    display: initial !important;
+  }
+
+  .backoffice:not(.editor-backoffice) .brand-symbol {
+    display: none !important;
+  }
+
+  .backoffice:not(.editor-backoffice) .app-nav > a[href="./editor/"],
+  .backoffice:not(.editor-backoffice) .app-nav > a[href="../editor/"],
+  .backoffice:not(.editor-backoffice) .app-nav > a[href="/admin/editor/"] {
+    display: none !important;
+  }
+
+  .backoffice:not(.editor-backoffice) .sidebar-bottom {
+    justify-content: flex-start !important;
+  }
+
+  .backoffice:not(.editor-backoffice) #collapseSidebar {
+    display: none !important;
+  }
+
+  .admin-mobile-menu-toggle {
+    position: fixed;
+    top: max(12px, env(safe-area-inset-top));
+    left: max(12px, env(safe-area-inset-left));
+    z-index: 1205;
+    width: 42px;
+    height: 42px;
+    display: grid;
+    place-items: center;
+    border: 1px solid var(--border);
+    border-radius: 11px;
+    background: rgba(11,13,20,.94);
+    color: var(--text);
+    box-shadow: 0 10px 30px rgba(0,0,0,.28);
+    cursor: pointer;
+  }
+
+  .admin-mobile-menu-toggle svg {
+    width: 20px;
+    height: 20px;
+    fill: currentColor;
+  }
+
+  .admin-mobile-menu-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 1090;
+    display: block;
+    border: 0;
+    padding: 0;
+    background: rgba(3,4,7,.62);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .2s ease;
+  }
+
+  body.admin-mobile-nav-open .admin-mobile-menu-backdrop {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .backoffice:not(.editor-backoffice) .topbar {
+    min-height: 68px !important;
+    height: auto !important;
+    padding: 10px 12px 10px 66px !important;
+    gap: 10px !important;
+  }
+
+  .backoffice:not(.editor-backoffice) .topbar > div:first-child {
+    min-width: 0;
+  }
+
+  .backoffice:not(.editor-backoffice) .topbar h1 {
+    font-size: 18px !important;
+    line-height: 1.1;
+  }
+
+  .backoffice:not(.editor-backoffice) .top-actions {
+    min-width: 0;
+    gap: 6px !important;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .backoffice:not(.editor-backoffice) .top-actions .identity {
+    display: none !important;
+  }
+
+  .backoffice:not(.editor-backoffice) .top-actions .button {
+    min-height: 34px !important;
+    height: auto !important;
+    padding: 7px 9px !important;
+    font-size: 9px !important;
+    white-space: nowrap;
+  }
+
+  .backoffice:not(.editor-backoffice) .content {
+    width: 100% !important;
+    max-width: none !important;
+    padding-left: 14px !important;
+    padding-right: 14px !important;
+  }
+
+  /* Direct phone access to Site Editor: explicit handoff instead of a
+     compressed editor. */
+  .editor-backoffice {
+    display: none !important;
+  }
+
+  body:has(.editor-backoffice) {
+    min-width: 0 !important;
+    overflow: auto !important;
+  }
+
+  body:has(.editor-backoffice) .admin-editor-mobile-gate {
+    min-height: 100dvh;
+    display: grid;
+    place-items: center;
+    padding: 28px;
+    background: radial-gradient(circle at top left, rgba(160,137,229,.12), transparent 38%), #06070b;
+  }
+
+  .admin-editor-mobile-gate__card {
+    width: min(100%, 430px);
+    padding: 24px;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: #10121a;
+    box-shadow: 0 24px 70px rgba(0,0,0,.35);
+  }
+
+  .admin-editor-mobile-gate__card h1 {
+    margin: 8px 0 10px;
+    font-size: 24px;
+    font-weight: 560;
+  }
+
+  .admin-editor-mobile-gate__card p {
+    margin: 0 0 18px;
+    color: var(--soft);
+    font-size: 14px;
+    line-height: 1.55;
+  }
+
+  .admin-editor-mobile-gate__card a {
+    display: inline-flex;
+    min-height: 42px;
+    align-items: center;
+    padding: 0 14px;
+    border: 1px solid var(--accent);
+    border-radius: 10px;
+    background: var(--accent);
+    color: #090910;
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 560;
+  }
+}

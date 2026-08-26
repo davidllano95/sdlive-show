@@ -1,7 +1,7 @@
 {
   "name": "fragrant-brook-7554",
   "compatibility_date": "2026-08-17",
-  "main": "./public-form-rate-limit.js",
+  "main": "./admin-stabilization-worker.js",
 
   "workers_dev": false,
   "preview_urls": false,
@@ -31,7 +31,8 @@
     "TEAM_DOMAIN": "https://sdlive-show.cloudflareaccess.com",
     "POLICY_AUD": "510624979f4eb3e43797993696d0a49ecb7812dab18a4c3f48e9569ae8254d02",
     "MEDIA_PUBLIC_BASE": "https://media.sdlive.show",
-    "GOOGLE_FINANCE_SPREADSHEET_ID": "12xDFHgmtp8c9dTLzH-C9rjTLIUxKlZDYDW7cCcF1iJU"
+    "GOOGLE_FINANCE_SPREADSHEET_ID": "12xDFHgmtp8c9dTLzH-C9rjTLIUxKlZDYDW7cCcF1iJU",
+    "GOOGLE_CALENDAR_ID": "sam@sdlive.show"
   },
 
   "d1_databases": [
