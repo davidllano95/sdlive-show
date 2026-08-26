@@ -3,8 +3,8 @@
 **Created:** 2026-08-23 — America/Bogota  
 **Updated:** 2026-08-25 — America/Bogota  
 **Status:** **ACTIVE — Admin audit is the current block**  
-**Current merged runtime baseline:** PR #137 · `44c852f6b9d4f11aaa31bb779b2339e7eefbd735`  
-**Immediate manual gate:** production-smoke Finance connection hotfix #137, then resume Admin audit.
+**Current verified runtime baseline:** PR #141 · `159abff630188399ea9455ed4fe8911758f1fdf3`  
+**Immediate manual gate:** resume Admin audit at `/admin/` desktop.
 
 ## Purpose
 
@@ -71,26 +71,9 @@ PR #123 grouped the remaining public closeout findings:
 - PR #129 — short testimonials terminate naturally instead of stretching to a large empty height; `Read less / Leer menos` preserves reader viewport; BetaThree PA behaves like one item in a hypothetical three-card desktop grid instead of a full-width hero.
 - PR #131 — changing EN ↔ ES while Testimonials are expanded preserves the active expansion coherently, recalculates translated height and uses the existing global language scroll restoration instead of jumping to another page section.
 
-### Trusted visual treatment
+Issue #124 remains the final public representative-smoke ledger for the later Testimonials/PA/Misi/Wonderlust refinements. Do not overclaim full closure without explicit acceptance.
 
-- Anima Producciones + Sonique remain white in normal + Show Day through targeted CSS inversion; R2 originals are unchanged and no plate/glow/gradient remains.
-
-## Public route matrix — representative review
-
-Representative manual QA was performed across current public route families, desktop/mobile and normal/Show Day branches where applicable:
-
-- Home/shared header;
-- `/theatre-sound-design-audio-post`;
-- `/audio-eventos-streaming-teatro-bogota`;
-- `/alquiler-sonido-wing-midas-dl32-bogota`;
-- `/en/`;
-- `/es-co/`;
-- `/en/audio-equipment-rental-bogota.html`;
-- Trusted/Supported Brands treatment.
-
-**Do not overclaim exhaustive full-page review of every route.** Issue #124 remains the final public representative-smoke ledger for the later Testimonials/PA/Misi/Wonderlust refinements.
-
-## Finance runtime regression handled during audit
+## Finance blocking regression — CLOSED/PASS
 
 Finance work was allowed as an immediate exception because it became a blocking Admin regression.
 
@@ -100,9 +83,12 @@ Recent Finance sequence:
 - PR #133 — Finance resolves canonical fields by header name rather than assuming fixed physical column positions.
 - PR #134 — ambiguous Google dates no longer produce false negative payment durations; LiventX ready-to-sign queue + monthly day-20 review added.
 - PR #135 — direct LiventX supplier/signing portal CTA to `https://proveedores.aoscentral.com`.
-- PR #137 — after production remained at `Connecting to SD.Live Track…`, Finance added bounded upstream timeout, production-proven formatted-date transport plus immediate serial normalization, and a visible connection-state guard.
+- PR #137/#139/#140 — connection/timeouts/cache/Worker routing were hardened while the visible `Connecting…` regression was investigated.
+- **PR #141 — root cause found and fixed:** `finance-liventx-portal-link.js` had a DOM-wide `MutationObserver`; its callback rewrote text/attributes inside the same observed subtree, creating a mutation → callback → mutation loop capable of saturating Safari's main thread. When the main thread froze, connection timeouts could not fire, which made the browser freeze appear to be a Google Sheets hang.
 
-**#137 is merged + CI green; one production smoke is pending.** The audit cannot mark Finance runtime healthy until that smoke is explicitly accepted.
+PR #141 removed the observer, moved portal-link synchronization to explicit click/keyboard/language events, made updates idempotent, cache-busted the runtime and expanded Finance freeze tests to prevent reintroduction of this pattern.
+
+**Production smoke #141: PASS. Finance loads and remains responsive. This blocking exception is closed.**
 
 ## Admin visual audit — ACTIVE
 
@@ -147,7 +133,8 @@ Manual sequence, exactly one action at a time:
 
 ### Finance
 
-- current production connection state after #137;
+Finance runtime itself is now production PASS. During the audit inspect visual/workflow quality only unless a new runtime regression appears:
+
 - top queues and drilldowns;
 - LiventX signing card + external portal CTA;
 - Data quality dialogs;
@@ -155,7 +142,8 @@ Manual sequence, exactly one action at a time:
 - analytics layout;
 - calculator;
 - bilingual state;
-- desktop/mobile modal scrolling and tap targets.
+- desktop/mobile modal scrolling and tap targets;
+- loading/error states must remain bounded and must not freeze the Admin shell.
 
 ### Calendar / Operations
 
@@ -277,8 +265,8 @@ The audit closes only when:
 
 ## Exact continuation
 
-1. Production-smoke **PR #137** on `/admin/finance/`: it must leave `Connecting to SD.Live Track…` and either load normally or fail visibly within the bounded timeout.
-2. If it loads, confirm existing Finance cards/data are back; record #137 smoke PASS.
-3. Resume the Admin record-first sequence at **`/admin/` desktop**.
-4. Add every Admin finding to issue #126; do not branch/fix each item individually.
-5. After all 10 Admin surface/device checks, reconcile #126 against current `main` and implement one coherent Admin stabilization batch.
+1. Finance recovery through PR #141 is **production-smoked PASS**; do not repeat that smoke.
+2. Resume the Admin record-first sequence at **`/admin/` desktop**.
+3. Add every Admin finding to issue #126; do not branch/fix each item individually.
+4. Continue the remaining 10-surface sequence one manual action at a time.
+5. After all Admin surface/device checks, reconcile #126 against current `main` and implement one coherent Admin stabilization batch.

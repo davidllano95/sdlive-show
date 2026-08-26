@@ -2,7 +2,7 @@
 
 **Updated:** 2026-08-25 — America/Bogota  
 **Scope:** current Finance continuation/reference for SD.Live Control Center.  
-**Status:** **read-only Finance remains the operating model; generic Phase 3 write-back is BLOCKED.**
+**Status:** **read-only Finance operational/PASS; generic Phase 3 write-back is BLOCKED.**
 
 Where older Finance notes conflict, current `main`, verified production behavior and `PROJECT_STATUS.md` take precedence.
 
@@ -22,7 +22,7 @@ Where older Finance notes conflict, current `main`, verified production behavior
 
 ## Established Finance capabilities
 
-The dedicated workspace currently provides:
+The dedicated workspace provides:
 
 - top operational queues: **Por facturar / Cobrable ahora / Flujo bloqueado**;
 - exact lazy-loaded worklists behind those queues;
@@ -33,7 +33,8 @@ The dedicated workspace currently provides:
 - browser-local pass-through / third-party retention calculator;
 - EN/ES;
 - COP/USD separation;
-- read-only workflow status and actions.
+- read-only workflow status and actions;
+- `LiventX · Listo para firmar` + external supplier portal.
 
 ## Canonical date rule
 
@@ -45,8 +46,6 @@ Source dates:
 - multi-day: end>=start.
 
 ### Invoice eligibility — current rule
-
-PR #132 replaced the older start-date rule.
 
 For `Estado = Pendiente Envio`:
 
@@ -63,17 +62,11 @@ Issue #83 remains relevant only for bringing AppSheet reminders/bots to the same
 
 ## Header/schema resilience — PR #133
 
-Finance no longer assumes every canonical field lives at a fixed physical column position. Required fields are resolved by normalized header name before rows are mapped into the canonical Finance model.
-
-This protects Finance when columns move without changing source ownership or writing the Sheet.
+Finance resolves required fields by normalized header name before rows are mapped into the canonical Finance model. It does not rely on fixed physical column positions.
 
 ## Payment-date ambiguity — PR #134
 
-Real data showed false `Duraciones de pago inválidas`, e.g.:
-
-- account sent `2/4/2026`;
-- paid `2/19/2026`;
-- incorrect result `-42 días` when one side was interpreted D/M and the other M/D.
+Real data showed false `Duraciones de pago inválidas`, e.g. account sent `2/4/2026` and paid `2/19/2026` being interpreted inconsistently.
 
 Current semantics:
 
@@ -83,9 +76,9 @@ Current semantics:
 
 Regression coverage includes the real ambiguous patterns `2/4 → 2/19` and `5/11 → 5/14`.
 
-## LiventX signing workflow — PR #134
+## LiventX signing workflow — PR #134/#135
 
-A read-only queue now exists:
+A read-only queue exists:
 
 **LiventX · Listo para firmar / Ready to sign**
 
@@ -97,48 +90,51 @@ Eligibility:
 - `Fecha evaluación` present;
 - `Fecha firma` empty.
 
-The queue is always visible so pending signatures are not hidden before the monthly review. From the **20th through month end** the card is emphasized as the active monthly signing review.
+The queue is always visible. From the **20th through month end** the card is emphasized as the active monthly signing review.
 
-Finance does not write the signature state; it tells the user what is ready for the existing external signing workflow.
+Finance does not write the signature state; it identifies what is ready for the external signing workflow.
 
-## LiventX supplier portal — PR #135
-
-The ready-to-sign workflow links directly to:
+Supplier portal:
 
 `https://proveedores.aoscentral.com`
 
-The CTA exists below the LiventX card and inside its worklist/modal. It opens in a new tab and does not trigger the card interaction accidentally.
+The CTA exists below the LiventX card and inside its worklist/modal and opens in a new tab.
 
-## Finance connection regression + hotfix — PR #137
+## Finance connection/freeze incident — CLOSED/PASS through PR #141
 
-After PR #134, production was observed stuck at:
+### Symptom
+
+Production remained at:
 
 `Connecting to SD.Live Track…`
 
-The failure mode was dangerous because upstream Google OAuth/Sheets reads had no bounded timeout and the page could remain indefinitely in an unresolved loading state.
+and Safari eventually reported the page as unresponsive.
 
-PR #137 introduces a dedicated Finance transport guard:
+Early fixes (#137/#139/#140) hardened Google OAuth/Sheets timeouts, formatted-date transport, Worker routing, cache behavior and visible diagnostics. Those were useful guardrails but did not remove the browser freeze.
 
-- Finance uses the previously production-proven Google Sheets `FORMATTED_STRING` date transport;
-- only recognized Finance date columns are immediately normalized back to numeric Sheets serials before existing Finance parsers see them;
-- this keeps deterministic date calculations while avoiding the hanging transport regression;
-- Google OAuth/Sheets upstream requests have an **8-second timeout**;
-- the Finance page has a **12-second visible connection guard** so it cannot remain forever at `Connecting…`;
-- outer workspace status is synchronized with the actual Finance source state instead of remaining misleadingly green;
-- Contact/Rental public rate-limit bindings remain intact through the new Worker entry wrapper.
+### Root cause
 
-PR #137 is **merged + CI green**. Exactly one production smoke remains required before marking this hotfix production PASS.
+PR #141 identified the actual main-thread freeze in:
 
-### Required production smoke
+`admin/finance-liventx-portal-link.js`
 
-Reload `/admin/finance/`.
+The script installed a `MutationObserver` on the entire `document.body` subtree. Its callback called a synchronization function that rewrote link text/attributes inside the same observed subtree. Those writes could trigger the observer again, creating:
 
-Expected:
+`mutation → callback → mutation → callback → …`
 
-- `Connecting to SD.Live Track…` must resolve;
-- normal result: Finance cards/data load;
-- failure result: visible bounded error/timeout, **not** an infinite connecting state;
-- existing queues, LiventX signing card and portal remain present if source loads.
+That loop could saturate Safari's main thread. Once saturated, even the Finance connection timeout could not execute, so the visible symptom looked like an unresolved backend request.
+
+### Final fix — PR #141
+
+- removed the DOM-wide `MutationObserver`;
+- portal-link synchronization now runs only from explicit click/keyboard/language events;
+- link configuration is idempotent;
+- affected runtime is cache-busted so browsers do not reuse the observer-based script;
+- Finance freeze tests now explicitly forbid this DOM-wide observer pattern in the relevant Finance runtimes.
+
+**Production smoke: PASS. Finance loads and the Admin page remains responsive.**
+
+No Sheet/AppSheet write path, pricing, Calendar scope or Finance ownership boundary changed.
 
 ## Pass-through calculator
 
@@ -173,7 +169,7 @@ Do not add:
 
 ## Controlled Calendar write boundary
 
-Calendar/Operations controlled create is now implemented and production-smoked separately. It writes only mapped source fields into the same `REGISTRO` source and preserves formula/workflow ownership.
+Calendar/Operations controlled create is implemented and production-smoked separately. It writes only mapped source fields into the same `REGISTRO` source and preserves formula/workflow ownership.
 
 That authorization does **not** enable:
 
@@ -212,8 +208,12 @@ A local PDF must never be represented as a legally valid Colombian electronic in
 
 ## Current continuation
 
-1. Production-smoke PR #137 on `/admin/finance/`.
-2. If PASS, record the connection hotfix as production PASS.
-3. Return to the active **Admin visual audit** rather than adding more Finance features immediately.
-4. Finance desktop/mobile will be deliberately reviewed as part of that coherent Admin block.
-5. Add new Admin findings to issue #126; batch-fix only after the full Admin surface sequence is complete unless a blocking regression appears.
+Finance runtime recovery is **CLOSED/PASS** through PR #141. Do not spend another smoke on that incident.
+
+Return to the active **Admin visual audit**:
+
+1. start/resume at `/admin/` desktop;
+2. record findings in issue #126;
+3. do not fix each finding as discovered unless a new P0/P1 blocks use;
+4. deliberately review Finance desktop/mobile later in the locked Admin sequence for visual/workflow quality;
+5. after all 10 Admin surface/device checks, reconcile and implement one coherent Admin stabilization batch.
