@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
+import vm from "node:vm";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
@@ -25,6 +26,14 @@ function clone(value) {
 
 function read(relative) {
   return fs.readFileSync(path.join(root, relative), "utf8");
+}
+
+function loadFinanceCycleRules() {
+  const context = { globalThis: null };
+  context.globalThis = context;
+  vm.createContext(context);
+  vm.runInContext(read("admin/finance-cycle-rules.js"), context);
+  return context.SDLiveFinanceCycleRules;
 }
 
 test("Site presentation accepts bounded defaults", () => {
@@ -77,11 +86,27 @@ test("Admin stabilization worker is the deploy entry and covers localized home r
   assert.match(worker, /validateRentalPresentationExtras/);
 });
 
+test("LiventX cycle colors follow 5-19 green, 20-25 yellow, 26-4 red", () => {
+  const rules = loadFinanceCycleRules();
+  for (const day of [5, 6, 12, 19]) assert.equal(rules.urgencyFor(day), "low", `day ${day}`);
+  for (const day of [20, 21, 25]) assert.equal(rules.urgencyFor(day), "medium", `day ${day}`);
+  for (const day of [1, 2, 4, 26, 27, 31]) assert.equal(rules.urgencyFor(day), "high", `day ${day}`);
+});
+
+test("Collection reminders fire only on days 5 and 19", () => {
+  const rules = loadFinanceCycleRules();
+  assert.equal(rules.reminderKind(5), "open");
+  assert.equal(rules.reminderKind(19), "close");
+  for (const day of [1, 4, 6, 18, 20, 31]) assert.equal(rules.reminderKind(day), null, `day ${day}`);
+});
+
 test("Finance stabilization keeps observation narrow", () => {
   const source = read("admin/finance-stabilization.js");
   assert.match(source, /observer\.observe\(card/);
   assert.doesNotMatch(source, /observe\(document\.(?:body|documentElement)/);
   assert.doesNotMatch(source, /observe\(document\.querySelector\(["']body/);
+  assert.match(source, /America\/Bogota/);
+  assert.match(source, /financeCollectionCycleReminder/);
 });
 
 test("Required stabilization scripts parse as JavaScript modules or classic scripts", () => {
@@ -98,6 +123,7 @@ test("Required stabilization scripts parse as JavaScript modules or classic scri
     "admin/editor/admin-stabilization-cms.js",
     "admin/editor/rental-stabilization-editor.js",
     "admin/editor/site-presentation-editor.js",
+    "admin/finance-cycle-rules.js",
     "admin/finance-stabilization.js",
     "admin/site-schedule-stabilization.js"
   ];
