@@ -4,10 +4,23 @@ import {
   readPublishedSitePresentation
 } from "./site-presentation-api.js";
 import { applySitePresentation } from "./site-presentation-edge.js";
+import {
+  readPublishedMediaPresentation,
+  applyMediaPresentation
+} from "./media-presentation-edge.js";
+import { applyRentalPresentationRuntime } from "./rental-presentation-edge.js";
+import { validateRentalPresentationExtras } from "./rental-presentation-contract.js";
 
 function normalizedPath(request) {
   const url = new URL(request.url);
   return url.pathname.length > 1 ? url.pathname.replace(/\/+$/, "") : url.pathname;
+}
+
+function json(data, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" }
+  });
 }
 
 function isAdminPreview(request) {
@@ -36,6 +49,23 @@ async function verifyAdminViaExistingApi(request, env) {
   return { email: String(data.email).toLowerCase() };
 }
 
+async function validateRentalPut(request) {
+  try {
+    const type = request.headers.get("content-type") || "";
+    if (!type.toLowerCase().includes("application/json")) return null;
+    const body = await request.clone().json();
+    if (!body?.draft) throw new Error("Rental draft is required");
+    validateRentalPresentationExtras(body.draft);
+    return null;
+  } catch (error) {
+    return json({
+      ok: false,
+      error: "Could not save Rental Draft",
+      detail: String(error?.message || error)
+    }, 400);
+  }
+}
+
 export default {
   async fetch(request, env) {
     const path = normalizedPath(request);
@@ -50,6 +80,11 @@ export default {
       if (response) return response;
     }
 
+    if (path === "/api/admin/content/rental" && request.method === "PUT") {
+      const invalid = await validateRentalPut(request);
+      if (invalid) return invalid;
+    }
+
     const response = await baseWorker.fetch(request, env);
 
     if (
@@ -61,10 +96,16 @@ export default {
     }
 
     try {
-      const published = await readPublishedSitePresentation(env);
-      return applySitePresentation(response, published);
+      const [published, mediaState] = await Promise.all([
+        readPublishedSitePresentation(env),
+        readPublishedMediaPresentation(env)
+      ]);
+      let transformed = applySitePresentation(response, published);
+      transformed = applyRentalPresentationRuntime(transformed, mediaState.rental);
+      transformed = applyMediaPresentation(transformed, mediaState);
+      return transformed;
     } catch (error) {
-      console.error("[SD.Live] Site presentation render failed; preserving stable base response.", error);
+      console.error("[SD.Live] Stabilization presentation render failed; preserving stable base response.", error);
       return response;
     }
   }
