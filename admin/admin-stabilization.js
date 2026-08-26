@@ -19,7 +19,6 @@
 
   function ensureCalendarLink() {
     if (!nav) return null;
-
     const existing = findNavItem("Calendar");
     if (!existing) return null;
     if (existing.tagName === "A") return existing;
@@ -30,33 +29,18 @@
     link.innerHTML = existing.innerHTML;
     const small = link.querySelector("small");
     if (small) small.textContent = "Operations";
-    if (window.location.pathname.startsWith("/admin/calendar/")) {
-      link.classList.add("is-active");
-    }
+    if (window.location.pathname.startsWith("/admin/calendar/")) link.classList.add("is-active");
     existing.replaceWith(link);
     return link;
   }
 
   function normalizeNavigation() {
     if (!nav) return;
-
     ensureCalendarLink();
-
-    const media = findNavItem("Media");
-    media?.remove();
-
+    findNavItem("Media")?.remove();
     const firstLabel = nav.querySelector(".nav-label");
     if (!firstLabel) return;
-
-    const ordered = [
-      "Dashboard",
-      "Calendar",
-      "Finance",
-      "Inbox",
-      "Site Editor"
-    ];
-
-    ordered.forEach((label) => {
+    ["Dashboard", "Calendar", "Finance", "Inbox", "Site Editor"].forEach((label) => {
       const item = findNavItem(label);
       if (item) nav.insertBefore(item, firstLabel);
     });
@@ -66,7 +50,6 @@
     document.querySelectorAll(".top-actions, .toolbar").forEach((zone) => {
       zone.dataset.adminActionZone = "true";
     });
-
     document.querySelectorAll(".top-actions a").forEach((link) => {
       const href = link.getAttribute("href") || "";
       if (["/admin/", "/admin/calendar/", "../", "./"].includes(href)) {
@@ -78,7 +61,6 @@
 
   function createMobileNavigation() {
     if (!shell || !sidebar || document.querySelector(".admin-mobile-menu-toggle")) return;
-
     const toggle = document.createElement("button");
     toggle.type = "button";
     toggle.className = "admin-mobile-menu-toggle";
@@ -91,7 +73,6 @@
     backdrop.type = "button";
     backdrop.className = "admin-mobile-menu-backdrop";
     backdrop.setAttribute("aria-label", "Close Admin navigation");
-
     document.body.append(toggle, backdrop);
 
     const close = () => {
@@ -99,7 +80,6 @@
       toggle.setAttribute("aria-expanded", "false");
       toggle.setAttribute("aria-label", "Open Admin navigation");
     };
-
     const open = () => {
       document.body.classList.add("admin-mobile-nav-open");
       toggle.setAttribute("aria-expanded", "true");
@@ -110,25 +90,17 @@
       document.body.classList.contains("admin-mobile-nav-open") ? close() : open();
     });
     backdrop.addEventListener("click", close);
-    nav?.addEventListener("click", (event) => {
-      if (event.target.closest("a")) close();
-    });
-    document.addEventListener("keydown", (event) => {
-      if (event.key === "Escape") close();
-    });
+    nav?.addEventListener("click", (event) => { if (event.target.closest("a")) close(); });
+    document.addEventListener("keydown", (event) => { if (event.key === "Escape") close(); });
 
     const media = window.matchMedia(MOBILE_QUERY);
-    const sync = () => {
-      if (!media.matches) close();
-    };
+    const sync = () => { if (!media.matches) close(); };
     media.addEventListener?.("change", sync);
     sync();
   }
 
   function createEditorMobileGate() {
-    if (!document.querySelector(".editor-backoffice")) return;
-    if (document.querySelector(".admin-editor-mobile-gate")) return;
-
+    if (!document.querySelector(".editor-backoffice") || document.querySelector(".admin-editor-mobile-gate")) return;
     const gate = document.createElement("section");
     gate.className = "admin-editor-mobile-gate";
     gate.setAttribute("aria-label", "Site Editor desktop-only notice");
@@ -143,20 +115,38 @@
     document.body.appendChild(gate);
   }
 
+  function loadScript(src, marker) {
+    if (document.querySelector(`script[data-${marker}]`)) return;
+    const script = document.createElement("script");
+    script.src = src;
+    script.setAttribute(`data-${marker}`, "true");
+    document.body.appendChild(script);
+  }
+
+  function loadStyle(href, marker) {
+    if (document.querySelector(`link[data-${marker}]`)) return;
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = href;
+    link.setAttribute(`data-${marker}`, "true");
+    document.head.appendChild(link);
+  }
+
   function loadEditorExtensions() {
     if (!document.querySelector(".editor-backoffice")) return;
-    const scripts = [
-      "/admin/editor/site-presentation-editor.js?v=20260825-1",
-      "/admin/editor/admin-stabilization-cms.js?v=20260825-1",
-      "/admin/editor/rental-stabilization-editor.js?v=20260825-1"
-    ];
-    scripts.forEach((src) => {
-      if (document.querySelector(`script[src="${src}"]`)) return;
-      const script = document.createElement("script");
-      script.src = src;
-      script.defer = true;
-      document.body.appendChild(script);
-    });
+    loadScript("/admin/editor/site-presentation-editor.js?v=20260825-1", "sdlive-site-presentation-editor");
+    loadScript("/admin/editor/rental-stabilization-editor.js?v=20260825-1", "sdlive-rental-stabilization-editor");
+  }
+
+  function loadPathExtensions() {
+    const path = window.location.pathname;
+    if (path === "/admin/calendar/" || path === "/admin/calendar") {
+      loadStyle("/admin/calendar-stabilization.css?v=20260825-1", "sdlive-calendar-stabilization");
+    }
+    if (path.startsWith("/admin/calendar/site-schedule")) {
+      loadStyle("/admin/site-schedule-stabilization.css?v=20260825-1", "sdlive-site-schedule-stabilization");
+      loadScript("/admin/site-schedule-stabilization.js?v=20260825-1", "sdlive-site-schedule-stabilization");
+    }
   }
 
   normalizeNavigation();
@@ -164,4 +154,5 @@
   createMobileNavigation();
   createEditorMobileGate();
   loadEditorExtensions();
+  loadPathExtensions();
 })();
