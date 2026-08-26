@@ -15,7 +15,10 @@ import {
   mergeGoogleCalendarOverlayResponse,
   projectCreatedWorkToGoogleCalendar
 } from "./google-calendar-integration.js";
-import { syncCalendarProjectionToGoogleCalendar } from "./site-schedule-google-projection.js";
+import {
+  syncCalendarProjectionToGoogleCalendar,
+  syncSiteScheduleToGoogleCalendar
+} from "./site-schedule-google-projection.js";
 
 const PUBLIC_HOME_PATHS = new Set(["/", "/en", "/es-co"]);
 const ADMIN_CALENDAR_PATH = "/api/admin/calendar/events";
@@ -149,8 +152,15 @@ function scheduleGoogleSyncAfterSiteScheduleMutation(path, request, response, en
     return;
   }
 
+  // PUT only needs to project/update the D1 blocks and remove the broad parent
+  // event. DELETE also restores the broad REGISTRO projection after removing
+  // stale Site Schedule blocks.
+  const syncTask = request.method === "DELETE"
+    ? syncCalendarProjectionToGoogleCalendar(env)
+    : syncSiteScheduleToGoogleCalendar(env);
+
   ctx.waitUntil(
-    syncCalendarProjectionToGoogleCalendar(env).catch((error) => {
+    syncTask.catch((error) => {
       // Site Schedule remains canonical for website presentation. A Google
       // Calendar projection failure must never turn a successful schedule save
       // into an error or write anything back to REGISTRO/AppSheet.
