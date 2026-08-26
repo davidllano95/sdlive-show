@@ -112,6 +112,7 @@ test("Finance stabilization keeps observation narrow", () => {
 test("Required stabilization scripts parse as JavaScript modules or classic scripts", () => {
   const files = [
     "admin-stabilization-worker.js",
+    "google-calendar-integration.js",
     "media-presentation-edge.js",
     "rental-presentation-contract.js",
     "rental-presentation-edge.js",
@@ -120,6 +121,7 @@ test("Required stabilization scripts parse as JavaScript modules or classic scri
     "site-presentation-content.js",
     "site-presentation-edge.js",
     "admin/admin-stabilization.js",
+    "admin/calendar-google-integration.js",
     "admin/editor/admin-stabilization-cms.js",
     "admin/editor/rental-stabilization-editor.js",
     "admin/editor/site-presentation-editor.js",
@@ -139,6 +141,7 @@ test("Required stabilization scripts parse as JavaScript modules or classic scri
 test("Calendar and Site Schedule stabilization assets are present", () => {
   for (const relative of [
     "admin/calendar-stabilization.css",
+    "admin/calendar-google-integration.js",
     "admin/site-schedule-stabilization.css",
     "admin/site-schedule-stabilization.js"
   ]) {
@@ -146,5 +149,6 @@ test("Calendar and Site Schedule stabilization assets are present", () => {
   }
   const shell = read("admin/admin-stabilization.js");
   assert.match(shell, /calendar-stabilization\.css/);
+  assert.match(shell, /calendar-google-integration\.js/);
   assert.match(shell, /site-schedule-stabilization\.js/);
 });
