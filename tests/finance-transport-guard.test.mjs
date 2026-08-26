@@ -6,14 +6,14 @@ import {
   formattedSheetDateToSerial,
   financeUpstreamUrl,
   normalizeFinanceDateValues
-} from "../finance-transport-guard.js";
+} from "../finance-upstream.js";
 
 function serialFor(year, month, day) {
   const epoch = Date.UTC(1899, 11, 30);
   return Math.round((Date.UTC(year, month - 1, day) - epoch) / 86400000);
 }
 
-test("Finance rewrites the Sheets date transport to the production-proven formatted mode", () => {
+test("Finance rewrites Sheets dates to the previously proven formatted transport", () => {
   const url = financeUpstreamUrl(
     "https://sheets.googleapis.com/v4/spreadsheets/id/values/REGISTRO?valueRenderOption=UNFORMATTED_VALUE&dateTimeRenderOption=SERIAL_NUMBER"
   );
@@ -42,13 +42,21 @@ test("only Finance date columns are normalized", () => {
   assert.equal(normalized[1][4], serialFor(2026, 2, 1));
 });
 
-test("Finance connection guard prevents an indefinite Connecting state", async () => {
-  const [guard, wrangler] = await Promise.all([
-    readFile(new URL("../admin/finance-connection-guard.js", import.meta.url), "utf8"),
+test("Finance stability runtime is a static asset loaded before page bootstrap", async () => {
+  const [runtime, html, wrangler] = await Promise.all([
+    readFile(new URL("../admin/finance-runtime-stability.js", import.meta.url), "utf8"),
+    readFile(new URL("../admin/finance/index.html", import.meta.url), "utf8"),
     readFile(new URL("../wrangler.jsonc", import.meta.url), "utf8")
   ]);
-  assert.match(guard, /DEADLINE_MS = 12000/);
-  assert.match(guard, /Finance request timed out · reload to retry/);
-  assert.match(guard, /Finance online · read-only source/);
-  assert.match(wrangler, /"main": "\.\/finance-transport-guard\.js"/);
+
+  assert.match(runtime, /REQUEST_TIMEOUT_MS = 12000/);
+  assert.match(runtime, /SHORT_CACHE_MS = 1500/);
+  assert.match(runtime, /cachedResponse\.clone\(\)/);
+  assert.match(runtime, /source\?\.classList\.contains\("is-error"\)/);
+  assert.doesNotMatch(runtime, /MutationObserver/);
+
+  const stabilityIndex = html.indexOf("finance-runtime-stability.js?v=20260825-1");
+  const pageIndex = html.indexOf("finance-page.js?v=20260823-1");
+  assert.ok(stabilityIndex > -1 && pageIndex > stabilityIndex);
+  assert.match(wrangler, /"main": "\.\/public-form-rate-limit\.js"/);
 });
