@@ -73,13 +73,16 @@ test("allowed request continues and missing production binding fails closed", as
   assert.equal(missing.headers.get("Retry-After"), "60");
 });
 
-test("wrangler keeps independent 10-per-minute bindings for Contact and Rental", async () => {
-  const wrangler = JSON.parse(
-    (await readFile(new URL("../wrangler.jsonc", import.meta.url), "utf8"))
-      .replace(/^\s*\/\/.*$/gm, "")
-  );
+test("wrangler keeps independent 10-per-minute bindings while Finance guard delegates to public form protections", async () => {
+  const [wranglerText, financeGuard] = await Promise.all([
+    readFile(new URL("../wrangler.jsonc", import.meta.url), "utf8"),
+    readFile(new URL("../finance-transport-guard.js", import.meta.url), "utf8")
+  ]);
+  const wrangler = JSON.parse(wranglerText.replace(/^\s*\/\/.*$/gm, ""));
 
-  assert.equal(wrangler.main, "./public-form-rate-limit.js");
+  assert.equal(wrangler.main, "./finance-transport-guard.js");
+  assert.match(financeGuard, /import appWorker from "\.\/public-form-rate-limit\.js"/);
+  assert.match(financeGuard, /return appWorker\.fetch\(request, env\)/);
   assert.equal(wrangler.ratelimits.length, 2);
 
   const byName = Object.fromEntries(
