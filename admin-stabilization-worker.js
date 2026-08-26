@@ -141,6 +141,7 @@ async function decorateCreatedWorkResponse(response, env, payload) {
 export default {
   async fetch(request, env) {
     const path = normalizedPath(request);
+    const url = new URL(request.url);
 
     if (path === ADMIN_CALENDAR_SYNC_PATH) {
       return handleGoogleCalendarSync(request, env);
@@ -168,6 +169,10 @@ export default {
     const response = await baseWorker.fetch(request, env);
 
     if (path === ADMIN_CALENDAR_PATH && request.method === "GET") {
+      // Site Schedule deliberately consumes ?view=source. Keep that route
+      // REGISTRO-only so Google reminders/manual events can never become
+      // website-schedule or Show Day source records.
+      if (url.searchParams.get("view") === "source") return response;
       return mergeGoogleCalendarOverlayResponse(response, env);
     }
 
