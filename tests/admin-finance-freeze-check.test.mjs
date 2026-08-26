@@ -13,5 +13,5 @@ test("Finance runtimes use explicit events instead of DOM-wide observation", () 
     assert.doesNotMatch(source, /\.observe\(document\.(?:body|documentElement)/);
   }
   assert.match(portal, /scheduleDialogSync/);
-  assert.match(portal, /data-finance-action-queue=\\"liventxReadyToSign\\"/);
+  assert.match(portal, /data-finance-action-queue="liventxReadyToSign"/);
 });
