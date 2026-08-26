@@ -7,6 +7,7 @@
   let inFlight = null;
   let cachedResponse = null;
   let cachedAt = 0;
+  let lastFailureMessage = "";
 
   function requestPath(input) {
     try {
@@ -22,6 +23,28 @@
     return method === "GET" && requestPath(input) === DASHBOARD_PATH;
   }
 
+  async function diagnosticResponse(response) {
+    const type = String(response.headers.get("content-type") || "").toLowerCase();
+    if (response.ok || !type.includes("application/json")) return response;
+
+    const data = await response.clone().json().catch(() => null);
+    if (!data) return response;
+
+    const diagnostic = [data.stage, data.code].filter(Boolean).join("/");
+    lastFailureMessage = diagnostic
+      ? `${data.error || "Finance source unavailable"} · ${diagnostic}`
+      : (data.error || `Finance request failed (${response.status})`);
+
+    return new Response(JSON.stringify({
+      ...data,
+      error: lastFailureMessage
+    }), {
+      status: response.status,
+      statusText: response.statusText,
+      headers: response.headers
+    });
+  }
+
   async function fetchDashboard(input, init = {}) {
     const now = Date.now();
     if (cachedResponse && now - cachedAt < SHORT_CACHE_MS) {
@@ -34,14 +57,25 @@
       inFlight = originalFetch(input, {
         ...init,
         signal: controller.signal
-      }).then((response) => {
-        cachedResponse = response.clone();
-        cachedAt = Date.now();
-        return response;
-      }).finally(() => {
-        window.clearTimeout(timer);
-        inFlight = null;
-      });
+      })
+        .then(diagnosticResponse)
+        .then((response) => {
+          cachedResponse = response.clone();
+          cachedAt = Date.now();
+          return response;
+        })
+        .catch((error) => {
+          if (error?.name === "AbortError") {
+            lastFailureMessage = "Finance request timed out";
+            throw new Error(lastFailureMessage);
+          }
+          lastFailureMessage = error?.message || "Finance source unavailable";
+          throw error;
+        })
+        .finally(() => {
+          window.clearTimeout(timer);
+          inFlight = null;
+        });
     }
 
     const response = await inFlight;
@@ -71,9 +105,10 @@
       normalized.includes("timed out") ||
       !normalized.startsWith("live ·")
     ) {
-      throw new Error(message || "Finance source unavailable");
+      throw new Error(lastFailureMessage || message || "Finance source unavailable");
     }
 
+    lastFailureMessage = "";
     return true;
   };
 })();
