@@ -4,16 +4,15 @@
 
 | Campo | Valor |
 |---|---|
-| Última revisión integral | **2026-08-23 — America/Bogota** |
+| Última reconciliación | **2026-08-25 — America/Bogota** |
 | Rama operativa | `main` |
-| `main` verificado al actualizar | **PR #116 · `a48a92c0c6f0d0c38765b04e0833db692456c3e9`** |
+| `main` al reconciliar | **PR #137 · `44c852f6b9d4f11aaa31bb779b2339e7eefbd735`** |
 | Producción | `https://sdlive.show` |
 | Media pública | `https://media.sdlive.show` |
-| Estado macro | **Finance Phase 2 CLOSED/PASS · Calendar read-only CLOSED/PASS · controlled create CLOSED/PASS · Site Schedule + automatic Show Day CLOSED/PASS · Site Schedule source filter PASS** |
-| Active Gate | **post-integration detailed visual audit — ACTIVE** |
-| Estado del audit | **Rental Show Day matrix PASS · Anima/Sonique contrast PASS · remaining public matrix + Admin audit still required** |
-| Después del audit | close remaining P0/P1, preserve P2/P3 backlog, then controlled Calendar edit/workflow actions |
-| Bloqueado | **Generic Finance Phase 3 write-back remains BLOCKED** |
+| Estado macro | **Finance read-only + Calendar create + Site Schedule + automatic Show Day operativos; public stabilization muy avanzada; Admin visual audit aún abierto** |
+| Active Gate | **post-integration Admin visual audit + stabilization** |
+| Bloqueado | **Generic Finance Phase 3 write-back** |
+| Paso manual inmediato | **1 smoke en `/admin/finance/` para PR #137; luego continuar Admin audit record-first** |
 
 ## Precedencia
 
@@ -21,49 +20,71 @@ En conflicto prevalece:
 
 1. código actual de GitHub `main` + comportamiento verificable en producción;
 2. schema/config desplegada;
-3. este archivo;
-4. `README.md`;
-5. `ROADMAP_MASTER_CHECKLIST.md` para backlog/historia;
-6. prompts/ideas/referencias.
+3. último handoff/checkpoint fechado;
+4. este archivo;
+5. `README.md`;
+6. `ROADMAP_MASTER_CHECKLIST.md` para backlog/historia;
+7. prompts/ideas/referencias.
 
 **Stability > novelty.** Un documento futuro no autoriza reemplazar una implementación funcional.
 
-## Regla de continuidad
+## Método de cambio
 
-- Un solo smoke/manual QA step a la vez.
-- Defectos encontrados dentro de la superficie activa se corrigen dentro del audit según severidad.
-- P0/P1 se cierran antes del PASS final del audit.
-- P2/P3 se registran y se implementan después en secuencia coherente.
-- No saltar a CRM, Finance write-back, Calendar edit/workflow u otros milestones mientras el gate visual siga activo salvo cambio explícito de prioridad.
-- Cada milestone material actualiza evidencia/docs.
+`inspect current main → short branch → implement/update → tests/CI → PR → CI green → squash merge → exactly one production smoke for runtime changes`.
+
+Durante el visual audit:
+
+1. recorrer una superficie coherente;
+2. registrar hallazgos;
+3. no corregir uno por uno;
+4. terminar el bloque;
+5. reconciliar contra `main`;
+6. corregir lo vigente en un solo batch;
+7. un smoke de producción por batch runtime.
+
+Excepción: P0/P1 que impide usar o continuar la superficie puede corregirse inmediatamente.
 
 ## Architectural invariants
 
 - GitHub `main` = code truth.
 - Cloudflare Access = barrera real del Admin.
-- D1 no es mirror de Finance/`REGISTRO`.
 - Google Sheets `REGISTRO` = persistencia + formula owner para operaciones/finanzas.
 - AppSheet **SD.Live Track** = cliente mobile/offline.
+- D1 no es mirror de Finance/`REGISTRO`.
+- D1 `site_schedule_state` = website-only Calendar presentation / Show Day state.
+- Cloudflare R2 = source of truth para media administrada/migrada por CMS.
 - Formula-owned Sheets columns nunca se escriben desde Admin forms.
-- COP y USD permanecen separados.
+- COP y USD permanecen separados; no FX implícito.
 - `Save Draft` no cambia producción; `Publish` promueve Draft → Published.
-- GTM no controla navegación, branding, copy ni layout.
-- Rental pricing/quote logic vive en backend.
-- Rental notifica solo a `rental@sdlive.show`; Contact general a `hello@sdlive.show`.
-- `/admin/` no auto-arranca Finance; Finance vive en `/admin/finance/`.
-- **Generic Finance Phase 3 write-back sigue bloqueado.**
-- Calendar/Operations tiene autorización separada y estrecha para controlled writes en `REGISTRO`.
-- Todo UI nuevo/modificado reutiliza palette/tokens aprobados.
+- Rental pricing/quote math permanece backend-owned.
+- Rental notifica a `rental@sdlive.show`; Contact general a `hello@sdlive.show`.
+- Calendar controlled create es una autorización estrecha y separada; **no** desbloquea generic Finance write-back.
 - Home es el contrato visual/navigation del header público.
-- Media administrada por el Editor vive en Cloudflare R2; no duplicar versiones de logos/assets sin necesidad.
+- Todo UI nuevo/modificado reutiliza palette/tokens aprobados.
 
 ## Control Center actual
 
 ### `/admin/` — Dashboard
-Overview ligero, CMS/system health y navegación a workspaces.
+Overview ligero, health, navegación y Admin-only Show Day QA override.
 
 ### `/admin/finance/` — Finance
-Read-only sobre Google Sheets/API para SD.Live Track, COP/USD separados, sin Finance mirror en D1 y sin generic write-back.
+Read-only sobre Google Sheets/API para SD.Live Track. COP/USD separados; no D1 Finance mirror; no generic write-back.
+
+Capacidades recientes:
+
+- top queues: **Por facturar / Cobrable ahora / Flujo bloqueado**;
+- Aging drilldowns;
+- Data quality drilldowns;
+- pass-through / third-party retention calculator;
+- canonical billing eligibility basada en `Fecha fin`;
+- schema/header resolution por nombre, no por posición fija;
+- fechas Google Sheets normalizadas para evitar ambigüedad M/D vs D/M;
+- **LiventX · Listo para firmar**: evaluación presente + firma pendiente + no pagado;
+- revisión mensual LiventX activa desde el día **20**;
+- CTA al portal `https://proveedores.aoscentral.com` desde card y modal;
+- PR #137 agrega guard de transporte/timeout para que Finance no pueda quedar indefinidamente en `Connecting to SD.Live Track…`.
+
+**PR #137 está mergeado con CI verde; producción smoke todavía pendiente al momento de esta reconciliación.**
 
 ### `/admin/calendar/` — Calendar / Operations
 
@@ -78,15 +99,14 @@ Read-only sobre Google Sheets/API para SD.Live Track, COP/USD separados, sin Fin
 
 - D1 `site_schedule_state`;
 - website-only presentation state;
-- bloques no solapados con start/end, Show Day boolean y Location;
-- Calendar display + `Next` consumen effective blocks;
-- source view conserva canonical `REGISTRO` dates;
-- Split Work selector filtra ongoing + future en America/Bogota.
+- bloques no solapados con Start, End, Show Day y Location;
+- source selector muestra ongoing + future según America/Bogota;
+- no modifica fechas ni workflow de `REGISTRO`/AppSheet.
 
 ### `/admin/editor/` — Site Editor
 CMS visual con Draft/Published/revisions, EN/ES, COL/INT, Media Library, Global Select, Visual Safeguards y publish failsafe.
 
-## Source of Truth / Owner
+## Source-of-truth matrix
 
 | Área | Source of Truth | Estado |
 |---|---|---|
@@ -103,142 +123,141 @@ CMS visual con Draft/Published/revisions, EN/ES, COL/INT, Media Library, Global 
 | Website Calendar presentation overrides | D1 `site_schedule_state` | Active |
 | Public Show Day active state | Site Schedule + America/Bogota date | Active |
 | Show Day Location | Site Schedule block only | Active |
-| Future CRM | TBD; Attio candidate under evaluation | Planned |
-| Future AI chatbot/agent | Dapta.ai candidate under evaluation | Planned |
+| Future CRM | TBD; Attio candidate only | Planned |
+| Future AI chatbot/agent | Dapta.ai candidate only | Planned |
 
-## Calendar / AppSheet verified contract
+## Calendar / Finance date contract
 
 Canonical source dates:
 
 - `Fecha trabajo` = canonical start;
-- `Fecha fin` = canonical end (`REGISTRO` AB);
+- `Fecha fin` = canonical end;
 - one-day: end = start;
-- multi-day: end >= start;
-- Finance billing/reminder logic uses canonical `Fecha fin`, never Site Schedule split dates.
+- multi-day: end >= start.
 
-Google Sheets formula-owned columns remain read-only to Admin forms.
+Finance billing rule:
 
-## Controlled Admin create — CLOSED/PASS
+- `Estado = Pendiente Envio` AND canonical end `< today` → **Por facturar**;
+- canonical end `= today`, future or invalid → **Flujo bloqueado**;
+- legacy rows without `Fecha fin` may fall back to `Fecha trabajo`;
+- “today” is evaluated in America/Bogota.
 
-Google OAuth has Sheets write authorization. PR #99 replaced unsafe `values.append` row reservation after the first real smoke exposed an occupied-row overwrite risk. Recovery was completed and the hardened flow now targets the first safe row after occupied source/workflow data while excluding formula-only occupancy.
+Issue #83 retains only the AppSheet/reminder follow-up: reminder/bot eligibility should use the same day-after-`Fecha fin` rule.
 
-Final E2E production smoke:
+## Finance dates — current safeguard
 
-- new event wrote to `REGISTRO` row 67;
-- no inherited workflow/payment values;
-- AppSheet sync clean;
-- Admin confirms `✓ Event created · REGISTRO row N`.
+PR #134 fixed false `Duraciones de pago inválidas` caused by ambiguous formatted dates such as `2/4/2026` and `5/11/2026`.
 
-Generic Finance write-back remains blocked; this is only the narrow Calendar/Operations create path.
+PR #137 then hardened transport after production showed a hanging connection:
 
-## Site Schedule + automatic Show Day — CLOSED/PASS
+- Finance uses the previously proven Sheets formatted-date transport;
+- only Finance date columns are normalized immediately back to numeric Sheets serials before Finance parsers consume them;
+- ambiguous Google-style slash dates are interpreted deterministically as M/D unless the first component cannot be a month;
+- upstream OAuth/Sheets requests have a bounded timeout;
+- the UI cannot remain forever in a fake `Connecting…` state.
 
-- canonical `REGISTRO` dates remain untouched;
-- D1 Site Schedule is website-only presentation state;
-- each block owns start/end, Show Day and Location;
-- Location required when Show Day is enabled;
-- public state comes from `GET /api/site/showday-status` using America/Bogota;
-- endpoint/runtime failure fails closed to normal mode;
-- legacy visitor Show Day toggle removed;
-- Home + secondary pages share the Home-style header contract.
+No Sheet/AppSheet writes or finance workflow ownership changed.
 
-Real RENT source span was production-smoked as Aug 4–9, Aug 14–17, Aug 20–24, Aug 27–28.
+## LiventX signing workflow
 
-PR #100 hides source work whose canonical end is before today from the Site Schedule selector while preserving historical Calendar data and historical overrides.
+Read-only Finance support now includes:
 
-## Post-integration visual audit — ACTIVE
+- queue `LiventX · Listo para firmar`;
+- eligibility: LiventX + evaluation date present + signature missing + not paid + not `Pendiente Envio`;
+- persistent queue visibility so pending work is not hidden before the 20th;
+- monthly review emphasis from the **20th through month end**;
+- direct external signing CTA to `https://proveedores.aoscentral.com`.
 
-Full contract: `docs/roadmap/post-integration-visual-audit-2026-08-23.md`.
+This does not write `Fecha firma`; signing still occurs in the external portal/current workflow.
 
-Required scope remains:
+## Public-site stabilization — current state
 
-- public Home + current landing families;
-- desktop + mobile separately;
-- normal + automatic Show Day;
-- EN/ES and COL/INT where applicable;
-- Admin Dashboard, Finance, Calendar, Site Schedule and Editor on desktop/mobile.
+The representative route/header matrix has been reviewed across desktop/mobile, EN/ES and normal/Show Day branches where applicable.
 
-### Closed visual findings
+Recent merged public fixes:
 
-- **PR #101:** Privacy + Cookie preferences moved to bottom legal footer area — PASS.
-- **PR #102:** footer logo follows Show Day; Show Day dot blinks with header cadence — PASS.
-- **PR #103:** desktop footer rebalanced.
-- **PR #104:** branded `SD.Live` copyright mark restored without stray literal period — PASS.
-- **PR #105:** mobile Show Day Location spacing +2 px — user production QA PASS.
-- **PR #107:** Rental drawer copy reframed as **quote request / cotización**, with explicit estimate-not-payment/reservation language; backend pricing and `rental@sdlive.show` unchanged.
-- **PR #108:** original Rental shopping-cart icon restored — user QA PASS.
-- **Rental Show Day matrix:** mobile+desktop, EN+ES — PASS. Normal mode remains later verification because Show Day is currently automatic/active.
-- **PR #109:** docs reconciled to dynamic automatic Show Day; future Admin-only `Auto / Force On / Force Off` override preserved as backlog.
-- **PR #110:** future testimonial card geometry/long-copy UX + generic Editor collection reordering recorded, not active.
-- **PR #111/#112:** attempted Anima/Sonique neutral plate + halo treatments; user rejected final visual direction.
-- **PR #114:** plate/gradient/halo treatment fully removed.
-- **PR #115:** Anima + Sonique inverted to white in Show Day; user QA = very good/PASS.
-- **PR #116:** inversion made mode-independent; Anima + Sonique now white in normal + Show Day, original R2 assets untouched, no other client logos affected. Show Day mobile QA PASS.
+- **PR #123:** accessibility/continuity closeout, public WhatsApp on SEO/service landings, Rental empty-request guard, pricing parity test, initial testimonial long-copy behavior.
+- **PR #125:** testimonial shrink correction, reduced PA presentation, mobile Misi/Wonderlust Supported Brands normalization.
+- **PR #127:** synchronized testimonial progressive expansion.
+- **PR #129:** shorter testimonial cards stop naturally instead of stretching; collapse preserves reader viewport; BetaThree PA sized like one card in a three-card desktop grid.
+- **PR #131:** changing EN ↔ ES preserves testimonial expansion state and viewport coherently.
 
-### Open audit findings
+Issue #124 is still the public smoke ledger. Do not claim the final public block formally closed until its representative smoke is explicitly accepted.
 
-1. **Public normal-mode verification** — later verify Rental and Anima/Sonique when automatic Show Day is inactive or a future Admin-only override exists.
-2. **Remaining public matrix** — continue route-family desktop/mobile + language/market review.
-3. **Admin visual audit** — Dashboard, Finance, Calendar, Site Schedule and Editor still need deliberate desktop/mobile review.
+## Admin visual audit — ACTIVE
 
-Do not reopen closed Rental/Trusted findings without regression evidence.
+Admin must still be deliberately reviewed as one coherent block, **record first / batch fix later**:
 
-## Future backlog recorded during this audit
+1. `/admin/` desktop;
+2. `/admin/` mobile;
+3. `/admin/finance/` desktop;
+4. `/admin/finance/` mobile;
+5. `/admin/calendar/` desktop;
+6. `/admin/calendar/` mobile;
+7. `/admin/calendar/site-schedule/` desktop;
+8. `/admin/calendar/site-schedule/` mobile;
+9. `/admin/editor/` desktop;
+10. `/admin/editor/` mobile.
 
-### Show Day polish
+Known required Admin/CMS findings live in issue #126:
 
-- Admin-only temporary override: recommended `Auto / Force On / Force Off`, explicit/reversible/ideally TTL-based, never mutating canonical `REGISTRO` or Site Schedule blocks.
-- dynamic Show Day favicon;
-- remove normal-violet → Show Day-red startup pop via authoritative prepaint.
+- **Global CMS media scaling:** every CMS-managed logo/image control must allow scale up to **250%**, including Testimonials, Trusted By, Supported Brands, Services/Selected Work/Rental media where applicable.
+- **CMS collection/card reordering:** repeatable cards must be reorderable with persistent saved order, explicit drag handle plus accessible move up/down controls; stable IDs, Draft → Published and ownership boundaries must remain intact.
 
-### Testimonials / Editor systemization
+Do not implement these piecemeal before the Admin finding set is complete unless one becomes blocking.
 
-- consistent testimonial card geometry;
-- accessible `Read more / Leer más` progressive disclosure for long quotes;
-- consistent reorder capability for repeatable Editor collections, preserving Draft → Published and IDs/source ownership.
+## Show Day state
 
-### External CRM + AI candidates
+Automatic Show Day is CLOSED/PASS:
 
-Dedicated note: `docs/roadmap/future-crm-ai-vendors-2026-08-23.md`.
+- public source: Site Schedule + America/Bogota;
+- failure fails closed to normal;
+- visitor manual toggle removed;
+- Admin-only Visual QA override `Auto / Force On / Force Off` exists and expires at Bogotá day-end;
+- override is separate from canonical Site Schedule and `REGISTRO`/AppSheet.
 
-- **Attio:** future CRM candidate; evaluate pricing, API/OAuth/webhooks, export/lock-in and fit against custom SD.Live CRM.
-- **Dapta.ai:** future AI chatbot/agent candidate; evaluate pricing, privacy, reliability, integrations/webhooks and human handoff.
-- Neither candidate may silently become owner of Finance/`REGISTRO` or write formula-owned fields.
+Future concurrency backlog: support explicit **Primary / Secondary** presentation priority for simultaneous active Show Day blocks; multiple active Primary blocks should surface an Admin conflict rather than silently choosing by sort order.
 
-### Calendar Agenda scope toggle
+Low-priority polish: Show Day favicon and authoritative prepaint to remove normal-violet → red startup pop.
 
-Future Admin Calendar **Agenda mode** should expose a toggle:
+## Future roadmap
 
-- **Full Month:** all effective Agenda items in selected month, including past items;
-- **Current + Future:** ongoing + future only; hide items whose effective end is before today.
+### Finance Document Generator
 
-Guardrails:
+Recorded in `docs/roadmap/future-finance-document-generator-2026-08-25.md`.
 
-- “today” evaluated in America/Bogota;
-- presentation/filter only;
-- no deletion/mutation of `REGISTRO`, AppSheet or Site Schedule history;
-- ongoing multi-day work remains visible;
-- default choice TBD at implementation time;
-- desktop/mobile + accessibility considered together.
+Future shared Admin/Finance engine for:
 
-## Parallel/open operational follow-ups
+- Cuenta de cobro;
+- Cotización;
+- Factura / invoice draft.
 
-- GitHub issue #83: invoice eligibility + reminders based on day after canonical `Fecha fin`.
-- Finance Phase 2 real-use observation.
-- AppSheet workflow/date-display follow-ups stay separate from Site Schedule presentation logic.
-- Controlled Calendar edit/workflow actions only after visual stabilization PASS.
-- CRM/Projects/Rental Admin only after source-of-truth design.
-- Search/analytics/indexation follow-up as already documented.
+It should reuse SD.Live Track/Finance/Rental/future CRM data, generate branded PDFs, preserve revisions/statuses and avoid a second finance source of truth. A locally generated PDF must **not** be represented as a DIAN-valid Colombian electronic invoice until legal/e-invoicing requirements and provider integration are explicitly designed and verified.
 
-## Roadmap / docs relevantes
+### Other future items
+
+- Calendar Agenda `Full Month` vs `Current + Future` filter;
+- controlled Calendar edit/workflow actions after stabilization;
+- Attio CRM evaluation;
+- Dapta.ai AI-agent evaluation;
+- Rental availability/double-booking and advanced quote workflow;
+- Finance reminder delivery hardening.
+
+## Relevant docs
 
 - `README.md` — architecture/current operating overview.
-- `ROADMAP_MASTER_CHECKLIST.md` — detailed historical/future backlog.
+- `docs/roadmap/post-integration-visual-audit-2026-08-23.md` — active audit contract.
+- `docs/roadmap/finance-phase2-real-use-2026-08-23.md` — Finance real-use history/current rules.
+- `docs/roadmap/future-finance-document-generator-2026-08-25.md` — future document generation.
 - `docs/roadmap/calendar-operations-hub-2026-08-23.md` — Calendar/AppSheet/Site Schedule handoff.
-- `docs/roadmap/post-integration-visual-audit-2026-08-23.md` — active visual audit contract.
-- `docs/roadmap/future-crm-ai-vendors-2026-08-23.md` — Attio/Dapta future evaluation.
-- `docs/checkpoints/visual-audit-progress-pr116-2026-08-23.md` — current detailed audit checkpoint.
+- `docs/roadmap/future-crm-ai-vendors-2026-08-23.md` — future vendor candidates.
+- `ROADMAP_MASTER_CHECKLIST.md` — historical/future backlog; lower precedence than current-state docs above.
 
-## Continuation point
+## Exact continuation point
 
-**Continue the active visual audit in sequence.** Rental quote UX and Anima/Sonique contrast are closed for the currently testable Show Day state. Next, continue the remaining public matrix and then the mandatory Admin desktop/mobile audit, one manual QA action at a time. Normal-mode-specific checks remain explicitly pending until normal mode is available; do not falsely mark them PASS.
+1. **Production smoke PR #137:** reload `/admin/finance/`. It must leave `Connecting to SD.Live Track…` and either load Finance normally or fail visibly within the bounded timeout. If it loads, verify the existing values/cards return.
+2. If PASS, record PR #137 production smoke PASS.
+3. Resume the **Admin visual audit record-first**, starting with `/admin/` desktop unless the user chooses another Admin surface.
+4. Keep adding findings to issue #126; do **not** fix each finding as discovered.
+5. After all 10 Admin desktop/mobile surfaces are reviewed, reconcile issue #126 against current `main` and implement one coherent Admin stabilization batch.
+6. Only after Admin stabilization PASS continue controlled Calendar edit/workflow or unrelated future roadmap work.
