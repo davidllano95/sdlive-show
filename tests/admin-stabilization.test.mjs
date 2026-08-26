@@ -93,20 +93,14 @@ test("LiventX cycle colors follow 5-19 green, 20-25 yellow, 26-4 red", () => {
   for (const day of [1, 2, 4, 26, 27, 31]) assert.equal(rules.urgencyFor(day), "high", `day ${day}`);
 });
 
-test("Collection reminders fire only on days 5 and 19", () => {
-  const rules = loadFinanceCycleRules();
-  assert.equal(rules.reminderKind(5), "open");
-  assert.equal(rules.reminderKind(19), "close");
-  for (const day of [1, 4, 6, 18, 20, 31]) assert.equal(rules.reminderKind(day), null, `day ${day}`);
-});
-
-test("Finance stabilization keeps observation narrow", () => {
+test("Finance stabilization keeps observation narrow and reminders out of Finance", () => {
   const source = read("admin/finance-stabilization.js");
   assert.match(source, /observer\.observe\(card/);
   assert.doesNotMatch(source, /observe\(document\.(?:body|documentElement)/);
   assert.doesNotMatch(source, /observe\(document\.querySelector\(["']body/);
   assert.match(source, /America\/Bogota/);
-  assert.match(source, /financeCollectionCycleReminder/);
+  assert.doesNotMatch(source, /financeCollectionCycleReminder/);
+  assert.doesNotMatch(source, /localStorage/);
 });
 
 test("Required stabilization scripts parse as JavaScript modules or classic scripts", () => {
