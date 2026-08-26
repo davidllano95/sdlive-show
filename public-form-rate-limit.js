@@ -8,6 +8,7 @@ import {
 } from "./site-schedule-store-v2.js";
 import { applyShowDayRuntime } from "./showday-edge.js";
 import { rentalRequestHasSelection } from "./rental-request-validation.js";
+import { financeUpstreamFetch } from "./finance-upstream.js";
 
 const PUBLIC_FORM_LIMITS = {
   "/api/contact": {
@@ -155,14 +156,16 @@ export default {
       path === "/api/admin/finance/settings"
     ) {
       const response = await handleFinanceDashboardApi(request, env, {
-        verifyAdmin: verifyAdminViaExistingApi
+        verifyAdmin: verifyAdminViaExistingApi,
+        fetchImpl: financeUpstreamFetch
       });
       if (response) return response;
     }
 
     if (path.startsWith("/api/admin/finance")) {
       const response = await handleFinanceApi(request, env, {
-        verifyAdmin: verifyAdminViaExistingApi
+        verifyAdmin: verifyAdminViaExistingApi,
+        fetchImpl: financeUpstreamFetch
       });
       if (response) return response;
     }

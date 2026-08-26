@@ -1,11 +1,5 @@
-import appWorker from "./public-form-rate-limit.js";
-import { handleFinanceApi } from "./finance-api.js";
-import { handleFinanceDashboardApi } from "./finance-dashboard-api.js";
-
-const FINANCE_UPSTREAM_TIMEOUT_MS = 8000;
+const FINANCE_UPSTREAM_TIMEOUT_MS = 7000;
 const GOOGLE_SHEETS_HOST = "sheets.googleapis.com";
-const FINANCE_PAGE_PATH = "/admin/finance";
-const FINANCE_CONNECTION_GUARD_VERSION = "20260825-1";
 const DATE_HEADERS = new Set([
   "fecha trabajo",
   "fecha cuenta enviada",
@@ -14,13 +8,6 @@ const DATE_HEADERS = new Set([
   "fecha pago",
   "fecha fin"
 ]);
-
-function normalizedPath(request) {
-  const url = new URL(request.url);
-  return url.pathname.length > 1
-    ? url.pathname.replace(/\/+$/, "")
-    : url.pathname;
-}
 
 function normalizeHeader(value) {
   return String(value ?? "")
@@ -64,8 +51,6 @@ export function formattedSheetDateToSerial(value) {
     const second = Number(match[2]);
     year = Number(match[3]);
 
-    // The production Google Sheet has historically rendered ambiguous dates
-    // as M/D/YYYY. Only interpret D/M when the first component cannot be a month.
     if (first > 12 && second <= 12) {
       day = first;
       month = second;
@@ -109,9 +94,6 @@ export function financeUpstreamUrl(input) {
   }
 
   if (url.hostname === GOOGLE_SHEETS_HOST) {
-    // FORMATTED_STRING is the previously production-proven transport. We
-    // immediately normalize its date cells back to serials before Finance sees
-    // them, retaining deterministic date semantics without the hanging request.
     url.searchParams.set("dateTimeRenderOption", "FORMATTED_STRING");
   }
   return url.toString();
@@ -149,76 +131,14 @@ export async function financeUpstreamFetch(input, init = {}) {
   }
 
   if (!Array.isArray(parsed?.values)) return response;
-  const normalized = {
-    ...parsed,
-    values: normalizeFinanceDateValues(parsed.values)
-  };
   const headers = new Headers(response.headers);
   headers.set("Content-Type", "application/json; charset=utf-8");
-  return new Response(JSON.stringify(normalized), {
+  return new Response(JSON.stringify({
+    ...parsed,
+    values: normalizeFinanceDateValues(parsed.values)
+  }), {
     status: response.status,
     statusText: response.statusText,
     headers
   });
 }
-
-async function verifyAdminViaExistingApi(request, env) {
-  const url = new URL(request.url);
-  url.pathname = "/api/admin/whoami";
-  url.search = "";
-  const verificationRequest = new Request(url.toString(), {
-    method: "GET",
-    headers: request.headers
-  });
-  const response = await appWorker.fetch(verificationRequest, env);
-  if (!response.ok) return null;
-  const data = await response.json().catch(() => null);
-  if (!data?.authenticated || !data?.email) return null;
-  return { email: String(data.email).toLowerCase() };
-}
-
-function decorateFinancePage(response) {
-  const type = response.headers.get("Content-Type") || "";
-  if (!response.ok || !type.includes("text/html")) return response;
-  return new HTMLRewriter()
-    .on("body", {
-      element(element) {
-        element.append(
-          `<script src="/admin/finance-connection-guard.js?v=${FINANCE_CONNECTION_GUARD_VERSION}"></script>`,
-          { html: true }
-        );
-      }
-    })
-    .transform(response);
-}
-
-export default {
-  async fetch(request, env) {
-    const path = normalizedPath(request);
-
-    if (
-      path === "/api/admin/finance/dashboard" ||
-      path === "/api/admin/finance/settings"
-    ) {
-      const response = await handleFinanceDashboardApi(request, env, {
-        verifyAdmin: verifyAdminViaExistingApi,
-        fetchImpl: financeUpstreamFetch
-      });
-      if (response) return response;
-    }
-
-    if (path.startsWith("/api/admin/finance")) {
-      const response = await handleFinanceApi(request, env, {
-        verifyAdmin: verifyAdminViaExistingApi,
-        fetchImpl: financeUpstreamFetch
-      });
-      if (response) return response;
-    }
-
-    const response = await appWorker.fetch(request, env);
-    if (request.method === "GET" && path === FINANCE_PAGE_PATH) {
-      return decorateFinancePage(response);
-    }
-    return response;
-  }
-};
