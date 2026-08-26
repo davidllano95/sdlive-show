@@ -11,6 +11,8 @@ import {
 import { applyRentalPresentationRuntime } from "./rental-presentation-edge.js";
 import { validateRentalPresentationExtras } from "./rental-presentation-contract.js";
 
+const PUBLIC_HOME_PATHS = new Set(["/", "/en", "/es-co"]);
+
 function normalizedPath(request) {
   const url = new URL(request.url);
   return url.pathname.length > 1 ? url.pathname.replace(/\/+$/, "") : url.pathname;
@@ -35,6 +37,10 @@ function isAdminPreview(request) {
   } catch {
     return false;
   }
+}
+
+function languageForPath(path) {
+  return path === "/es-co" ? "es" : "en";
 }
 
 async function verifyAdminViaExistingApi(request, env) {
@@ -88,7 +94,7 @@ export default {
     const response = await baseWorker.fetch(request, env);
 
     if (
-      path !== "/" ||
+      !PUBLIC_HOME_PATHS.has(path) ||
       request.method !== "GET" ||
       isAdminPreview(request)
     ) {
@@ -100,7 +106,7 @@ export default {
         readPublishedSitePresentation(env),
         readPublishedMediaPresentation(env)
       ]);
-      let transformed = applySitePresentation(response, published);
+      let transformed = applySitePresentation(response, published, languageForPath(path));
       transformed = applyRentalPresentationRuntime(transformed, mediaState.rental);
       transformed = applyMediaPresentation(transformed, mediaState);
       return transformed;
