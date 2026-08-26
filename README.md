@@ -6,7 +6,7 @@ Production website and private Control Center for **SD.Live — Creative Audio**
 - Public media: `https://media.sdlive.show`
 - Operational timezone: **America/Bogota** unless explicitly labelled otherwise.
 
-The public site is vanilla HTML/CSS/JS served through Cloudflare Workers + Static Assets. Workers also own dynamic APIs, CMS publishing, forms and edge rendering. D1 stores structured CMS/application state, R2 stores editor-managed media, Google Sheets `REGISTRO` remains the operations/finance persistence source of truth, AppSheet **SD.Live Track** remains the mobile/offline workflow client, and Cloudflare Access protects Admin.
+The public site is vanilla HTML/CSS/JS served through Cloudflare Workers + Static Assets. Workers own dynamic APIs, CMS publishing, forms and edge rendering. D1 stores structured CMS/application state, R2 stores editor-managed media, Google Sheets `REGISTRO` remains the operations/finance persistence source of truth, AppSheet **SD.Live Track** remains the mobile/offline workflow client, and Cloudflare Access protects Admin.
 
 ## Source precedence
 
@@ -20,24 +20,24 @@ When docs disagree, use:
 6. `ROADMAP_MASTER_CHECKLIST.md` for historical/future backlog;
 7. older prompts/ideas/references.
 
-Do not replace a working source of truth because a future document imagines another architecture. **Stability > novelty.**
+**Stability > novelty.** Do not replace a working source of truth because an older/future document imagines another architecture.
 
 ## Current state
 
 As of **2026-08-25 America/Bogota**:
 
-- Finance read-only integration and dedicated `/admin/finance/` workspace — **operational**, with latest connection hotfix PR #137 merged/CI green and production smoke pending.
+- Finance read-only integration and dedicated `/admin/finance/` workspace — **OPERATIONAL / production-smoked PASS through PR #141**.
 - Admin Calendar read-only + multi-day model — **CLOSED/PASS**.
 - Controlled Admin Calendar create — **CLOSED/PASS** after OAuth write authorization and row-safety hardening.
 - Site Schedule + automatic Show Day + Location — **CLOSED/PASS**.
 - Admin-only Show Day QA override `Auto / Force On / Force Off` — **CLOSED/PASS**.
 - Shared Home-style header on current public route families — **PASS**.
-- Public-site stabilization has merged the current Rental, Testimonials, Trusted/Supported Brands and accessibility fixes through PR #131; issue #124 retains the final representative public smoke ledger.
+- Public-site stabilization has merged current Rental, Testimonials, Trusted/Supported Brands and accessibility fixes through PR #131; issue #124 retains the final representative public-smoke ledger.
 - **Active gate:** mandatory Admin desktop/mobile visual audit using record-first → batch-fix workflow.
 - Known Admin/CMS requirements are tracked in issue #126: global logo/image scale to **250%** and persistent repeatable-card reordering.
 - Generic Finance Phase 3 write-back — **BLOCKED**.
 
-The exact current continuation point lives in `PROJECT_STATUS.md`.
+The exact current continuation point lives in `PROJECT_STATUS.md` and `docs/checkpoints/handoff-pr141-2026-08-25.md`.
 
 ## Change workflow
 
@@ -65,9 +65,8 @@ During visual audit, record all findings in a coherent surface first and batch t
 - R2 binding `MEDIA_BUCKET` → `sdlive-media-production`.
 - Public media domain: `media.sdlive.show`.
 - Hero, Trusted By / Supported Brands, Testimonials, Core Home, Rental/Contact presentation and reusable Media Library are established.
-- Visual safeguards: `visual-safeguards.css` + `visual-safeguards.js`.
-- Global Select routes selection to owning CMS sections/items.
 - Managed logos/images remain R2-owned; presentation-only changes should not duplicate source assets unnecessarily.
+- Visual safeguards and publish failsafe remain part of the Editor boundary.
 
 ### Private Admin / Control Center
 
@@ -90,7 +89,6 @@ All Admin workspaces remain behind Cloudflare Access.
 | Rental pricing / quote calculation | backend pricing logic |
 | Public analytics | GA4/GTM after consent |
 | Admin access | Cloudflare Access |
-| Admin visual tokens | `admin/dashboard.css` |
 | Operations/finance persistence + formulas | Google Sheets `REGISTRO` |
 | Offline capture/workflow | AppSheet SD.Live Track |
 | Finance Admin analytics | read-only Worker view over Sheets/API |
@@ -119,13 +117,14 @@ Canonical dates:
 - one-day uses end=start;
 - multi-day requires end>=start.
 
-Invoice eligibility now uses the canonical end date:
+Invoice eligibility:
 
-- end before today → **Por facturar** when otherwise eligible;
+- canonical end before today → **Por facturar** when otherwise eligible;
 - end today/future/invalid → **Flujo bloqueado**;
-- legacy rows without `Fecha fin` may fall back to `Fecha trabajo`.
+- legacy rows without `Fecha fin` may fall back to `Fecha trabajo`;
+- today is America/Bogota.
 
-Issue #83 now mainly remains for aligning AppSheet reminders/bots to that same day-after-`Fecha fin` rule.
+Issue #83 mainly remains for aligning AppSheet reminders/bots to the same day-after-`Fecha fin` rule.
 
 ## Finance current capabilities
 
@@ -138,20 +137,26 @@ The dedicated workspace includes:
 - pass-through/third-party retention calculator;
 - header-by-name schema normalization;
 - deterministic date normalization so ambiguous Google-formatted dates do not generate false negative payment durations;
-- LiventX ready-to-sign queue and monthly review starting on the 20th;
-- direct LiventX supplier portal CTA to `https://proveedores.aoscentral.com`.
+- `LiventX · Listo para firmar` queue with monthly emphasis from the 20th;
+- direct supplier portal CTA to `https://proveedores.aoscentral.com`.
 
-### Latest Finance reliability hotfix — PR #137
+### Finance reliability closeout — PR #141
 
-After a real production regression left Finance indefinitely at `Connecting to SD.Live Track…`, PR #137 added:
+A production regression caused `/admin/finance/` to remain on `Connecting to SD.Live Track…` and eventually make Safari unresponsive.
 
-- bounded upstream Google OAuth/Sheets timeout;
-- the previously proven formatted-date transport;
-- immediate normalization of Finance date columns back to numeric Sheets serials before existing Finance parsers consume them;
-- a UI guard that cannot remain indefinitely in `Connecting…` and keeps the outer workspace status consistent with the real Finance state;
-- regression tests for ambiguous dates and rate-limit/worker-entry delegation.
+The root cause was a DOM-wide `MutationObserver` in the LiventX portal-link runtime. Its callback changed text/attributes inside the same observed subtree, creating a mutation → callback → mutation loop capable of saturating the main thread. Once saturated, browser timeouts could not execute, which made the issue look like a Google/Sheets connection hang.
 
-PR #137 is merged and CI green. A single production smoke is still required before marking the hotfix production PASS.
+PR #141:
+
+- removed the DOM-wide LiventX observer;
+- moved portal-link updates to explicit click/keyboard/language events;
+- made link updates idempotent;
+- cache-busted the affected runtime;
+- expanded Finance freeze regression coverage so Finance runtimes cannot reintroduce this DOM-wide observer pattern.
+
+**Production smoke: PASS. Finance loads again and the page remains responsive.**
+
+Earlier #137/#139/#140 connection guards remain historical context; the current checkpoint is `docs/checkpoints/handoff-pr141-2026-08-25.md`.
 
 ## LiventX workflow
 
@@ -162,7 +167,7 @@ PR #137 is merged and CI green. A single production smoke is still required befo
 - signature date is missing;
 - record is not paid and is beyond `Pendiente Envio`.
 
-The queue is always visible and receives monthly emphasis from the **20th** through month end. The card/modal links directly to `https://proveedores.aoscentral.com`; Finance remains read-only and does not mark signatures itself.
+The queue is always visible and receives monthly emphasis from the **20th** through month end. Finance remains read-only and signing occurs externally at `https://proveedores.aoscentral.com`.
 
 ## Calendar / Site Schedule / Show Day
 
@@ -175,9 +180,9 @@ Site Schedule is separate website-only D1 presentation state:
 - source selector uses ongoing + future work in America/Bogota;
 - Site Schedule never writes split dates, Show Day or Location to Sheets/AppSheet.
 
-Automatic Show Day comes from Site Schedule + America/Bogota. The public visitor toggle is gone. Admin has a temporary QA override `Auto / Force On / Force Off` that is separate from canonical data and expires at Bogotá day-end.
+Automatic Show Day comes from Site Schedule + America/Bogota. The public visitor toggle is gone. Admin has a temporary QA override `Auto / Force On / Force Off` separate from canonical data and expiring at Bogotá day-end.
 
-Future Show Day concurrency should use an explicit **Primary / Secondary** presentation priority rather than showing multiple cramped Locations; multiple active Primary blocks should surface an Admin conflict.
+Future simultaneous Show Day behavior should use explicit **Primary / Secondary** presentation priority instead of cramming multiple Locations into the header.
 
 ## Public visual stabilization
 
@@ -196,7 +201,7 @@ Issue #124 remains the final representative public smoke ledger. Do not declare 
 
 ## Admin visual audit — active next block
 
-Inspect, one manual action at a time, but **record findings without fixing each one immediately**:
+Inspect one manual action at a time, but **record findings without fixing each one immediately**:
 
 1. `/admin/` desktop;
 2. `/admin/` mobile;
@@ -211,10 +216,10 @@ Inspect, one manual action at a time, but **record findings without fixing each 
 
 Issue #126 is the live Admin finding ledger. Already-required items:
 
-- all CMS-managed logos/images must support scale up to **250%**, including Testimonials and every other applicable editor;
+- every CMS-managed logo/image must support scale up to **250%**, including Testimonials and all other applicable editors;
 - repeatable cards/collections must have persistent reordering with explicit drag handles plus accessible move up/down controls.
 
-After all Admin surfaces are inspected, reconcile the issue against current `main` and implement one coherent stabilization batch.
+After all Admin surfaces are inspected, reconcile #126 against current `main` and implement one coherent stabilization batch.
 
 ## Future roadmap highlights
 
@@ -228,15 +233,15 @@ After all Admin surfaces are inspected, reconcile the issue against current `mai
 ## Relevant docs
 
 - `PROJECT_STATUS.md` — exact current status and continuation point.
+- `docs/checkpoints/handoff-pr141-2026-08-25.md` — latest handoff after Finance production recovery.
 - `docs/roadmap/post-integration-visual-audit-2026-08-23.md` — active visual audit contract.
 - `docs/roadmap/finance-phase2-real-use-2026-08-23.md` — Finance real-use/current workflow details.
 - `docs/roadmap/future-finance-document-generator-2026-08-25.md` — future document generator.
 - `docs/roadmap/calendar-operations-hub-2026-08-23.md` — Calendar/AppSheet/Site Schedule contract.
-- `docs/roadmap/future-crm-ai-vendors-2026-08-23.md` — future vendor research.
 - `ROADMAP_MASTER_CHECKLIST.md` — historical/future backlog; lower precedence than current-state docs.
 
 ## Immediate continuation
 
-1. Reload `/admin/finance/` and production-smoke PR #137. Finance must leave `Connecting to SD.Live Track…`; it should load normally, or fail visibly within the bounded timeout rather than hang.
-2. If PASS, record the hotfix smoke as PASS.
-3. Resume the Admin visual audit from `/admin/` desktop and continue one surface at a time, adding findings to #126 without piecemeal fixes.
+Finance recovery is **closed/PASS**. Do not spend another smoke on #141.
+
+Resume the Admin visual audit at **`/admin/` desktop**, one manual action at a time. Add findings to issue #126 and do not fix them piecemeal unless a new P0/P1 blocks the audit.
