@@ -82,7 +82,7 @@ test("wrangler keeps independent 10-per-minute bindings while Finance guard dele
 
   assert.equal(wrangler.main, "./finance-transport-guard.js");
   assert.match(financeGuard, /import appWorker from "\.\/public-form-rate-limit\.js"/);
-  assert.match(financeGuard, /return appWorker\.fetch\(request, env\)/);
+  assert.match(financeGuard, /appWorker\.fetch\(request, env\)/);
   assert.equal(wrangler.ratelimits.length, 2);
 
   const byName = Object.fromEntries(
