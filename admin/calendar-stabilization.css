@@ -1,9 +1,23 @@
+.calendar-welcome__actions {
+  display: grid;
+  grid-template-columns: repeat(3, max-content);
+  align-items: center;
+  justify-content: end;
+  gap: 10px;
+}
+
+.calendar-welcome__actions .system-pill,
+.calendar-google-status {
+  grid-column: 1 / -1;
+  justify-self: end;
+}
+
 .calendar-google-status {
   display: flex;
   align-items: center;
   justify-content: flex-end;
   gap: 7px;
-  max-width: 320px;
+  max-width: 360px;
   color: rgba(255,255,255,.52);
   font-size: .72rem;
   line-height: 1.4;
@@ -58,7 +72,15 @@
   }
 
   .calendar-welcome__actions {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    align-items: stretch;
     gap: 7px;
+  }
+
+  .calendar-welcome__actions .system-pill {
+    justify-content: center;
   }
 
   .calendar-google-status {
