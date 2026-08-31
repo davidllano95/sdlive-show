@@ -1,0 +1,333 @@
+name: Reconcile Admin stabilization closeout docs
+
+on:
+  push:
+    branches:
+      - docs-admin-stabilization-closeout
+
+permissions:
+  contents: write
+
+jobs:
+  reconcile:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: docs-admin-stabilization-closeout
+      - name: Reconcile current-state documentation
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          def replace_once(text, old, new, label):
+              if old not in text:
+                  raise SystemExit(f'Missing expected text for {label}')
+              return text.replace(old, new, 1)
+
+          # PROJECT_STATUS.md
+          path = Path('PROJECT_STATUS.md')
+          text = path.read_text()
+          text = replace_once(text,
+              '| Última reconciliación | **2026-08-25 — America/Bogota** |',
+              '| Última reconciliación | **2026-08-31 — America/Bogota** |',
+              'PROJECT_STATUS date')
+          text = replace_once(text,
+              '| `main` al reconciliar | **PR #141 · `159abff630188399ea9455ed4fe8911758f1fdf3`** |',
+              '| `main` al reconciliar | **PR #150 · `f5f527db3a95aaea4cde02febf147f0113e8f356`** |',
+              'PROJECT_STATUS baseline')
+          text = replace_once(text,
+              '| Estado macro | **Finance read-only + Calendar create + Site Schedule + automatic Show Day operativos; Finance freeze recuperado/PASS; Admin visual audit aún abierto** |',
+              '| Estado macro | **Admin stabilization CLOSED/PASS; Finance, Calendar, Site Schedule, automatic Show Day y Google Calendar projection operativos; public representative smoke #124 sigue separado/abierto** |',
+              'PROJECT_STATUS macro')
+          text = replace_once(text,
+              '| Active Gate | **post-integration Admin visual audit + stabilization** |',
+              '| Active Gate | **Admin stabilization CLOSED/PASS; resolver o diferir conscientemente el representative public smoke #124 antes de seleccionar el siguiente módulo** |',
+              'PROJECT_STATUS gate')
+          text = replace_once(text,
+              '| Paso manual inmediato | **continuar Admin audit record-first desde `/admin/` desktop** |',
+              '| Paso manual inmediato | **revisar el ledger de smoke público #124; si se cierra o se difiere explícitamente, seleccionar el siguiente módulo del roadmap** |',
+              'PROJECT_STATUS next')
+
+          matrix_old = '| Website Calendar presentation overrides | D1 `site_schedule_state` | Active |\n| Public Show Day active state | Site Schedule + America/Bogota date | Active |'
+          matrix_new = '| Website Calendar presentation overrides | D1 `site_schedule_state` | Active |\n| Google Calendar work/site-schedule projection + read-only overlay | `sam@sdlive.show` secondary integration | Active / production-smoked |\n| Public Show Day active state | Site Schedule + America/Bogota date | Active |'
+          text = replace_once(text, matrix_old, matrix_new, 'PROJECT_STATUS source matrix')
+
+          closed_admin = '''## Admin stabilization — CLOSED/PASS
+
+Issue #126 is closed as completed after the full desktop/mobile audit, coherent stabilization implementation and final production verification on 2026-08-31.
+
+Accepted current behavior includes:
+
+- shared Admin typography/navigation/mobile drawer/action hierarchy normalized;
+- Site Editor CMS scale/order/content/header contracts implemented while preserving Draft → Published and backend ownership boundaries;
+- Rental presentation ordering/media/grid behavior stabilized without moving pricing or availability truth into CMS;
+- Finance LiventX metric/urgency presentation stabilized; Finance remains read-only and the PR #141 freeze regression guard remains mandatory;
+- Calendar mobile and Site Schedule desktop/mobile workflows stabilized;
+- Google Calendar target `sam@sdlive.show` integrated as secondary projection/read-only overlay;
+- REGISTRO/AppSheet remain operations truth; Site Schedule V2 D1 `site_schedule_state` remains website-block truth;
+- Site Schedule Google reconciliation now reads the same V2 store as Admin/Show Day (PR #150).
+
+Final production smoke verified:
+
+- `RENT` is four Site Schedule blocks and its broad REGISTRO parent is gone;
+- `JPN - Cubo Colsubsidio` and `N. Jade` Site Schedule projections are present;
+- monthly collection reminders exist on day 5 and day 19 at 09:00 America/Bogota and are transparent;
+- manual/recurring Google events are not edited/deleted by SD.Live reconciliation;
+- no Google → REGISTRO/AppSheet reverse-write path exists.
+
+Issue #126 is historical/completed. Do not reopen the Admin stabilization audit unless a new regression is observed.
+
+'''
+          text, count = re.subn(r'## Admin visual audit — ACTIVE\n.*?(?=## Show Day state\n)', closed_admin, text, count=1, flags=re.S)
+          if count != 1:
+              raise SystemExit('Could not replace PROJECT_STATUS Admin audit section')
+
+          text = text.replace('`docs/checkpoints/handoff-pr141-2026-08-25.md` — latest checkpoint and exact continuation.', '`docs/checkpoints/handoff-admin-stabilization-2026-08-31.md` — latest checkpoint and exact continuation.')
+
+          continuation = '''## Exact continuation point
+
+1. **Admin stabilization is CLOSED/PASS through PR #150**. Issue #126 is completed; do not repeat its audit/smoke unless a new regression appears.
+2. **Finance PR #141 remains production-smoked PASS**; preserve the no-DOM-wide-observer regression rule.
+3. Public stabilization issue #124 remains a separate representative-smoke ledger. Review/finish it, or explicitly defer it with evidence before claiming the broader post-integration visual audit fully closed.
+4. After #124 is closed or consciously deferred, select the next roadmap module rather than implicitly starting one. `SD.Live Patch` is documented and now eligible for prioritization, but is not automatically active.
+5. Generic Finance Phase 3 write-back remains blocked; Inbox unread count and Finance → AppSheet deep links still require verified integrations/targets.
+'''
+          text, count = re.subn(r'## Exact continuation point\n.*\Z', continuation, text, count=1, flags=re.S)
+          if count != 1:
+              raise SystemExit('Could not replace PROJECT_STATUS continuation')
+          path.write_text(text)
+
+          # README.md
+          path = Path('README.md')
+          text = path.read_text()
+          current_state = '''As of **2026-08-31 America/Bogota**:
+
+- Finance read-only integration and `/admin/finance/` — **OPERATIONAL / production-smoked PASS**; PR #141 freeze regression remains closed.
+- Admin Calendar + controlled create + multi-day operations — **CLOSED/PASS**.
+- Site Schedule + automatic Show Day + Location — **CLOSED/PASS**.
+- Admin-only Show Day QA override `Auto / Force On / Force Off` — **CLOSED/PASS**.
+- Admin desktop/mobile stabilization — **CLOSED/PASS**; issue #126 completed.
+- Google Calendar integration to `sam@sdlive.show` — **OPERATIONAL / production-smoked PASS through PR #150**: REGISTRO work projection, Site Schedule V2 block projection, read-only manual/recurring overlay and monthly collection reminders.
+- Shared Home-style header on current public route families — **PASS**.
+- Public-site stabilization fixes through PR #131 remain merged; issue #124 still owns the final representative public-smoke ledger.
+- **Current gate:** resolve or explicitly defer public smoke #124, then select the next roadmap module.
+- Generic Finance Phase 3 write-back — **BLOCKED**.
+
+The exact current continuation point lives in `PROJECT_STATUS.md` and `docs/checkpoints/handoff-admin-stabilization-2026-08-31.md`.
+'''
+          text, count = re.subn(r'As of \*\*2026-08-25 America/Bogota\*\*:\n.*?The exact current continuation point lives in `PROJECT_STATUS\.md` and `docs/checkpoints/handoff-pr141-2026-08-25\.md`\.\n', current_state, text, count=1, flags=re.S)
+          if count != 1:
+              raise SystemExit('Could not replace README current state')
+
+          text = replace_once(text,
+              '- `/admin/calendar/` — Calendar / Operations over `REGISTRO`, including multi-day and controlled create.',
+              '- `/admin/calendar/` — Calendar / Operations over `REGISTRO`, including multi-day, controlled create, authenticated Google sync and read-only Google overlay.',
+              'README calendar workspace')
+
+          matrix_old = '| Website-only Calendar presentation overrides | D1 `site_schedule_state` |\n| Automatic public Show Day | Site Schedule + America/Bogota date |'
+          matrix_new = '| Website-only Calendar presentation overrides | D1 `site_schedule_state` |\n| Google Calendar secondary projection / read-only overlay | `sam@sdlive.show` |\n| Automatic public Show Day | Site Schedule + America/Bogota date |'
+          text = replace_once(text, matrix_old, matrix_new, 'README source matrix')
+
+          google_para = '''\nGoogle Calendar is a secondary integration surface, not a source of operational truth. Explicit `Sync Google Calendar` reconciles REGISTRO/AppSheet work into `sam@sdlive.show`; Site Schedule V2 blocks replace only their own SD.Live broad parent projections; manual/recurring Google events are read-only overlay data. PR #150 aligned Google reconciliation with the same `site_schedule_state` store used by Admin and Show Day.\n'''
+          anchor = 'Automatic Show Day comes from Site Schedule + America/Bogota. The public visitor toggle is gone. Admin has a temporary QA override `Auto / Force On / Force Off` separate from canonical data and expiring at Bogotá day-end.\n'
+          text = replace_once(text, anchor, anchor + google_para, 'README Google integration paragraph')
+
+          admin_closed = '''## Admin stabilization — closed
+
+The full Admin desktop/mobile audit and coherent stabilization batch are complete. Issue #126 is closed.
+
+Accepted scope includes shared shell/readability/navigation, mobile drawer behavior, Editor CMS scale/order/header contracts, Rental presentation stabilization, Finance LiventX visual cycle, Calendar mobile hierarchy, Site Schedule desktop/mobile workflow and Google Calendar integration.
+
+Final production verification after PR #150 confirmed:
+
+- `RENT` projects as four Site Schedule blocks instead of one broad date range;
+- `JPN - Cubo Colsubsidio` and `N. Jade` Site Schedule projections exist;
+- day-5/day-19 09:00 Bogotá collection reminders exist and are transparent;
+- manual/recurring Google items remain untouched by reconciliation;
+- REGISTRO/AppSheet and Site Schedule V2 retain their existing ownership boundaries.
+
+Do not restart the Admin audit unless a new regression appears.
+
+'''
+          text, count = re.subn(r'## Admin visual audit — active next block\n.*?(?=## Future roadmap highlights\n)', admin_closed, text, count=1, flags=re.S)
+          if count != 1:
+              raise SystemExit('Could not replace README Admin audit section')
+
+          text = text.replace('`docs/checkpoints/handoff-pr141-2026-08-25.md` — latest handoff after Finance production recovery.', '`docs/checkpoints/handoff-admin-stabilization-2026-08-31.md` — latest handoff after Admin stabilization + Google Calendar production acceptance.')
+
+          immediate = '''## Immediate continuation
+
+Admin stabilization is **closed/PASS through PR #150** and issue #126 is completed. Do not spend another smoke on it unless a new regression appears.
+
+The remaining post-integration visual debt is the separate public representative-smoke ledger in issue #124. Finish that smoke, or explicitly defer it with evidence. After that, select the next roadmap module deliberately; `SD.Live Patch` is eligible for prioritization but is not automatically active.
+'''
+          text, count = re.subn(r'## Immediate continuation\n.*\Z', immediate, text, count=1, flags=re.S)
+          if count != 1:
+              raise SystemExit('Could not replace README continuation')
+          path.write_text(text)
+
+          # post-integration roadmap
+          path = Path('docs/roadmap/post-integration-visual-audit-2026-08-23.md')
+          text = path.read_text()
+          text = replace_once(text, '**Updated:** 2026-08-25 — America/Bogota', '**Updated:** 2026-08-31 — America/Bogota', 'roadmap updated date')
+          text = replace_once(text, '**Status:** **ACTIVE — Admin audit is the current block**', '**Status:** **ADMIN CLOSED/PASS — public representative smoke #124 remains separate**', 'roadmap status')
+          text = replace_once(text, '**Current verified runtime baseline:** PR #141 · `159abff630188399ea9455ed4fe8911758f1fdf3`', '**Current verified runtime baseline:** PR #150 · `f5f527db3a95aaea4cde02febf147f0113e8f356`', 'roadmap baseline')
+          text = replace_once(text, '**Immediate manual gate:** resume Admin audit at `/admin/` desktop.', '**Immediate manual gate:** review/finish issue #124 representative public smoke, or explicitly defer it before selecting the next roadmap module.', 'roadmap immediate gate')
+
+          locked = '''## Locked sequence
+
+1. ~~Google OAuth Sheets write authorization~~ **PASS**.
+2. ~~Controlled Calendar create → Google Sheet → AppSheet E2E~~ **PASS**.
+3. ~~Site Schedule source cleanup~~ **PASS**.
+4. ~~Representative public route/header audit + public stabilization batches~~ **IMPLEMENTED / final representative smoke still tracked in #124**.
+5. ~~Admin visual audit desktop + mobile~~ **PASS**.
+6. ~~Reconcile/fix Admin requirements in one coherent stabilization batch~~ **PASS / issue #126 closed**.
+7. ~~Google Calendar production acceptance including Site Schedule projection + collection reminders~~ **PASS through PR #150**.
+8. Resolve or explicitly defer #124, then deliberately select the next roadmap module. `SD.Live Patch` is eligible but not automatically active.
+'''
+          text, count = re.subn(r'## Locked sequence\n.*?(?=## Public audit — merged work\n)', locked + '\n', text, count=1, flags=re.S)
+          if count != 1:
+              raise SystemExit('Could not replace roadmap locked sequence')
+
+          admin_roadmap = '''## Admin stabilization — CLOSED/PASS
+
+The 10-surface Admin audit is complete and issue #126 is closed as completed.
+
+The stabilization batch delivered the reconciled current requirements instead of patching audit findings one-by-one. The final Google Calendar acceptance required PRs #146–#150; the last root cause was a stale V1 Site Schedule reader in Google reconciliation while Admin/Show Day had already moved to V2 `site_schedule_state`.
+
+Final production verification on 2026-08-31 confirmed:
+
+- Google sync reads the same Site Schedule V2 store as Admin/Show Day;
+- `RENT` is four blocks and its broad parent is removed;
+- `JPN - Cubo Colsubsidio` and `N. Jade` block projections exist;
+- monthly day-5/day-19 09:00 Bogotá collection reminders are present and transparent;
+- manual/recurring Google events are never edited/deleted by reconciliation;
+- no Google → REGISTRO/AppSheet/Site Schedule reverse write exists.
+
+Current Admin requirements implemented in this gate include shared typography/navigation/mobile shell, 50–250% managed-media scaling where applicable, persistent collection ordering, bounded header-nav CMS controls, Rental presentation ordering/media/grid behavior, LiventX cycle presentation, Calendar mobile hierarchy and Site Schedule responsive workflow.
+
+Issue #126 is now historical/completed. Reopen only for a genuine regression, not to continue future roadmap work.
+
+'''
+          text, count = re.subn(r'## Admin visual audit — ACTIVE\n.*?(?=## Future Calendar Agenda filter — RECORDED, NOT ACTIVE\n)', admin_roadmap, text, count=1, flags=re.S)
+          if count != 1:
+              raise SystemExit('Could not replace roadmap Admin section')
+
+          exit_note = '''## Exit criteria
+
+The **Admin portion** of this roadmap has met its exit criteria and is CLOSED/PASS. Source-of-truth boundaries were preserved and issue #126 is completed.
+
+The broader post-integration visual-audit document still records one separate debt: issue #124 owns the final representative public smoke for the later public refinements. Do not claim the entire public audit formally closed until #124 is accepted or explicitly deferred with evidence.
+'''
+          text, count = re.subn(r'## Exit criteria\n.*?(?=## Exact continuation\n)', exit_note + '\n', text, count=1, flags=re.S)
+          if count != 1:
+              raise SystemExit('Could not replace roadmap exit criteria')
+
+          exact = '''## Exact continuation
+
+1. Admin stabilization through **PR #150 is production-smoked PASS**; issue #126 is closed.
+2. Finance recovery through PR #141 remains PASS; do not repeat that smoke without a regression.
+3. Review/finish the representative public smoke ledger in issue #124, or explicitly defer it with evidence.
+4. Once #124 is resolved/deferred, select the next roadmap module deliberately. `SD.Live Patch` may now be prioritized, but no future module is implicitly active.
+'''
+          text, count = re.subn(r'## Exact continuation\n.*\Z', exact, text, count=1, flags=re.S)
+          if count != 1:
+              raise SystemExit('Could not replace roadmap continuation')
+          path.write_text(text)
+
+          # New checkpoint
+          checkpoint = Path('docs/checkpoints/handoff-admin-stabilization-2026-08-31.md')
+          checkpoint.write_text('''# SD.Live — handoff after Admin stabilization / PR #150
+
+**Date:** 2026-08-31 — America/Bogota  
+**Runtime baseline:** `main` after PR #150 = `f5f527db3a95aaea4cde02febf147f0113e8f356`  
+**Admin stabilization:** **CLOSED / production-smoked PASS**  
+**Issue #126:** **CLOSED / completed**  
+**Remaining separate visual-smoke debt:** public issue #124.
+
+## Source precedence
+
+`current main + verified production → current schema/config → this handoff → PROJECT_STATUS → README → historical roadmaps`.
+
+## Verified architecture
+
+- GitHub `main` = code truth.
+- Google Sheets `REGISTRO` = operations/finance persistence + formulas.
+- AppSheet SD.Live Track = mobile/offline workflow.
+- Finance Admin remains read-only; generic Finance Phase 3 write-back is blocked.
+- D1 `site_schedule_state` = website-only Site Schedule / automatic Show Day truth.
+- Google Calendar `sam@sdlive.show` = secondary work/site-schedule projection + read-only manual/recurring overlay.
+- Google Calendar never becomes a reverse-write source for REGISTRO/AppSheet/Site Schedule.
+- R2 = managed site media; Rental pricing/quote math remains backend-owned.
+- Cloudflare Access = Admin security boundary.
+
+## Final Google Calendar acceptance
+
+The final user sync returned **6 created**. Direct inspection of `sam@sdlive.show` showed those missing Site Schedule projections were created correctly:
+
+### RENT — REGISTRO ID `1b01796e`
+
+The former broad Aug 4–28 projection is gone. It is now four Site Schedule blocks:
+
+1. `segment_1`: Aug 4–9, Show Day disabled;
+2. `segment_2`: Aug 14–17, Show Day disabled;
+3. `segment_3`: Aug 20–23, Show Day enabled, Location `RENT • Bogota`;
+4. `segment_4`: Aug 27–28, Show Day disabled, Location `RENT • Bogota`.
+
+### Other created Site Schedule projections
+
+- `JPN - Cubo Colsubsidio`: Aug 28, Show Day enabled, Location `Juan Pablo Navarrete • Bogota`, REGISTRO ID `9fd9f746`.
+- `N. Jade`: Sep 6–21, Show Day enabled, Location `NCL Jade • Alaska`, REGISTRO ID `7d3ed5ba`.
+- A separate `N. Jade` per-diem REGISTRO record on Sep 21 (`7acf0766`) remains a legitimate distinct broad work event and is not the Site Schedule parent above.
+
+These four RENT blocks + JPN + N. Jade explain the **6 created** production result.
+
+### Collection reminders
+
+Recurring Google Calendar reminders are present and transparent:
+
+- day 5, 09:00 America/Bogota — `SD.Live · Se abre ventana de cobro`;
+- day 19, 09:00 America/Bogota — `SD.Live · Cierra ventana de cobro`.
+
+## Root cause of the final Site Schedule projection failure
+
+Production diagnostics showed `sourceEvents: 62` but `projectedBlocks: 0`, while browser-side Admin APIs proved that the REGISTRO `eventKey` and D1 override key matched exactly.
+
+The actual architecture had diverged:
+
+- Admin Calendar decoration and automatic Show Day already used `site-schedule-store-v2.js` / D1 `site_schedule_state`;
+- Google reconciliation still imported `readSiteSchedule()` from legacy `site-schedule-api.js` and therefore read the old V1 CMS representation.
+
+PR #150 changed Google reconciliation to `readSiteScheduleV2()` and updated projection tests to the real V2 D1 contract. CI passed and the next production sync produced the expected six block events.
+
+## Stabilization status
+
+Issue #126 now records the accepted Admin scope as completed: shared Admin shell/readability/navigation, Editor CMS presentation contracts, Rental presentation stabilization, Finance LiventX visual cycle, Calendar mobile hierarchy, Site Schedule responsive editing, Google integration and production acceptance.
+
+Preserve the Finance PR #141 regression rule: do not introduce DOM-wide MutationObservers into Finance runtimes.
+
+## Exact continuation
+
+1. Do **not** repeat the Admin stabilization smoke unless a new regression appears.
+2. Public issue #124 remains the separate representative-smoke ledger for public refinements. Finish it or explicitly defer it with evidence.
+3. After #124 is resolved/deferred, choose the next roadmap module deliberately. `SD.Live Patch` is now eligible for prioritization but is not automatically active.
+4. Keep Inbox unread count integration-gated until Gmail auth/source is deliberately designed; do not fake it.
+5. Keep Finance → AppSheet deep links gated until exact current SD.Live Track targets are verified.
+6. Generic Finance Phase 3 write-back remains blocked.
+
+## New-chat rule
+
+A new conversation should read current `main`, `PROJECT_STATUS.md`, this checkpoint, `README.md`, issue #126 (completed) and issue #124 (if still open). It should treat Admin stabilization + Google Calendar production acceptance as PASS and should not reopen the OAuth/Site Schedule debugging sequence.
+''')
+          PY
+
+          git rm .github/workflows/reconcile-admin-closeout-docs.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add PROJECT_STATUS.md README.md docs/roadmap/post-integration-visual-audit-2026-08-23.md docs/checkpoints/handoff-admin-stabilization-2026-08-31.md
+          git diff --cached --quiet || git commit -m "Document Admin stabilization closeout"
+          git push
