@@ -37,6 +37,10 @@ function normalizeHeader(value) {
     .toLowerCase();
 }
 
+function normalizeIdentity(value) {
+  return clean(value).normalize("NFKC").replace(/\s+/g, " ").toLowerCase();
+}
+
 function validIsoDate(value) {
   const text = clean(value);
   const match = text.match(/^(\d{4})-(\d{2})-(\d{2})$/);
@@ -243,16 +247,43 @@ function comparableGoogleEvent(event) {
   });
 }
 
+function legacyOverrideForSourceEvent(sourceEvent, overrides) {
+  const sourceLabel = normalizeIdentity(sourceEvent.project || sourceEvent.client);
+  const sourceClient = normalizeIdentity(sourceEvent.client);
+  const candidates = Object.entries(overrides).filter(([, override]) => {
+    if (!override || !Array.isArray(override.segments) || !override.segments.length) return false;
+    if (validIsoDate(override.sourceStartDate) !== sourceEvent.startDate) return false;
+    if (validIsoDate(override.sourceEndDate) !== sourceEvent.endDate) return false;
+    if (normalizeIdentity(override.client) !== sourceClient) return false;
+    if (normalizeIdentity(override.label) !== sourceLabel) return false;
+    return true;
+  });
+  if (candidates.length !== 1) return null;
+  return { eventKey: candidates[0][0], override: candidates[0][1] };
+}
+
+function resolvedOverrideForSourceEvent(sourceEvent, overrides) {
+  const eventKey = calendarEventKey(sourceEvent);
+  const exact = overrides[eventKey];
+  if (exact && Array.isArray(exact.segments) && exact.segments.length) {
+    return { eventKey, override: exact, match: "event-key" };
+  }
+  const legacy = legacyOverrideForSourceEvent(sourceEvent, overrides);
+  return legacy ? { ...legacy, match: "legacy-metadata" } : null;
+}
+
 function desiredBlocksForSource(sourceEvents, schedule, window) {
   const desired = [];
   const overriddenRegistroIds = new Set();
   const overrides = schedule?.overrides || {};
+  let legacyMatchedOverrides = 0;
 
   for (const sourceEvent of sourceEvents) {
     if (sourceEvent.endDate < window.startDate || sourceEvent.startDate > window.endDate) continue;
-    const eventKey = calendarEventKey(sourceEvent);
-    const override = overrides[eventKey];
-    if (!override || !Array.isArray(override.segments) || !override.segments.length) continue;
+    const resolved = resolvedOverrideForSourceEvent(sourceEvent, overrides);
+    if (!resolved) continue;
+    const { eventKey, override, match } = resolved;
+    if (match === "legacy-metadata") legacyMatchedOverrides += 1;
 
     overriddenRegistroIds.add(sourceEvent.id);
     override.segments.forEach((segment, index) => {
@@ -267,7 +298,7 @@ function desiredBlocksForSource(sourceEvents, schedule, window) {
     });
   }
 
-  return { desired, overriddenRegistroIds };
+  return { desired, overriddenRegistroIds, legacyMatchedOverrides };
 }
 
 async function createGoogleEvent(env, accessToken, resource, fetchImpl) {
@@ -321,7 +352,7 @@ export async function syncSiteScheduleToGoogleCalendar(
     listGoogleEvents(env, accessToken, window, fetchImpl)
   ]);
 
-  const { desired, overriddenRegistroIds } = desiredBlocksForSource(
+  const { desired, overriddenRegistroIds, legacyMatchedOverrides } = desiredBlocksForSource(
     sourceEvents,
     currentSchedule.schedule,
     window
@@ -347,6 +378,7 @@ export async function syncSiteScheduleToGoogleCalendar(
     calendarId: calendarId(env),
     projectedBlocks: desired.length,
     overriddenWorks: overriddenRegistroIds.size,
+    legacyMatchedOverrides,
     created: 0,
     updated: 0,
     unchanged: 0,
