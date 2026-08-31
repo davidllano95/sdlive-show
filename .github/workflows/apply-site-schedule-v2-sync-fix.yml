@@ -62,7 +62,8 @@ jobs:
 
           for filename in [
               'tests/site-schedule-google-projection.test.mjs',
-              'tests/site-schedule-legacy-source-match.test.mjs'
+              'tests/site-schedule-legacy-source-match.test.mjs',
+              'tests/site-schedule-date-key.test.mjs'
           ]:
               path = Path(filename)
               source = path.read_text()
@@ -85,6 +86,6 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add site-schedule-google-projection.js tests/site-schedule-google-projection.test.mjs tests/site-schedule-legacy-source-match.test.mjs
+          git add site-schedule-google-projection.js tests/site-schedule-google-projection.test.mjs tests/site-schedule-legacy-source-match.test.mjs tests/site-schedule-date-key.test.mjs
           git diff --cached --quiet || git commit -m "Use Site Schedule V2 store for Google sync"
           git push
