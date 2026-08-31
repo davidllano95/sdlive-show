@@ -1,4 +1,5 @@
 import { fetchGoogleAccessToken } from "./finance-api.js";
+import { normalizeCalendarRows } from "./calendar-api.js";
 import {
   addIsoDays,
   googleCalendarDiagnostic,
@@ -153,28 +154,24 @@ async function readRegistroRows(env, fetchImpl, accessToken) {
     throw new Error("REGISTRO Site Schedule projection header row unavailable");
   }
 
+  const headers = values[0];
   const index = new Map();
-  values[0].forEach((header, position) => {
+  headers.forEach((header, position) => {
     const key = normalizeHeader(header);
     if (key && !index.has(key)) index.set(key, position);
   });
-  const at = (row, name) => row?.[index.get(normalizeHeader(name))];
+  const fieldIndex = Object.fromEntries(
+    ["Fecha trabajo", "Fecha fin", "Cliente", "Proyecto / Show", "Rol", "Moneda", "Estado", "ID"]
+      .map((field) => [field, index.get(normalizeHeader(field))])
+  );
+  const idIndex = fieldIndex.ID;
 
   return values.slice(1).map((row) => {
-    const id = clean(at(row, "ID"));
-    const startDate = sheetDateToIso(at(row, "Fecha trabajo"));
-    const parsedEnd = sheetDateToIso(at(row, "Fecha fin"));
-    const endDate = parsedEnd || startDate;
-    if (!id || !startDate || !endDate || endDate < startDate) return null;
-    return {
-      id,
-      startDate,
-      endDate,
-      client: clean(at(row, "Cliente")),
-      project: clean(at(row, "Proyecto / Show")),
-      role: clean(at(row, "Rol")),
-      currency: clean(at(row, "Moneda")).toUpperCase()
-    };
+    if (!Number.isInteger(idIndex)) return null;
+    const id = clean(row?.[idIndex]);
+    if (!id) return null;
+    const normalized = normalizeCalendarRows([row], fieldIndex).events[0] || null;
+    return normalized ? { id, ...normalized } : null;
   }).filter(Boolean);
 }
 
@@ -379,6 +376,7 @@ export async function syncSiteScheduleToGoogleCalendar(
     projectedBlocks: desired.length,
     overriddenWorks: overriddenRegistroIds.size,
     legacyMatchedOverrides,
+    sourceEvents: sourceEvents.length,
     created: 0,
     updated: 0,
     unchanged: 0,
