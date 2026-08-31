@@ -6,13 +6,13 @@
 |---|---|
 | Última reconciliación | **2026-08-31 — America/Bogota** |
 | Rama operativa | `main` |
-| `main` al reconciliar | **PR #150 · `f5f527db3a95aaea4cde02febf147f0113e8f356`** |
+| `main` al reconciliar | **PR #154 · `aacc0a60af70b9b85c8c61eb74216f1db6d329f3`** |
 | Producción | `https://sdlive.show` |
 | Media pública | `https://media.sdlive.show` |
-| Estado macro | **Admin stabilization CLOSED/PASS; Finance, Calendar, Site Schedule, automatic Show Day y Google Calendar projection operativos; public representative smoke #124 sigue separado/abierto** |
-| Active Gate | **Admin stabilization CLOSED/PASS; resolver o diferir conscientemente el representative public smoke #124 antes de seleccionar el siguiente módulo** |
+| Estado macro | **Admin stabilization CLOSED/PASS; public post-integration visual audit CLOSED/PASS; Finance, Calendar, Site Schedule, automatic Show Day y Google Calendar projection operativos** |
+| Active Gate | **Ningún gate de estabilización activo. Seleccionar deliberadamente el siguiente módulo del roadmap antes de iniciar runtime nuevo.** |
 | Bloqueado | **Generic Finance Phase 3 write-back** |
-| Paso manual inmediato | **revisar el ledger de smoke público #124; si se cierra o se difiere explícitamente, seleccionar el siguiente módulo del roadmap** |
+| Paso manual inmediato | **Seleccionar el siguiente módulo del roadmap. `SD.Live Patch` está documentado y elegible, pero no está activado automáticamente.** |
 
 ## Precedencia
 
@@ -183,17 +183,30 @@ Read-only Finance support includes:
 
 This does not write `Fecha firma`; signing still occurs in the external portal/current workflow.
 
-## Public-site stabilization — current state
+## Public-site stabilization — CLOSED/PASS
 
-Recent merged public fixes:
+Issue #124 is closed as completed after the representative public smoke passed on 2026-08-31.
+
+Accepted public closeout includes:
 
 - **PR #123:** accessibility/continuity closeout, public WhatsApp on SEO/service landings, Rental empty-request guard, pricing parity test, initial testimonial long-copy behavior.
 - **PR #125:** testimonial shrink correction, reduced PA presentation, mobile Misi/Wonderlust Supported Brands normalization.
 - **PR #127:** synchronized testimonial progressive expansion.
 - **PR #129:** shorter testimonial cards stop naturally instead of stretching; collapse preserves reader viewport; BetaThree PA sized like one card in a three-card desktop grid.
 - **PR #131:** changing EN ↔ ES preserves testimonial expansion state and viewport coherently.
+- **PR #152:** final public closeout batch restoring testimonial glow, Trusted By mobile luminosity, BetaThree left alignment and accepted Misi/Wonderlust mobile grouping.
+- **PR #153:** testimonial sheen pacing made independent from expanded card height; Rental editor image framing controls refreshed reliably.
+- **PR #154:** the two visible BetaThree PA units are one canonical CMS media composition; one source/scale/X/Y control updates both units together.
 
-Issue #124 is still the public smoke ledger. Do not claim the final public block formally closed until its representative smoke is explicitly accepted.
+Final production smoke verified:
+
+- Testimonials reveal/collapse remains coherent, short cards end naturally, glow stays visible, and sheen speed is consistent open/closed and across the full expanded quote;
+- Rental/PA is correctly sized/aligned; the user adjusted PA in CMS, saved, published, and confirmed the result on both desktop and mobile;
+- Misi Supported Brands is side-by-side on mobile;
+- Wonderlust is three items per row on mobile with a single remainder centered on the next row;
+- Trusted By card glow/luminosity remains visible on mobile.
+
+Issue #124 is historical/completed. Do not reopen the public audit unless a new regression is observed.
 
 ## Admin stabilization — CLOSED/PASS
 
@@ -265,8 +278,9 @@ A locally generated PDF must **not** be represented as a DIAN-valid Colombian el
 ## Relevant docs
 
 - `README.md` — architecture/current operating overview.
-- `docs/checkpoints/handoff-admin-stabilization-2026-08-31.md` — latest checkpoint and exact continuation.
-- `docs/roadmap/post-integration-visual-audit-2026-08-23.md` — completed Admin audit/stabilization contract; public #124 remains separate.
+- `docs/checkpoints/handoff-public-audit-closeout-2026-08-31.md` — latest checkpoint and exact continuation after closing #124.
+- `docs/checkpoints/handoff-admin-stabilization-2026-08-31.md` — Admin/Google Calendar acceptance checkpoint.
+- `docs/roadmap/post-integration-visual-audit-2026-08-23.md` — completed post-integration Admin + public audit contract.
 - `docs/roadmap/finance-phase2-real-use-2026-08-23.md` — Finance real-use history/current rules.
 - `docs/roadmap/future-finance-document-generator-2026-08-25.md` — future document generation.
 - `docs/roadmap/calendar-operations-hub-2026-08-23.md` — Calendar/AppSheet/Site Schedule handoff.
@@ -274,8 +288,8 @@ A locally generated PDF must **not** be represented as a DIAN-valid Colombian el
 
 ## Exact continuation point
 
-1. **Admin stabilization is CLOSED/PASS through PR #150**. Issue #126 is completed; do not repeat its audit/smoke unless a new regression appears.
-2. **Finance PR #141 remains production-smoked PASS**; preserve the no-DOM-wide-observer regression rule.
-3. Public stabilization issue #124 remains a separate representative-smoke ledger. Review/finish it, or explicitly defer it with evidence before claiming the broader post-integration visual audit fully closed.
-4. After #124 is closed or consciously deferred, select the next roadmap module rather than implicitly starting one. `SD.Live Patch` is documented and now eligible for prioritization, but is not automatically active.
+1. **Admin stabilization is CLOSED/PASS through PR #150**; issue #126 is completed. Do not repeat its audit/smoke unless a new regression appears.
+2. **Public post-integration stabilization is CLOSED/PASS through PR #154**; issue #124 is completed. Do not repeat its representative smoke unless a new regression appears.
+3. **Finance PR #141 remains production-smoked PASS**; preserve the no-DOM-wide-observer regression rule.
+4. **No stabilization gate is active.** Deliberately select the next roadmap module before starting implementation. `SD.Live Patch` is documented and eligible, but not automatically active.
 5. Generic Finance Phase 3 write-back remains blocked; Inbox unread count and Finance → AppSheet deep links still require verified integrations/targets.
