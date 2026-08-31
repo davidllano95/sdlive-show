@@ -58,6 +58,13 @@ test("testimonial expansion synchronizes quote reveal without forcing short card
   assert.match(css, /has-synced-testimonial-expansion \.testimonial-card\s*\{[^}]*align-self:\s*start;/s);
 });
 
+test("expanded active testimonial retains visible glow after geometry changes", () => {
+  assert.match(
+    css,
+    /has-synced-testimonial-expansion \.testimonial-card:has\(> p\.is-expanded\)\s*\{[^}]*border-color:\s*rgba\(var\(--color-accent-rgb\), 0\.28\)[^}]*0 0 34px rgba\(var\(--color-accent-rgb\), 0\.14\)/s
+  );
+});
+
 test("testimonial collapse preserves the reader viewport around the disclosure control", () => {
   assert.match(runtime, /function preserveViewportAfterCollapse\(anchorButton, anchorTop\)/);
   assert.match(runtime, /anchorButton\.getBoundingClientRect\(\)\.top/);
@@ -75,15 +82,42 @@ test("testimonial language changes preserve active expansion before global scrol
   assert.doesNotMatch(runtime, /langObserver[\s\S]{0,220}requestAnimationFrame\(syncTestimonials\)/);
 });
 
-test("final public mobile supported-brand layouts use simple stable grids", () => {
-  assert.match(css, /#misiSupportedBrands \.supported-reveal-logos--misi\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\)/s);
-  assert.match(css, /#wonderlustSupportedBrands \.supported-reveal-logos--wonderlust\s*\{[^}]*grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)/s);
-  assert.match(css, /#wonderlustSupportedBrands[\s\S]*\.supported-brand-tile:last-child:not\(\.supported-brand-tile--featured\)[\s\S]*grid-column:\s*auto/);
+test("final public mobile supported-brand layouts match accepted grouping", () => {
+  assert.match(
+    css,
+    /#misiSupportedBrands \.supported-reveal-logos--misi\s*\{[^}]*grid-template-columns:\s*repeat\(3, minmax\(0, 1fr\)\)/s
+  );
+  assert.match(
+    css,
+    /#misiSupportedBrands[\s\S]*\.supported-brand-tile--misi-pair\s*\{[^}]*grid-column:\s*auto/s
+  );
+  assert.match(
+    css,
+    /#wonderlustSupportedBrands \.supported-reveal-logos--wonderlust\s*\{[^}]*grid-template-columns:\s*repeat\(3, minmax\(0, 1fr\)\)/s
+  );
+  assert.match(
+    css,
+    /#wonderlustSupportedBrands[\s\S]*\.supported-brand-tile:last-child:nth-child\(3n \+ 1\)\s*\{[^}]*grid-column:\s*2/s
+  );
 });
 
-test("PA is sized like one card in a three-card desktop grid", () => {
+test("touch Trusted By cards keep static luminosity without re-enabling hover motion", () => {
+  assert.match(css, /@media \(hover: none\), \(pointer: coarse\)/);
+  assert.match(
+    css,
+    /\.trusted-wrap \.client-strip-card\s*\{[^}]*0 10px 30px rgba\(var\(--color-accent-rgb\), 0\.10\)/s
+  );
+  assert.match(
+    css,
+    /\.trusted-wrap \.client-strip-card\.is-reveal-active\s*\{[^}]*0 12px 34px rgba\(var\(--color-accent-rgb\), 0\.18\)/s
+  );
+});
+
+test("PA is sized like one left-aligned card in a three-card desktop grid", () => {
   assert.match(css, /@media \(min-width: 1025px\)[\s\S]*equipment-card--wide\[data-rental-item=\"pa\"\][\s\S]*width:\s*calc\(\(100% - 40px\) \/ 3\)/);
   assert.match(css, /@media \(min-width: 1025px\)[\s\S]*equipment-card--wide\[data-rental-item=\"pa\"\][\s\S]*max-width:\s*400px/);
+  assert.match(css, /@media \(min-width: 1025px\)[\s\S]*equipment-card--wide\[data-rental-item=\"pa\"\][\s\S]*margin-left:\s*0/);
+  assert.match(css, /@media \(min-width: 1025px\)[\s\S]*equipment-card--wide\[data-rental-item=\"pa\"\][\s\S]*margin-right:\s*auto/);
   assert.match(css, /@media \(min-width: 1025px\)[\s\S]*equipment-card--wide\[data-rental-item=\"pa\"\][\s\S]*height:\s*280px\s*!important/);
   assert.match(css, /@media \(max-width: 720px\)[\s\S]*equipment-card--wide\[data-rental-item=\"pa\"\][\s\S]*height:\s*280px\s*!important/);
 });
