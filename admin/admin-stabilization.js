@@ -3,7 +3,7 @@
   window.SDLiveAdminStabilization = true;
 
   const MOBILE_QUERY = "(max-width: 820px)";
-  const EDITOR_EXTENSION_VERSION = "20260831-2";
+  const EDITOR_EXTENSION_VERSION = "20260831-3";
   const shell = document.querySelector(".backoffice");
   const sidebar = document.querySelector(".app-sidebar");
   const nav = sidebar?.querySelector(".app-nav") || null;
