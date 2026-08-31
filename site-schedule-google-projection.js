@@ -66,11 +66,11 @@ function sheetDateToIso(value) {
   const first = Number(match[1]);
   const second = Number(match[2]);
   const year = Number(match[3]);
-  let month = first;
-  let day = second;
-  if (first > 12 && second <= 12) {
-    day = first;
-    month = second;
+  let day = first;
+  let month = second;
+  if (first <= 12 && second > 12) {
+    month = first;
+    day = second;
   }
   return validIsoDate(`${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`);
 }
