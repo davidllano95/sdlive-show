@@ -1,0 +1,44 @@
+name: Apply current documentation reconciliation
+
+on:
+  push:
+    branches:
+      - docs-reconcile-rental-ai-availability
+    paths:
+      - scripts/reconcile-current-docs-20260831.py
+      - .github/workflows/apply-docs-reconciliation-20260831.yml
+
+permissions:
+  contents: write
+
+jobs:
+  reconcile:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: docs-reconcile-rental-ai-availability
+          fetch-depth: 0
+
+      - name: Apply reconciliation
+        run: python scripts/reconcile-current-docs-20260831.py
+
+      - name: Validate current-state markers
+        run: |
+          grep -q 'PR #157' PROJECT_STATUS.md
+          grep -q 'issue #156' README.md
+          grep -q 'No active stabilization gate' ROADMAP_MASTER_CHECKLIST.md
+          grep -q 'ELIGIBLE ROADMAP CANDIDATE — NOT ACTIVE' docs/roadmap/availability-aware-contact-widget.md
+          grep -q 'CURRENT BASELINE CLOSED/PASS — NO ACTIVE STABILIZATION GATE' docs/roadmap/sdlive-control-center.md
+          grep -q 'Rental image-editor parity: CLOSED/PASS' docs/checkpoints/handoff-current-state-2026-08-31.md
+          git diff --check
+
+      - name: Commit reconciled docs and remove one-shot helpers
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git rm scripts/reconcile-current-docs-20260831.py .github/workflows/apply-docs-reconciliation-20260831.yml
+          git add PROJECT_STATUS.md README.md ROADMAP_MASTER_CHECKLIST.md docs/roadmap/sdlive-control-center.md docs/roadmap/availability-aware-contact-widget.md docs/roadmap/future-crm-ai-vendors-2026-08-23.md docs/checkpoints/handoff-current-state-2026-08-31.md
+          git commit -m 'Reconcile current state and availability AI roadmap'
+          git push origin HEAD:docs-reconcile-rental-ai-availability
