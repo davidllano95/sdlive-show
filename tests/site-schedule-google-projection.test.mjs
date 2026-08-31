@@ -10,17 +10,19 @@ import {
 
 function fakeScheduleDb(schedule) {
   return {
-    prepare() {
+    prepare(sql) {
       return {
         bind() {
           return this;
         },
+        async run() {
+          return { success: true };
+        },
         async first() {
+          if (!String(sql).includes("site_schedule_state")) return null;
           return {
-            id: 1,
-            published_blob: JSON.stringify(schedule),
-            updated_at: "2026-08-26T12:00:00Z",
-            published_at: "2026-08-26T12:00:00Z"
+            content_json: JSON.stringify(schedule),
+            updated_at: "2026-08-31T19:00:00Z"
           };
         }
       };

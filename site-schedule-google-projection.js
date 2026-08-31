@@ -5,7 +5,8 @@ import {
   googleCalendarDiagnostic,
   syncRegistroToGoogleCalendar
 } from "./google-calendar-integration.js";
-import { calendarEventKey, readSiteSchedule } from "./site-schedule-api.js";
+import { calendarEventKey } from "./site-schedule-api.js";
+import { readSiteScheduleV2 } from "./site-schedule-store-v2.js";
 
 const GOOGLE_CALENDAR_API_BASE = "https://www.googleapis.com/calendar/v3/calendars";
 const GOOGLE_SHEETS_API_BASE = "https://sheets.googleapis.com/v4/spreadsheets";
@@ -345,7 +346,7 @@ export async function syncSiteScheduleToGoogleCalendar(
   const window = projectionWindow(now);
   const [sourceEvents, currentSchedule, existingData] = await Promise.all([
     readRegistroRows(env, fetchImpl, accessToken),
-    readSiteSchedule(env),
+    readSiteScheduleV2(env),
     listGoogleEvents(env, accessToken, window, fetchImpl)
   ]);
 
