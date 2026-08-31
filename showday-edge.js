@@ -1,5 +1,5 @@
 const SHOWDAY_RUNTIME_VERSION = "20260824-2";
-const PUBLIC_AUDIT_RUNTIME_VERSION = "20260825-5";
+const PUBLIC_AUDIT_RUNTIME_VERSION = "20260831-1";
 
 const SHARED_PUBLIC_HEADER_HTML = `
 <header class="site-header" id="siteHeader" data-sdlive-shared-public-header>
