@@ -254,6 +254,7 @@ A locally generated PDF must **not** be represented as a DIAN-valid Colombian el
 
 ### Other future items
 
+- SD.Live Patch — documented future patch-sheet/signal-flow/show-documentation workspace, now eligible for prioritization but not automatically active;
 - Calendar Agenda `Full Month` vs `Current + Future` filter;
 - controlled Calendar edit/workflow actions after stabilization;
 - Attio CRM evaluation;
@@ -265,7 +266,7 @@ A locally generated PDF must **not** be represented as a DIAN-valid Colombian el
 
 - `README.md` — architecture/current operating overview.
 - `docs/checkpoints/handoff-admin-stabilization-2026-08-31.md` — latest checkpoint and exact continuation.
-- `docs/roadmap/post-integration-visual-audit-2026-08-23.md` — active audit contract.
+- `docs/roadmap/post-integration-visual-audit-2026-08-23.md` — completed Admin audit/stabilization contract; public #124 remains separate.
 - `docs/roadmap/finance-phase2-real-use-2026-08-23.md` — Finance real-use history/current rules.
 - `docs/roadmap/future-finance-document-generator-2026-08-25.md` — future document generation.
 - `docs/roadmap/calendar-operations-hub-2026-08-23.md` — Calendar/AppSheet/Site Schedule handoff.

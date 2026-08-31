@@ -10,7 +10,7 @@
 
 The integration work materially changed public and private surfaces: Finance, Calendar, controlled create, Site Schedule, automatic Show Day, shared public headers, Rental, Testimonials and Admin navigation. Functional tests are necessary but do not prove visual/workflow coherence.
 
-This audit treats desktop and mobile as separate first-class layouts. Public findings are largely stabilized; the remaining required coherent audit block is Admin.
+This audit treated desktop and mobile as separate first-class layouts. The Admin block is now CLOSED/PASS; issue #124 remains the separate final representative public-smoke debt.
 
 ## Audit execution method — LOCKED
 
@@ -48,7 +48,7 @@ A P0/P1 that blocks use or prevents the audit from continuing may justify immedi
 - PR #105/#120 — accepted mobile subtitle/Location +2px spacing in Show Day and normal modes.
 - PR #118 — Admin-only Show Day Visual QA override `Auto / Force On / Force Off`, separate from canonical Site Schedule/REGISTRO/AppSheet, expiring at Bogotá day-end.
 - PR #121 — Theatre secondary cards use natural content height.
-- PR #122 — shared Admin nav visual order normalized to `Dashboard → Finance → Calendar → Site Editor → Inbox`.
+- PR #122 — earlier shared Admin nav normalization; the final stabilization order is `Dashboard → Calendar → Finance → Inbox`, with Site Editor desktop-only and Media Library Editor-owned.
 
 ### Public closeout / accessibility / Rental integrity
 

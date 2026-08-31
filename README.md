@@ -157,7 +157,7 @@ PR #141:
 
 **Production smoke: PASS. Finance loads again and the page remains responsive.**
 
-Earlier #137/#139/#140 connection guards remain historical context; the current checkpoint is `docs/checkpoints/handoff-pr141-2026-08-25.md`.
+Earlier #137/#139/#140 connection guards remain historical context; the Finance incident checkpoint is `docs/checkpoints/handoff-pr141-2026-08-25.md`, while the current project checkpoint is `docs/checkpoints/handoff-admin-stabilization-2026-08-31.md`.
 
 ## LiventX workflow
 
@@ -220,6 +220,7 @@ Do not restart the Admin audit unless a new regression appears.
 
 ## Future roadmap highlights
 
+- `docs/roadmap/sdlive-control-center.md`: includes the documented future **SD.Live Patch** direction; Patch is now eligible for prioritization but is not automatically active.
 - `docs/roadmap/future-finance-document-generator-2026-08-25.md`: shared branded generator for **Cuenta de cobro / Cotización / Factura or invoice draft**, reusing existing Finance/Rental/client data and not creating a second finance source of truth. Real Colombian electronic invoicing requires explicit DIAN-compliant design/provider integration before it can be represented as legally valid.
 - Calendar Agenda scope filter: `Full Month` vs `Current + Future`.
 - Controlled Calendar edit/workflow actions after stabilization.
@@ -231,7 +232,7 @@ Do not restart the Admin audit unless a new regression appears.
 
 - `PROJECT_STATUS.md` — exact current status and continuation point.
 - `docs/checkpoints/handoff-admin-stabilization-2026-08-31.md` — latest handoff after Admin stabilization + Google Calendar production acceptance.
-- `docs/roadmap/post-integration-visual-audit-2026-08-23.md` — active visual audit contract.
+- `docs/roadmap/post-integration-visual-audit-2026-08-23.md` — completed Admin audit/stabilization contract; public #124 remains separate.
 - `docs/roadmap/finance-phase2-real-use-2026-08-23.md` — Finance real-use/current workflow details.
 - `docs/roadmap/future-finance-document-generator-2026-08-25.md` — future document generator.
 - `docs/roadmap/calendar-operations-hub-2026-08-23.md` — Calendar/AppSheet/Site Schedule contract.
