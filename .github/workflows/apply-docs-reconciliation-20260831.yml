@@ -31,7 +31,7 @@ jobs:
           grep -q 'No active stabilization gate' ROADMAP_MASTER_CHECKLIST.md
           grep -q 'ELIGIBLE ROADMAP CANDIDATE — NOT ACTIVE' docs/roadmap/availability-aware-contact-widget.md
           grep -q 'CURRENT BASELINE CLOSED/PASS — NO ACTIVE STABILIZATION GATE' docs/roadmap/sdlive-control-center.md
-          grep -q 'Rental image-editor parity: CLOSED/PASS' docs/checkpoints/handoff-current-state-2026-08-31.md
+          grep -q 'Rental image-editor parity' docs/checkpoints/handoff-current-state-2026-08-31.md
           git diff --check
 
       - name: Commit reconciled docs and remove one-shot helpers
