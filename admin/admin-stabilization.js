@@ -3,6 +3,7 @@
   window.SDLiveAdminStabilization = true;
 
   const MOBILE_QUERY = "(max-width: 820px)";
+  const EDITOR_EXTENSION_VERSION = "20260831-2";
   const shell = document.querySelector(".backoffice");
   const sidebar = document.querySelector(".app-sidebar");
   const nav = sidebar?.querySelector(".app-nav") || null;
@@ -134,8 +135,8 @@
 
   function loadEditorExtensions() {
     if (!document.querySelector(".editor-backoffice")) return;
-    loadScript("/admin/editor/site-presentation-editor.js?v=20260825-1", "sdlive-site-presentation-editor");
-    loadScript("/admin/editor/rental-stabilization-editor.js?v=20260825-1", "sdlive-rental-stabilization-editor");
+    loadScript(`/admin/editor/site-presentation-editor.js?v=${EDITOR_EXTENSION_VERSION}`, "sdlive-site-presentation-editor");
+    loadScript(`/admin/editor/rental-stabilization-editor.js?v=${EDITOR_EXTENSION_VERSION}`, "sdlive-rental-stabilization-editor");
   }
 
   function loadPathExtensions() {

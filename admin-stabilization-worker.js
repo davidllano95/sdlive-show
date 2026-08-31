@@ -37,6 +37,18 @@ function json(data, status = 200) {
   });
 }
 
+function withAdminNoStore(response) {
+  if (!response) return response;
+  const headers = new Headers(response.headers);
+  headers.set("Cache-Control", "no-store, no-cache, must-revalidate");
+  headers.set("Pragma", "no-cache");
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers
+  });
+}
+
 function isAdminPreview(request) {
   if (request.headers.get("Sec-Fetch-Dest") !== "iframe") return false;
   const referer = request.headers.get("Referer");
@@ -197,7 +209,10 @@ export default {
       ? await request.clone().json().catch(() => null)
       : null;
 
-    const response = await baseWorker.fetch(request, env);
+    const baseResponse = await baseWorker.fetch(request, env);
+    const response = request.method === "GET" && (path === "/admin" || path.startsWith("/admin/"))
+      ? withAdminNoStore(baseResponse)
+      : baseResponse;
 
     scheduleGoogleSyncAfterSiteScheduleMutation(path, request, response, env, ctx);
 

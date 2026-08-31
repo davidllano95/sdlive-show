@@ -78,6 +78,26 @@ test("Rental presentation cannot invent presets, item membership or media bounds
   assert.throws(() => validateRentalPresentationExtras(badScale), /displayScale must be between 0.5 and 2.5/);
 });
 
+test("Rental Site Editor serves fresh image framing controls", () => {
+  const worker = read("admin-stabilization-worker.js");
+  const shell = read("admin/admin-stabilization.js");
+  const editor = read("admin/editor/rental-stabilization-editor.js");
+
+  assert.match(worker, /function withAdminNoStore\(response\)/);
+  assert.match(worker, /path === "\/admin" \|\| path\.startsWith\("\/admin\/"\)/);
+  assert.match(worker, /Cache-Control", "no-store, no-cache, must-revalidate"/);
+  assert.match(shell, /EDITOR_EXTENSION_VERSION = "20260831-2"/);
+  assert.match(shell, /rental-stabilization-editor\.js\?v=\$\{EDITOR_EXTENSION_VERSION\}/);
+
+  assert.match(editor, /document\.createTextNode\("Image size"\)/);
+  assert.match(editor, /range\.min = "50"; range\.max = "250"; range\.step = "5"/);
+  assert.match(editor, /positionField\(id, "positionX", "Horizontal position"\)/);
+  assert.match(editor, /positionField\(id, "positionY", "Vertical position"\)/);
+  assert.match(editor, /range\.min = "-100"; range\.max = "100"; range\.step = "1"/);
+  assert.match(editor, /img\.style\.scale = String\(clamp\(item\.image\.displayScale/);
+  assert.match(editor, /img\.style\.translate = `\$\{clamp\(item\.image\.positionX/);
+});
+
 test("Admin stabilization worker is the deploy entry and covers localized home routes", () => {
   const wrangler = read("wrangler.jsonc");
   const worker = read("admin-stabilization-worker.js");

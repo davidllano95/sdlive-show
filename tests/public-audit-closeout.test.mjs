@@ -8,6 +8,7 @@ const runtime = readFileSync(new URL("../public-audit-closeout.js", import.meta.
 const rateLimit = readFileSync(new URL("../public-form-rate-limit.js", import.meta.url), "utf8");
 
 test("public closeout assets are injected through the shared public edge", () => {
+  assert.match(edge, /PUBLIC_AUDIT_RUNTIME_VERSION = "20260831-2"/);
   assert.match(edge, /public-audit-closeout\.css\?v=\$\{PUBLIC_AUDIT_RUNTIME_VERSION\}/);
   assert.match(edge, /public-audit-closeout\.js\?v=\$\{PUBLIC_AUDIT_RUNTIME_VERSION\}/);
   assert.match(edge, /\.on\("body\.seo-page"/);
@@ -63,6 +64,23 @@ test("expanded active testimonial retains visible glow after geometry changes", 
     css,
     /has-synced-testimonial-expansion \.testimonial-card:has\(> p\.is-expanded\)\s*\{[^}]*border-color:\s*rgba\(var\(--color-accent-rgb\), 0\.28\)[^}]*0 0 34px rgba\(var\(--color-accent-rgb\), 0\.14\)/s
   );
+});
+
+test("testimonial sheen speed is independent from testimonial height", () => {
+  assert.match(
+    css,
+    /\.testimonials--public \.testimonial-card::after\s*\{[^}]*top:\s*0;[^}]*bottom:\s*0;[^}]*left:\s*-38%;[^}]*width:\s*30%;[^}]*transform:\s*none;/s
+  );
+  assert.match(
+    css,
+    /\.testimonial-card:hover::after,[\s\S]*\.testimonial-card:focus-within::after\s*\{[^}]*testimonial-card-sheen-stable 900ms cubic-bezier\(0\.22, 1, 0\.36, 1\)/s
+  );
+  assert.match(
+    css,
+    /@keyframes testimonial-card-sheen-stable\s*\{[\s\S]*left:\s*-38%;[\s\S]*left:\s*108%;/s
+  );
+  const sheenRule = css.match(/\.testimonials--public \.testimonial-card::after\s*\{([^}]*)\}/s)?.[1] || "";
+  assert.doesNotMatch(sheenRule, /skew|top:\s*-|bottom:\s*-/);
 });
 
 test("testimonial collapse preserves the reader viewport around the disclosure control", () => {
