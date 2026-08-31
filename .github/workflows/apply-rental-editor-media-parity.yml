@@ -1,0 +1,41 @@
+name: Apply Rental editor media parity fix
+
+on:
+  push:
+    branches:
+      - fix-rental-editor-media-parity
+    paths:
+      - scripts/apply-rental-editor-media-parity-fix.mjs
+      - .github/workflows/apply-rental-editor-media-parity.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix-rental-editor-media-parity
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Apply patch
+        run: node scripts/apply-rental-editor-media-parity-fix.mjs
+      - name: Validate JavaScript syntax
+        run: |
+          node --check admin/editor/rental-stabilization-editor.js
+          node --check media-presentation-edge.js
+          node --check admin/admin-stabilization.js
+      - name: Run full test suite
+        run: npm install --no-audit --no-fund && npm test
+      - name: Commit runtime fix and remove one-shot helpers
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add admin/editor/rental-stabilization-editor.js media-presentation-edge.js admin/admin-stabilization.js tests/admin-stabilization.test.mjs tests/rental-pa-pair-editor.test.mjs tests/rental-media-editor-parity.test.mjs
+          git rm scripts/apply-rental-editor-media-parity-fix.mjs .github/workflows/apply-rental-editor-media-parity.yml
+          git commit -m "Fix Rental image editor preview and publish parity"
+          git push origin HEAD:fix-rental-editor-media-parity
