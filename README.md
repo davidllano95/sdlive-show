@@ -33,11 +33,11 @@ As of **2026-08-31 America/Bogota**:
 - Admin desktop/mobile stabilization — **CLOSED/PASS**; issue #126 completed.
 - Google Calendar integration to `sam@sdlive.show` — **OPERATIONAL / production-smoked PASS through PR #150**: REGISTRO work projection, Site Schedule V2 block projection, read-only manual/recurring overlay and monthly collection reminders.
 - Shared Home-style header on current public route families — **PASS**.
-- Public-site stabilization fixes through PR #131 remain merged; issue #124 still owns the final representative public-smoke ledger.
-- **Current gate:** resolve or explicitly defer public smoke #124, then select the next roadmap module.
+- Public post-integration visual stabilization — **CLOSED/PASS through PR #154**; issue #124 completed after representative desktop/mobile production smoke.
+- **Current gate:** no stabilization gate is active; deliberately select the next roadmap module before starting implementation.
 - Generic Finance Phase 3 write-back — **BLOCKED**.
 
-The exact current continuation point lives in `PROJECT_STATUS.md` and `docs/checkpoints/handoff-admin-stabilization-2026-08-31.md`.
+The exact current continuation point lives in `PROJECT_STATUS.md` and `docs/checkpoints/handoff-public-audit-closeout-2026-08-31.md`.
 
 ## Change workflow
 
@@ -67,6 +67,7 @@ During visual audit, record all findings in a coherent surface first and batch t
 - Hero, Trusted By / Supported Brands, Testimonials, Core Home, Rental/Contact presentation and reusable Media Library are established.
 - Managed logos/images remain R2-owned; presentation-only changes should not duplicate source assets unnecessarily.
 - Visual safeguards and publish failsafe remain part of the Editor boundary.
+- Rental PA uses one canonical CMS image/framing control for the two visible BetaThree units; source, scale and X/Y framing remain synchronized as one composition.
 
 ### Private Admin / Control Center
 
@@ -147,17 +148,9 @@ A production regression caused `/admin/finance/` to remain on `Connecting to SD.
 
 The root cause was a DOM-wide `MutationObserver` in the LiventX portal-link runtime. Its callback changed text/attributes inside the same observed subtree, creating a mutation → callback → mutation loop capable of saturating the main thread. Once saturated, browser timeouts could not execute, which made the issue look like a Google/Sheets connection hang.
 
-PR #141:
-
-- removed the DOM-wide LiventX observer;
-- moved portal-link updates to explicit click/keyboard/language events;
-- made link updates idempotent;
-- cache-busted the affected runtime;
-- expanded Finance freeze regression coverage so Finance runtimes cannot reintroduce this DOM-wide observer pattern.
+PR #141 removed the DOM-wide observer, moved portal-link updates to explicit events, made updates idempotent, cache-busted the affected runtime and expanded Finance freeze regression coverage.
 
 **Production smoke: PASS. Finance loads again and the page remains responsive.**
-
-Earlier #137/#139/#140 connection guards remain historical context; the Finance incident checkpoint is `docs/checkpoints/handoff-pr141-2026-08-25.md`, while the current project checkpoint is `docs/checkpoints/handoff-admin-stabilization-2026-08-31.md`.
 
 ## LiventX workflow
 
@@ -187,7 +180,9 @@ Google Calendar is a secondary integration surface, not a source of operational 
 
 Future simultaneous Show Day behavior should use explicit **Primary / Secondary** presentation priority instead of cramming multiple Locations into the header.
 
-## Public visual stabilization
+## Public visual stabilization — closed
+
+The post-integration public audit is production-verified and issue #124 is closed.
 
 Current merged public corrections include:
 
@@ -196,11 +191,21 @@ Current merged public corrections include:
 - local contrast/semantics/accessibility fixes;
 - WhatsApp CTA consistency on public service/SEO landings;
 - Rental empty-request protection + browser/backend pricing parity test;
-- BetaThree PA reduced to roughly one card in a three-card desktop PA grid;
+- BetaThree PA reduced to roughly one card in a three-card desktop PA grid and aligned left;
+- Rental CMS PA framing controls keep the two visible units synchronized as one composition;
 - stable mobile Supported Brands layouts for Misi/Wonderlust;
-- Testimonials progressive disclosure with synchronized reveal, natural short-card height, viewport-preserving collapse and EN/ES expansion preservation.
+- Trusted By mobile glow/luminosity restored;
+- Testimonials progressive disclosure with synchronized reveal, natural short-card height, viewport-preserving collapse, EN/ES expansion preservation, retained glow and height-independent sheen pacing.
 
-Issue #124 remains the final representative public smoke ledger. Do not declare the entire public audit formally closed without explicit smoke acceptance.
+Final user production acceptance after PRs #152–#154 confirmed:
+
+- Testimonials behavior/visual pacing is correct;
+- PA was positioned in CMS, saved, published and verified on desktop and mobile;
+- Misi mobile Supported Brands is side-by-side;
+- Wonderlust mobile Supported Brands is three per row with a single remainder centered;
+- Trusted By mobile glow is present.
+
+Do not restart the public visual audit unless a new regression appears.
 
 ## Admin stabilization — closed
 
@@ -220,7 +225,7 @@ Do not restart the Admin audit unless a new regression appears.
 
 ## Future roadmap highlights
 
-- `docs/roadmap/sdlive-control-center.md`: includes the documented future **SD.Live Patch** direction; Patch is now eligible for prioritization but is not automatically active.
+- `docs/roadmap/sdlive-control-center.md`: includes the documented future **SD.Live Patch** direction; Patch is eligible for prioritization but is not automatically active.
 - `docs/roadmap/future-finance-document-generator-2026-08-25.md`: shared branded generator for **Cuenta de cobro / Cotización / Factura or invoice draft**, reusing existing Finance/Rental/client data and not creating a second finance source of truth. Real Colombian electronic invoicing requires explicit DIAN-compliant design/provider integration before it can be represented as legally valid.
 - Calendar Agenda scope filter: `Full Month` vs `Current + Future`.
 - Controlled Calendar edit/workflow actions after stabilization.
@@ -231,8 +236,9 @@ Do not restart the Admin audit unless a new regression appears.
 ## Relevant docs
 
 - `PROJECT_STATUS.md` — exact current status and continuation point.
-- `docs/checkpoints/handoff-admin-stabilization-2026-08-31.md` — latest handoff after Admin stabilization + Google Calendar production acceptance.
-- `docs/roadmap/post-integration-visual-audit-2026-08-23.md` — completed Admin audit/stabilization contract; public #124 remains separate.
+- `docs/checkpoints/handoff-public-audit-closeout-2026-08-31.md` — latest handoff after closing the public post-integration audit.
+- `docs/checkpoints/handoff-admin-stabilization-2026-08-31.md` — Admin stabilization + Google Calendar acceptance.
+- `docs/roadmap/post-integration-visual-audit-2026-08-23.md` — completed Admin + public post-integration audit contract.
 - `docs/roadmap/finance-phase2-real-use-2026-08-23.md` — Finance real-use/current workflow details.
 - `docs/roadmap/future-finance-document-generator-2026-08-25.md` — future document generator.
 - `docs/roadmap/calendar-operations-hub-2026-08-23.md` — Calendar/AppSheet/Site Schedule contract.
@@ -240,6 +246,6 @@ Do not restart the Admin audit unless a new regression appears.
 
 ## Immediate continuation
 
-Admin stabilization is **closed/PASS through PR #150** and issue #126 is completed. Do not spend another smoke on it unless a new regression appears.
+Admin stabilization is **closed/PASS through PR #150** and issue #126 is completed. Public post-integration stabilization is **closed/PASS through PR #154** and issue #124 is completed. Finance PR #141 remains production-smoked PASS.
 
-The remaining post-integration visual debt is the separate public representative-smoke ledger in issue #124. Finish that smoke, or explicitly defer it with evidence. After that, select the next roadmap module deliberately; `SD.Live Patch` is eligible for prioritization but is not automatically active.
+**No stabilization gate is active.** Select the next roadmap module deliberately; `SD.Live Patch` is documented and eligible for prioritization but is not automatically active. Generic Finance Phase 3 write-back remains blocked.

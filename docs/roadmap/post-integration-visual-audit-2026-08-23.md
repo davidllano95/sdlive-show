@@ -2,15 +2,15 @@
 
 **Created:** 2026-08-23 — America/Bogota  
 **Updated:** 2026-08-31 — America/Bogota  
-**Status:** **ADMIN CLOSED/PASS — public representative smoke #124 remains separate**  
-**Current verified runtime baseline:** PR #150 · `f5f527db3a95aaea4cde02febf147f0113e8f356`  
-**Immediate manual gate:** review/finish issue #124 representative public smoke, or explicitly defer it before selecting the next roadmap module.
+**Status:** **CLOSED/PASS — Admin + public representative smoke completed**  
+**Current verified runtime baseline:** PR #154 · `aacc0a60af70b9b85c8c61eb74216f1db6d329f3`  
+**Immediate gate:** none. Select the next roadmap module deliberately before starting new runtime work.
 
 ## Purpose
 
 The integration work materially changed public and private surfaces: Finance, Calendar, controlled create, Site Schedule, automatic Show Day, shared public headers, Rental, Testimonials and Admin navigation. Functional tests are necessary but do not prove visual/workflow coherence.
 
-This audit treated desktop and mobile as separate first-class layouts. The Admin block is now CLOSED/PASS; issue #124 remains the separate final representative public-smoke debt.
+This audit treated desktop and mobile as separate first-class layouts. Both the Admin block and the representative public block are now CLOSED/PASS.
 
 ## Audit execution method — LOCKED
 
@@ -31,11 +31,12 @@ A P0/P1 that blocks use or prevents the audit from continuing may justify immedi
 1. ~~Google OAuth Sheets write authorization~~ **PASS**.
 2. ~~Controlled Calendar create → Google Sheet → AppSheet E2E~~ **PASS**.
 3. ~~Site Schedule source cleanup~~ **PASS**.
-4. ~~Representative public route/header audit + public stabilization batches~~ **IMPLEMENTED / final representative smoke still tracked in #124**.
+4. ~~Representative public route/header audit + public stabilization batches~~ **PASS / issue #124 closed**.
 5. ~~Admin visual audit desktop + mobile~~ **PASS**.
 6. ~~Reconcile/fix Admin requirements in one coherent stabilization batch~~ **PASS / issue #126 closed**.
 7. ~~Google Calendar production acceptance including Site Schedule projection + collection reminders~~ **PASS through PR #150**.
-8. Resolve or explicitly defer #124, then deliberately select the next roadmap module. `SD.Live Patch` is eligible but not automatically active.
+8. ~~Representative public production closeout~~ **PASS through PR #154**.
+9. **Select the next roadmap module deliberately.** `SD.Live Patch` is eligible but not automatically active.
 
 ## Public audit — merged work
 
@@ -70,8 +71,21 @@ PR #123 grouped the remaining public closeout findings:
 - PR #127 — synchronized progressive expansion: the active testimonial defines the visible expansion target for its peers.
 - PR #129 — short testimonials terminate naturally instead of stretching to a large empty height; `Read less / Leer menos` preserves reader viewport; BetaThree PA behaves like one item in a hypothetical three-card desktop grid instead of a full-width hero.
 - PR #131 — changing EN ↔ ES while Testimonials are expanded preserves the active expansion coherently, recalculates translated height and uses the existing global language scroll restoration instead of jumping to another page section.
+- PR #152 — final public closeout batch: retained testimonial glow, restored Trusted By mobile luminosity, aligned BetaThree left, Misi mobile Supported Brands side-by-side, Wonderlust mobile layout three per row with single remainder centered.
+- PR #153 — testimonial sheen pacing made independent of expanded card height; Rental editor image framing controls reliably served fresh.
+- PR #154 — PA editor treats the two visible BetaThree units as one canonical CMS media composition; one image/scale/X/Y control updates both together.
 
-Issue #124 remains the final public representative-smoke ledger for the later Testimonials/PA/Misi/Wonderlust refinements. Do not overclaim full closure without explicit acceptance.
+### Final public production acceptance — PASS
+
+Issue #124 is closed as completed. User verification on 2026-08-31 confirmed:
+
+- Testimonials synchronized reveal/collapse remains correct; short cards end naturally; glow remains visible; sheen pacing is consistent open/closed and across the full expanded quote.
+- BetaThree PA remains at the accepted desktop proportion/alignment; user adjusted the paired composition in CMS, saved and published it, then confirmed the live result on desktop and mobile.
+- Misi Supported Brands is side-by-side on mobile.
+- Wonderlust Supported Brands is three items per row on mobile, with a single remainder centered on the next row.
+- Trusted By cards retain visible glow/luminosity on mobile.
+
+The public post-integration visual audit is historical/completed. Reopen only if a new regression is observed.
 
 ## Finance blocking regression — CLOSED/PASS
 
@@ -107,7 +121,7 @@ Final production verification on 2026-08-31 confirmed:
 
 Current Admin requirements implemented in this gate include shared typography/navigation/mobile shell, 50–250% managed-media scaling where applicable, persistent collection ordering, bounded header-nav CMS controls, Rental presentation ordering/media/grid behavior, LiventX cycle presentation, Calendar mobile hierarchy and Site Schedule responsive workflow.
 
-Issue #126 is now historical/completed. Reopen only for a genuine regression, not to continue future roadmap work.
+Issue #126 is historical/completed. Reopen only for a genuine regression, not to continue future roadmap work.
 
 ## Future Calendar Agenda filter — RECORDED, NOT ACTIVE
 
@@ -155,15 +169,16 @@ Target shared engine:
 
 P0/P1 must close before stabilization completes. P2/P3 remain explicitly tracked.
 
-## Exit criteria
+## Exit criteria — MET
 
-The **Admin portion** of this roadmap has met its exit criteria and is CLOSED/PASS. Source-of-truth boundaries were preserved and issue #126 is completed.
+The Admin portion and the representative public portion have both met exit criteria. Source-of-truth boundaries were preserved, issue #126 is completed, issue #124 is completed, and the final runtime baseline is production-verified through PR #154.
 
-The broader post-integration visual-audit document still records one separate debt: issue #124 owns the final representative public smoke for the later public refinements. Do not claim the entire public audit formally closed until #124 is accepted or explicitly deferred with evidence.
+No remaining stabilization debt in this roadmap blocks selection of the next module.
 
 ## Exact continuation
 
 1. Admin stabilization through **PR #150 is production-smoked PASS**; issue #126 is closed.
-2. Finance recovery through PR #141 remains PASS; do not repeat that smoke without a regression.
-3. Review/finish the representative public smoke ledger in issue #124, or explicitly defer it with evidence.
-4. Once #124 is resolved/deferred, select the next roadmap module deliberately. `SD.Live Patch` may now be prioritized, but no future module is implicitly active.
+2. Public stabilization through **PR #154 is production-smoked PASS**; issue #124 is closed.
+3. Finance recovery through PR #141 remains PASS; do not repeat that smoke without a regression.
+4. **No audit/stabilization gate is active. Select the next roadmap module deliberately.** `SD.Live Patch` may be prioritized, but no future module is implicitly active.
+5. Generic Finance Phase 3 write-back remains blocked; integration-gated items still require verified sources/targets before implementation.
