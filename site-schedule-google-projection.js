@@ -17,6 +17,7 @@ const PRIVATE_SOURCE_SITE_SCHEDULE = "SITE_SCHEDULE";
 const PRIVATE_EVENT_KEY = "sdliveSiteScheduleEventKey";
 const PRIVATE_BLOCK_KEY = "sdliveSiteScheduleBlockId";
 const MAX_SITE_SCHEDULE_WRITES = 35;
+const MAX_COMBINED_SYNC_WRITES = 40;
 
 function clean(value) {
   return value === undefined || value === null ? "" : String(value).trim();
@@ -301,7 +302,17 @@ async function deleteGoogleEvent(env, accessToken, eventId, fetchImpl) {
   if (!response.ok) throw googleError(response.status, data);
 }
 
-export async function syncSiteScheduleToGoogleCalendar(env, { fetchImpl = fetch, now = new Date() } = {}) {
+function boundedWriteLimit(value) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return MAX_SITE_SCHEDULE_WRITES;
+  return Math.max(0, Math.min(MAX_SITE_SCHEDULE_WRITES, Math.floor(parsed)));
+}
+
+export async function syncSiteScheduleToGoogleCalendar(
+  env,
+  { fetchImpl = fetch, now = new Date(), maxWrites = MAX_SITE_SCHEDULE_WRITES } = {}
+) {
+  const writeLimit = boundedWriteLimit(maxWrites);
   const accessToken = await fetchGoogleAccessToken(env, fetchImpl);
   const window = projectionWindow(now);
   const [sourceEvents, currentSchedule, existingData] = await Promise.all([
@@ -352,7 +363,7 @@ export async function syncSiteScheduleToGoogleCalendar(env, { fetchImpl = fetch,
       result.unchanged += 1;
       continue;
     }
-    if (writes >= MAX_SITE_SCHEDULE_WRITES) {
+    if (writes >= writeLimit) {
       result.capped = true;
       continue;
     }
@@ -375,7 +386,7 @@ export async function syncSiteScheduleToGoogleCalendar(env, { fetchImpl = fetch,
 
   for (const [blockId, item] of existingBlocks.entries()) {
     if (desiredByBlockId.has(blockId)) continue;
-    if (writes >= MAX_SITE_SCHEDULE_WRITES) {
+    if (writes >= writeLimit) {
       result.capped = true;
       continue;
     }
@@ -394,7 +405,7 @@ export async function syncSiteScheduleToGoogleCalendar(env, { fetchImpl = fetch,
   for (const registroId of overriddenRegistroIds) {
     const baseEvent = existingBaseByRegistroId.get(registroId);
     if (!baseEvent?.id) continue;
-    if (writes >= MAX_SITE_SCHEDULE_WRITES) {
+    if (writes >= writeLimit) {
       result.capped = true;
       continue;
     }
@@ -415,7 +426,12 @@ export async function syncSiteScheduleToGoogleCalendar(env, { fetchImpl = fetch,
 
 export async function syncCalendarProjectionToGoogleCalendar(env, options = {}) {
   const registro = await syncRegistroToGoogleCalendar(env, options);
-  const siteSchedule = await syncSiteScheduleToGoogleCalendar(env, options);
+  const registroWrites = registro.created + registro.updated;
+  const remainingWrites = Math.max(0, MAX_COMBINED_SYNC_WRITES - registroWrites);
+  const siteSchedule = await syncSiteScheduleToGoogleCalendar(env, {
+    ...options,
+    maxWrites: remainingWrites
+  });
   return {
     available: true,
     calendarId: siteSchedule.calendarId || registro.calendarId,
