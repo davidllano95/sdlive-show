@@ -1,16 +1,16 @@
 # SD.Live — post-integration visual audit + stabilization
 
 **Created:** 2026-08-23 — America/Bogota  
-**Updated:** 2026-08-25 — America/Bogota  
-**Status:** **ACTIVE — Admin audit is the current block**  
-**Current verified runtime baseline:** PR #141 · `159abff630188399ea9455ed4fe8911758f1fdf3`  
-**Immediate manual gate:** resume Admin audit at `/admin/` desktop.
+**Updated:** 2026-08-31 — America/Bogota  
+**Status:** **ADMIN CLOSED/PASS — public representative smoke #124 remains separate**  
+**Current verified runtime baseline:** PR #150 · `f5f527db3a95aaea4cde02febf147f0113e8f356`  
+**Immediate manual gate:** review/finish issue #124 representative public smoke, or explicitly defer it before selecting the next roadmap module.
 
 ## Purpose
 
 The integration work materially changed public and private surfaces: Finance, Calendar, controlled create, Site Schedule, automatic Show Day, shared public headers, Rental, Testimonials and Admin navigation. Functional tests are necessary but do not prove visual/workflow coherence.
 
-This audit treats desktop and mobile as separate first-class layouts. Public findings are largely stabilized; the remaining required coherent audit block is Admin.
+This audit treated desktop and mobile as separate first-class layouts. The Admin block is now CLOSED/PASS; issue #124 remains the separate final representative public-smoke debt.
 
 ## Audit execution method — LOCKED
 
@@ -31,11 +31,11 @@ A P0/P1 that blocks use or prevents the audit from continuing may justify immedi
 1. ~~Google OAuth Sheets write authorization~~ **PASS**.
 2. ~~Controlled Calendar create → Google Sheet → AppSheet E2E~~ **PASS**.
 3. ~~Site Schedule source cleanup~~ **PASS**.
-4. ~~Representative public route/header audit + public stabilization batches~~ **IMPLEMENTED / final ledger smoke still tracked in #124**.
-5. **Admin visual audit desktop + mobile — ACTIVE NEXT BLOCK**.
-6. Reconcile and fix Admin P0/P1 plus approved current requirements in one coherent stabilization batch.
-7. Preserve P2/P3 and future ideas explicitly.
-8. Only after stabilization continue controlled Calendar edit/workflow or unrelated roadmap modules.
+4. ~~Representative public route/header audit + public stabilization batches~~ **IMPLEMENTED / final representative smoke still tracked in #124**.
+5. ~~Admin visual audit desktop + mobile~~ **PASS**.
+6. ~~Reconcile/fix Admin requirements in one coherent stabilization batch~~ **PASS / issue #126 closed**.
+7. ~~Google Calendar production acceptance including Site Schedule projection + collection reminders~~ **PASS through PR #150**.
+8. Resolve or explicitly defer #124, then deliberately select the next roadmap module. `SD.Live Patch` is eligible but not automatically active.
 
 ## Public audit — merged work
 
@@ -48,7 +48,7 @@ A P0/P1 that blocks use or prevents the audit from continuing may justify immedi
 - PR #105/#120 — accepted mobile subtitle/Location +2px spacing in Show Day and normal modes.
 - PR #118 — Admin-only Show Day Visual QA override `Auto / Force On / Force Off`, separate from canonical Site Schedule/REGISTRO/AppSheet, expiring at Bogotá day-end.
 - PR #121 — Theatre secondary cards use natural content height.
-- PR #122 — shared Admin nav visual order normalized to `Dashboard → Finance → Calendar → Site Editor → Inbox`.
+- PR #122 — earlier shared Admin nav normalization; the final stabilization order is `Dashboard → Calendar → Finance → Inbox`, with Site Editor desktop-only and Media Library Editor-owned.
 
 ### Public closeout / accessibility / Rental integrity
 
@@ -90,121 +90,24 @@ PR #141 removed the observer, moved portal-link synchronization to explicit clic
 
 **Production smoke #141: PASS. Finance loads and remains responsive. This blocking exception is closed.**
 
-## Admin visual audit — ACTIVE
+## Admin stabilization — CLOSED/PASS
 
-Use issue #126 as the live finding ledger. Do not patch findings one by one.
+The 10-surface Admin audit is complete and issue #126 is closed as completed.
 
-Manual sequence, exactly one action at a time:
+The stabilization batch delivered the reconciled current requirements instead of patching audit findings one-by-one. The final Google Calendar acceptance required PRs #146–#150; the last root cause was a stale V1 Site Schedule reader in Google reconciliation while Admin/Show Day had already moved to V2 `site_schedule_state`.
 
-1. `/admin/` desktop;
-2. `/admin/` mobile;
-3. `/admin/finance/` desktop;
-4. `/admin/finance/` mobile;
-5. `/admin/calendar/` desktop;
-6. `/admin/calendar/` mobile;
-7. `/admin/calendar/site-schedule/` desktop;
-8. `/admin/calendar/site-schedule/` mobile;
-9. `/admin/editor/` desktop;
-10. `/admin/editor/` mobile.
+Final production verification on 2026-08-31 confirmed:
 
-### Shared Admin checks
+- Google sync reads the same Site Schedule V2 store as Admin/Show Day;
+- `RENT` is four blocks and its broad parent is removed;
+- `JPN - Cubo Colsubsidio` and `N. Jade` block projections exist;
+- monthly day-5/day-19 09:00 Bogotá collection reminders are present and transparent;
+- manual/recurring Google events are never edited/deleted by reconciliation;
+- no Google → REGISTRO/AppSheet/Site Schedule reverse write exists.
 
-- shared violet Admin tokens and semantic-status colors;
-- navigation order, active state and cross-workspace consistency;
-- responsive width/centering;
-- panel/card spacing, radii and elevation;
-- loading/empty/error/offline states;
-- text contrast and muted labels;
-- no horizontal overflow;
-- safe-area/sticky collisions;
-- keyboard focus order;
-- mobile tap targets;
-- long client/project/role strings;
-- consistent EN/ES where the workspace supports it.
+Current Admin requirements implemented in this gate include shared typography/navigation/mobile shell, 50–250% managed-media scaling where applicable, persistent collection ordering, bounded header-nav CMS controls, Rental presentation ordering/media/grid behavior, LiventX cycle presentation, Calendar mobile hierarchy and Site Schedule responsive workflow.
 
-### Dashboard Visual QA
-
-- `Auto / Force On / Force Off` hierarchy and selected state;
-- Force On Location validation;
-- Apply loading/saved/error feedback;
-- effective/source summary clarity;
-- expiry copy;
-- no mobile overflow/collisions.
-
-### Finance
-
-Finance runtime itself is now production PASS. During the audit inspect visual/workflow quality only unless a new runtime regression appears:
-
-- top queues and drilldowns;
-- LiventX signing card + external portal CTA;
-- Data quality dialogs;
-- Aging;
-- analytics layout;
-- calculator;
-- bilingual state;
-- desktop/mobile modal scrolling and tap targets;
-- loading/error states must remain bounded and must not freeze the Admin shell.
-
-### Calendar / Operations
-
-- month-grid proportions/date readability;
-- multi-day blocks across week boundaries;
-- truncation/overflow;
-- today state;
-- `Next` hierarchy;
-- Calendar/Agenda selector;
-- month navigation;
-- controlled create layout/validation;
-- multiple events/day.
-
-### Site Schedule
-
-- source-work density/search;
-- selected source range;
-- segments/add/remove;
-- date inputs;
-- Show Day + Location hierarchy;
-- Save / Use REGISTRO dates;
-- overlap/outside-range/backwards/missing-Location errors;
-- saved state after reload;
-- mobile editing without horizontal scroll.
-
-### Site Editor
-
-- Select/Interact and inspector routing;
-- Draft/Publish/failsafe feedback;
-- Media Library;
-- section editors and preview parity;
-- mobile inspector/preview behavior;
-- known mandatory requirements below.
-
-## Known mandatory Admin/CMS findings — issue #126
-
-These are **required current findings**, not optional future polish, but should be implemented with the final Admin batch after the coherent audit unless they become blocking.
-
-### Global logo/image scale to 250%
-
-Wherever the CMS exposes a managed **logo or image**, scale controls must support up to **250%** consistently. Explicitly includes:
-
-- Testimonials;
-- Trusted By/client logos;
-- Supported Brands;
-- Services / Selected Work / Rental media where applicable;
-- future repeatable collections exposing image/logo controls.
-
-Use a shared/reusable scale contract. Do not mutate source image files just to achieve visual scale.
-
-### Persistent card/collection reordering
-
-Repeatable CMS cards/collections must have a clear persistent reorder workflow:
-
-- explicit drag handle where appropriate;
-- accessible move up/down controls for keyboard/touch;
-- stable item IDs;
-- Draft → Published semantics preserved;
-- media/source ownership preserved;
-- backend-owned transactional fields untouched;
-- Preview and Published order must match saved CMS order.
+Issue #126 is now historical/completed. Reopen only for a genuine regression, not to continue future roadmap work.
 
 ## Future Calendar Agenda filter — RECORDED, NOT ACTIVE
 
@@ -254,19 +157,13 @@ P0/P1 must close before stabilization completes. P2/P3 remain explicitly tracked
 
 ## Exit criteria
 
-The audit closes only when:
+The **Admin portion** of this roadmap has met its exit criteria and is CLOSED/PASS. Source-of-truth boundaries were preserved and issue #126 is completed.
 
-- current public representative smoke debt is explicitly resolved or consciously deferred with evidence;
-- all current Admin workspaces are deliberately reviewed desktop + mobile;
-- all P0/P1 findings are fixed and re-smoked;
-- required current Admin items in #126 are reconciled and implemented or explicitly re-scoped by the user;
-- P2/P3/future ideas are preserved;
-- no source-of-truth boundary was weakened to solve UI problems.
+The broader post-integration visual-audit document still records one separate debt: issue #124 owns the final representative public smoke for the later public refinements. Do not claim the entire public audit formally closed until #124 is accepted or explicitly deferred with evidence.
 
 ## Exact continuation
 
-1. Finance recovery through PR #141 is **production-smoked PASS**; do not repeat that smoke.
-2. Resume the Admin record-first sequence at **`/admin/` desktop**.
-3. Add every Admin finding to issue #126; do not branch/fix each item individually.
-4. Continue the remaining 10-surface sequence one manual action at a time.
-5. After all Admin surface/device checks, reconcile #126 against current `main` and implement one coherent Admin stabilization batch.
+1. Admin stabilization through **PR #150 is production-smoked PASS**; issue #126 is closed.
+2. Finance recovery through PR #141 remains PASS; do not repeat that smoke without a regression.
+3. Review/finish the representative public smoke ledger in issue #124, or explicitly defer it with evidence.
+4. Once #124 is resolved/deferred, select the next roadmap module deliberately. `SD.Live Patch` may now be prioritized, but no future module is implicitly active.
