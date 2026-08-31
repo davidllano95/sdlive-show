@@ -86,7 +86,7 @@ test("Rental Site Editor serves fresh image framing controls", () => {
   assert.match(worker, /function withAdminNoStore\(response\)/);
   assert.match(worker, /path === "\/admin" \|\| path\.startsWith\("\/admin\/"\)/);
   assert.match(worker, /Cache-Control", "no-store, no-cache, must-revalidate"/);
-  assert.match(shell, /EDITOR_EXTENSION_VERSION = "20260831-3"/);
+  assert.match(shell, /EDITOR_EXTENSION_VERSION = "20260831-4"/);
   assert.match(shell, /rental-stabilization-editor\.js\?v=\$\{EDITOR_EXTENSION_VERSION\}/);
 
   assert.match(editor, /document\.createTextNode\("Image size"\)/);

@@ -88,6 +88,25 @@
     if (!element || !value) return;
     element.dataset.en = value.en || ""; element.dataset.es = value.es || ""; element.textContent = value[lang] || "";
   }
+  function focusPreviewItem(id, smooth = false) {
+    try {
+      const card = iframe.contentDocument?.querySelector(`#rental [data-rental-item="${CSS.escape(id)}"]`);
+      card?.scrollIntoView({ behavior: smooth ? "smooth" : "auto", block: "center", inline: "nearest" });
+    } catch {}
+  }
+  function updateMediaPathLabel(id) {
+    const code = editorBody.querySelector(`[data-rental-media-editor="${CSS.escape(id)}"] code`);
+    if (code) code.textContent = working?.items?.[id]?.image?.src || "";
+  }
+  function setRentalImageSource(id, source) {
+    const image = working?.items?.[id]?.image;
+    const value = String(source || "").trim();
+    if (!image || !value) return;
+    image.src = value;
+    updateMediaPathLabel(id);
+    changed();
+    focusPreviewItem(id);
+  }
   async function fetchJson(url, options = {}) {
     const response = await fetch(url, { credentials: "same-origin", cache: "no-store", ...options });
     const data = await response.json().catch(() => null);
@@ -231,7 +250,7 @@
     const head = document.createElement("div"); head.className = "rental-v2-item-head";
     const title = document.createElement("strong"); title.textContent = item?.title?.en || id;
     const actions = document.createElement("div"); actions.className = "rental-v2-actions";
-    actions.append(button("↑", () => moveArray(order, index, -1), index === 0), button("↓", () => moveArray(order, index, 1), index === order.length - 1));
+    actions.append(button("Preview", () => focusPreviewItem(id, true)), button("↑", () => moveArray(order, index, -1), index === 0), button("↓", () => moveArray(order, index, 1), index === order.length - 1));
     head.append(title, actions); block.append(head);
     if (id === "pa") {
       const pairNote = document.createElement("p");
@@ -249,7 +268,7 @@
 
   function mediaEditor(id) {
     const image = working.items[id].image;
-    const row = document.createElement("div"); row.className = "rental-v2-media";
+    const row = document.createElement("div"); row.className = "rental-v2-media"; row.dataset.rentalMediaEditor = id;
     const code = document.createElement("code"); code.textContent = image.src;
     const file = document.createElement("input"); file.type = "file"; file.accept = "image/png,image/jpeg,image/webp"; file.hidden = true;
     const upload = button("Replace", () => file.click());
@@ -257,7 +276,7 @@
     const choose = button("Library", () => {
       if (!window.SDLiveMediaLibrary?.open) return toast("Media Library is not ready.", "Reload the Editor and try again.", "error");
       window.SDLiveMediaLibrary.open({ folder: "rental", onSelect: (media) => {
-        image.src = media.logicalRef || `${LOGICAL_MEDIA_PREFIX}${media.key}`; changed(true);
+        setRentalImageSource(id, media.logicalPath || media.logicalRef || (LOGICAL_MEDIA_PREFIX + media.key));
       }});
     });
     row.append(code, upload, choose, file); return row;
@@ -270,7 +289,7 @@
     try {
       const form = new FormData(); form.set("folder", "rental"); form.set("file", file);
       const data = await fetchJson("/api/admin/media/upload", { method: "POST", body: form });
-      working.items[id].image.src = `${LOGICAL_MEDIA_PREFIX}${data.media.key}`; changed(true); toast("Rental image uploaded.", "Save Draft to keep it.");
+      setRentalImageSource(id, data.media.logicalPath || (LOGICAL_MEDIA_PREFIX + data.media.key)); toast("Rental image uploaded.", "Save Draft to keep it.");
     } catch (error) { toast("Upload failed.", error.message, "error"); }
     finally { busy = false; updateState(); }
   }
@@ -281,7 +300,7 @@
     const range = document.createElement("input"); range.type = "range"; range.min = "50"; range.max = "250"; range.step = "5";
     range.value = String(Math.round(clamp(working.items[id].image.displayScale ?? working.items[id].image.scale, .5, 2.5, 1) * 100));
     const sync = () => value.textContent = `${range.value}%`; sync();
-    range.addEventListener("input", () => { working.items[id].image.displayScale = Number(range.value) / 100; working.items[id].image.scale = Number(range.value) / 100; sync(); changed(); });
+    range.addEventListener("input", () => { working.items[id].image.displayScale = Number(range.value) / 100; working.items[id].image.scale = Number(range.value) / 100; sync(); changed(); focusPreviewItem(id); });
     label.append(document.createTextNode("Image size"), value); field.append(label, range); return field;
   }
 
@@ -290,7 +309,7 @@
     const label = document.createElement("label"); const value = document.createElement("span"); value.className = "rental-v2-value";
     const range = document.createElement("input"); range.type = "range"; range.min = "-100"; range.max = "100"; range.step = "1"; range.value = String(clamp(working.items[id].image[key], -100, 100, 0));
     const sync = () => value.textContent = `${range.value}%`; sync();
-    range.addEventListener("input", () => { working.items[id].image[key] = Number(range.value); sync(); changed(); });
+    range.addEventListener("input", () => { working.items[id].image[key] = Number(range.value); sync(); changed(); focusPreviewItem(id); });
     label.append(document.createTextNode(labelText), value); field.append(label, range); return field;
   }
 
@@ -366,7 +385,7 @@
         const bodyPs = [...card.querySelectorAll(".equipment-card-body > p")]; applyLocalized(bodyPs[0], item.description, lang); if (bodyPs[1]) applyLocalized(bodyPs[1], item.technicalNote, lang);
         const images = id === "pa"
           ? [...card.querySelectorAll(".equipment-pa-pair img")]
-          : [card.querySelector(".equipment-card-visual img")].filter(Boolean);
+          : [...card.querySelectorAll(".equipment-card-visual img, .equipment-tool-visual img")];
         images.forEach((img, imageIndex) => {
           img.src = resolveMedia(item.image.src);
           if (id === "pa" && imageIndex > 0) { img.alt = ""; img.setAttribute("aria-hidden", "true"); }
