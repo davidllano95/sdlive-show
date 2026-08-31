@@ -43,19 +43,13 @@ replaceOnce(
   "tag media editor row"
 );
 
-replaceOnce(
-  editorPath,
-  `      window.SDLiveMediaLibrary.open({ folder: "rental", onSelect: (media) => {\n        image.src = media.logicalRef || \`${LOGICAL_MEDIA_PREFIX}\${media.key}\`; changed(true);\n      }});\n`,
-  `      window.SDLiveMediaLibrary.open({ folder: "rental", onSelect: (media) => {\n        setRentalImageSource(id, media.logicalPath || media.logicalRef || \`${LOGICAL_MEDIA_PREFIX}\${media.key}\`);\n      }});\n`,
-  "use canonical Media Library logicalPath without rerender"
-);
+const oldLibrarySelect = '      window.SDLiveMediaLibrary.open({ folder: "rental", onSelect: (media) => {\n        image.src = media.logicalRef || `${LOGICAL_MEDIA_PREFIX}${media.key}`; changed(true);\n      }});\n';
+const newLibrarySelect = '      window.SDLiveMediaLibrary.open({ folder: "rental", onSelect: (media) => {\n        setRentalImageSource(id, media.logicalPath || media.logicalRef || (LOGICAL_MEDIA_PREFIX + media.key));\n      }});\n';
+replaceOnce(editorPath, oldLibrarySelect, newLibrarySelect, "use canonical Media Library logicalPath without rerender");
 
-replaceOnce(
-  editorPath,
-  `      working.items[id].image.src = \`${LOGICAL_MEDIA_PREFIX}\${data.media.key}\`; changed(true); toast("Rental image uploaded.", "Save Draft to keep it.");\n`,
-  `      setRentalImageSource(id, data.media.logicalPath || \`${LOGICAL_MEDIA_PREFIX}\${data.media.key}\`); toast("Rental image uploaded.", "Save Draft to keep it.");\n`,
-  "keep upload preview live without rerender"
-);
+const oldUpload = '      working.items[id].image.src = `${LOGICAL_MEDIA_PREFIX}${data.media.key}`; changed(true); toast("Rental image uploaded.", "Save Draft to keep it.");\n';
+const newUpload = '      setRentalImageSource(id, data.media.logicalPath || (LOGICAL_MEDIA_PREFIX + data.media.key)); toast("Rental image uploaded.", "Save Draft to keep it.");\n';
+replaceOnce(editorPath, oldUpload, newUpload, "keep upload preview live without rerender");
 
 replaceOnce(
   editorPath,
