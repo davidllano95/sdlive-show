@@ -24,20 +24,20 @@ When docs disagree, use:
 
 ## Current state
 
-As of **2026-08-25 America/Bogota**:
+As of **2026-08-31 America/Bogota**:
 
-- Finance read-only integration and dedicated `/admin/finance/` workspace — **OPERATIONAL / production-smoked PASS through PR #141**.
-- Admin Calendar read-only + multi-day model — **CLOSED/PASS**.
-- Controlled Admin Calendar create — **CLOSED/PASS** after OAuth write authorization and row-safety hardening.
+- Finance read-only integration and `/admin/finance/` — **OPERATIONAL / production-smoked PASS**; PR #141 freeze regression remains closed.
+- Admin Calendar + controlled create + multi-day operations — **CLOSED/PASS**.
 - Site Schedule + automatic Show Day + Location — **CLOSED/PASS**.
 - Admin-only Show Day QA override `Auto / Force On / Force Off` — **CLOSED/PASS**.
+- Admin desktop/mobile stabilization — **CLOSED/PASS**; issue #126 completed.
+- Google Calendar integration to `sam@sdlive.show` — **OPERATIONAL / production-smoked PASS through PR #150**: REGISTRO work projection, Site Schedule V2 block projection, read-only manual/recurring overlay and monthly collection reminders.
 - Shared Home-style header on current public route families — **PASS**.
-- Public-site stabilization has merged current Rental, Testimonials, Trusted/Supported Brands and accessibility fixes through PR #131; issue #124 retains the final representative public-smoke ledger.
-- **Active gate:** mandatory Admin desktop/mobile visual audit using record-first → batch-fix workflow.
-- Known Admin/CMS requirements are tracked in issue #126: global logo/image scale to **250%** and persistent repeatable-card reordering.
+- Public-site stabilization fixes through PR #131 remain merged; issue #124 still owns the final representative public-smoke ledger.
+- **Current gate:** resolve or explicitly defer public smoke #124, then select the next roadmap module.
 - Generic Finance Phase 3 write-back — **BLOCKED**.
 
-The exact current continuation point lives in `PROJECT_STATUS.md` and `docs/checkpoints/handoff-pr141-2026-08-25.md`.
+The exact current continuation point lives in `PROJECT_STATUS.md` and `docs/checkpoints/handoff-admin-stabilization-2026-08-31.md`.
 
 ## Change workflow
 
@@ -74,7 +74,7 @@ All Admin workspaces remain behind Cloudflare Access.
 
 - `/admin/` — lightweight Dashboard / system overview + Show Day Visual QA.
 - `/admin/finance/` — read-only SD.Live Track analytics/workflow workspace; COP/USD separate.
-- `/admin/calendar/` — Calendar / Operations over `REGISTRO`, including multi-day and controlled create.
+- `/admin/calendar/` — Calendar / Operations over `REGISTRO`, including multi-day, controlled create, authenticated Google sync and read-only Google overlay.
 - `/admin/calendar/site-schedule/` — website-only split-work / Show Day / Location editor.
 - `/admin/editor/` — Site Editor / CMS workspace.
 
@@ -93,6 +93,7 @@ All Admin workspaces remain behind Cloudflare Access.
 | Offline capture/workflow | AppSheet SD.Live Track |
 | Finance Admin analytics | read-only Worker view over Sheets/API |
 | Website-only Calendar presentation overrides | D1 `site_schedule_state` |
+| Google Calendar secondary projection / read-only overlay | `sam@sdlive.show` |
 | Automatic public Show Day | Site Schedule + America/Bogota date |
 | Show Day Location | Site Schedule block only |
 
@@ -182,6 +183,8 @@ Site Schedule is separate website-only D1 presentation state:
 
 Automatic Show Day comes from Site Schedule + America/Bogota. The public visitor toggle is gone. Admin has a temporary QA override `Auto / Force On / Force Off` separate from canonical data and expiring at Bogotá day-end.
 
+Google Calendar is a secondary integration surface, not a source of operational truth. Explicit `Sync Google Calendar` reconciles REGISTRO/AppSheet work into `sam@sdlive.show`; Site Schedule V2 blocks replace only their own SD.Live broad parent projections; manual/recurring Google events are read-only overlay data. PR #150 aligned Google reconciliation with the same `site_schedule_state` store used by Admin and Show Day.
+
 Future simultaneous Show Day behavior should use explicit **Primary / Secondary** presentation priority instead of cramming multiple Locations into the header.
 
 ## Public visual stabilization
@@ -199,27 +202,21 @@ Current merged public corrections include:
 
 Issue #124 remains the final representative public smoke ledger. Do not declare the entire public audit formally closed without explicit smoke acceptance.
 
-## Admin visual audit — active next block
+## Admin stabilization — closed
 
-Inspect one manual action at a time, but **record findings without fixing each one immediately**:
+The full Admin desktop/mobile audit and coherent stabilization batch are complete. Issue #126 is closed.
 
-1. `/admin/` desktop;
-2. `/admin/` mobile;
-3. `/admin/finance/` desktop;
-4. `/admin/finance/` mobile;
-5. `/admin/calendar/` desktop;
-6. `/admin/calendar/` mobile;
-7. `/admin/calendar/site-schedule/` desktop;
-8. `/admin/calendar/site-schedule/` mobile;
-9. `/admin/editor/` desktop;
-10. `/admin/editor/` mobile.
+Accepted scope includes shared shell/readability/navigation, mobile drawer behavior, Editor CMS scale/order/header contracts, Rental presentation stabilization, Finance LiventX visual cycle, Calendar mobile hierarchy, Site Schedule desktop/mobile workflow and Google Calendar integration.
 
-Issue #126 is the live Admin finding ledger. Already-required items:
+Final production verification after PR #150 confirmed:
 
-- every CMS-managed logo/image must support scale up to **250%**, including Testimonials and all other applicable editors;
-- repeatable cards/collections must have persistent reordering with explicit drag handles plus accessible move up/down controls.
+- `RENT` projects as four Site Schedule blocks instead of one broad date range;
+- `JPN - Cubo Colsubsidio` and `N. Jade` Site Schedule projections exist;
+- day-5/day-19 09:00 Bogotá collection reminders exist and are transparent;
+- manual/recurring Google items remain untouched by reconciliation;
+- REGISTRO/AppSheet and Site Schedule V2 retain their existing ownership boundaries.
 
-After all Admin surfaces are inspected, reconcile #126 against current `main` and implement one coherent stabilization batch.
+Do not restart the Admin audit unless a new regression appears.
 
 ## Future roadmap highlights
 
@@ -233,7 +230,7 @@ After all Admin surfaces are inspected, reconcile #126 against current `main` an
 ## Relevant docs
 
 - `PROJECT_STATUS.md` — exact current status and continuation point.
-- `docs/checkpoints/handoff-pr141-2026-08-25.md` — latest handoff after Finance production recovery.
+- `docs/checkpoints/handoff-admin-stabilization-2026-08-31.md` — latest handoff after Admin stabilization + Google Calendar production acceptance.
 - `docs/roadmap/post-integration-visual-audit-2026-08-23.md` — active visual audit contract.
 - `docs/roadmap/finance-phase2-real-use-2026-08-23.md` — Finance real-use/current workflow details.
 - `docs/roadmap/future-finance-document-generator-2026-08-25.md` — future document generator.
@@ -242,6 +239,6 @@ After all Admin surfaces are inspected, reconcile #126 against current `main` an
 
 ## Immediate continuation
 
-Finance recovery is **closed/PASS**. Do not spend another smoke on #141.
+Admin stabilization is **closed/PASS through PR #150** and issue #126 is completed. Do not spend another smoke on it unless a new regression appears.
 
-Resume the Admin visual audit at **`/admin/` desktop**, one manual action at a time. Add findings to issue #126 and do not fix them piecemeal unless a new P0/P1 blocks the audit.
+The remaining post-integration visual debt is the separate public representative-smoke ledger in issue #124. Finish that smoke, or explicitly defer it with evidence. After that, select the next roadmap module deliberately; `SD.Live Patch` is eligible for prioritization but is not automatically active.

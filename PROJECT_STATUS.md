@@ -4,15 +4,15 @@
 
 | Campo | Valor |
 |---|---|
-| Última reconciliación | **2026-08-25 — America/Bogota** |
+| Última reconciliación | **2026-08-31 — America/Bogota** |
 | Rama operativa | `main` |
-| `main` al reconciliar | **PR #141 · `159abff630188399ea9455ed4fe8911758f1fdf3`** |
+| `main` al reconciliar | **PR #150 · `f5f527db3a95aaea4cde02febf147f0113e8f356`** |
 | Producción | `https://sdlive.show` |
 | Media pública | `https://media.sdlive.show` |
-| Estado macro | **Finance read-only + Calendar create + Site Schedule + automatic Show Day operativos; Finance freeze recuperado/PASS; Admin visual audit aún abierto** |
-| Active Gate | **post-integration Admin visual audit + stabilization** |
+| Estado macro | **Admin stabilization CLOSED/PASS; Finance, Calendar, Site Schedule, automatic Show Day y Google Calendar projection operativos; public representative smoke #124 sigue separado/abierto** |
+| Active Gate | **Admin stabilization CLOSED/PASS; resolver o diferir conscientemente el representative public smoke #124 antes de seleccionar el siguiente módulo** |
 | Bloqueado | **Generic Finance Phase 3 write-back** |
-| Paso manual inmediato | **continuar Admin audit record-first desde `/admin/` desktop** |
+| Paso manual inmediato | **revisar el ledger de smoke público #124; si se cierra o se difiere explícitamente, seleccionar el siguiente módulo del roadmap** |
 
 ## Precedencia
 
@@ -136,6 +136,7 @@ CMS visual con Draft/Published/revisions, EN/ES, COL/INT, Media Library, Global 
 | Offline workflow | AppSheet `SD.Live Track` | Active |
 | Finance Admin analytics | Worker read-only → Google Sheets/API | Active |
 | Website Calendar presentation overrides | D1 `site_schedule_state` | Active |
+| Google Calendar work/site-schedule projection + read-only overlay | `sam@sdlive.show` secondary integration | Active / production-smoked |
 | Public Show Day active state | Site Schedule + America/Bogota date | Active |
 | Show Day Location | Site Schedule block only | Active |
 | Future CRM | TBD; Attio candidate only | Planned |
@@ -194,27 +195,30 @@ Recent merged public fixes:
 
 Issue #124 is still the public smoke ledger. Do not claim the final public block formally closed until its representative smoke is explicitly accepted.
 
-## Admin visual audit — ACTIVE
+## Admin stabilization — CLOSED/PASS
 
-Admin must still be deliberately reviewed as one coherent block, **record first / batch fix later**:
+Issue #126 is closed as completed after the full desktop/mobile audit, coherent stabilization implementation and final production verification on 2026-08-31.
 
-1. `/admin/` desktop;
-2. `/admin/` mobile;
-3. `/admin/finance/` desktop;
-4. `/admin/finance/` mobile;
-5. `/admin/calendar/` desktop;
-6. `/admin/calendar/` mobile;
-7. `/admin/calendar/site-schedule/` desktop;
-8. `/admin/calendar/site-schedule/` mobile;
-9. `/admin/editor/` desktop;
-10. `/admin/editor/` mobile.
+Accepted current behavior includes:
 
-Known required Admin/CMS findings live in issue #126:
+- shared Admin typography/navigation/mobile drawer/action hierarchy normalized;
+- Site Editor CMS scale/order/content/header contracts implemented while preserving Draft → Published and backend ownership boundaries;
+- Rental presentation ordering/media/grid behavior stabilized without moving pricing or availability truth into CMS;
+- Finance LiventX metric/urgency presentation stabilized; Finance remains read-only and the PR #141 freeze regression guard remains mandatory;
+- Calendar mobile and Site Schedule desktop/mobile workflows stabilized;
+- Google Calendar target `sam@sdlive.show` integrated as secondary projection/read-only overlay;
+- REGISTRO/AppSheet remain operations truth; Site Schedule V2 D1 `site_schedule_state` remains website-block truth;
+- Site Schedule Google reconciliation now reads the same V2 store as Admin/Show Day (PR #150).
 
-- **Global CMS media scaling:** every CMS-managed logo/image control must allow scale up to **250%**, including Testimonials, Trusted By, Supported Brands, Services/Selected Work/Rental media where applicable.
-- **CMS collection/card reordering:** repeatable cards must be reorderable with persistent saved order, explicit drag handle plus accessible move up/down controls; stable IDs, Draft → Published and ownership boundaries must remain intact.
+Final production smoke verified:
 
-Do not implement these piecemeal before the Admin finding set is complete unless one becomes blocking.
+- `RENT` is four Site Schedule blocks and its broad REGISTRO parent is gone;
+- `JPN - Cubo Colsubsidio` and `N. Jade` Site Schedule projections are present;
+- monthly collection reminders exist on day 5 and day 19 at 09:00 America/Bogota and are transparent;
+- manual/recurring Google events are not edited/deleted by SD.Live reconciliation;
+- no Google → REGISTRO/AppSheet reverse-write path exists.
+
+Issue #126 is historical/completed. Do not reopen the Admin stabilization audit unless a new regression is observed.
 
 ## Show Day state
 
@@ -260,7 +264,7 @@ A locally generated PDF must **not** be represented as a DIAN-valid Colombian el
 ## Relevant docs
 
 - `README.md` — architecture/current operating overview.
-- `docs/checkpoints/handoff-pr141-2026-08-25.md` — latest checkpoint and exact continuation.
+- `docs/checkpoints/handoff-admin-stabilization-2026-08-31.md` — latest checkpoint and exact continuation.
 - `docs/roadmap/post-integration-visual-audit-2026-08-23.md` — active audit contract.
 - `docs/roadmap/finance-phase2-real-use-2026-08-23.md` — Finance real-use history/current rules.
 - `docs/roadmap/future-finance-document-generator-2026-08-25.md` — future document generation.
@@ -269,9 +273,8 @@ A locally generated PDF must **not** be represented as a DIAN-valid Colombian el
 
 ## Exact continuation point
 
-1. Finance recovery through **PR #141 is production-smoked PASS**. Do not re-test it unless a new Finance regression appears.
-2. Resume the **Admin visual audit record-first** at `/admin/` desktop.
-3. Keep adding findings to issue #126; do **not** fix each finding as discovered.
-4. Continue the locked 10-surface desktop/mobile sequence one manual action at a time.
-5. After all 10 checks, reconcile issue #126 against current `main` and implement one coherent Admin stabilization batch.
-6. Only after Admin stabilization PASS continue controlled Calendar edit/workflow or unrelated future roadmap work.
+1. **Admin stabilization is CLOSED/PASS through PR #150**. Issue #126 is completed; do not repeat its audit/smoke unless a new regression appears.
+2. **Finance PR #141 remains production-smoked PASS**; preserve the no-DOM-wide-observer regression rule.
+3. Public stabilization issue #124 remains a separate representative-smoke ledger. Review/finish it, or explicitly defer it with evidence before claiming the broader post-integration visual audit fully closed.
+4. After #124 is closed or consciously deferred, select the next roadmap module rather than implicitly starting one. `SD.Live Patch` is documented and now eligible for prioritization, but is not automatically active.
+5. Generic Finance Phase 3 write-back remains blocked; Inbox unread count and Finance → AppSheet deep links still require verified integrations/targets.
