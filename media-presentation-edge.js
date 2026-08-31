@@ -96,7 +96,7 @@ export function applyMediaPresentation(response, state = {}) {
   addTrustedHandlers(rewriter, state.trusted);
 
   for (const [id, item] of Object.entries(state.rental?.items || {})) {
-    addImageHandler(rewriter, `#rental [data-rental-item="${cssEscapeAttribute(id)}"] .equipment-card-visual img`, item.image, { allowPosition: true });
+    addImageHandler(rewriter, `#rental [data-rental-item="${cssEscapeAttribute(id)}"] img`, item.image, { allowPosition: true });
   }
 
   const transformed = rewriter.transform(response);

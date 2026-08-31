@@ -27,6 +27,6 @@ test("published Rental rendering applies the canonical item image to every PA un
 });
 
 test("Site Editor cache-busts the PA pair runtime change", () => {
-  assert.match(shell, /const EDITOR_EXTENSION_VERSION = "20260831-3";/);
+  assert.match(shell, /const EDITOR_EXTENSION_VERSION = "20260831-4";/);
   assert.match(shell, /rental-stabilization-editor\.js\?v=\$\{EDITOR_EXTENSION_VERSION\}/);
 });
