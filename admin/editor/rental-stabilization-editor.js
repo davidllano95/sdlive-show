@@ -233,6 +233,13 @@
     const actions = document.createElement("div"); actions.className = "rental-v2-actions";
     actions.append(button("↑", () => moveArray(order, index, -1), index === 0), button("↓", () => moveArray(order, index, 1), index === order.length - 1));
     head.append(title, actions); block.append(head);
+    if (id === "pa") {
+      const pairNote = document.createElement("p");
+      pairNote.className = "field-help";
+      pairNote.dataset.rentalPaPairNotice = "true";
+      pairNote.textContent = "PA pair · both units always use the same image, size and position.";
+      block.append(pairNote);
+    }
     block.append(
       localizedField("Title", `items.${id}.title`), localizedField("Description", `items.${id}.description`, true), localizedField("Technical note", `items.${id}.technicalNote`, true),
       mediaEditor(id), scaleField(id), positionField(id, "positionX", "Horizontal position"), positionField(id, "positionY", "Vertical position")
@@ -357,7 +364,16 @@
         const card = root.querySelector(`[data-rental-item="${CSS.escape(id)}"]`); if (!card) continue;
         applyLocalized(card.querySelector("h4"), item.title, lang);
         const bodyPs = [...card.querySelectorAll(".equipment-card-body > p")]; applyLocalized(bodyPs[0], item.description, lang); if (bodyPs[1]) applyLocalized(bodyPs[1], item.technicalNote, lang);
-        const img = card.querySelector(".equipment-card-visual img"); if (img) { img.src = resolveMedia(item.image.src); img.alt = item.image.alt || ""; img.style.scale = String(clamp(item.image.displayScale ?? item.image.scale, .5, 2.5, 1)); img.style.translate = `${clamp(item.image.positionX, -100, 100, 0)}% ${clamp(item.image.positionY, -100, 100, 0)}%`; }
+        const images = id === "pa"
+          ? [...card.querySelectorAll(".equipment-pa-pair img")]
+          : [card.querySelector(".equipment-card-visual img")].filter(Boolean);
+        images.forEach((img, imageIndex) => {
+          img.src = resolveMedia(item.image.src);
+          if (id === "pa" && imageIndex > 0) { img.alt = ""; img.setAttribute("aria-hidden", "true"); }
+          else { img.alt = item.image.alt || ""; if (id === "pa") img.removeAttribute("aria-hidden"); }
+          img.style.scale = String(clamp(item.image.displayScale ?? item.image.scale, .5, 2.5, 1));
+          img.style.translate = `${clamp(item.image.positionX, -100, 100, 0)}% ${clamp(item.image.positionY, -100, 100, 0)}%`;
+        });
       }
       const sourcing = root.querySelector(".rental-sourcing, .rental-custom-source, [data-rental-sourcing]");
       if (sourcing) { applyLocalized(sourcing.querySelector(".eyebrow"), working.sourcing.eyebrow, lang); applyLocalized(sourcing.querySelector("h2,h3"), working.sourcing.title, lang); applyLocalized(sourcing.querySelector("p"), working.sourcing.body, lang); }
