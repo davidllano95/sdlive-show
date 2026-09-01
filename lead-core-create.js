@@ -246,6 +246,10 @@ function assertDirectCreateInput(lead, compatibility) {
     throw new Error("Lead Core direct creation requires at least one contact channel");
   }
 
+  if (lead.source === "assistant" && lead.status !== "new") {
+    throw new Error("Assistant lead creation must start in New status");
+  }
+
   if (lead.source === "assistant" && !lead.summary) {
     throw new Error("Assistant lead creation requires a summary");
   }
