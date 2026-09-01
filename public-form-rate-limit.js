@@ -7,6 +7,8 @@ import {
   handleSiteScheduleApiV2
 } from "./site-schedule-store-v2.js";
 import { applyShowDayRuntime } from "./showday-edge.js";
+import { handleAvailabilityApi } from "./availability-core.js";
+import { applyAvailabilityAdminRuntime } from "./availability-admin-edge.js";
 import { rentalRequestHasSelection } from "./rental-request-validation.js";
 import { financeUpstreamFetch } from "./finance-upstream.js";
 
@@ -170,6 +172,13 @@ export default {
     const path = normalizedPath(request);
     const url = new URL(request.url);
 
+    if (path === "/api/availability" || path === "/api/admin/availability") {
+      const response = await handleAvailabilityApi(request, env, {
+        verifyAdmin: verifyAdminViaExistingApi
+      });
+      if (response) return response;
+    }
+
     if (
       path === "/api/site/showday-status" ||
       path === "/api/admin/showday-override" ||
@@ -223,6 +232,9 @@ export default {
     const response = await appWorker.fetch(request, env);
     if (request.method === "GET" && path === FINANCE_PAGE_PATH) {
       return decorateFinanceAdminPage(response);
+    }
+    if (request.method === "GET" && (path === "/admin" || path === "/admin/index.html")) {
+      return applyAvailabilityAdminRuntime(response);
     }
     if (request.method === "GET" && !path.startsWith("/admin")) {
       return applyShowDayRuntime(response);

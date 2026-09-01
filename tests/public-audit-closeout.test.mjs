@@ -13,7 +13,8 @@ test("public closeout assets are injected through the shared public edge", () =>
   assert.match(edge, /public-audit-closeout\.js\?v=\$\{PUBLIC_AUDIT_RUNTIME_VERSION\}/);
   assert.match(edge, /\.on\("body\.seo-page"/);
   assert.match(edge, /class=\"whatsapp-float\"/);
-  assert.match(edge, /href=\"https:\/\/wa\.me\/573192473948\"/);
+  assert.match(edge, /href=\"https:\/\/wa\.me\/samd\.llano95\"/);
+  assert.doesNotMatch(edge, /https:\/\/wa\.me\/\d{7,}/);
 });
 
 test("known accessibility findings are corrected without changing global muted text", () => {
