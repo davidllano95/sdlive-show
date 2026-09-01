@@ -11,6 +11,7 @@ import {
 import { applyRentalPresentationRuntime } from "./rental-presentation-edge.js";
 import { validateRentalPresentationExtras } from "./rental-presentation-contract.js";
 import { handleAvailabilityTravelPut } from "./availability-travel-api.js";
+import { decorateAvailabilityNextWindowResponse } from "./availability-next-window.js";
 import {
   googleCalendarDiagnostic,
   mergeGoogleCalendarOverlayResponse,
@@ -96,9 +97,10 @@ async function handleAvailabilityTravelIfRequested(request, env) {
   }
 
   if (String(body?.action || "").trim().toLowerCase() !== "travel") return null;
-  return handleAvailabilityTravelPut(request, env, body, {
+  const response = await handleAvailabilityTravelPut(request, env, body, {
     verifyAdmin: verifyAdminViaExistingApi
   });
+  return decorateAvailabilityNextWindowResponse(response, env, { publicView: false });
 }
 
 async function validateRentalPut(request) {

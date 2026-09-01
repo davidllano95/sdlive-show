@@ -8,6 +8,7 @@ import {
 } from "./site-schedule-store-v2.js";
 import { applyShowDayRuntime } from "./showday-edge.js";
 import { handleAvailabilityApi } from "./availability-core.js";
+import { decorateAvailabilityNextWindowResponse } from "./availability-next-window.js";
 import { applyAvailabilityAdminRuntime } from "./availability-admin-edge.js";
 import { rentalRequestHasSelection } from "./rental-request-validation.js";
 import { financeUpstreamFetch } from "./finance-upstream.js";
@@ -176,7 +177,11 @@ export default {
       const response = await handleAvailabilityApi(request, env, {
         verifyAdmin: verifyAdminViaExistingApi
       });
-      if (response) return response;
+      if (response) {
+        return decorateAvailabilityNextWindowResponse(response, env, {
+          publicView: path === "/api/availability"
+        });
+      }
     }
 
     if (
