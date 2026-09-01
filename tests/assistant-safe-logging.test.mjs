@@ -96,7 +96,7 @@ test("raw PII, messages, tokens, prompts and provider bodies are dropped", () =>
     assert.equal(serialized.includes(forbidden), false, forbidden);
   }
   assert.equal(entry.redacted, true);
-  assert.equal(entry.droppedFieldCount, 11);
+  assert.equal(entry.droppedFieldCount, 12);
 });
 
 test("raw Error messages are never used as error codes", () => {
