@@ -1,0 +1,118 @@
+/* Dashboard operational controls: compact, coherent cards instead of full-width panels. */
+
+.admin-control-cluster {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(340px, 480px));
+  align-items: start;
+  justify-content: start;
+  gap: 10px;
+  max-width: 970px;
+  margin: 0 0 27px;
+}
+
+.admin-control-cluster > #availabilityAdminCard,
+.admin-control-cluster > #showDayQaControl {
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  margin: 0;
+}
+
+.admin-control-cluster > #availabilityAdminCard {
+  grid-column: auto !important;
+}
+
+.admin-control-cluster .availability-admin-card,
+.admin-control-cluster .showday-control {
+  padding: 14px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(var(--accent-rgb), .08), transparent 48%), var(--panel);
+}
+
+.admin-control-cluster .availability-admin-card__head,
+.admin-control-cluster .showday-control__head {
+  min-height: 30px;
+  margin-bottom: 0;
+}
+
+.admin-control-cluster .availability-admin-manage,
+.admin-control-cluster .showday-admin-manage {
+  margin-top: 10px;
+}
+
+/* At compact card width, Availability controls read better as one vertical stack. */
+.admin-control-cluster .availability-admin-manage__body {
+  grid-template-columns: 1fr;
+}
+
+.admin-control-cluster .availability-admin-manage .availability-force,
+.admin-control-cluster .availability-admin-manage .availability-temporary,
+.admin-control-cluster .availability-admin-manage .availability-travel,
+.admin-control-cluster .availability-admin-manage .availability-schedule {
+  grid-column: 1;
+}
+
+/* Show Day uses the same disclosure language as Availability. */
+.showday-admin-manage__body {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 10px;
+}
+
+.showday-admin-manage__body .showday-control__intro {
+  max-width: none;
+  margin: 0;
+  font-size: 8.5px;
+  line-height: 1.55;
+}
+
+.showday-admin-manage__body .showday-control__row {
+  grid-template-columns: 1fr;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.showday-admin-manage__body .showday-mode-toggle {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: 100%;
+}
+
+.showday-admin-manage__body .showday-mode-toggle button {
+  min-width: 0;
+  padding: 0 7px;
+}
+
+.showday-admin-manage__body .showday-location {
+  width: 100%;
+}
+
+.showday-admin-manage__body .showday-control__apply {
+  width: 100%;
+  justify-content: center;
+}
+
+.showday-admin-manage__body .showday-control__meta {
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 0;
+}
+
+.showday-admin-manage__body #showDayQaFeedback {
+  text-align: left;
+}
+
+@media (max-width: 1120px) {
+  .admin-control-cluster {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 900px) {
+  .admin-control-cluster {
+    grid-template-columns: 1fr;
+    max-width: none;
+    margin-bottom: 18px;
+  }
+}
