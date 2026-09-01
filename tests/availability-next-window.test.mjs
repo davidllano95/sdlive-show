@@ -123,7 +123,7 @@ test('Travel Mode evaluates the next service window in the travel timezone', () 
 test('Travel Mode expiry can immediately reopen an active base-timezone service window', () => {
   const now = new Date('2026-09-01T15:00:00.000Z');
   const next = computeNextHumanWindow(state({
-    schedule: { tue: [['12:00', '18:00']] },
+    schedule: { tue: [['12:00', '16:00']] },
     travel: {
       active: true,
       timezone: 'Europe/Madrid',
