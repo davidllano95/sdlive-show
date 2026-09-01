@@ -1,6 +1,7 @@
 const SHOWDAY_RUNTIME_VERSION = "20260824-2";
 const PUBLIC_AUDIT_RUNTIME_VERSION = "20260831-2";
-const AVAILABILITY_RUNTIME_VERSION = "20260901-5";
+const AVAILABILITY_RUNTIME_VERSION = "20260901-4";
+const AVAILABILITY_NEXT_WINDOW_VERSION = "1";
 
 const SHARED_PUBLIC_HEADER_HTML = `
 <header class="site-header" id="siteHeader" data-sdlive-shared-public-header>
@@ -72,7 +73,7 @@ export function applyShowDayRuntime(response) {
           `<link rel="stylesheet" href="/public-audit-closeout.css?v=${PUBLIC_AUDIT_RUNTIME_VERSION}" data-sdlive-public-audit/>` +
           `<script defer src="/public-audit-closeout.js?v=${PUBLIC_AUDIT_RUNTIME_VERSION}" data-sdlive-public-audit></script>` +
           `<link rel="stylesheet" href="/availability-status.css?v=${AVAILABILITY_RUNTIME_VERSION}" data-sdlive-availability/>` +
-          `<script defer src="/availability-status.js?v=${AVAILABILITY_RUNTIME_VERSION}" data-sdlive-availability></script>`,
+          `<script defer src="/availability-status.js?v=${AVAILABILITY_RUNTIME_VERSION}&nw=${AVAILABILITY_NEXT_WINDOW_VERSION}" data-sdlive-availability></script>`,
           { html: true }
         );
       }
