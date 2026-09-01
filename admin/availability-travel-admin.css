@@ -1,15 +1,22 @@
+.availability-travel {
+  padding-top: 12px;
+  margin-top: 12px;
+}
+
 .availability-travel__head {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  margin-bottom: 7px;
 }
 
 .availability-travel__status {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 24px;
+  min-width: 42px;
+  min-height: 22px;
   padding: 0 8px;
   border: 1px solid var(--border);
   border-radius: 999px;
@@ -17,75 +24,116 @@
   color: var(--muted);
   font-size: 8px;
   font-weight: 800;
-  letter-spacing: .05em;
+  letter-spacing: .06em;
   text-transform: uppercase;
 }
 
 .availability-travel[data-travel-active="true"] .availability-travel__status {
   color: var(--text);
-  border-color: rgba(var(--accent-rgb), .25);
+  border-color: rgba(var(--accent-rgb), .24);
   background: rgba(var(--accent-rgb), .12);
-  box-shadow: inset 0 0 0 1px rgba(var(--accent-rgb), .08);
+  box-shadow: inset 0 0 0 1px rgba(var(--accent-rgb), .07);
 }
 
 .availability-travel__meta {
   display: block;
-  margin-top: 0;
-  margin-bottom: 9px;
+  margin: 0 0 10px;
+  color: var(--soft);
+  line-height: 1.45;
 }
 
 .availability-travel__controls {
   display: grid;
-  grid-template-columns: minmax(0, 1.35fr) minmax(145px, .65fr);
-  gap: 8px;
+  grid-template-columns: minmax(0, 1.35fr) minmax(150px, .65fr);
+  gap: 9px;
+  align-items: start;
 }
 
-.availability-travel__controls label {
+.availability-travel__field {
   display: grid;
+  min-width: 0;
   gap: 5px;
 }
 
-.availability-travel__controls label > span {
+.availability-travel__field > span {
   color: var(--muted);
   font-size: 8px;
   font-weight: 700;
-  letter-spacing: .05em;
+  letter-spacing: .06em;
   text-transform: uppercase;
 }
 
+.availability-travel__controls select,
 .availability-travel__controls input {
+  box-sizing: border-box;
   width: 100%;
+  max-width: 100%;
   min-width: 0;
-  min-height: 34px;
-  padding: 0 9px;
+  height: 42px;
+  min-height: 42px;
+  margin: 0;
+  padding: 0 11px;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 9px;
   background: rgba(0, 0, 0, .16);
   color: var(--text);
   font: inherit;
-  font-size: 9px;
+  font-size: 10px;
+  line-height: 1;
 }
 
+.availability-travel__controls select {
+  padding-right: 34px;
+  cursor: pointer;
+}
+
+.availability-travel__controls input[type="date"] {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.availability-travel__controls select:focus,
 .availability-travel__controls input:focus {
   border-color: rgba(var(--accent-rgb), .45);
   outline: none;
   box-shadow: 0 0 0 2px rgba(var(--accent-rgb), .08);
 }
 
+.availability-travel__custom-zone[hidden] {
+  display: none !important;
+}
+
+.availability-travel__field-hint {
+  min-height: 14px;
+  color: var(--muted);
+  font-size: 7.5px;
+  line-height: 1.4;
+}
+
 .availability-travel__actions {
-  display: flex;
-  align-items: center;
+  display: grid;
+  grid-template-columns: 1fr;
   gap: 8px;
-  margin-top: 9px;
+  margin-top: 10px;
+}
+
+.availability-travel[data-travel-active="true"] .availability-travel__actions {
+  grid-template-columns: minmax(0, 2fr) minmax(100px, 1fr);
 }
 
 .availability-travel__actions .availability-admin-card__apply,
 .availability-travel__stop {
-  min-height: 35px;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  height: 42px;
+  min-height: 42px;
+  margin: 0;
   padding: 0 12px;
   border-radius: 9px;
   font-size: 9px;
   font-weight: 750;
+  justify-content: center;
 }
 
 .availability-travel__actions .availability-admin-card__apply {
@@ -95,14 +143,21 @@
 }
 
 .availability-travel__stop {
-  border: 1px solid var(--border);
-  background: rgba(0, 0, 0, .16);
+  border: 1px solid rgba(255, 255, 255, .12);
+  background: rgba(0, 0, 0, .14);
   color: var(--soft);
 }
 
 .availability-travel__stop:hover {
   color: var(--text);
   background: rgba(255, 255, 255, .04);
+}
+
+.availability-travel__feedback {
+  display: block;
+  min-height: 14px;
+  margin-top: 7px;
+  line-height: 1.45;
 }
 
 .availability-travel__feedback[data-state="error"] {
@@ -118,18 +173,51 @@
 }
 
 @media (max-width: 560px) {
-  .availability-travel__controls {
-    grid-template-columns: 1fr;
+  .availability-travel {
+    padding-top: 11px;
+    margin-top: 11px;
   }
 
-  .availability-travel__actions {
-    display: grid;
+  .availability-travel__head {
+    align-items: flex-start;
+  }
+
+  .availability-travel__meta {
+    margin-bottom: 9px;
+    padding-right: 2px;
+  }
+
+  .availability-travel__controls {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .availability-travel__controls select,
+  .availability-travel__controls input {
+    height: 44px;
+    min-height: 44px;
+    font-size: 10px;
+  }
+
+  .availability-travel__field-hint {
+    min-height: 0;
+    font-size: 7px;
+  }
+
+  .availability-travel__actions,
+  .availability-travel[data-travel-active="true"] .availability-travel__actions {
+    grid-template-columns: minmax(0, 1.7fr) minmax(96px, .8fr);
+    gap: 7px;
+  }
+
+  .availability-travel:not([data-travel-active="true"]) .availability-travel__actions {
     grid-template-columns: 1fr;
   }
 
   .availability-travel__actions .availability-admin-card__apply,
   .availability-travel__stop {
-    width: 100%;
-    justify-content: center;
+    height: 44px;
+    min-height: 44px;
+    padding: 0 10px;
   }
 }
