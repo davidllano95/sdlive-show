@@ -21,6 +21,15 @@ jobs:
           ref: privacy-whatsapp-username
           fetch-depth: 0
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
       - name: Apply privacy patch
         run: node scripts/apply-whatsapp-username-privacy.mjs
 
