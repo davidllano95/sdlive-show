@@ -268,7 +268,7 @@ export async function readAvailabilityProfile(env) {
   return {
     defaultTimezone,
     weeklySchedule: normalized.schedule,
-    configured: normalized.windowCount > 0,
+    configured: true,
     updatedAt: row.updated_at || null,
     actorEmail: cleanString(row.actor_email)
   };
@@ -330,7 +330,7 @@ export function evaluateWeeklySchedule(profile, travel, now = new Date()) {
     : (isValidTimeZone(safeProfile.defaultTimezone) ? safeProfile.defaultTimezone : "America/Bogota");
   const normalized = normalizeWeeklySchedule(safeProfile.weeklySchedule || {});
 
-  if (!safeProfile.configured || normalized.windowCount === 0) {
+  if (!safeProfile.configured) {
     return {
       status: "available",
       source: "compatibility-default",
@@ -453,7 +453,7 @@ export function normalizeAvailabilityProfileInput(payload) {
     value: {
       defaultTimezone,
       weeklySchedule: normalized.schedule,
-      configured: normalized.windowCount > 0
+      configured: true
     }
   };
 }
