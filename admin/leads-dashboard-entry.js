@@ -1,4 +1,22 @@
 (() => {
+  const currentPath = window.location.pathname.replace(/\/+$/, "") || "/";
+
+  function ensureAdminStabilization() {
+    if (currentPath !== "/admin/leads") return;
+    if (
+      window.SDLiveAdminStabilization ||
+      document.querySelector("script[data-sdlive-leads-admin-stabilization]")
+    ) {
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = "/admin/admin-stabilization.js?v=20260831-4";
+    script.defer = true;
+    script.dataset.sdliveLeadsAdminStabilization = "true";
+    document.head.appendChild(script);
+  }
+
   function leadNavButton() {
     return [...document.querySelectorAll(".app-nav__item")]
       .find((item) =>
@@ -55,6 +73,7 @@
     card.replaceWith(link);
   }
 
+  ensureAdminStabilization();
   activateSidebarEntry();
   activateDashboardCard();
 })();
