@@ -6,15 +6,17 @@ async function source(path) {
   return readFile(new URL(`../${path}`, import.meta.url), "utf8");
 }
 
-test("Wrangler mounts the narrow WhatsApp owner wrapper", async () => {
-  const [wrangler, wrapper] = await Promise.all([
+test("stable Admin worker remains the deploy entry and mounts the WhatsApp webhook narrowly", async () => {
+  const [wrangler, worker] = await Promise.all([
     source("wrangler.jsonc"),
-    source("whatsapp-owner-worker.js")
+    source("admin-stabilization-worker.js")
   ]);
 
-  assert.match(wrangler, /"main": "\.\/whatsapp-owner-worker\.js"/);
-  assert.match(wrapper, /handleWhatsAppOwnerWebhook/);
-  assert.match(wrapper, /baseWorker\.fetch\(request, env, ctx\)/);
+  assert.match(wrangler, /"main": "\.\/admin-stabilization-worker\.js"/);
+  assert.match(worker, /handleWhatsAppOwnerWebhook/);
+  assert.match(worker, /WHATSAPP_OWNER_WEBHOOK_PATH = "\/api\/webhooks\/whatsapp"/);
+  assert.match(worker, /path === WHATSAPP_OWNER_WEBHOOK_PATH/);
+  assert.match(worker, /baseWorker\.fetch\(request, env\)/);
 });
 
 test("WhatsApp secrets and owner number are not committed to wrangler vars", async () => {
