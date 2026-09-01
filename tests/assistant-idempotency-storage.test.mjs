@@ -63,7 +63,7 @@ class FakeD1 {
       return { meta: { changes: 1 } };
     }
 
-    if (sql.includes("status = 'reserved'") && sql.includes("status = 'failed'")) {
+    if (sql.includes("SET status = 'reserved'") && sql.includes("AND status = 'failed'")) {
       const [requestId, reservedAt, updatedAt, key] = args;
       const row = this.rows.get(key);
       if (!row || row.status !== "failed") return { meta: { changes: 0 } };
@@ -95,7 +95,7 @@ class FakeD1 {
       return { meta: { changes: 1 } };
     }
 
-    if (sql.includes("status = 'completed'")) {
+    if (sql.includes("SET status = 'completed'") && sql.includes("AND status = 'reserved'")) {
       const [leadId, completedAt, updatedAt, key] = args;
       const row = this.rows.get(key);
       if (!row || row.status !== "reserved") return { meta: { changes: 0 } };
@@ -109,7 +109,7 @@ class FakeD1 {
       return { meta: { changes: 1 } };
     }
 
-    if (sql.includes("status = 'failed'")) {
+    if (sql.includes("SET status = 'failed'") && sql.includes("AND status = 'reserved'")) {
       const [updatedAt, errorCode, key] = args;
       const row = this.rows.get(key);
       if (!row || row.status !== "reserved") return { meta: { changes: 0 } };
