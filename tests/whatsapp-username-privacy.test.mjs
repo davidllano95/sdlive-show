@@ -14,6 +14,7 @@ test('public HTML never exposes a phone-number WhatsApp link or telephone schema
     const html = fs.readFileSync(path, 'utf8');
     assert.doesNotMatch(html, /https:\/\/wa\.me\/\d{7,}/, `${path} contains a numeric WhatsApp link`);
     assert.doesNotMatch(html, /"telephone"\s*:\s*"\+?\d{7,}"/, `${path} contains public telephone structured data`);
+    assert.doesNotMatch(html, /573192473948|319\s*247\s*3948/, `${path} contains the owner phone number as public copy`);
   }
 });
 
