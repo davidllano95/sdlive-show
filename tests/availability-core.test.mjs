@@ -183,7 +183,8 @@ test('Availability backend force and weekly schedule stay separate D1-owned stat
   assert.match(admin, /action:\s*"force"/);
   assert.match(admin, /action:\s*"profile"/);
   assert.match(admin, /Maximum 6 service windows per day/);
-  assert.match(edge, /AVAILABILITY_ADMIN_RUNTIME_VERSION = "20260901-2"/);
+  assert.match(edge, /AVAILABILITY_ADMIN_RUNTIME_VERSION = "20260901-\d+"/);
+  assert.match(edge, /availability-live-mode-parity\.css/);
 });
 
 test('public runtime contains bilingual copy and follows html lang changes', () => {

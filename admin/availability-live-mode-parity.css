@@ -1,0 +1,257 @@
+/* Availability Admin — visual parity with the existing Show Day / Live Mode QA panel.
+   Presentation only: no Availability resolver, API, D1 or precedence changes. */
+
+.availability-admin-card {
+  min-height: 0;
+  padding: 15px;
+  gap: 0;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(var(--accent-rgb), .08), transparent 48%), var(--panel);
+}
+
+.availability-admin-card__head {
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.availability-admin-card__head > div {
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: auto auto;
+  gap: 3px 12px;
+  align-items: center;
+}
+
+.availability-admin-card__head > div > span {
+  grid-column: 1;
+  grid-row: 1;
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.availability-admin-card__status {
+  grid-column: 2;
+  grid-row: 1 / 3;
+  display: inline-flex;
+  align-items: center;
+  min-height: 25px;
+  margin: 0;
+  padding: 0 8px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--panel2);
+  color: var(--soft);
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.availability-admin-card__status i {
+  display: none;
+}
+
+.availability-admin-card[data-status="available"] .availability-admin-card__status {
+  color: var(--green, #65d59a);
+  border-color: rgba(101, 213, 154, .22);
+  background: rgba(101, 213, 154, .06);
+}
+
+.availability-admin-card[data-status="limited"] .availability-admin-card__status {
+  color: var(--amber, #e9b86a);
+  border-color: rgba(233, 184, 106, .24);
+  background: rgba(233, 184, 106, .07);
+}
+
+.availability-admin-card[data-status="away"] .availability-admin-card__status {
+  color: var(--soft);
+  border-color: var(--border);
+  background: var(--panel2);
+}
+
+.availability-admin-card__meta {
+  grid-column: 1;
+  grid-row: 2;
+  color: var(--soft);
+  font-size: 9px;
+  line-height: 1.45;
+}
+
+.availability-admin-section {
+  padding-top: 13px;
+  margin-top: 13px;
+  border-top: 1px solid rgba(255, 255, 255, .08);
+}
+
+.availability-admin-section__head {
+  margin-bottom: 9px;
+}
+
+.availability-admin-section__head strong {
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.availability-admin-section__head small {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+/* Backend Force Mode mirrors the Show Day segmented control. */
+.availability-force .availability-admin-card__controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0;
+}
+
+.availability-force [data-force-mode] {
+  flex: 0 0 auto;
+  min-height: 32px;
+  padding: 0 11px;
+  border: 1px solid var(--border);
+  border-right: 0;
+  border-radius: 0;
+  background: rgba(0, 0, 0, .16);
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 750;
+}
+
+.availability-force [data-force-mode="auto"] {
+  border-radius: 7px 0 0 7px;
+}
+
+.availability-force [data-force-mode="force_off"] {
+  border-right: 1px solid var(--border);
+  border-radius: 0 7px 7px 0;
+}
+
+.availability-force [data-force-mode]:hover {
+  color: var(--text);
+  border-color: var(--border);
+  background: rgba(255, 255, 255, .04);
+}
+
+.availability-force [data-force-mode].is-active,
+.availability-force [data-force-mode="force_on"].is-active,
+.availability-force [data-force-mode="force_off"].is-active {
+  border-color: rgba(var(--accent-rgb), .25) !important;
+  background: rgba(var(--accent-rgb), .16) !important;
+  color: var(--text) !important;
+  box-shadow: inset 0 0 0 1px rgba(var(--accent-rgb), .12);
+}
+
+.availability-force .availability-admin-card__apply {
+  min-height: 35px;
+  margin-left: 10px;
+  padding: 0 12px;
+  border: 1px solid var(--accent) !important;
+  border-radius: 9px;
+  background: var(--accent) !important;
+  color: #090910;
+  font-size: 9px;
+  font-weight: 750 !important;
+}
+
+.availability-force .availability-admin-card__apply:hover {
+  filter: brightness(1.04);
+}
+
+.availability-force .availability-admin-card__apply:focus-visible,
+.availability-force [data-force-mode]:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.availability-admin-section__meta,
+.availability-admin-section__feedback {
+  margin-top: 9px;
+  color: var(--muted);
+  font-size: 8px;
+  line-height: 1.45;
+}
+
+.availability-admin-section__feedback {
+  min-height: 14px;
+  margin-top: 3px;
+  color: var(--soft);
+}
+
+/* Temporary state keeps its semantic meaning but uses the same compact control density. */
+.availability-temporary .availability-admin-card__controls {
+  gap: 6px;
+}
+
+.availability-temporary .availability-admin-card__controls button,
+.availability-temporary .availability-admin-card__controls select {
+  min-height: 32px;
+  font-size: 9px;
+}
+
+.availability-schedule > summary {
+  min-height: 34px;
+  font-size: 11px;
+}
+
+@media (max-width: 560px) {
+  .availability-admin-card {
+    padding: 15px;
+  }
+
+  .availability-admin-card__head > div {
+    gap: 4px 8px;
+  }
+
+  .availability-admin-card__meta {
+    max-width: 230px;
+  }
+
+  .availability-force .availability-admin-card__controls {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .availability-force [data-force-mode] {
+    width: 100%;
+    min-width: 0;
+    padding: 0 7px;
+    text-align: center;
+  }
+
+  .availability-force .availability-admin-card__apply {
+    grid-column: 1 / -1;
+    width: 100%;
+    margin: 8px 0 0;
+    justify-content: center;
+  }
+
+  .availability-temporary .availability-admin-card__controls {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+    width: 100%;
+  }
+
+  .availability-temporary .availability-admin-card__controls button,
+  .availability-temporary .availability-admin-card__controls select {
+    width: 100%;
+    min-width: 0;
+    flex: none;
+  }
+
+  .availability-temporary .availability-admin-card__controls select {
+    grid-column: 1 / -1;
+  }
+}
