@@ -34,7 +34,18 @@ test("Admin navigation promotes Leads from Soon to the live Lead Core workspace"
   assert.match(edge, /leads-dashboard-entry\.js/);
 });
 
-test("Leads workspace loads the shared mobile Admin navigation runtime", async () => {
+test("Leads workspace loads the shared mobile Admin navigation runtime directly", async () => {
+  const html = await source("admin/leads/index.html");
+
+  assert.match(html, /\.\/admin-stabilization\.js\?v=20260901-1/);
+  assert.ok(
+    html.indexOf("./admin-stabilization.js?v=20260901-1") <
+      html.indexOf("./leads/leads.js?v=20260901-1"),
+    "shared Admin runtime should load before the Leads workspace runtime"
+  );
+});
+
+test("Leads dashboard entry keeps a fallback mobile Admin runtime loader", async () => {
   const entry = await source("admin/leads-dashboard-entry.js");
 
   assert.match(entry, /currentPath !== "\/admin\/leads"/);
