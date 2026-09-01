@@ -1,0 +1,201 @@
+/* Availability Admin compact disclosure layout.
+   Presentation only: keeps the Availability Core/API/D1 contract untouched. */
+
+.availability-admin-manage {
+  margin-top: 10px;
+  border: 1px solid rgba(255, 255, 255, .08);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, .10);
+  overflow: hidden;
+}
+
+.availability-admin-manage > summary {
+  min-height: 44px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 7px 10px;
+  list-style: none;
+  cursor: pointer;
+}
+
+.availability-admin-manage > summary::-webkit-details-marker {
+  display: none;
+}
+
+.availability-admin-manage > summary:hover {
+  background: rgba(255, 255, 255, .025);
+}
+
+.availability-admin-manage > summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.availability-admin-manage__label {
+  min-width: 0;
+}
+
+.availability-admin-manage__label strong {
+  display: block;
+  margin: 0;
+  color: var(--soft);
+  font-size: 9px;
+  font-weight: 750;
+  letter-spacing: .01em;
+}
+
+.availability-admin-manage__label small {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 8px;
+  line-height: 1.35;
+}
+
+.availability-admin-manage__chevron {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--panel2);
+  color: var(--muted);
+  font-size: 13px;
+  transition: transform .16s ease, color .16s ease, border-color .16s ease;
+}
+
+.availability-admin-manage[open] .availability-admin-manage__chevron {
+  transform: rotate(180deg);
+  color: var(--accent);
+  border-color: rgba(var(--accent-rgb), .25);
+}
+
+.availability-admin-manage__body {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  padding: 8px;
+  border-top: 1px solid rgba(255, 255, 255, .07);
+}
+
+.availability-admin-manage .availability-admin-section {
+  min-width: 0;
+  margin: 0;
+  padding: 11px;
+  border: 1px solid rgba(255, 255, 255, .07);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, .018);
+}
+
+.availability-admin-manage .availability-admin-section__head {
+  margin-bottom: 8px;
+}
+
+.availability-admin-manage .availability-admin-section__head strong {
+  font-size: 10px;
+}
+
+.availability-admin-manage .availability-admin-section__head small {
+  font-size: 7.5px;
+}
+
+.availability-admin-manage .availability-travel,
+.availability-admin-manage .availability-schedule {
+  grid-column: 1 / -1;
+}
+
+.availability-admin-manage .availability-schedule {
+  padding-bottom: 11px;
+}
+
+.availability-admin-manage .availability-schedule > summary {
+  min-height: 30px;
+}
+
+.availability-admin-manage .availability-schedule__body {
+  padding-top: 10px;
+}
+
+/* Match Show Day QA control density instead of the old full-width Travel CTA. */
+.availability-admin-manage .availability-travel__controls select,
+.availability-admin-manage .availability-travel__controls input {
+  height: 38px;
+  min-height: 38px;
+}
+
+.availability-admin-manage .availability-travel__actions,
+.availability-admin-manage .availability-travel[data-travel-active="true"] .availability-travel__actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.availability-admin-manage .availability-travel__actions .availability-admin-card__apply,
+.availability-admin-manage .availability-travel__stop {
+  width: auto;
+  min-width: 132px;
+  height: 35px;
+  min-height: 35px;
+  padding: 0 12px;
+}
+
+.availability-admin-manage .availability-admin-section__feedback {
+  min-height: 0;
+}
+
+/* Keep the always-visible summary area as compact as Show Day Visual QA. */
+.availability-admin-card .availability-next-window-admin {
+  margin: 2px 0 0;
+  min-height: 38px;
+  padding: 7px 10px;
+  border-radius: 9px;
+}
+
+@media (max-width: 700px) {
+  .availability-admin-manage__body {
+    grid-template-columns: 1fr;
+  }
+
+  .availability-admin-manage .availability-force,
+  .availability-admin-manage .availability-temporary,
+  .availability-admin-manage .availability-travel,
+  .availability-admin-manage .availability-schedule {
+    grid-column: 1;
+  }
+}
+
+@media (max-width: 560px) {
+  .availability-admin-manage {
+    margin-top: 8px;
+  }
+
+  .availability-admin-manage > summary {
+    min-height: 46px;
+    padding: 7px 9px;
+  }
+
+  .availability-admin-manage__label small {
+    max-width: 250px;
+  }
+
+  .availability-admin-manage__body {
+    padding: 7px;
+    gap: 7px;
+  }
+
+  .availability-admin-manage .availability-admin-section {
+    padding: 10px;
+  }
+
+  .availability-admin-manage .availability-travel__actions .availability-admin-card__apply,
+  .availability-admin-manage .availability-travel__stop {
+    width: 100%;
+    min-width: 0;
+    height: 42px;
+    min-height: 42px;
+  }
+}
