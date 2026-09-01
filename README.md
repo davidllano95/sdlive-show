@@ -182,6 +182,37 @@ Google Calendar is a secondary integration surface, not a source of operational 
 
 Future simultaneous Show Day behavior should use explicit **Primary / Secondary** presentation priority instead of cramming multiple Locations into the header.
 
+## Availability / Travel Mode
+
+Availability has a separate Admin-controlled Travel Mode. Travel Mode changes the timezone used to evaluate the saved weekly service hours; **travel does not itself force the public status to Away**.
+
+The Admin timezone selector includes common destinations plus **Use device timezone**. Prefer **Use device timezone** when the phone/computer is already set to the timezone of the place where you are working.
+
+If the required timezone is not in the selector, choose **Other IANA timezone…** and enter the canonical **IANA timezone identifier** in this format:
+
+`Area/Location`
+
+Examples:
+
+- Bogotá → `America/Bogota`
+- New York → `America/New_York`
+- Los Angeles → `America/Los_Angeles`
+- Madrid → `Europe/Madrid`
+- London → `Europe/London`
+- Singapore → `Asia/Singapore`
+- Sydney → `Australia/Sydney`
+- Auckland → `Pacific/Auckland`
+- Honolulu → `Pacific/Honolulu`
+
+Rules for manual entry:
+
+- enter the identifier exactly as an IANA timezone, including `/` and `_` where required;
+- use the canonical English/IANA spelling, e.g. `America/Bogota` — not `America/Bogotá`;
+- do **not** enter a city name alone (`Bogotá`), a country (`Colombia`), an abbreviation (`EST`, `COT`) or a raw UTC/GMT offset (`UTC-5`, `GMT+1`);
+- if unsure, use **Use device timezone** after confirming the device is set to the destination timezone rather than guessing an identifier.
+
+Travel Mode is bounded: it starts when saved and ends at **11:59 PM on the selected end date in the selected travel timezone**. Turning it off returns weekly service-hour evaluation to the base timezone.
+
 ## Public visual stabilization — closed
 
 The post-integration public audit is production-verified and issue #124 is closed.
