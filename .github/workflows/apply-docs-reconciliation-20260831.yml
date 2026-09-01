@@ -22,7 +22,9 @@ jobs:
           fetch-depth: 0
 
       - name: Apply reconciliation
-        run: python scripts/reconcile-current-docs-20260831.py
+        run: |
+          python scripts/reconcile-current-docs-20260831.py
+          sed -i 's/[[:space:]]\+$//' docs/roadmap/availability-aware-contact-widget.md docs/roadmap/sdlive-control-center.md
 
       - name: Validate current-state markers
         run: |
