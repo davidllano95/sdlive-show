@@ -99,8 +99,8 @@ export function isFreshAssistantConsentEvidence(evidence, now = new Date()) {
   return age >= 0 && age <= ASSISTANT_CONSENT_TTL_MS;
 }
 
-export function assistantConsentStorageRecord(evidence, leadId) {
-  if (!isFreshAssistantConsentEvidence(evidence)) {
+export function assistantConsentStorageRecord(evidence, leadId, now = new Date()) {
+  if (!isFreshAssistantConsentEvidence(evidence, now)) {
     throw new Error("Fresh Assistant consent evidence is required");
   }
 
