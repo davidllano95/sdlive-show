@@ -32,12 +32,16 @@ jobs:
           privacy.write_text(text, encoding='utf-8')
 
           test = Path('tests/whatsapp-username-privacy.test.mjs')
-          source = test.read_text(encoding='utf-8')
-          old = "      assert.doesNotMatch(html, /\\\"telephone\\\"\\s*:\\s*\\\"\\+?\\d{7,}\\\"/, `${path} contains public telephone structured data`);\n"
-          new = old + "      assert.doesNotMatch(html, /573192473948|319\\s*247\\s*3948/, `${path} contains the owner phone number as public copy`);\n"
-          if old not in source:
+          lines = test.read_text(encoding='utf-8').splitlines()
+          needle = 'contains public telephone structured data'
+          if not any(needle in line for line in lines):
               raise SystemExit('Expected privacy assertion not found')
-          test.write_text(source.replace(old, new, 1), encoding='utf-8')
+          if not any('contains the owner phone number as public copy' in line for line in lines):
+              for index, line in enumerate(lines):
+                  if needle in line:
+                      lines.insert(index + 1, "    assert.doesNotMatch(html, /573192473948|319\\s*247\\s*3948/, `${path} contains the owner phone number as public copy`);")
+                      break
+          test.write_text('\n'.join(lines) + '\n', encoding='utf-8')
           PY
 
       - name: Validate privacy invariant
