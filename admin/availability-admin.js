@@ -65,6 +65,7 @@
     if (!/^\d{4}-\d{2}-\d{2}$/.test(String(value || ""))) return String(value || "");
     const [year, month, day] = value.split("-").map(Number);
     return new Intl.DateTimeFormat("en", {
+      timeZone: "UTC",
       month: "short",
       day: "numeric",
       year: "numeric"
