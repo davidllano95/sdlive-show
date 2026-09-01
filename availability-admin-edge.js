@@ -1,5 +1,5 @@
 const AVAILABILITY_ADMIN_RUNTIME_VERSION = "20260901-6";
-const ADMIN_CONTROL_CLUSTER_VERSION = "20260901-1";
+const ADMIN_CONTROL_CLUSTER_VERSION = "20260901-2";
 
 export function applyAvailabilityAdminRuntime(response) {
   const contentType = response?.headers?.get("content-type") || "";

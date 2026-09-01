@@ -23,7 +23,7 @@ test('Availability and Show Day are grouped into bounded compact dashboard cards
   assert.match(css, /@media \(max-width: 900px\)/);
   assert.match(css, /grid-template-columns: 1fr/);
 
-  assert.match(edge, /ADMIN_CONTROL_CLUSTER_VERSION = "20260901-1"/);
+  assert.match(edge, /ADMIN_CONTROL_CLUSTER_VERSION = "20260901-2"/);
   assert.match(edge, /admin-control-cluster\.css\?v=\$\{ADMIN_CONTROL_CLUSTER_VERSION\}/);
   assert.match(edge, /admin-control-cluster\.js\?v=\$\{ADMIN_CONTROL_CLUSTER_VERSION\}/);
 });
@@ -37,4 +37,18 @@ test('Show Day compacting preserves existing control ids and runtime ownership',
   assert.match(dashboard, /data-showday-mode="force_on"/);
   assert.doesNotMatch(runtime, /\/api\/admin\/showday-override/);
   assert.doesNotMatch(runtime, /fetch\(/);
+});
+
+test('compact control polish normalizes status typography, chevrons and weekly schedule layout', () => {
+  const css = fs.readFileSync('admin/admin-control-cluster.css', 'utf8');
+
+  assert.match(css, /availability-admin-card__status,[\s\S]*showday-control__status/);
+  assert.match(css, /font-size: 8px !important/);
+  assert.match(css, /font-weight: 600 !important/);
+  assert.match(css, /availability-admin-manage__chevron::before/);
+  assert.match(css, /border-right: 1\.5px solid currentColor/);
+  assert.match(css, /availability-schedule__grid \{[\s\S]*grid-template-columns: 1fr !important/);
+  assert.match(css, /availability-schedule__day \{[\s\S]*grid-template-columns: 88px minmax\(0, 1fr\)/);
+  assert.match(css, /availability-schedule__footer \.availability-admin-card__apply/);
+  assert.match(css, /font-size: 9px !important/);
 });
