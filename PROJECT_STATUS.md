@@ -6,13 +6,13 @@
 |---|---|
 | Última reconciliación | **2026-08-31 — America/Bogota** |
 | Rama operativa | `main` |
-| `main` al reconciliar | **PR #154 · `aacc0a60af70b9b85c8c61eb74216f1db6d329f3`** |
+| `main` al reconciliar | **PR #157 · `74b5eaed01ed324b7f5f1af82dea27721a3b5509`** |
 | Producción | `https://sdlive.show` |
 | Media pública | `https://media.sdlive.show` |
 | Estado macro | **Admin stabilization CLOSED/PASS; public post-integration visual audit CLOSED/PASS; Finance, Calendar, Site Schedule, automatic Show Day y Google Calendar projection operativos** |
 | Active Gate | **Ningún gate de estabilización activo. Seleccionar deliberadamente el siguiente módulo del roadmap antes de iniciar runtime nuevo.** |
 | Bloqueado | **Generic Finance Phase 3 write-back** |
-| Paso manual inmediato | **Seleccionar el siguiente módulo del roadmap. `SD.Live Patch` está documentado y elegible, pero no está activado automáticamente.** |
+| Paso manual inmediato | **Seleccionar deliberadamente el siguiente módulo. `Availability-Aware Contact / AI`, `SD.Live Patch`, Calendar workflow, Finance Document Generator y Rental availability son candidatos elegibles; ninguno está activado automáticamente.** |
 
 ## Precedencia
 
@@ -197,11 +197,13 @@ Accepted public closeout includes:
 - **PR #152:** final public closeout batch restoring testimonial glow, Trusted By mobile luminosity, BetaThree left alignment and accepted Misi/Wonderlust mobile grouping.
 - **PR #153:** testimonial sheen pacing made independent from expanded card height; Rental editor image framing controls refreshed reliably.
 - **PR #154:** the two visible BetaThree PA units are one canonical CMS media composition; one source/scale/X/Y control updates both units together.
+- **PR #157:** Rental image-editor parity was repaired across standard equipment, PA and Production Tools; Replace/Library/size/X/Y now use the real public image containers, and published framing uses the same semantics as Admin preview. Issue #156 closed after production PASS on Event Labeler, BetaThree PA and Behringer WING.
 
 Final production smoke verified:
 
 - Testimonials reveal/collapse remains coherent, short cards end naturally, glow stays visible, and sheen speed is consistent open/closed and across the full expanded quote;
 - Rental/PA is correctly sized/aligned; the user adjusted PA in CMS, saved, published, and confirmed the result on both desktop and mobile;
+- Rental image controls are production-verified on a Production Tool (Event Labeler), synchronized PA pair and standard equipment card (Behringer WING); Save Draft/Publish parity is accepted through PR #157 / issue #156;
 - Misi Supported Brands is side-by-side on mobile;
 - Wonderlust is three items per row on mobile with a single remainder centered on the next row;
 - Trusted By card glow/luminosity remains visible on mobile.
@@ -267,6 +269,7 @@ A locally generated PDF must **not** be represented as a DIAN-valid Colombian el
 
 ### Other future items
 
+- Availability-Aware Contact / AI — documented 3-layer owner availability model (manual away, travel mode, weekly service hours) with human WhatsApp when reachable and AI qualification/handoff when unavailable; eligible for prioritization, not active;
 - SD.Live Patch — documented future patch-sheet/signal-flow/show-documentation workspace, now eligible for prioritization but not automatically active;
 - Calendar Agenda `Full Month` vs `Current + Future` filter;
 - controlled Calendar edit/workflow actions after stabilization;
@@ -278,7 +281,8 @@ A locally generated PDF must **not** be represented as a DIAN-valid Colombian el
 ## Relevant docs
 
 - `README.md` — architecture/current operating overview.
-- `docs/checkpoints/handoff-public-audit-closeout-2026-08-31.md` — latest checkpoint and exact continuation after closing #124.
+- `docs/checkpoints/handoff-current-state-2026-08-31.md` — latest checkpoint after PR #157 / issue #156 and roadmap reconciliation.
+- `docs/checkpoints/handoff-public-audit-closeout-2026-08-31.md` — historical checkpoint after closing #124.
 - `docs/checkpoints/handoff-admin-stabilization-2026-08-31.md` — Admin/Google Calendar acceptance checkpoint.
 - `docs/roadmap/post-integration-visual-audit-2026-08-23.md` — completed post-integration Admin + public audit contract.
 - `docs/roadmap/finance-phase2-real-use-2026-08-23.md` — Finance real-use history/current rules.
@@ -289,7 +293,7 @@ A locally generated PDF must **not** be represented as a DIAN-valid Colombian el
 ## Exact continuation point
 
 1. **Admin stabilization is CLOSED/PASS through PR #150**; issue #126 is completed. Do not repeat its audit/smoke unless a new regression appears.
-2. **Public post-integration stabilization is CLOSED/PASS through PR #154**; issue #124 is completed. Do not repeat its representative smoke unless a new regression appears.
+2. **Public post-integration stabilization remains CLOSED/PASS; Rental image-editor parity is additionally CLOSED/PASS through PR #157 / issue #156.** Do not repeat those smoke sequences unless a new regression appears.
 3. **Finance PR #141 remains production-smoked PASS**; preserve the no-DOM-wide-observer regression rule.
-4. **No stabilization gate is active.** Deliberately select the next roadmap module before starting implementation. `SD.Live Patch` is documented and eligible, but not automatically active.
+4. **No stabilization gate is active.** Deliberately select the next roadmap module before starting implementation. `Availability-Aware Contact / AI` and `SD.Live Patch` are both documented and eligible; neither is automatically active.
 5. Generic Finance Phase 3 write-back remains blocked; Inbox unread count and Finance → AppSheet deep links still require verified integrations/targets.
