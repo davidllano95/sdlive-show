@@ -73,7 +73,7 @@ export function extractWhatsAppMessages(payload, expectedPhoneNumberId = "") {
       const value = change?.value;
       if (!value || typeof value !== "object") continue;
       const phoneNumberId = String(value?.metadata?.phone_number_id || "").trim();
-      if (expected && phoneNumberId && phoneNumberId !== expected) continue;
+      if (expected && phoneNumberId !== expected) continue;
 
       const messages = Array.isArray(value.messages) ? value.messages : [];
       for (const message of messages) {
@@ -256,12 +256,20 @@ async function processOwnerMessage(
   const claimed = await store.claim(message);
   const existing = claimed?.row || null;
 
-  if (!claimed?.isNew && existing?.command_status === "processed") {
-    if (existing.reply_status !== "sent" && existing.response_text) {
-      await sendText(env, message.from, existing.response_text);
-      await store.markReplied(message.id);
+  if (!claimed?.isNew) {
+    if (existing?.command_status === "processed") {
+      if (existing.reply_status !== "sent" && existing.response_text) {
+        await sendText(env, message.from, existing.response_text);
+        await store.markReplied(message.id);
+      }
+      return { duplicate: true, replied: existing.reply_status !== "sent" };
     }
-    return { duplicate: true, replied: existing.reply_status !== "sent" };
+
+    // A second delivery can arrive before the first request finishes. Never let
+    // that concurrent retry execute the same temporary Availability command.
+    // Returning a retryable failure keeps the operation fail-safe until the
+    // first request reaches the durable 'processed' state.
+    throw new Error("Duplicate WhatsApp owner message is still processing");
   }
 
   let responseText = nonTextReply(message);
@@ -284,7 +292,7 @@ async function processOwnerMessage(
  * Security order is intentional:
  * 1. validate Meta HMAC signature;
  * 2. parse only the signed body;
- * 3. require the configured owner sender number;
+ * 3. require the configured phone_number_id and owner sender number;
  * 4. only then invoke the Availability command executor.
  */
 export async function handleWhatsAppOwnerWebhook(
@@ -337,9 +345,10 @@ export async function handleWhatsAppOwnerWebhook(
   }
 
   const ownerNumber = normalizeWhatsAppNumber(env?.WHATSAPP_OWNER_NUMBER);
-  if (!ownerNumber) return text("Webhook unavailable", 503);
+  const phoneNumberId = String(env?.WHATSAPP_PHONE_NUMBER_ID || "").trim();
+  if (!ownerNumber || !/^\d+$/.test(phoneNumberId)) return text("Webhook unavailable", 503);
 
-  const messages = extractWhatsAppMessages(payload, env?.WHATSAPP_PHONE_NUMBER_ID);
+  const messages = extractWhatsAppMessages(payload, phoneNumberId);
   const ownerMessages = messages.filter((message) => message.from === ownerNumber);
   if (!ownerMessages.length) return text("EVENT_RECEIVED", 200);
 
