@@ -78,46 +78,71 @@ function applyCanonicalFields(body, lead) {
   return nextBody;
 }
 
-/**
- * Normalize valid Contact/Rental public payloads through the canonical Lead
- * Core contract before the existing form handlers run.
- *
- * This layer intentionally fails open to the existing handlers for malformed
- * payloads so their established validation/status/error contract remains the
- * public source of truth during the compatibility migration.
- */
-export async function canonicalizePublicLeadRequest(request) {
-  if (request.method !== "POST") return request;
+async function parsePublicLeadRequest(request) {
+  if (request.method !== "POST") return null;
 
   const source = publicLeadSource(normalizedPath(request));
-  if (!source) return request;
+  if (!source) return null;
 
   const contentType = String(
     request.headers.get("content-type") || ""
   ).toLowerCase();
 
   if (!contentType.includes("application/json")) {
-    return request;
+    return null;
   }
 
   const body = await request.clone().json().catch(() => null);
   if (!body || typeof body !== "object" || Array.isArray(body)) {
-    return request;
+    return null;
   }
-
-  let lead;
 
   try {
-    lead = normalizeLeadCoreInput(
-      buildLeadCoreInput(body, source)
-    );
+    return {
+      body,
+      lead: normalizeLeadCoreInput(
+        buildLeadCoreInput(body, source)
+      )
+    };
   } catch {
-    return request;
+    return null;
+  }
+}
+
+/**
+ * Prepare a valid public Contact/Rental request and retain its canonical Lead
+ * Core object for post-write storage enrichment.
+ *
+ * Invalid payloads deliberately fall through unchanged so the established
+ * public handlers remain authoritative for validation and error responses.
+ */
+export async function preparePublicLeadRequest(request) {
+  const parsed = await parsePublicLeadRequest(request);
+  if (!parsed) {
+    return {
+      request,
+      lead: null
+    };
   }
 
-  const canonicalBody = applyCanonicalFields(body, lead);
+  const canonicalBody = applyCanonicalFields(
+    parsed.body,
+    parsed.lead
+  );
 
-  return new Request(request, {
-    body: JSON.stringify(canonicalBody)
-  });
+  return {
+    request: new Request(request, {
+      body: JSON.stringify(canonicalBody)
+    }),
+    lead: parsed.lead
+  };
+}
+
+/**
+ * Backward-compatible request-only API used by the previous compatibility
+ * slice and its tests.
+ */
+export async function canonicalizePublicLeadRequest(request) {
+  const prepared = await preparePublicLeadRequest(request);
+  return prepared.request;
 }
