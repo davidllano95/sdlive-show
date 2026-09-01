@@ -22,6 +22,7 @@ The existing `availability-owner-command.js` parser remains transport-neutral. W
 Owner WhatsApp
   → Meta WhatsApp Cloud API
   → POST /api/webhooks/whatsapp
+  → stable admin-stabilization-worker.js entry
   → verify X-Hub-Signature-256 with Meta app secret
   → verify sender == configured owner number
   → idempotency record by WhatsApp message id
@@ -30,6 +31,8 @@ Owner WhatsApp
   → Availability Core D1
   → confirmation reply through Meta Cloud API
 ```
+
+`wrangler.jsonc` deliberately keeps `admin-stabilization-worker.js` as the deploy entry. The webhook is mounted narrowly inside that already-proven top-level Worker instead of introducing another deploy wrapper.
 
 No second Availability source of truth is introduced.
 
@@ -42,6 +45,7 @@ No second Availability source of truth is introduced.
 - Meta access token, app secret and webhook verification token are secrets and must not be committed to GitHub.
 - The WhatsApp message id is persisted for idempotency so a retry after an outbound reply failure does not apply the Availability command twice.
 - Public Contact, Rental and WhatsApp CTA behavior remain independent of this owner-control transport.
+- Existing Admin stabilization and Finance transport guardrails remain intact; the deploy entry is unchanged.
 
 ## Required Cloudflare configuration
 
