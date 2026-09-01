@@ -24,6 +24,7 @@ Owner WhatsApp
   → POST /api/webhooks/whatsapp
   → stable admin-stabilization-worker.js entry
   → verify X-Hub-Signature-256 with Meta app secret
+  → verify exact configured phone_number_id
   → verify sender == configured owner number
   → idempotency record by WhatsApp message id
   → existing Availability owner parser
@@ -40,12 +41,27 @@ No second Availability source of truth is introduced.
 
 - The webhook URL is internet-reachable because Meta must call it, but commands are not public.
 - POST bodies are rejected unless the Meta HMAC signature is valid.
+- Signed message events are accepted only for the exact configured `phone_number_id`.
 - Signed messages are ignored unless the sender exactly matches the configured owner number after digits-only normalization.
 - The owner number is server-side configuration only and must never be written into public HTML, JavaScript, schema or public Availability output.
 - Meta access token, app secret and webhook verification token are secrets and must not be committed to GitHub.
 - The WhatsApp message id is persisted for idempotency so a retry after an outbound reply failure does not apply the Availability command twice.
+- A duplicate delivery that arrives while the first request is still processing fails safely and asks Meta to retry rather than executing the same command concurrently.
 - Public Contact, Rental and WhatsApp CTA behavior remain independent of this owner-control transport.
 - Existing Admin stabilization and Finance transport guardrails remain intact; the deploy entry is unchanged.
+
+## Current Meta baseline — verified 2026-09-01
+
+- Current Graph API release: `v26.0` (released 2026-07-29).
+- Initial production value for `WHATSAPP_GRAPH_API_VERSION`: `v26.0`.
+- Keep the version configurable; do not hard-code it into request logic.
+- Core WhatsApp Cloud API permissions documented by Meta:
+  - `whatsapp_business_messaging`
+  - `whatsapp_business_management`
+- `business_management` is only needed for portfolio-level operations beyond the normal WhatsApp Cloud API flow.
+- If the selected number must continue being used in the WhatsApp Business App, use Meta's supported coexistence/onboarding path rather than treating the number as a normal dedicated Cloud API registration. Verify eligibility in Meta at onboarding time because coexistence requirements can change.
+
+Before future onboarding work, re-check Meta's current Graph API version and coexistence requirements rather than assuming this 2026-09-01 snapshot is still current.
 
 ## Required Cloudflare configuration
 
@@ -68,7 +84,13 @@ WHATSAPP_GRAPH_API_VERSION
 WHATSAPP_OWNER_ACTOR_EMAIL
 ```
 
-`WHATSAPP_GRAPH_API_VERSION` must be an explicitly selected currently-supported Meta Graph API version in `vN.N` form. Do not hard-code an assumed version in source.
+For the current 2026-09-01 baseline:
+
+```text
+WHATSAPP_GRAPH_API_VERSION=v26.0
+```
+
+`WHATSAPP_GRAPH_API_VERSION` must always be an explicitly selected currently-supported Meta Graph API version in `vN.N` form.
 
 `WHATSAPP_OWNER_NUMBER` should contain the full international number; runtime comparison normalizes it to digits only.
 
@@ -77,9 +99,11 @@ WHATSAPP_OWNER_ACTOR_EMAIL
 These steps require the owner in Meta Business / WhatsApp Manager and are intentionally not automated from GitHub:
 
 1. Confirm or create the Meta Business Portfolio and WhatsApp Business Account to be used by SD.Live.
-2. Connect the chosen WhatsApp number using the appropriate Meta onboarding/coexistence flow if the number must continue working in WhatsApp Business App.
-3. Obtain the WhatsApp `phone_number_id`.
-4. Create/configure a server-side access token with the minimum WhatsApp permissions needed to send replies.
+2. Decide whether the selected number is:
+   - a dedicated Cloud API number; or
+   - an existing WhatsApp Business App number that must stay usable in the app through coexistence.
+3. Complete the applicable Meta onboarding flow and obtain the WhatsApp `phone_number_id`.
+4. Create/configure a server-side access token with the minimum WhatsApp permissions needed to send replies (`whatsapp_business_messaging` and, where required by the setup flow, `whatsapp_business_management`).
 5. Set the Cloudflare secrets/vars listed above.
 6. Register webhook callback:
 
