@@ -2,6 +2,14 @@ import { ensureLeadCoreStorageSchema } from "./lead-core-storage.js";
 
 const MAX_LEADS = 200;
 const DEFAULT_LEADS = 100;
+const VALID_LEAD_STATUSES = Object.freeze([
+  "new",
+  "contacted",
+  "quoted",
+  "confirmed",
+  "lost"
+]);
+const VALID_LEAD_STATUS_SET = new Set(VALID_LEAD_STATUSES);
 
 function normalizedPath(request) {
   const url = new URL(request.url);
@@ -60,9 +68,14 @@ function parseDetails(value) {
   }
 }
 
+export function normalizeLeadStatus(value) {
+  const status = String(value || "").trim().toLowerCase();
+  return VALID_LEAD_STATUS_SET.has(status) ? status : null;
+}
+
 export function normalizeLeadAdminRow(row) {
   const source = String(row?.source || row?.type || "other").trim() || "other";
-  const status = String(row?.status || "new").trim() || "new";
+  const status = normalizeLeadStatus(row?.status) || "new";
 
   return {
     id: Number(row?.id) || 0,
@@ -148,17 +161,133 @@ export async function listLeadAdminRows(env, { limit = DEFAULT_LEADS } = {}) {
     .map(normalizeLeadAdminRow);
 }
 
+async function ensureLeadStatusHistorySchema(env) {
+  const db = databaseFromEnv(env);
+
+  await db.prepare(`
+    CREATE TABLE IF NOT EXISTS lead_status_events (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      lead_id INTEGER NOT NULL,
+      from_status TEXT,
+      to_status TEXT NOT NULL,
+      actor_email TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+  `).run();
+
+  await db.prepare(`
+    CREATE INDEX IF NOT EXISTS idx_lead_status_events_lead_id
+    ON lead_status_events (lead_id, created_at DESC)
+  `).run();
+}
+
+export async function updateLeadAdminStatus(
+  env,
+  {
+    leadId,
+    status,
+    actorEmail
+  } = {}
+) {
+  const id = Number(leadId);
+  const nextStatus = normalizeLeadStatus(status);
+  const actor = String(actorEmail || "").trim();
+
+  if (!Number.isInteger(id) || id < 1) {
+    throw new Error("leadId must be a positive integer");
+  }
+  if (!nextStatus) {
+    throw new Error("Invalid lead status");
+  }
+  if (!actor) {
+    throw new Error("actorEmail is required");
+  }
+
+  await ensureLeadCoreStorageSchema(env);
+  await ensureLeadStatusHistorySchema(env);
+
+  const db = databaseFromEnv(env);
+  const currentResult = await db
+    .prepare("SELECT id, status FROM leads WHERE id = ? LIMIT 1")
+    .bind(id)
+    .all();
+  const currentRow = Array.isArray(currentResult?.results)
+    ? currentResult.results[0]
+    : null;
+
+  if (!currentRow) {
+    return { found: false, changed: false, leadId: id };
+  }
+
+  const previousStatus = normalizeLeadStatus(currentRow.status) || "new";
+  if (previousStatus === nextStatus) {
+    return {
+      found: true,
+      changed: false,
+      leadId: id,
+      previousStatus,
+      status: nextStatus
+    };
+  }
+
+  const updateStatement = db
+    .prepare(`
+      UPDATE leads
+      SET status = ?, updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `)
+    .bind(nextStatus, id);
+
+  const eventStatement = db
+    .prepare(`
+      INSERT INTO lead_status_events (
+        lead_id,
+        from_status,
+        to_status,
+        actor_email
+      ) VALUES (?, ?, ?, ?)
+    `)
+    .bind(id, previousStatus, nextStatus, actor);
+
+  if (typeof db.batch === "function") {
+    await db.batch([updateStatement, eventStatement]);
+  } else {
+    await updateStatement.run();
+    await eventStatement.run();
+  }
+
+  return {
+    found: true,
+    changed: true,
+    leadId: id,
+    previousStatus,
+    status: nextStatus
+  };
+}
+
+async function readJsonBody(request) {
+  try {
+    const body = await request.json();
+    return body && typeof body === "object" && !Array.isArray(body)
+      ? body
+      : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function handleLeadAdminApi(
   request,
   env,
   {
     verifyAdmin,
-    listLeads = listLeadAdminRows
+    listLeads = listLeadAdminRows,
+    updateStatus = updateLeadAdminStatus
   } = {}
 ) {
   if (normalizedPath(request) !== "/api/admin/leads") return null;
 
-  if (request.method !== "GET") {
+  if (request.method !== "GET" && request.method !== "PATCH") {
     return json({ ok: false, error: "Method not allowed" }, 405);
   }
 
@@ -170,6 +299,46 @@ export async function handleLeadAdminApi(
     return json({ ok: false, error: "Unauthorized" }, 401);
   }
 
+  if (request.method === "PATCH") {
+    const body = await readJsonBody(request);
+    const leadId = Number(body?.leadId);
+    const status = normalizeLeadStatus(body?.status);
+
+    if (!Number.isInteger(leadId) || leadId < 1 || !status) {
+      return json({
+        ok: false,
+        error: "A valid leadId and status are required"
+      }, 400);
+    }
+
+    try {
+      const result = await updateStatus(env, {
+        leadId,
+        status,
+        actorEmail: admin.email
+      });
+
+      if (!result?.found) {
+        return json({ ok: false, error: "Lead not found" }, 404);
+      }
+
+      return json({
+        ok: true,
+        actor: admin.email,
+        leadId,
+        status: result.status,
+        previousStatus: result.previousStatus,
+        changed: Boolean(result.changed)
+      });
+    } catch (error) {
+      console.error("[SD.Live] Lead Admin status update failed", error);
+      return json({
+        ok: false,
+        error: "Could not update lead status"
+      }, 500);
+    }
+  }
+
   try {
     const url = new URL(request.url);
     const leads = await listLeads(env, {
@@ -178,7 +347,10 @@ export async function handleLeadAdminApi(
 
     return json({
       ok: true,
-      readOnly: true,
+      readOnly: false,
+      capabilities: {
+        updateStatus: true
+      },
       actor: admin.email,
       count: leads.length,
       leads
