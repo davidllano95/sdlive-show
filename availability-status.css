@@ -1,0 +1,118 @@
+/* SD.Live Availability — public floating WhatsApp status */
+
+.whatsapp-float[data-availability-state] {
+  --availability-glow-rgb: var(--color-accent-rgb, 160, 137, 229);
+  isolation: isolate;
+}
+
+.whatsapp-float[data-availability-state="available"] {
+  box-shadow:
+    var(--shadow-medium, 0 12px 40px rgba(0, 0, 0, 0.45)),
+    0 0 0 5px rgba(var(--availability-glow-rgb), 0.10),
+    0 0 28px rgba(var(--availability-glow-rgb), 0.42);
+  animation: availability-breathe 3.6s ease-in-out infinite;
+}
+
+.whatsapp-float[data-availability-state="limited"] {
+  box-shadow:
+    var(--shadow-medium, 0 12px 40px rgba(0, 0, 0, 0.45)),
+    0 0 0 4px rgba(var(--availability-glow-rgb), 0.06),
+    0 0 18px rgba(var(--availability-glow-rgb), 0.22);
+}
+
+.whatsapp-float[data-availability-state="away"] {
+  box-shadow: var(--shadow-medium, 0 12px 40px rgba(0, 0, 0, 0.45));
+}
+
+@keyframes availability-breathe {
+  0%, 100% {
+    box-shadow:
+      var(--shadow-medium, 0 12px 40px rgba(0, 0, 0, 0.45)),
+      0 0 0 4px rgba(var(--availability-glow-rgb), 0.08),
+      0 0 22px rgba(var(--availability-glow-rgb), 0.30);
+  }
+  50% {
+    box-shadow:
+      var(--shadow-medium, 0 12px 40px rgba(0, 0, 0, 0.45)),
+      0 0 0 7px rgba(var(--availability-glow-rgb), 0.12),
+      0 0 34px rgba(var(--availability-glow-rgb), 0.48);
+  }
+}
+
+.availability-popover {
+  position: fixed;
+  z-index: 399;
+  width: min(290px, calc(100vw - 104px));
+  padding: 13px 15px 14px;
+  border: 1px solid rgba(244, 245, 247, 0.14);
+  border-radius: 14px;
+  background: rgba(11, 13, 20, 0.90);
+  color: #f4f5f7;
+  box-shadow: 0 16px 50px rgba(0, 0, 0, 0.42);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  opacity: 0;
+  transform: translateX(8px) scale(0.985);
+  transform-origin: right center;
+  pointer-events: none;
+  transition: opacity 220ms ease, transform 280ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.availability-popover::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: -6px;
+  width: 11px;
+  height: 11px;
+  border-top: 1px solid rgba(244, 245, 247, 0.14);
+  border-right: 1px solid rgba(244, 245, 247, 0.14);
+  background: rgba(11, 13, 20, 0.90);
+  transform: translateY(-50%) rotate(45deg);
+}
+
+.availability-popover.is-visible {
+  opacity: 1;
+  transform: translateX(0) scale(1);
+  pointer-events: auto;
+}
+
+.availability-popover__status {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--color-accent, #a089e5);
+  font-family: var(--font-mono, "Sora", system-ui, sans-serif);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  line-height: 1.35;
+  text-transform: uppercase;
+}
+
+.availability-popover__message {
+  display: block;
+  color: rgba(244, 245, 247, 0.72);
+  font-family: var(--font-body, "Manrope", system-ui, sans-serif);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+@media (max-width: 620px) {
+  .availability-popover {
+    width: min(265px, calc(100vw - 96px));
+    padding: 12px 14px 13px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .whatsapp-float[data-availability-state="available"] {
+    animation: none;
+  }
+  .availability-popover {
+    transition: opacity 120ms linear;
+    transform: none;
+  }
+  .availability-popover.is-visible {
+    transform: none;
+  }
+}
