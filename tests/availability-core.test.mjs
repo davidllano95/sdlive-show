@@ -114,26 +114,46 @@ test('Availability uses semantic green, amber and muted status colors', () => {
   assert.match(css, /--availability-available-rgb:\s*91, 214, 142/);
   assert.match(css, /--availability-limited-rgb:\s*245, 183, 72/);
   assert.match(css, /--availability-away-rgb:\s*142, 149, 166/);
-  assert.match(css, /data-availability-state="available"[\s\S]*--availability-glow-rgb:\s*var\(--availability-available-rgb\)/);
-  assert.match(css, /data-availability-state="limited"[\s\S]*--availability-glow-rgb:\s*var\(--availability-limited-rgb\)/);
+  assert.match(css, /data-availability-state="available"[\s\S]*--availability-state-rgb:\s*var\(--availability-available-rgb\)/);
+  assert.match(css, /data-availability-state="limited"[\s\S]*--availability-state-rgb:\s*var\(--availability-limited-rgb\)/);
   assert.match(runtime, /ensurePopover\(\)\.dataset\.availabilityState = state/);
 });
 
-test('touch Availability keeps a restrained visible halo while preserving reduced-motion support', () => {
+test('Availability status is an integrated bilingual tab attached to the WhatsApp control', () => {
   const css = fs.readFileSync('availability-status.css', 'utf8');
-  assert.match(css, /@media \(hover: none\), \(pointer: coarse\)/);
-  assert.match(
-    css,
-    /data-availability-state="available"[\s\S]*0 0 28px rgba\(var\(--availability-glow-rgb\), 0\.36\)[\s\S]*availability-breathe-touch/
-  );
-  assert.doesNotMatch(css, /0 0 42px rgba\(var\(--availability-glow-rgb\), 0\.80\)/);
-  assert.match(css, /@keyframes availability-breathe-touch/);
-  assert.match(css, /@media \(prefers-reduced-motion: reduce\)[\s\S]*animation:\s*none/);
+  const runtime = fs.readFileSync('availability-status.js', 'utf8');
+  assert.match(runtime, /tab:\s*"AVAILABLE"/);
+  assert.match(runtime, /tab:\s*"DISPONIBLE"/);
+  assert.match(runtime, /tab:\s*"LIMITED"/);
+  assert.match(runtime, /tab:\s*"LIMITADO"/);
+  assert.match(runtime, /tab = document\.createElement\("span"\)/);
+  assert.match(runtime, /tab\.className = "availability-tab"/);
+  assert.match(runtime, /button\.append\(tab\)/);
+  assert.match(css, /\.availability-tab\s*\{[\s\S]*right:\s*calc\(100% - 11px\)/);
+  assert.match(css, /data-availability-ready="true"[\s\S]*\.availability-tab/);
+  assert.doesNotMatch(css, /availability-status-dot/);
 });
 
-test('Availability public assets are cache-busted after the semantic glow change', () => {
+test('popover hands off to the persistent tab instead of competing for the same space', () => {
+  const runtime = fs.readFileSync('availability-status.js', 'utf8');
+  assert.match(runtime, /function showPopover\(\{ autoHide = true, keepTab = false \} = \{\}\)/);
+  assert.match(runtime, /if \(!keepTab\) hideTab\(\)/);
+  assert.match(runtime, /function hidePopover\(\)[\s\S]*showTab\(120\)/);
+  assert.match(runtime, /button\.dataset\.availabilityReady = "true"/);
+  assert.match(runtime, /button\.dataset\.availabilityReady = "false"/);
+});
+
+test('button glow remains only a restrained depth cue once the tab is present', () => {
+  const css = fs.readFileSync('availability-status.css', 'utf8');
+  assert.match(css, /data-availability-state="available"[\s\S]*0 0 18px rgba\(var\(--availability-state-rgb\), 0\.14\)/);
+  assert.match(css, /data-availability-state="limited"[\s\S]*0 0 14px rgba\(var\(--availability-state-rgb\), 0\.10\)/);
+  assert.doesNotMatch(css, /availability-breathe-touch/);
+  assert.doesNotMatch(css, /@keyframes availability-breathe/);
+});
+
+test('Availability public assets are cache-busted after the integrated tab change', () => {
   const edge = fs.readFileSync('showday-edge.js', 'utf8');
-  assert.match(edge, /AVAILABILITY_RUNTIME_VERSION = "20260901-3"/);
+  assert.match(edge, /AVAILABILITY_RUNTIME_VERSION = "20260901-4"/);
   assert.match(edge, /availability-status\.css\?v=\$\{AVAILABILITY_RUNTIME_VERSION\}/);
   assert.match(edge, /availability-status\.js\?v=\$\{AVAILABILITY_RUNTIME_VERSION\}/);
 });
