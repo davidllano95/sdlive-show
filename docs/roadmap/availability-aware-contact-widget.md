@@ -147,10 +147,10 @@ Until AI exists, Away does **not** claim that an AI agent is available. WhatsApp
 
 This is a hard invariant:
 
-- public pages use the WhatsApp username as the direct-link identity;
-- owner phone number must not appear in public HTML, JavaScript, structured data, visible copy or Availability output;
-- if username linking is unavailable, fall back to Contact/Rental rather than exposing a phone number;
-- phone number may exist only server-side if later required for authenticated provider/webhook operations.
+- Public pages use the WhatsApp username as the direct-link identity and must not embed the owner phone number in HTML, JavaScript, structured data or visible copy.
+- Availability output must not expose the owner phone number either.
+- If username linking is unavailable, fall back to Contact/Rental rather than exposing a phone number.
+- Phone number may exist only server-side if later required for authenticated provider/webhook operations.
 
 The earlier SEO-edge regression that could reintroduce a numeric `wa.me` link was fixed and regression-tested.
 
