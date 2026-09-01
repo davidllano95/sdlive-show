@@ -16,6 +16,8 @@
     rental: document.getElementById("metricRental")
   };
 
+  const LEAD_STATUSES = ["new", "contacted", "quoted", "confirmed", "lost"];
+
   const state = {
     leads: [],
     selectedId: null
@@ -40,14 +42,21 @@
     collapse.textContent = next ? "Expand" : "Collapse";
   });
 
-  async function api(url) {
+  async function api(url, options = {}) {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 10000);
+    const headers = {
+      Accept: "application/json",
+      ...(options.body ? { "Content-Type": "application/json" } : {}),
+      ...(options.headers || {})
+    };
+
     try {
       const response = await fetch(url, {
         credentials: "same-origin",
         cache: "no-store",
-        headers: { Accept: "application/json" },
+        ...options,
+        headers,
         signal: controller.signal
       });
       const type = response.headers.get("content-type") || "";
@@ -232,6 +241,79 @@
     sectionNode.appendChild(grid);
   }
 
+  async function saveLeadStatus(lead, nextStatus, button, feedback) {
+    if (!LEAD_STATUSES.includes(nextStatus) || nextStatus === lead.status) return;
+
+    const originalLabel = button.textContent;
+    button.disabled = true;
+    button.textContent = "Saving…";
+    feedback.textContent = "Applying status…";
+
+    try {
+      const payload = await api("/api/admin/leads", {
+        method: "PATCH",
+        body: JSON.stringify({
+          leadId: lead.id,
+          status: nextStatus
+        })
+      });
+
+      lead.status = payload.status;
+      lead.updatedAt = new Date().toISOString();
+      renderMetrics();
+      applyFilters();
+      if (state.selectedId === lead.id) renderDetail(lead);
+      setStatus(`Lead Core online · ${state.leads.length} loaded`);
+    } catch (error) {
+      console.error("Lead status update failed", error);
+      feedback.textContent = error.message || "Could not update status.";
+      feedback.classList.add("is-error");
+      button.disabled = false;
+      button.textContent = originalLabel;
+      setStatus("Lead Core write failed", "error");
+    }
+  }
+
+  function statusSection(lead) {
+    const status = section("Pipeline status");
+    const controls = element("div", "lead-status-control");
+    const select = element("select", "lead-status-control__select");
+
+    LEAD_STATUSES.forEach((value) => {
+      const option = element("option", "", humanize(value));
+      option.value = value;
+      option.selected = value === lead.status;
+      select.appendChild(option);
+    });
+
+    const button = element("button", "button lead-status-control__apply", "Apply status");
+    button.type = "button";
+    button.disabled = true;
+
+    const feedback = element(
+      "span",
+      "lead-status-control__feedback",
+      `Current: ${humanize(lead.status)}`
+    );
+
+    select.addEventListener("change", () => {
+      const dirty = select.value !== lead.status;
+      button.disabled = !dirty;
+      feedback.classList.remove("is-error");
+      feedback.textContent = dirty
+        ? "Not applied yet."
+        : `Current: ${humanize(lead.status)}`;
+    });
+
+    button.addEventListener("click", () => {
+      saveLeadStatus(lead, select.value, button, feedback);
+    });
+
+    controls.append(select, button, feedback);
+    status.appendChild(controls);
+    return status;
+  }
+
   function renderDetail(lead) {
     if (!detail) return;
     detail.innerHTML = "";
@@ -245,6 +327,8 @@
     headerTop.append(heading, makeStatus(lead.status));
     header.appendChild(headerTop);
     detail.appendChild(header);
+
+    detail.appendChild(statusSection(lead));
 
     const contact = section("Contact");
     const contactGrid = element("div", "lead-detail__grid");

@@ -6,7 +6,7 @@ async function source(path) {
   return readFile(new URL(`../${path}`, import.meta.url), "utf8");
 }
 
-test("Lead Admin workspace is explicitly read-only and points at the protected Admin API", async () => {
+test("Lead Admin workspace exposes the protected operational status workflow", async () => {
   const [html, js, api] = await Promise.all([
     source("admin/leads/index.html"),
     source("admin/leads/leads.js"),
@@ -14,15 +14,17 @@ test("Lead Admin workspace is explicitly read-only and points at the protected A
   ]);
 
   assert.match(html, /Lead Core · D1/);
-  assert.match(html, /Read-only/);
+  assert.match(html, /Operational/);
   assert.match(js, /\/api\/admin\/leads\?limit=100/);
   assert.match(js, /\/api\/admin\/whoami/);
-  assert.doesNotMatch(api, /INSERT\s+INTO\s+leads/i);
-  assert.doesNotMatch(api, /UPDATE\s+leads/i);
+  assert.match(js, /method: "PATCH"/);
+  assert.match(js, /Apply status/);
+  assert.match(api, /UPDATE leads/);
+  assert.match(api, /lead_status_events/);
   assert.doesNotMatch(api, /DELETE\s+FROM\s+leads/i);
 });
 
-test("Admin navigation promotes Leads from Soon to the live Lead Core workspace", async () => {
+test("Admin navigation promotes Leads to the live operations workspace", async () => {
   const [entry, edge] = await Promise.all([
     source("admin/leads-dashboard-entry.js"),
     source("lead-admin-dashboard-edge.js")
@@ -30,7 +32,7 @@ test("Admin navigation promotes Leads from Soon to the live Lead Core workspace"
 
   assert.match(entry, /\/admin\/leads\//);
   assert.match(entry, /Lead Core/);
-  assert.match(entry, /Live · Read-only/);
+  assert.match(entry, /Live · Operations/);
   assert.match(edge, /leads-dashboard-entry\.js/);
 });
 
@@ -40,7 +42,7 @@ test("Leads workspace loads the shared mobile Admin navigation runtime directly"
   assert.match(html, /\.\/admin-stabilization\.js\?v=20260901-1/);
   assert.ok(
     html.indexOf("./admin-stabilization.js?v=20260901-1") <
-      html.indexOf("./leads/leads.js?v=20260901-1"),
+      html.indexOf("./leads/leads.js?v=20260901-2"),
     "shared Admin runtime should load before the Leads workspace runtime"
   );
 });

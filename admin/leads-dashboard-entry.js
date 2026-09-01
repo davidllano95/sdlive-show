@@ -56,13 +56,13 @@
 
     const status = link.querySelector(".module-status");
     if (status) {
-      status.textContent = "Live · Read-only";
+      status.textContent = "Live · Operations";
       status.classList.add("is-live");
     }
 
     const description = link.querySelector("p");
     if (description) {
-      description.textContent = "Review Contact and Rental enquiries captured by Lead Core in D1 before human follow-up.";
+      description.textContent = "Review enquiries and move leads through New, Contacted, Quoted, Confirmed or Lost in Lead Core.";
     }
 
     const arrow = document.createElement("span");

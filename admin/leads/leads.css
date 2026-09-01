@@ -191,6 +191,16 @@
   color: rgba(216, 207, 255, 0.94);
 }
 
+.lead-status[data-status="contacted"] {
+  border-color: rgba(115, 165, 235, 0.28);
+  color: rgba(174, 205, 246, 0.92);
+}
+
+.lead-status[data-status="quoted"] {
+  border-color: rgba(225, 182, 91, 0.3);
+  color: rgba(239, 203, 126, 0.94);
+}
+
 .lead-status[data-status="confirmed"] {
   border-color: rgba(114, 211, 149, 0.25);
   color: rgba(153, 230, 180, 0.92);
@@ -259,6 +269,50 @@
   font-size: 0.78rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+.lead-status-control {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.lead-status-control__select {
+  min-height: 42px;
+  width: 100%;
+  border: 1px solid rgba(159, 139, 255, 0.2);
+  border-radius: 11px;
+  background: rgba(8, 8, 14, 0.72);
+  color: rgba(246, 246, 250, 0.94);
+  padding: 0 12px;
+  font: inherit;
+  outline: none;
+}
+
+.lead-status-control__select:focus {
+  border-color: rgba(159, 139, 255, 0.55);
+  box-shadow: 0 0 0 3px rgba(121, 95, 255, 0.1);
+}
+
+.lead-status-control__apply {
+  min-height: 42px;
+  white-space: nowrap;
+}
+
+.lead-status-control__apply:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.lead-status-control__feedback {
+  grid-column: 1 / -1;
+  color: rgba(219, 216, 235, 0.5);
+  font-size: 0.76rem;
+}
+
+.lead-status-control__feedback.is-error {
+  color: rgba(231, 171, 171, 0.86);
 }
 
 .lead-detail__grid {
@@ -413,5 +467,17 @@
 
   .lead-row__status {
     justify-self: start;
+  }
+
+  .lead-status-control {
+    grid-template-columns: 1fr;
+  }
+
+  .lead-status-control__feedback {
+    grid-column: auto;
+  }
+
+  .lead-status-control__apply {
+    width: 100%;
   }
 }
