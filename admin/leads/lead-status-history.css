@@ -1,0 +1,58 @@
+.lead-status-history {
+  display: grid;
+  gap: 10px;
+}
+
+.lead-status-history__item {
+  display: grid;
+  gap: 8px;
+  padding: 11px 12px;
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 12px;
+  background: rgba(8, 8, 14, 0.38);
+}
+
+.lead-status-history__transition {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.lead-status-history__transition .lead-status {
+  min-height: 24px;
+  padding: 0 8px;
+  font-size: 0.64rem;
+}
+
+.lead-status-history__arrow {
+  color: rgba(219, 216, 235, 0.42);
+  font-size: 0.82rem;
+}
+
+.lead-status-history__meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  color: rgba(219, 216, 235, 0.48);
+  font-size: 0.72rem;
+}
+
+.lead-status-history__meta span,
+.lead-status-history__meta time {
+  overflow-wrap: anywhere;
+}
+
+.lead-status-history__empty {
+  margin: 0;
+  color: rgba(219, 216, 235, 0.48);
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+@media (max-width: 520px) {
+  .lead-status-history__meta {
+    display: grid;
+    gap: 3px;
+  }
+}
