@@ -12,6 +12,7 @@ import { applyRentalPresentationRuntime } from "./rental-presentation-edge.js";
 import { validateRentalPresentationExtras } from "./rental-presentation-contract.js";
 import { handleAvailabilityTravelPut } from "./availability-travel-api.js";
 import { decorateAvailabilityNextWindowResponse } from "./availability-next-window.js";
+import { handleWhatsAppOwnerWebhook } from "./whatsapp-owner-webhook.js";
 import {
   googleCalendarDiagnostic,
   mergeGoogleCalendarOverlayResponse,
@@ -26,6 +27,7 @@ const PUBLIC_HOME_PATHS = new Set(["/", "/en", "/es-co"]);
 const ADMIN_CALENDAR_PATH = "/api/admin/calendar/events";
 const ADMIN_CALENDAR_SYNC_PATH = "/api/admin/calendar/google-sync";
 const ADMIN_SITE_SCHEDULE_EVENT_PREFIX = "/api/admin/site-schedule/events/";
+const WHATSAPP_OWNER_WEBHOOK_PATH = "/api/webhooks/whatsapp";
 
 function normalizedPath(request) {
   const url = new URL(request.url);
@@ -209,6 +211,11 @@ export default {
   async fetch(request, env, ctx) {
     const path = normalizedPath(request);
     const url = new URL(request.url);
+
+    if (path === WHATSAPP_OWNER_WEBHOOK_PATH) {
+      const webhookResponse = await handleWhatsAppOwnerWebhook(request, env);
+      if (webhookResponse) return webhookResponse;
+    }
 
     if (path === "/api/admin/availability") {
       const travelResponse = await handleAvailabilityTravelIfRequested(request, env);
