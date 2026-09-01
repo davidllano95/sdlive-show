@@ -104,6 +104,44 @@
   }
 }
 
+/* Touch screens need a more legible halo than desktop hover-capable screens.
+   Keep the same status language, but increase separation from the dark page so
+   Available is visible at a glance on iPhone-sized displays. */
+@media (hover: none), (pointer: coarse) {
+  .whatsapp-float[data-availability-state="available"] {
+    box-shadow:
+      var(--shadow-medium, 0 12px 40px rgba(0, 0, 0, 0.45)),
+      0 0 0 7px rgba(var(--availability-glow-rgb), 0.18),
+      0 0 34px rgba(var(--availability-glow-rgb), 0.72),
+      0 0 58px rgba(var(--availability-glow-rgb), 0.30);
+    animation: availability-breathe-touch 3.4s ease-in-out infinite;
+  }
+
+  .whatsapp-float[data-availability-state="limited"] {
+    box-shadow:
+      var(--shadow-medium, 0 12px 40px rgba(0, 0, 0, 0.45)),
+      0 0 0 6px rgba(var(--availability-glow-rgb), 0.11),
+      0 0 28px rgba(var(--availability-glow-rgb), 0.38);
+  }
+}
+
+@keyframes availability-breathe-touch {
+  0%, 100% {
+    box-shadow:
+      var(--shadow-medium, 0 12px 40px rgba(0, 0, 0, 0.45)),
+      0 0 0 6px rgba(var(--availability-glow-rgb), 0.15),
+      0 0 30px rgba(var(--availability-glow-rgb), 0.58),
+      0 0 50px rgba(var(--availability-glow-rgb), 0.24);
+  }
+  50% {
+    box-shadow:
+      var(--shadow-medium, 0 12px 40px rgba(0, 0, 0, 0.45)),
+      0 0 0 9px rgba(var(--availability-glow-rgb), 0.22),
+      0 0 42px rgba(var(--availability-glow-rgb), 0.80),
+      0 0 68px rgba(var(--availability-glow-rgb), 0.34);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .whatsapp-float[data-availability-state="available"] {
     animation: none;

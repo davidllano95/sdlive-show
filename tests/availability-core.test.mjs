@@ -107,3 +107,14 @@ test('public runtime decorates the existing WhatsApp button instead of creating 
   assert.match(runtime, /getElementById\("whatsappFloat"\)/);
   assert.doesNotMatch(runtime, /createElement\("a"\)/);
 });
+
+test('touch Availability keeps a stronger visible halo while preserving reduced-motion support', () => {
+  const css = fs.readFileSync('availability-status.css', 'utf8');
+  assert.match(css, /@media \(hover: none\), \(pointer: coarse\)/);
+  assert.match(
+    css,
+    /data-availability-state="available"[\s\S]*0 0 34px rgba\(var\(--availability-glow-rgb\), 0\.72\)[\s\S]*availability-breathe-touch/
+  );
+  assert.match(css, /@keyframes availability-breathe-touch/);
+  assert.match(css, /@media \(prefers-reduced-motion: reduce\)[\s\S]*animation:\s*none/);
+});
