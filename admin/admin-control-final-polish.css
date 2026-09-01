@@ -1,0 +1,82 @@
+/* Final visual parity pass for the compact Availability + Show Day control cluster.
+   Presentation only: no Availability or Show Day state semantics. */
+
+/* Remove the remaining bold hierarchy inside both operational cards. */
+#adminControlCluster .availability-admin-card__head > div > span,
+#adminControlCluster .availability-admin-manage__label strong,
+#adminControlCluster .availability-admin-section__head strong,
+#adminControlCluster .availability-travel__head strong,
+#adminControlCluster .availability-schedule > summary > span,
+#adminControlCluster .availability-schedule__day-head strong,
+#adminControlCluster .showday-control__head h3,
+#adminControlCluster .showday-admin-manage__label strong,
+#adminControlCluster button {
+  font-weight: 500 !important;
+}
+
+#adminControlCluster .availability-admin-manage__label small,
+#adminControlCluster .availability-admin-section__head small,
+#adminControlCluster .availability-travel__field > span,
+#adminControlCluster .showday-admin-manage__label small {
+  font-weight: 400 !important;
+}
+
+/* Status pills share one box model so text sits optically centered. */
+#adminControlCluster .availability-admin-card__status,
+#adminControlCluster .showday-control__status,
+#adminControlCluster .availability-travel__status {
+  box-sizing: border-box !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  height: 25px !important;
+  min-height: 25px !important;
+  margin: 0 !important;
+  padding: 0 8px !important;
+  line-height: 1 !important;
+  font-size: 8px !important;
+  font-weight: 500 !important;
+  letter-spacing: .05em !important;
+  text-align: center !important;
+  vertical-align: middle;
+}
+
+#adminControlCluster .availability-travel__status {
+  min-width: 44px;
+}
+
+/* Do not render a font glyph at all. The chevron is drawn from two borders and
+   positioned from the center of its fixed box, which stays stable in Safari/Chrome. */
+#adminControlCluster .availability-admin-manage__chevron {
+  position: relative !important;
+  width: 24px !important;
+  height: 24px !important;
+  display: block !important;
+  flex: 0 0 24px;
+  font-size: 0 !important;
+  line-height: 0 !important;
+  transform: none !important;
+}
+
+#adminControlCluster .availability-admin-manage__chevron::before {
+  content: "" !important;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  border: 0;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: translate(-50%, -64%) rotate(45deg) !important;
+  transform-origin: 50% 50%;
+  transition: transform .16s ease;
+}
+
+#adminControlCluster .availability-admin-manage[open] > summary .availability-admin-manage__chevron {
+  transform: none !important;
+}
+
+#adminControlCluster .availability-admin-manage[open] > summary .availability-admin-manage__chevron::before {
+  transform: translate(-50%, -36%) rotate(225deg) !important;
+}
