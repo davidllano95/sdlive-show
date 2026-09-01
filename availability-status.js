@@ -142,6 +142,7 @@
     const changed = Boolean(currentState && currentState !== state);
     currentState = state;
     button.dataset.availabilityState = state;
+    ensurePopover().dataset.availabilityState = state;
     renderCopy();
 
     if (shouldAutoShow(state, changed)) {
