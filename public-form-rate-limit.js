@@ -12,6 +12,7 @@ import { decorateAvailabilityNextWindowResponse } from "./availability-next-wind
 import { applyAvailabilityAdminRuntime } from "./availability-admin-edge.js";
 import { rentalRequestHasSelection } from "./rental-request-validation.js";
 import { financeUpstreamFetch } from "./finance-upstream.js";
+import { canonicalizePublicLeadRequest } from "./lead-core-public-request.js";
 
 const PUBLIC_FORM_LIMITS = {
   "/api/contact": {
@@ -234,7 +235,8 @@ export default {
     const emptyRental = await rejectEmptyRentalRequest(request, path);
     if (emptyRental) return emptyRental;
 
-    const response = await appWorker.fetch(request, env);
+    const leadCoreRequest = await canonicalizePublicLeadRequest(request);
+    const response = await appWorker.fetch(leadCoreRequest, env);
     if (request.method === "GET" && path === FINANCE_PAGE_PATH) {
       return decorateFinanceAdminPage(response);
     }
