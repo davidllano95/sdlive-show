@@ -4,7 +4,8 @@ import assert from "node:assert/strict";
 import {
   handleLeadAdminApi,
   normalizeLeadAdminRow,
-  normalizeLeadStatus
+  normalizeLeadStatus,
+  normalizeLeadStatusEvent
 } from "../lead-admin-api.js";
 
 function request(path = "/api/admin/leads", method = "GET", body = null) {
@@ -41,6 +42,7 @@ test("normalizes Lead Core rows for the Admin workspace", () => {
   assert.equal(lead.serviceCategory, "rental");
   assert.equal(lead.project.city, "Bogotá");
   assert.deepEqual(lead.details, { items: { wing: 1 } });
+  assert.deepEqual(lead.statusHistory, []);
   assert.equal(lead.attribution.sourceUrl, "https://sdlive.show/es-co/");
 });
 
@@ -61,6 +63,26 @@ test("lead status normalizer only accepts the pipeline status set", () => {
   assert.equal(normalizeLeadStatus("quoted"), "quoted");
   assert.equal(normalizeLeadStatus("archived"), null);
   assert.equal(normalizeLeadStatus(""), null);
+});
+
+test("normalizes auditable lead status events", () => {
+  const event = normalizeLeadStatusEvent({
+    id: 9,
+    lead_id: 25,
+    from_status: "new",
+    to_status: "contacted",
+    actor_email: "sam@sdlive.show",
+    created_at: "2026-09-01 21:00:00"
+  });
+
+  assert.deepEqual(event, {
+    id: 9,
+    leadId: 25,
+    fromStatus: "new",
+    toStatus: "contacted",
+    actorEmail: "sam@sdlive.show",
+    createdAt: "2026-09-01 21:00:00"
+  });
 });
 
 test("Lead Admin API ignores unrelated routes", async () => {
@@ -107,7 +129,17 @@ test("Lead Admin API returns operational capabilities and clamps the requested l
       verifyAdmin: async () => ({ email: "sam@sdlive.show" }),
       listLeads: async (_env, options) => {
         receivedLimit = options.limit;
-        return [{ id: 7, source: "contact", status: "new" }];
+        return [{
+          id: 7,
+          source: "contact",
+          status: "new",
+          statusHistory: [{
+            id: 1,
+            leadId: 7,
+            fromStatus: "contacted",
+            toStatus: "new"
+          }]
+        }];
       }
     }
   );
@@ -118,9 +150,11 @@ test("Lead Admin API returns operational capabilities and clamps the requested l
   assert.equal(payload.ok, true);
   assert.equal(payload.readOnly, false);
   assert.equal(payload.capabilities.updateStatus, true);
+  assert.equal(payload.capabilities.statusHistory, true);
   assert.equal(payload.actor, "sam@sdlive.show");
   assert.equal(payload.count, 1);
   assert.equal(payload.leads[0].id, 7);
+  assert.equal(payload.leads[0].statusHistory.length, 1);
 });
 
 test("Lead Admin API applies authenticated status updates", async () => {
