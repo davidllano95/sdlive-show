@@ -1,7 +1,9 @@
 const PROFILE_ROW_ID = 1;
 const OVERRIDE_ROW_ID = 1;
 const TRAVEL_ROW_ID = 1;
+const FORCE_ROW_ID = 1;
 const AVAILABILITY_MODES = new Set(["auto", "available", "limited", "away"]);
+const FORCE_MODES = new Set(["auto", "force_on", "force_off"]);
 const WEEKDAY_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
 let schemaPromise = null;
 
@@ -68,6 +70,32 @@ function normalizeWeeklySchedule(value) {
   return { schedule, windowCount };
 }
 
+function validateWeeklyScheduleInput(value) {
+  const source = value && typeof value === "object" && !Array.isArray(value) ? value : {};
+  const schedule = {};
+
+  for (const key of WEEKDAY_KEYS) {
+    const rawWindows = source[key] === undefined ? [] : source[key];
+    if (!Array.isArray(rawWindows) || rawWindows.length > 6) {
+      return { ok: false, error: "invalid_schedule_window" };
+    }
+    schedule[key] = [];
+    for (const raw of rawWindows) {
+      if (!Array.isArray(raw) || raw.length < 2) {
+        return { ok: false, error: "invalid_schedule_window" };
+      }
+      const start = validTime(raw[0]);
+      const end = validTime(raw[1]);
+      if (!start || !end || minutesFromTime(end) <= minutesFromTime(start)) {
+        return { ok: false, error: "invalid_schedule_window" };
+      }
+      schedule[key].push([start, end]);
+    }
+  }
+
+  return { ok: true, schedule };
+}
+
 function emptyProfile() {
   return {
     defaultTimezone: "America/Bogota",
@@ -96,6 +124,17 @@ function emptyTravel() {
     timezone: "",
     startsAt: null,
     expiresAt: null,
+    updatedAt: null,
+    actorEmail: ""
+  };
+}
+
+function emptyForce() {
+  return {
+    mode: "auto",
+    storedMode: "auto",
+    expiresOn: null,
+    expired: false,
     updatedAt: null,
     actorEmail: ""
   };
@@ -135,6 +174,15 @@ async function ensureSchema(env) {
         )
       `).run(),
       env.CMS_DB.prepare(`
+        CREATE TABLE IF NOT EXISTS availability_force_state (
+          id INTEGER PRIMARY KEY,
+          mode TEXT NOT NULL DEFAULT 'auto',
+          expires_on TEXT,
+          updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          actor_email TEXT
+        )
+      `).run(),
+      env.CMS_DB.prepare(`
         CREATE TABLE IF NOT EXISTS availability_history (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           action TEXT NOT NULL,
@@ -156,6 +204,18 @@ function parseDate(value) {
   if (!text) return null;
   const date = new Date(text);
   return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function dateIsoInZone(now = new Date(), timeZone = "America/Bogota") {
+  const zone = isValidTimeZone(timeZone) ? timeZone : "America/Bogota";
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: zone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).formatToParts(now);
+  const get = (type) => parts.find((part) => part.type === type)?.value || "";
+  return `${get("year")}-${get("month")}-${get("day")}`;
 }
 
 function activeOverrideFromRow(row, now = new Date()) {
@@ -197,6 +257,24 @@ function activeTravelFromRow(row, now = new Date()) {
   };
 }
 
+function activeForceFromRow(row, profile, now = new Date()) {
+  if (!row) return emptyForce();
+  const storedMode = FORCE_MODES.has(cleanString(row.mode)) ? cleanString(row.mode) : "auto";
+  const expiresOn = /^\d{4}-\d{2}-\d{2}$/.test(cleanString(row.expires_on))
+    ? cleanString(row.expires_on)
+    : null;
+  const today = dateIsoInZone(now, profile?.defaultTimezone || "America/Bogota");
+  const active = storedMode === "auto" || Boolean(expiresOn && expiresOn === today);
+  return {
+    mode: active ? storedMode : "auto",
+    storedMode,
+    expiresOn,
+    expired: storedMode !== "auto" && !active,
+    updatedAt: row.updated_at || null,
+    actorEmail: cleanString(row.actor_email)
+  };
+}
+
 export async function readAvailabilityProfile(env) {
   await ensureSchema(env);
   const row = await env.CMS_DB.prepare(`
@@ -216,7 +294,7 @@ export async function readAvailabilityProfile(env) {
   return {
     defaultTimezone,
     weeklySchedule: normalized.schedule,
-    configured: normalized.windowCount > 0,
+    configured: true,
     updatedAt: row.updated_at || null,
     actorEmail: cleanString(row.actor_email)
   };
@@ -244,6 +322,17 @@ export async function readAvailabilityTravel(env, now = new Date()) {
   return activeTravelFromRow(row, now);
 }
 
+export async function readAvailabilityForce(env, profile, now = new Date()) {
+  await ensureSchema(env);
+  const row = await env.CMS_DB.prepare(`
+    SELECT mode, expires_on, updated_at, actor_email
+    FROM availability_force_state
+    WHERE id = ?
+    LIMIT 1
+  `).bind(FORCE_ROW_ID).first();
+  return activeForceFromRow(row, profile, now);
+}
+
 function localClock(now, timeZone) {
   const parts = new Intl.DateTimeFormat("en-US", {
     timeZone,
@@ -267,7 +356,7 @@ export function evaluateWeeklySchedule(profile, travel, now = new Date()) {
     : (isValidTimeZone(safeProfile.defaultTimezone) ? safeProfile.defaultTimezone : "America/Bogota");
   const normalized = normalizeWeeklySchedule(safeProfile.weeklySchedule || {});
 
-  if (!safeProfile.configured || normalized.windowCount === 0) {
+  if (!safeProfile.configured) {
     return {
       status: "available",
       source: "compatibility-default",
@@ -292,17 +381,42 @@ export function evaluateWeeklySchedule(profile, travel, now = new Date()) {
   };
 }
 
-export function resolveAvailability(profile, override, travel, now = new Date()) {
+export function resolveAvailability(profile, override, travel, now = new Date(), force = emptyForce()) {
+  const safeForce = force && typeof force === "object" ? force : emptyForce();
+  const timeZone = travel?.active && travel?.timezone
+    ? travel.timezone
+    : profile?.defaultTimezone || "America/Bogota";
+
+  if (safeForce.mode === "force_on") {
+    return {
+      status: "available",
+      source: "admin-force",
+      overrideMode: "force_on",
+      timeZone,
+      nextTransition: null
+    };
+  }
+  if (safeForce.mode === "force_off") {
+    return {
+      status: "away",
+      source: "admin-force",
+      overrideMode: "force_off",
+      timeZone,
+      nextTransition: null
+    };
+  }
+
   const safeOverride = override && typeof override === "object" ? override : emptyOverride();
   if (safeOverride.mode !== "auto" && AVAILABILITY_MODES.has(safeOverride.mode)) {
     return {
       status: safeOverride.mode,
       source: "manual-override",
-      timeZone: travel?.active && travel?.timezone ? travel.timezone : profile?.defaultTimezone || "America/Bogota",
+      overrideMode: "auto",
+      timeZone,
       nextTransition: safeOverride.expiresAt || null
     };
   }
-  return evaluateWeeklySchedule(profile, travel, now);
+  return { ...evaluateWeeklySchedule(profile, travel, now), overrideMode: "auto" };
 }
 
 function publicSnapshot(effective) {
@@ -355,6 +469,35 @@ export function normalizeAvailabilityOverrideInput(payload, now = new Date()) {
   };
 }
 
+export function normalizeAvailabilityProfileInput(payload) {
+  const body = payload && typeof payload === "object" && !Array.isArray(payload) ? payload : {};
+  const defaultTimezone = cleanString(body.defaultTimezone) || "America/Bogota";
+  if (!isValidTimeZone(defaultTimezone)) return { ok: false, error: "invalid_timezone" };
+  const validated = validateWeeklyScheduleInput(body.weeklySchedule);
+  if (!validated.ok) return validated;
+  return {
+    ok: true,
+    value: {
+      defaultTimezone,
+      weeklySchedule: validated.schedule,
+      configured: true
+    }
+  };
+}
+
+export function normalizeAvailabilityForceInput(payload, timeZone = "America/Bogota", now = new Date()) {
+  const body = payload && typeof payload === "object" && !Array.isArray(payload) ? payload : {};
+  const mode = cleanString(body.mode).toLowerCase();
+  if (!FORCE_MODES.has(mode)) return { ok: false, error: "invalid_force_mode" };
+  return {
+    ok: true,
+    value: {
+      mode,
+      expiresOn: mode === "auto" ? null : dateIsoInZone(now, timeZone)
+    }
+  };
+}
+
 async function persistOverride(env, value, actorEmail, now = new Date()) {
   await ensureSchema(env);
   await env.CMS_DB.prepare(`
@@ -377,14 +520,55 @@ async function persistOverride(env, value, actorEmail, now = new Date()) {
   return readAvailabilityOverride(env, now);
 }
 
+async function persistProfile(env, value, actorEmail) {
+  await ensureSchema(env);
+  await env.CMS_DB.prepare(`
+    INSERT INTO availability_profile (id, default_timezone, weekly_schedule_json, updated_at, actor_email)
+    VALUES (?, ?, ?, CURRENT_TIMESTAMP, ?)
+    ON CONFLICT(id) DO UPDATE SET
+      default_timezone = excluded.default_timezone,
+      weekly_schedule_json = excluded.weekly_schedule_json,
+      updated_at = CURRENT_TIMESTAMP,
+      actor_email = excluded.actor_email
+  `).bind(
+    PROFILE_ROW_ID,
+    value.defaultTimezone,
+    JSON.stringify(value.weeklySchedule),
+    cleanString(actorEmail).slice(0, 320)
+  ).run();
+  await writeHistory(env, "profile", value, actorEmail);
+  return readAvailabilityProfile(env);
+}
+
+async function persistForce(env, value, actorEmail, profile, now = new Date()) {
+  await ensureSchema(env);
+  await env.CMS_DB.prepare(`
+    INSERT INTO availability_force_state (id, mode, expires_on, updated_at, actor_email)
+    VALUES (?, ?, ?, CURRENT_TIMESTAMP, ?)
+    ON CONFLICT(id) DO UPDATE SET
+      mode = excluded.mode,
+      expires_on = excluded.expires_on,
+      updated_at = CURRENT_TIMESTAMP,
+      actor_email = excluded.actor_email
+  `).bind(
+    FORCE_ROW_ID,
+    value.mode,
+    value.expiresOn,
+    cleanString(actorEmail).slice(0, 320)
+  ).run();
+  await writeHistory(env, "force", value, actorEmail);
+  return readAvailabilityForce(env, profile, now);
+}
+
 async function snapshot(env, now = new Date()) {
-  const [profile, override, travel] = await Promise.all([
-    readAvailabilityProfile(env),
+  const profile = await readAvailabilityProfile(env);
+  const [override, travel, force] = await Promise.all([
     readAvailabilityOverride(env, now),
-    readAvailabilityTravel(env, now)
+    readAvailabilityTravel(env, now),
+    readAvailabilityForce(env, profile, now)
   ]);
-  const effective = resolveAvailability(profile, override, travel, now);
-  return { profile, override, travel, effective };
+  const effective = resolveAvailability(profile, override, travel, now, force);
+  return { profile, override, travel, force, effective };
 }
 
 async function readJsonBody(request) {
@@ -437,13 +621,33 @@ export async function handleAvailabilityApi(request, env, { verifyAdmin } = {}) 
     if (request.method !== "PUT") return json({ ok: false, error: "Method not allowed" }, 405);
 
     const body = await readJsonBody(request);
-    const normalized = normalizeAvailabilityOverrideInput(body);
-    if (!normalized.ok) {
-      return json({ ok: false, error: "Invalid Availability override", code: normalized.error }, 400);
+    const action = cleanString(body.action).toLowerCase() || "override";
+
+    if (action === "profile") {
+      const normalized = normalizeAvailabilityProfileInput(body);
+      if (!normalized.ok) {
+        return json({ ok: false, error: "Invalid Availability schedule", code: normalized.error }, 400);
+      }
+      await persistProfile(env, normalized.value, user.email);
+    } else if (action === "force") {
+      const profile = await readAvailabilityProfile(env);
+      const normalized = normalizeAvailabilityForceInput(body, profile.defaultTimezone);
+      if (!normalized.ok) {
+        return json({ ok: false, error: "Invalid Availability force mode", code: normalized.error }, 400);
+      }
+      await persistForce(env, normalized.value, user.email, profile);
+    } else if (action === "override") {
+      const normalized = normalizeAvailabilityOverrideInput(body);
+      if (!normalized.ok) {
+        return json({ ok: false, error: "Invalid Availability override", code: normalized.error }, 400);
+      }
+      await persistOverride(env, normalized.value, user.email);
+    } else {
+      return json({ ok: false, error: "Invalid Availability action", code: "invalid_action" }, 400);
     }
-    await persistOverride(env, normalized.value, user.email);
+
     const state = await snapshot(env);
-    return json({ ok: true, saved: true, ...state });
+    return json({ ok: true, saved: true, action, ...state });
   } catch (error) {
     console.error("Availability admin operation failed", error);
     return json({
