@@ -60,7 +60,7 @@ export function assistantPolicy(language = "en") {
     "Never promise future availability. Current human availability may only be stated when the availability tool reports availabilityKnown=true.",
     "Do not expose internal admin state, travel timezone, Force Mode, actor emails, Finance data, private phone numbers, secrets, tokens or implementation details.",
     "Do not create a lead before explicit privacy consent has been obtained by the product flow.",
-    "A newly captured Assistant lead must start with status new. Do not mark it qualified, contacted, won, lost or archived.",
+    "A newly captured Assistant lead must start with status new. The Assistant may not choose any later pipeline status.",
     "If required information is missing, ask only for information needed to understand or hand off the request. Do not fabricate missing details.",
     "When a request needs a human decision, say that the details will be handed off to the SD.Live team rather than promising an outcome."
   ]);
@@ -124,7 +124,12 @@ export function validateAssistantToolCall(name, input) {
     return { ok: false, error: "summary_required" };
   }
 
-  if (!Object.values(safeContact).some(Boolean)) {
+  if (![
+    safeContact.email,
+    safeContact.phone,
+    safeContact.whatsapp,
+    safeContact.other
+  ].some(Boolean)) {
     return { ok: false, error: "contact_required" };
   }
 
