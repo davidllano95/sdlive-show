@@ -118,3 +118,10 @@ test('touch Availability keeps a stronger visible halo while preserving reduced-
   assert.match(css, /@keyframes availability-breathe-touch/);
   assert.match(css, /@media \(prefers-reduced-motion: reduce\)[\s\S]*animation:\s*none/);
 });
+
+test('Availability public assets are cache-busted after the mobile glow change', () => {
+  const edge = fs.readFileSync('showday-edge.js', 'utf8');
+  assert.match(edge, /AVAILABILITY_RUNTIME_VERSION = "20260901-2"/);
+  assert.match(edge, /availability-status\.css\?v=\$\{AVAILABILITY_RUNTIME_VERSION\}/);
+  assert.match(edge, /availability-status\.js\?v=\$\{AVAILABILITY_RUNTIME_VERSION\}/);
+});
