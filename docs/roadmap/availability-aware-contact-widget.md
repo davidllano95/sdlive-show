@@ -186,10 +186,10 @@ Until AI exists, Away does **not** claim an AI agent is available. WhatsApp rema
 
 Hard invariant:
 
-- public pages use WhatsApp username identity;
-- owner phone number must not appear in HTML, JavaScript, structured data, visible copy or Availability output;
-- if username linking is unavailable, fall back to Contact/Rental rather than exposing a phone number;
-- phone details may exist only server-side if required later for authenticated provider/webhook operations.
+- Public pages use the WhatsApp username as the direct-link identity and must not embed the owner phone number in HTML, JavaScript, structured data or visible copy.
+- Availability output must not expose the owner phone number either.
+- If username linking is unavailable, fall back to Contact/Rental rather than exposing a phone number.
+- Phone details may exist only server-side if required later for authenticated provider/webhook operations.
 
 ## Owner WhatsApp commands — parser prepared, transport future
 
