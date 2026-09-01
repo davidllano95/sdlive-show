@@ -6,9 +6,11 @@
 >
 > **Rule:** a checked item here means evidence exists elsewhere in the repo/production. A pending item remains backlog/future work unless `PROJECT_STATUS.md` explicitly promotes it to **F — Active Gate / Approved Work**.
 
-Last reconciliation: **2026-08-22 — America/Bogota**
+Last reconciliation: **2026-08-31 — America/Bogota**
 
-**Targeted correction — 2026-08-23:** Section 16 now reflects the verified production architecture: Show Day is automatic/dynamic from Site Schedule + America/Bogota date. An authenticated Admin-only manual override for QA/control is preserved as future backlog. Other historical status blocks in this reconciliation remain lower-precedence than `PROJECT_STATUS.md` and current code/production behavior.
+**Targeted correction — 2026-08-23:** Section 16 was reconciled to automatic Show Day architecture.
+
+**Current reconciliation — 2026-08-31:** Admin stabilization, public post-integration audit and Rental image-editor parity are CLOSED/PASS; issues #126, #124 and #156 are completed. Calendar controlled create, Site Schedule/Show Day and Google Calendar projection are operational. There is no active stabilization gate. Historical inline `F` markers below are retained only where useful as chronology and do not override `PROJECT_STATUS.md`. Availability-Aware Contact / AI and SD.Live Patch are both eligible for deliberate prioritization, but neither is automatically active.
 
 Runtime production baseline checked against: `2c0fe574a0ab37ceb00cf84b31cbf1b68e1746c4`; Security B is production-smoked. The finance audit is documentation/operational evidence outside the SD.Live runtime and does not change this runtime baseline. Query GitHub live for current `main` HEAD because docs-only commits may advance HEAD without changing runtime.
 
@@ -22,7 +24,7 @@ Runtime production baseline checked against: `2c0fe574a0ab37ceb00cf84b31cbf1b68e
 
 ## Current Active Gate
 
-🚧 **F — Control Center Step 6: read-only, Admin-only finance insights.** P3.4, Security, the finance audit, SD.Live Track rename and field/source-of-truth mapping are closed. The decision remains **repair + integrate; no rewrite**, preserving AppSheet offline capture and Google Sheets persistence/formulas. Availability/WhatsApp remains eligible as the explicit parallel track but is not active automatically.
+✅ **No active stabilization gate.** Finance read-only, Calendar create, Site Schedule/Show Day, Google Calendar integration, Admin stabilization, public visual closeout and Rental image-editor parity are production-verified. Select the next module deliberately. Availability-Aware Contact / AI and SD.Live Patch are documented eligible candidates; Generic Finance Phase 3 write-back remains blocked.
 
 ---
 
@@ -107,7 +109,7 @@ Still pending / future:
 - ⏳ Reordering when several controls coexist.
 - ⏳ Show/Hide by page/market/device.
 - ⏳ iPhone safe-area preview to avoid notch/home-indicator conflicts.
-- ⏳ **P3.0 finding:** public landings do not consistently include the Home WhatsApp CTA. Add it as a shared conversion-consistency improvement when promoted, preserving destination/tracking/safe-area behavior.
+- ✅ Public service/SEO landings now use the shared WhatsApp conversion path where applicable; preserve destination/tracking/safe-area behavior in future changes.
 
 ## 5. Media Library + Cloudflare R2
 
@@ -282,7 +284,7 @@ Resolved:
 
 Pending:
 
-- ⏳ Reject a request with **0 equipment + 0 services** in both frontend and backend; service-only requests remain valid when at least one service is selected.
+- ✅ Empty Rental requests are rejected; service-only requests remain valid when at least one service is selected.
 - ⏳ Future CRM Lead/Rental Request relationship once source-of-truth is designed.
 - ⏳ Automatic PDF quotation, validity, approval workflow.
 - ⏳ Real-time availability.
@@ -302,7 +304,7 @@ Pending:
 
 ## 14.5 — SD.Live as Control Center (reprioritized 2026-08-22)
 
-**Status: 🚧 F — Step 6 read-only, Admin-only finance insights is active; Steps 1–5 are closed.** Audit evidence: `docs/audits/nextpay26-repair-vs-rewrite-2026-08-22.md`; field map evidence: `docs/checkpoints/sdlive-track-source-of-truth-2026-08-22.md`. Decision: repair + integrate, preserve AppSheet offline capture and Sheets ownership. Required order now is read-only Admin insights → validated later write-back/bidirectional phases. Availability/WhatsApp remains the sole explicit parallel-track exception and is eligible, not active automatically.
+**Status: ✅ current Control Center stabilization sequence CLOSED/PASS.** Finance read-only, Calendar create, Site Schedule/Show Day, Google Calendar projection and the detailed Admin/public stabilization passes are complete. Decision remains repair + integrate, preserving AppSheet offline capture and Sheets ownership. Availability-Aware Contact / AI is now a normal eligible roadmap candidate rather than an exception blocked behind the old sequence; it is not active automatically.
 
 ## 14. Basic CRM
 
@@ -326,14 +328,14 @@ Pending:
 - ✅ Google Sheets remains the current backing data store on the repair path; this is not a permanent architecture commitment.
 - ✅ Renamed the surviving user-facing system to **SD.Live Track**; technical/internal AppSheet identity intentionally preserved where needed.
 - ✅ Field/source-of-truth mapping closed; see `docs/checkpoints/sdlive-track-source-of-truth-2026-08-22.md`.
-- 🚧 **F active:** First SD.Live integration is read-only `/admin` insight via underlying Google Sheet/API, not an assumed AppSheet API layer.
+- ✅ First SD.Live Finance integration is the production-smoked read-only Admin workspace over the underlying Google Sheet/API; AppSheet remains the offline workflow client.
 - ⏳ Avoid unnecessary duplication or second financial source of truth.
 - ⏳ **Finance reminder delivery hardening:** diagnose why current AppSheet push reminders have not been received; optionally add email + WhatsApp delivery using the same approved reminder conditions. Notification channels remain read-only and must not fork finance logic.
 - ⏳ Write-back/Lead→event/project automation only after the read-only phase is validated.
 
 ## 16. Automatic Show Day Mode
 
-**Status: ✅/⏳ A/D — automatic/dynamic Show Day is production PASS; Admin override remains backlog.**
+**Status: ✅ A — automatic/dynamic Show Day and the Admin-only QA override are production PASS.**
 
 Implemented / verified:
 
@@ -356,13 +358,13 @@ Pending / future:
 
 **Status: ⏳ D.**
 
-- ⏳ Native Admin calendar.
-- ⏳ Google Calendar integration.
-- ⏳ AppSheet events.
+- ✅ Native Admin Calendar / Operations workspace.
+- ✅ Google Calendar secondary projection + read-only overlay.
+- ✅ REGISTRO/AppSheet source events represented in Calendar.
 - ⏳ Projects.
-- ⏳ Rental availability.
+- ⏳ Rental inventory availability.
 - ⏳ Date/equipment conflict detection.
-- ⏳ Client availability link if valuable.
+- ⏳ Client-facing availability link if valuable.
 
 ## 18. Projects
 
@@ -636,7 +638,7 @@ For each: establish real offer, search intent, existing URL overlap, operational
 
 ## P3.1 Consent Mode parity
 
-**Status: 🚧 F — active.**
+**Status: ✅ A — closed.**
 
 - 🚧 Inventory every public HTML file/route that loads GTM.
 - 🚧 Reuse the existing `analytics-consent.js`; do not build a parallel banner/consent manager.

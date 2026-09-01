@@ -33,11 +33,12 @@ As of **2026-08-31 America/Bogota**:
 - Admin desktop/mobile stabilization — **CLOSED/PASS**; issue #126 completed.
 - Google Calendar integration to `sam@sdlive.show` — **OPERATIONAL / production-smoked PASS through PR #150**: REGISTRO work projection, Site Schedule V2 block projection, read-only manual/recurring overlay and monthly collection reminders.
 - Shared Home-style header on current public route families — **PASS**.
-- Public post-integration visual stabilization — **CLOSED/PASS through PR #154**; issue #124 completed after representative desktop/mobile production smoke.
+- Public post-integration visual stabilization — **CLOSED/PASS**; issue #124 completed after representative desktop/mobile production smoke.
+- Rental image-editor parity — **CLOSED/PASS through PR #157**; issue #156 completed after production smoke on Event Labeler, synchronized BetaThree PA and Behringer WING.
 - **Current gate:** no stabilization gate is active; deliberately select the next roadmap module before starting implementation.
 - Generic Finance Phase 3 write-back — **BLOCKED**.
 
-The exact current continuation point lives in `PROJECT_STATUS.md` and `docs/checkpoints/handoff-public-audit-closeout-2026-08-31.md`.
+The exact current continuation point lives in `PROJECT_STATUS.md` and `docs/checkpoints/handoff-current-state-2026-08-31.md`.
 
 ## Change workflow
 
@@ -68,6 +69,7 @@ During visual audit, record all findings in a coherent surface first and batch t
 - Managed logos/images remain R2-owned; presentation-only changes should not duplicate source assets unnecessarily.
 - Visual safeguards and publish failsafe remain part of the Editor boundary.
 - Rental PA uses one canonical CMS image/framing control for the two visible BetaThree units; source, scale and X/Y framing remain synchronized as one composition.
+- Rental image editing is parity-verified across standard cards and Production Tools: Replace/Library, size and X/Y act on the real public image containers, while Save Draft/Publish retain the same presentation semantics.
 
 ### Private Admin / Control Center
 
@@ -197,15 +199,16 @@ Current merged public corrections include:
 - Trusted By mobile glow/luminosity restored;
 - Testimonials progressive disclosure with synchronized reveal, natural short-card height, viewport-preserving collapse, EN/ES expansion preservation, retained glow and height-independent sheen pacing.
 
-Final user production acceptance after PRs #152–#154 confirmed:
+Final user production acceptance after PRs #152–#157 confirmed:
 
 - Testimonials behavior/visual pacing is correct;
 - PA was positioned in CMS, saved, published and verified on desktop and mobile;
 - Misi mobile Supported Brands is side-by-side;
 - Wonderlust mobile Supported Brands is three per row with a single remainder centered;
-- Trusted By mobile glow is present.
+- Trusted By mobile glow is present;
+- Event Labeler, BetaThree PA and Behringer WING image controls respond correctly in Site Editor, and the Labeler change was saved/published successfully.
 
-Do not restart the public visual audit unless a new regression appears.
+Do not restart the public visual audit or Rental image-editor smoke unless a new regression appears.
 
 ## Admin stabilization — closed
 
@@ -225,6 +228,7 @@ Do not restart the Admin audit unless a new regression appears.
 
 ## Future roadmap highlights
 
+- `docs/roadmap/availability-aware-contact-widget.md`: **Availability-Aware Contact / AI** is eligible for prioritization now that stabilization is closed. It combines weekly service hours, travel mode and expiring manual away overrides, then routes to human WhatsApp or an AI qualification/handoff surface without giving AI pricing/finance authority.
 - `docs/roadmap/sdlive-control-center.md`: includes the documented future **SD.Live Patch** direction; Patch is eligible for prioritization but is not automatically active.
 - `docs/roadmap/future-finance-document-generator-2026-08-25.md`: shared branded generator for **Cuenta de cobro / Cotización / Factura or invoice draft**, reusing existing Finance/Rental/client data and not creating a second finance source of truth. Real Colombian electronic invoicing requires explicit DIAN-compliant design/provider integration before it can be represented as legally valid.
 - Calendar Agenda scope filter: `Full Month` vs `Current + Future`.
@@ -236,7 +240,8 @@ Do not restart the Admin audit unless a new regression appears.
 ## Relevant docs
 
 - `PROJECT_STATUS.md` — exact current status and continuation point.
-- `docs/checkpoints/handoff-public-audit-closeout-2026-08-31.md` — latest handoff after closing the public post-integration audit.
+- `docs/checkpoints/handoff-current-state-2026-08-31.md` — latest handoff after PR #157 / issue #156 and roadmap reconciliation.
+- `docs/checkpoints/handoff-public-audit-closeout-2026-08-31.md` — historical handoff after closing the public post-integration audit.
 - `docs/checkpoints/handoff-admin-stabilization-2026-08-31.md` — Admin stabilization + Google Calendar acceptance.
 - `docs/roadmap/post-integration-visual-audit-2026-08-23.md` — completed Admin + public post-integration audit contract.
 - `docs/roadmap/finance-phase2-real-use-2026-08-23.md` — Finance real-use/current workflow details.
@@ -246,6 +251,6 @@ Do not restart the Admin audit unless a new regression appears.
 
 ## Immediate continuation
 
-Admin stabilization is **closed/PASS through PR #150** and issue #126 is completed. Public post-integration stabilization is **closed/PASS through PR #154** and issue #124 is completed. Finance PR #141 remains production-smoked PASS.
+Admin stabilization is **closed/PASS through PR #150** and issue #126 is completed. Public post-integration stabilization remains **closed/PASS**, and Rental image-editor parity is **closed/PASS through PR #157 / issue #156**. Finance PR #141 remains production-smoked PASS.
 
-**No stabilization gate is active.** Select the next roadmap module deliberately; `SD.Live Patch` is documented and eligible for prioritization but is not automatically active. Generic Finance Phase 3 write-back remains blocked.
+**No stabilization gate is active.** Select the next roadmap module deliberately. `Availability-Aware Contact / AI` and `SD.Live Patch` are documented and eligible candidates; neither is automatically active. Generic Finance Phase 3 write-back remains blocked.

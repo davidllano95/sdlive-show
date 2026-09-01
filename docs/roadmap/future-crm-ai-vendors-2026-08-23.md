@@ -1,11 +1,11 @@
 # SD.Live — future CRM + AI vendor evaluation
 
 **Recorded:** 2026-08-23 — America/Bogota  
-**Status:** **BACKLOG / EVALUATE LATER — NOT ACTIVE**
+**Status:** **ELIGIBLE EVALUATION BACKLOG — NOT ACTIVE**
 
 ## Why this exists
 
-Preserve two external products the user wants considered in the future without moving them ahead of the current Post-Integration Visual Audit or changing current source-of-truth boundaries.
+Preserve two external products the user wants considered without changing current source-of-truth boundaries. The former Admin/public stabilization prerequisite is now satisfied; Attio and Dapta.ai remain candidates rather than automatic implementation choices.
 
 The master backlog already names Dapta.ai as the current AI-chatbot candidate. This note adds a concrete commercial/technical evaluation frame for **Attio** and **Dapta.ai**, including current pricing snapshots and integration questions.
 
@@ -167,7 +167,7 @@ Do not implement this pattern merely because it is documented. Compare it agains
 
 Do not promote Attio or Dapta into Active Gate until:
 
-1. the current visual/admin stabilization gate is closed;
+1. deliberately select CRM/AI or Availability-Aware Contact as active work (the prior visual/admin stabilization prerequisite is already satisfied);
 2. CRM ownership and required entities are defined;
 3. actual expected lead/contact/conversation volume is estimated;
 4. annual vendor cost is compared with native SD.Live implementation/maintenance cost;
