@@ -34,6 +34,14 @@ test("Admin navigation promotes Leads from Soon to the live Lead Core workspace"
   assert.match(edge, /leads-dashboard-entry\.js/);
 });
 
+test("Leads workspace loads the shared mobile Admin navigation runtime", async () => {
+  const entry = await source("admin/leads-dashboard-entry.js");
+
+  assert.match(entry, /currentPath !== "\/admin\/leads"/);
+  assert.match(entry, /\/admin\/admin-stabilization\.js\?v=20260831-4/);
+  assert.match(entry, /SDLiveAdminStabilization/);
+});
+
 test("edge router mounts the protected Lead Admin API and navigation runtime", async () => {
   const router = await source("public-form-rate-limit.js");
 
