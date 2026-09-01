@@ -48,6 +48,7 @@
   let statusEl = null;
   let messageEl = null;
   let currentState = null;
+  let currentNextWindow = null;
   let autoHideTimer = 0;
   let refreshTimer = 0;
   let hoverHideTimer = 0;
@@ -59,6 +60,15 @@
 
   function normalizedState(value) {
     return ["available", "limited", "away"].includes(value) ? value : "available";
+  }
+
+  function normalizedWindow(value) {
+    if (!value || typeof value !== "object" || !value.startsAt) return null;
+    return {
+      startsAt: String(value.startsAt),
+      labelEn: String(value.labelEn || "").trim(),
+      labelEs: String(value.labelEs || "").trim()
+    };
   }
 
   function hoverCapable() {
@@ -126,14 +136,25 @@
     popover.style.top = `${Math.round(top)}px`;
   }
 
+  function awayMessage(lang, fallback) {
+    const label = lang === "es" ? currentNextWindow?.labelEs : currentNextWindow?.labelEn;
+    if (!label) return fallback;
+    return lang === "es"
+      ? `Disponible de nuevo ${label}. Déjame un mensaje por WhatsApp.`
+      : `Available again ${label}. Leave a WhatsApp message.`;
+  }
+
   function renderCopy() {
     if (!currentState) return;
     ensureTab();
     ensurePopover();
-    const text = copy[language()][currentState];
+    const lang = language();
+    const text = copy[lang][currentState];
     tab.textContent = text.tab;
     statusEl.textContent = text.status;
-    messageEl.textContent = text.message;
+    messageEl.textContent = currentState === "away"
+      ? awayMessage(lang, text.message)
+      : text.message;
     button?.setAttribute("aria-describedby", popover.id);
     positionPopover();
   }
@@ -181,12 +202,13 @@
     }
   }
 
-  function applyState(nextState) {
+  function applyState(nextState, nextWindow = null) {
     const state = normalizedState(nextState);
     const firstState = !currentState;
     const changed = Boolean(currentState && currentState !== state);
     const autoShow = shouldAutoShow(state, changed);
     currentState = state;
+    currentNextWindow = normalizedWindow(nextWindow);
 
     if (firstState || changed) hideTab();
     button.dataset.availabilityState = state;
@@ -211,7 +233,7 @@
       if (!response.ok) return;
       const data = await response.json();
       if (!data?.ok) return;
-      applyState(data.status);
+      applyState(data.status, data.nextHumanWindow);
     } catch {
       // Fail open: keep the existing WhatsApp button without status decoration.
     }
