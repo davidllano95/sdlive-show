@@ -3,8 +3,9 @@ export const ASSISTANT_PUBLIC_REQUEST_POLICY = Object.freeze({
   method: "POST",
   contentType: "application/json",
   allowedOrigins: Object.freeze(["https://sdlive.show"]),
-  maxBodyBytes: 8000,
+  maxBodyBytes: 32000,
   maxMessageChars: 2500,
+  maxSessionTokenChars: 24000,
   maxTurnstileTokenChars: 4096,
   turnstileAction: "assistant",
   rateLimitBinding: "ASSISTANT_RATE_LIMITER",
@@ -14,7 +15,7 @@ export const ASSISTANT_PUBLIC_REQUEST_POLICY = Object.freeze({
 const ALLOWED_BODY_KEYS = new Set([
   "message",
   "language",
-  "sessionId",
+  "sessionToken",
   "turnstileToken"
 ]);
 
@@ -37,10 +38,15 @@ function normalizedLanguage(value) {
   return language === "es" ? "es" : "en";
 }
 
-export function isValidAssistantSessionId(value) {
+export function isValidAssistantSessionTokenShape(value) {
   if (value === undefined || value === null || value === "") return true;
-  const id = String(value).trim();
-  return /^asst_[A-Za-z0-9_-]{20,120}$/.test(id);
+  const token = String(value).trim();
+  if (token.length > ASSISTANT_PUBLIC_REQUEST_POLICY.maxSessionTokenChars) return false;
+  const parts = token.split(".");
+  return parts.length === 3 &&
+    parts[0] === "ast1" &&
+    /^[A-Za-z0-9_-]{16}$/.test(parts[1]) &&
+    /^[A-Za-z0-9_-]{20,23970}$/.test(parts[2]);
 }
 
 export function assistantPublicRateLimitConfig() {
@@ -118,8 +124,8 @@ export async function validateAssistantPublicRequest(request) {
     };
   }
 
-  if (!isValidAssistantSessionId(body.sessionId)) {
-    return { ok: false, status: 400, error: "invalid_session_id" };
+  if (!isValidAssistantSessionTokenShape(body.sessionToken)) {
+    return { ok: false, status: 400, error: "invalid_session_token" };
   }
 
   const message = cleanString(body.message, ASSISTANT_PUBLIC_REQUEST_POLICY.maxMessageChars + 1);
@@ -131,6 +137,14 @@ export async function validateAssistantPublicRequest(request) {
   }
   if (message.includes("\u0000")) {
     return { ok: false, status: 400, error: "invalid_message" };
+  }
+
+  const sessionToken = cleanString(
+    body.sessionToken,
+    ASSISTANT_PUBLIC_REQUEST_POLICY.maxSessionTokenChars + 1
+  );
+  if (sessionToken.length > ASSISTANT_PUBLIC_REQUEST_POLICY.maxSessionTokenChars) {
+    return { ok: false, status: 400, error: "session_token_too_long" };
   }
 
   const turnstileToken = cleanString(
@@ -147,14 +161,15 @@ export async function validateAssistantPublicRequest(request) {
   return {
     ok: true,
     value: {
-      sessionId: body.sessionId ? String(body.sessionId).trim() : null,
+      sessionToken: sessionToken || null,
       language: normalizedLanguage(body.language),
       message,
       turnstileToken
     },
     security: {
       expectedTurnstileAction: ASSISTANT_PUBLIC_REQUEST_POLICY.turnstileAction,
-      rateLimit: assistantPublicRateLimitConfig()
+      rateLimit: assistantPublicRateLimitConfig(),
+      sessionTokenRequiresServerAuthentication: Boolean(sessionToken)
     }
   };
 }
