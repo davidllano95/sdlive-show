@@ -14,6 +14,8 @@ import { rentalRequestHasSelection } from "./rental-request-validation.js";
 import { financeUpstreamFetch } from "./finance-upstream.js";
 import { preparePublicLeadRequest } from "./lead-core-public-request.js";
 import { persistLeadCoreFromPublicResponse } from "./lead-core-storage.js";
+import { handleLeadAdminApi } from "./lead-admin-api.js";
+import { applyLeadAdminNavigationRuntime } from "./lead-admin-dashboard-edge.js";
 
 const PUBLIC_FORM_LIMITS = {
   "/api/contact": {
@@ -211,6 +213,13 @@ export default {
       return response;
     }
 
+    if (path === "/api/admin/leads") {
+      const response = await handleLeadAdminApi(request, env, {
+        verifyAdmin: verifyAdminViaExistingApi
+      });
+      if (response) return response;
+    }
+
     if (
       path === "/api/admin/finance/dashboard" ||
       path === "/api/admin/finance/settings"
@@ -237,7 +246,7 @@ export default {
     if (emptyRental) return emptyRental;
 
     const preparedLead = await preparePublicLeadRequest(request);
-    const response = await appWorker.fetch(preparedLead.request, env);
+    let response = await appWorker.fetch(preparedLead.request, env);
 
     if (preparedLead.lead) {
       try {
@@ -255,12 +264,15 @@ export default {
     }
 
     if (request.method === "GET" && path === FINANCE_PAGE_PATH) {
-      return decorateFinanceAdminPage(response);
+      response = decorateFinanceAdminPage(response);
     }
     if (request.method === "GET" && (path === "/admin" || path === "/admin/index.html")) {
-      return applyAvailabilityAdminRuntime(response);
+      response = applyAvailabilityAdminRuntime(response);
     }
-    if (request.method === "GET" && !path.startsWith("/admin")) {
+    if (request.method === "GET" && path.startsWith("/admin")) {
+      return applyLeadAdminNavigationRuntime(response);
+    }
+    if (request.method === "GET") {
       return applyShowDayRuntime(response);
     }
     return response;
