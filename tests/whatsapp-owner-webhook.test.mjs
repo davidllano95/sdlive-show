@@ -113,6 +113,10 @@ test("extracts only message payloads for the configured phone number id", () => 
     phoneNumberId: "123456789"
   });
   assert.equal(extractWhatsAppMessages(payload(), "999").length, 0);
+
+  const missingTarget = payload();
+  delete missingTarget.entry[0].changes[0].value.metadata.phone_number_id;
+  assert.equal(extractWhatsAppMessages(missingTarget, "123456789").length, 0);
 });
 
 test("GET webhook verification returns the Meta challenge only for the configured token", async () => {
@@ -194,6 +198,34 @@ test("verified owner command executes once and duplicate webhook delivery is ide
   assert.equal(second.status, 200);
   assert.equal(executions, 1);
   assert.equal(sends, 1);
+});
+
+test("an in-flight duplicate is retryable and never executes the Availability command twice", async () => {
+  const store = fakeStore();
+  store.rows.set("wamid.1", {
+    message_id: "wamid.1",
+    from_number: "573001112233",
+    command_text: "away 2h",
+    command_status: "received",
+    response_text: null,
+    reply_status: "pending"
+  });
+
+  let executions = 0;
+  let sends = 0;
+  const response = await handleWhatsAppOwnerWebhook(webhookRequest(payload()), env(), {
+    verifySignature: async () => true,
+    store,
+    executeCommand: async () => {
+      executions += 1;
+      return { reply: "should not happen" };
+    },
+    sendText: async () => { sends += 1; }
+  });
+
+  assert.equal(response.status, 500);
+  assert.equal(executions, 0);
+  assert.equal(sends, 0);
 });
 
 test("reply retry does not re-apply an already processed Availability command", async () => {
