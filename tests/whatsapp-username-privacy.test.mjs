@@ -8,6 +8,7 @@ const publicHtml = execFileSync('git', ['ls-files', '*.html'], { encoding: 'utf8
   .split('\n')
   .filter(Boolean)
   .filter((path) => !path.startsWith('admin/'));
+const publicRuntimeJs = ['script.js', 'showday-edge.js', 'availability-status.js'];
 
 test('public HTML never exposes the owner phone number in links, schema, or copy', () => {
   for (const path of publicHtml) {
@@ -15,6 +16,14 @@ test('public HTML never exposes the owner phone number in links, schema, or copy
     assert.doesNotMatch(html, /https:\/\/wa\.me\/\d{7,}/, `${path} contains a numeric WhatsApp link`);
     assert.doesNotMatch(html, /"telephone"\s*:\s*"\+?\d{7,}"/, `${path} contains public telephone structured data`);
     assert.doesNotMatch(html, /573192473948|319\s*247\s*3948/, `${path} contains the owner phone number as public copy`);
+  }
+});
+
+test('public JavaScript and edge HTML templates never reintroduce the owner phone number', () => {
+  for (const path of publicRuntimeJs) {
+    const source = fs.readFileSync(path, 'utf8');
+    assert.doesNotMatch(source, /https:\/\/wa\.me\/\d{7,}/, `${path} contains a numeric WhatsApp link`);
+    assert.doesNotMatch(source, /573192473948|319\s*247\s*3948/, `${path} contains the owner phone number`);
   }
 });
 
@@ -31,6 +40,11 @@ test('browser config stores only the WhatsApp username, not a phone contact targ
   assert.doesNotMatch(script, /whatsapp:\s*"\d+"/);
   assert.doesNotMatch(script, /SITE_CONFIG\.contact\.whatsapp(?!Username)/);
   assert.match(script, /wa\.me\/\$\{SITE_CONFIG\.contact\.whatsappUsername\.replace/);
+});
+
+test('edge-injected WhatsApp uses the public username', () => {
+  const edge = fs.readFileSync('showday-edge.js', 'utf8');
+  assert.match(edge, /href="https:\/\/wa\.me\/samd\.llano95"/);
 });
 
 test('Availability spec makes username-only public identity an invariant', () => {
