@@ -8,28 +8,34 @@
   const copy = {
     en: {
       available: {
+        tab: "AVAILABLE",
         status: "Available now",
         message: "Message me on WhatsApp."
       },
       limited: {
+        tab: "LIMITED",
         status: "Limited response",
         message: "Leave a WhatsApp message — I may reply more slowly right now."
       },
       away: {
+        tab: "AWAY",
         status: "Currently away",
         message: "Leave a WhatsApp message — I'll reply during the next service window."
       }
     },
     es: {
       available: {
+        tab: "DISPONIBLE",
         status: "Disponible ahora",
         message: "Escríbeme por WhatsApp."
       },
       limited: {
+        tab: "LIMITADO",
         status: "Respuesta limitada",
         message: "Déjame un mensaje por WhatsApp — puede que responda más lento ahora."
       },
       away: {
+        tab: "AUSENTE",
         status: "No disponible ahora",
         message: "Déjame un mensaje por WhatsApp — responderé en la próxima ventana de atención."
       }
@@ -37,6 +43,7 @@
   };
 
   let button = null;
+  let tab = null;
   let popover = null;
   let statusEl = null;
   let messageEl = null;
@@ -44,6 +51,7 @@
   let autoHideTimer = 0;
   let refreshTimer = 0;
   let hoverHideTimer = 0;
+  let tabRevealTimer = 0;
 
   function language() {
     return String(document.documentElement.lang || "en").toLowerCase().startsWith("es") ? "es" : "en";
@@ -51,6 +59,34 @@
 
   function normalizedState(value) {
     return ["available", "limited", "away"].includes(value) ? value : "available";
+  }
+
+  function hoverCapable() {
+    return window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+  }
+
+  function ensureTab() {
+    if (tab) return tab;
+    tab = document.createElement("span");
+    tab.className = "availability-tab";
+    tab.setAttribute("aria-hidden", "true");
+    button.append(tab);
+    return tab;
+  }
+
+  function showTab(delay = 0) {
+    if (!button || !currentState) return;
+    window.clearTimeout(tabRevealTimer);
+    tabRevealTimer = window.setTimeout(() => {
+      button.dataset.availabilityReady = "true";
+      positionPopover();
+    }, delay);
+  }
+
+  function hideTab() {
+    if (!button) return;
+    window.clearTimeout(tabRevealTimer);
+    button.dataset.availabilityReady = "false";
   }
 
   function ensurePopover() {
@@ -77,7 +113,11 @@
     const width = popover.offsetWidth || 290;
     const height = popover.offsetHeight || 70;
     const gap = 14;
-    const left = Math.max(12, rect.left - width - gap);
+    const tabRect = tab && button.dataset.availabilityReady === "true"
+      ? tab.getBoundingClientRect()
+      : null;
+    const controlLeft = tabRect?.width ? Math.min(rect.left, tabRect.left) : rect.left;
+    const left = Math.max(12, controlLeft - width - gap);
     const top = Math.min(
       window.innerHeight - height - 12,
       Math.max(12, rect.top + (rect.height - height) / 2)
@@ -88,17 +128,20 @@
 
   function renderCopy() {
     if (!currentState) return;
+    ensureTab();
     ensurePopover();
     const text = copy[language()][currentState];
+    tab.textContent = text.tab;
     statusEl.textContent = text.status;
     messageEl.textContent = text.message;
     button?.setAttribute("aria-describedby", popover.id);
     positionPopover();
   }
 
-  function showPopover({ autoHide = true } = {}) {
+  function showPopover({ autoHide = true, keepTab = false } = {}) {
     if (!currentState) return;
     ensurePopover();
+    if (!keepTab) hideTab();
     renderCopy();
     window.clearTimeout(autoHideTimer);
     popover.classList.add("is-visible");
@@ -114,6 +157,7 @@
     window.clearTimeout(autoHideTimer);
     popover.classList.remove("is-visible");
     popover.setAttribute("aria-hidden", "true");
+    showTab(120);
   }
 
   function sessionMarker(state) {
@@ -140,14 +184,18 @@
   function applyState(nextState) {
     const state = normalizedState(nextState);
     const changed = Boolean(currentState && currentState !== state);
+    const autoShow = shouldAutoShow(state, changed);
     currentState = state;
+    hideTab();
     button.dataset.availabilityState = state;
     ensurePopover().dataset.availabilityState = state;
     renderCopy();
 
-    if (shouldAutoShow(state, changed)) {
+    if (autoShow) {
       markAutoShown(state);
       window.setTimeout(() => showPopover({ autoHide: true }), changed ? 120 : AUTO_SHOW_DELAY_MS);
+    } else {
+      showTab(260);
     }
   }
 
@@ -168,11 +216,10 @@
   }
 
   function bindInteractions() {
-    const hoverCapable = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
-    if (hoverCapable) {
+    if (hoverCapable()) {
       button.addEventListener("pointerenter", () => {
         window.clearTimeout(hoverHideTimer);
-        showPopover({ autoHide: false });
+        showPopover({ autoHide: false, keepTab: true });
       });
       button.addEventListener("pointerleave", () => {
         hoverHideTimer = window.setTimeout(hidePopover, 220);
@@ -194,11 +241,15 @@
   function init() {
     button = document.getElementById("whatsappFloat");
     if (!button) return;
+    ensureTab();
     ensurePopover();
     bindInteractions();
     refresh();
     refreshTimer = window.setInterval(refresh, REFRESH_MS);
-    window.addEventListener("pagehide", () => window.clearInterval(refreshTimer), { once: true });
+    window.addEventListener("pagehide", () => {
+      window.clearInterval(refreshTimer);
+      window.clearTimeout(tabRevealTimer);
+    }, { once: true });
   }
 
   if (document.readyState === "loading") {
