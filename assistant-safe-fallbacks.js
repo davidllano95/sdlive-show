@@ -128,9 +128,10 @@ export function assistantFallback(code, language = "en", context = {}) {
     : {};
 
   // Notification failure is only safe to describe as a received request when
-  // the Lead Core write has already succeeded. Otherwise fail closed.
+  // the Lead Core write has already succeeded. If persistence state is not
+  // positively known, do not claim either success or failure of the write.
   if (safeCode === "notification_failed" && state.leadPersisted !== true) {
-    safeCode = "lead_create_failed";
+    safeCode = "internal_error";
   }
 
   const definition = FALLBACKS[safeCode];
