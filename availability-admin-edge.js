@@ -1,7 +1,7 @@
 const AVAILABILITY_ADMIN_RUNTIME_VERSION = "20260901-6";
 const ADMIN_CONTROL_CLUSTER_VERSION = "20260901-2";
 const ADMIN_CONTROL_FINAL_POLISH_VERSION = "20260901-1";
-const AVAILABILITY_TEMPORARY_TIMER_VERSION = "20260901-2";
+const AVAILABILITY_TEMPORARY_TIMER_VERSION = "20260901-3";
 
 export function applyAvailabilityAdminRuntime(response) {
   const contentType = response?.headers?.get("content-type") || "";
