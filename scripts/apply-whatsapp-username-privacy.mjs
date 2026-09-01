@@ -22,7 +22,8 @@ for (const path of publicHtml) {
   let html = read(path);
 
   html = html.replaceAll(`https://wa.me/${legacyPhoneDigits}`, usernameHref);
-  html = html.replace(new RegExp(`\\n\\s*\\"telephone\\"\\s*:\\s*\\"\\+?${legacyPhoneDigits}\\"\\s*,?`, 'g'), '');
+  html = html.replace(new RegExp(`,\\s*\\"telephone\\"\\s*:\\s*\\"\\+?${legacyPhoneDigits}\\"`, 'g'), '');
+  html = html.replace(new RegExp(`\\"telephone\\"\\s*:\\s*\\"\\+?${legacyPhoneDigits}\\"\\s*,`, 'g'), '');
   html = html.replaceAll(`tel:+${legacyPhoneDigits}`, '#contact');
   html = html.replaceAll(`tel:${legacyPhoneDigits}`, '#contact');
 
