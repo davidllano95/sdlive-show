@@ -1,17 +1,18 @@
 # Availability-Aware Contact / AI
 
 **Reconciled:** 2026-09-01 — America/Bogota  
-**Status:** **ACTIVE GATE — AVAILABILITY CORE OPERATIONAL; CONTINUATION IN PROGRESS**
+**Availability status:** **CORE v1 CLOSED/PASS**  
+**Current Active Gate:** **SD.Live Assistant + Lead Core**
 
-Availability is no longer only a roadmap candidate. The deterministic SD.Live-owned core is in production and has passed representative public/Admin smoke checks. AI/CRM are still future layers and are not architectural owners of availability truth.
+Availability is now a deterministic SD.Live-owned production capability. AI/CRM/WhatsApp automation are consumers or future transports; they are not architectural owners of availability truth.
 
 ## Problem
 
-SD.Live should not present the same contact expectation regardless of whether the owner is realistically reachable. The goal is not to pretend the business is staffed 24/7; it is to give the visitor an accurate path at any time while preserving a strong human handoff.
+SD.Live should not present the same contact expectation regardless of whether the owner is realistically reachable. The system must communicate a truthful reachability state while preserving a strong human handoff and deterministic fallback paths.
 
 ## Current production contract
 
-One SD.Live-owned resolver now drives the public Availability state.
+One SD.Live-owned resolver drives public Availability.
 
 Effective states:
 
@@ -28,11 +29,11 @@ Protected Admin API:
 - `GET /api/admin/availability`
 - `PUT /api/admin/availability`
 
-Current Admin precedence, highest first:
+Admin precedence, highest first:
 
-1. **Backend Force Mode** — `Auto / Force On / Force Off`; top-priority QA/emergency layer; non-Auto mode expires automatically after the current base-timezone day.
-2. **Temporary operational override** — `Auto / Available / Limited / Away`; all non-Auto writes require explicit bounded expiry.
-3. **Weekly service schedule** — Monday–Sunday, multiple windows per day, evaluated in the active availability timezone.
+1. **Backend Force Mode** — `Auto / Force On / Force Off`; top-priority QA/emergency layer; non-Auto expires automatically at the end of the current base-timezone day.
+2. **Temporary operational override** — `Auto / Available / Limited / Away`; all non-Auto writes are bounded.
+3. **Weekly service schedule** — Monday–Sunday, multiple windows per day, evaluated in the active Availability timezone.
 4. **Compatibility default** — before a deliberate schedule save, Auto preserves the pre-Availability Available behavior.
 
 Force Mode is separate D1 state and never rewrites temporary override or weekly schedule state.
@@ -41,7 +42,7 @@ Force Mode is separate D1 state and never rewrites temporary override or weekly 
 
 Availability remains SD.Live-owned and separate from Finance/REGISTRO/AppSheet.
 
-Current D1 model includes:
+Canonical state includes:
 
 ```text
 availability_profile
@@ -77,54 +78,92 @@ availability_history
 - created_at
 ```
 
-Travel data exists in the resolver-compatible model, but Travel Mode Admin/API writes are not implemented yet.
+## Owner availability model
 
-## 3-layer owner availability model
+### Layer 1 — Temporary operational override
 
-### Layer 1 — expiring manual override
+Implemented and production-smoked.
 
-For a show, flight, meeting, sleep, focused work or any short period where the weekly schedule is wrong.
+Use for shows, flights, meetings, sleep, focused work or any short period where the weekly schedule is wrong.
 
-Current Admin implements explicit temporary states with bounded duration. Future verified-owner WhatsApp commands may provide another authenticated transport for the same underlying state:
+Current Admin:
 
-- `away 2h`
-- `away 4h`
-- `away until 23:00`
-- `away tomorrow`
-- `back`
-- `status`
+- `Auto / Available / Limited / Away` selection;
+- explicit `Apply status` action;
+- flexible hours + minutes timer;
+- minimum 15 minutes;
+- maximum 24 hours;
+- all non-Auto states auto-expire;
+- timer/status edits remain pending until Apply.
 
-Indefinite away state is not allowed.
+Production smoke verified `0 h / 15 min` for both Limited and Away, including correct expiry and Away `Next service window`. Production was returned to Auto after testing.
 
-Owner-command authorization must remain server-side and accept only an explicitly authenticated owner identity. Public browser code must never expose the owner phone number.
+### Layer 2 — Travel Mode
 
-### Layer 2 — travel mode
+Implemented and production-accepted.
 
-Travel Mode is the next runtime slice.
-
-Intended contract:
-
-- temporary timezone;
-- explicit start/end or end date;
+- temporary IANA timezone;
+- explicit end date;
 - automatic fallback after expiry;
 - travel itself does **not** mean Away;
-- travel changes the clock used to evaluate weekly service windows.
+- travel changes the clock used to evaluate weekly service windows;
+- common timezone selector + `Use device timezone` + manual `Other IANA timezone…`;
+- no private itinerary/travel reason is exposed publicly.
 
-Conceptual state:
+Manual entry uses canonical IANA values such as `America/Bogota`, `Europe/Madrid`, `America/New_York`, `Asia/Singapore`, `Australia/Sydney`.
 
-`Travel · Europe/Madrid · through 2026-09-21`
+Do not use raw offsets, abbreviations or city/country names alone.
 
-No private itinerary or travel reason is exposed publicly.
+### Layer 3 — Weekly service hours
 
-### Layer 3 — default weekly service hours
+Implemented.
 
-This layer is now implemented in Admin.
-
-- base timezone currently defaults to `America/Bogota`;
+- base timezone defaults to `America/Bogota` unless changed by canonical profile state;
 - Monday–Sunday schedule;
-- up to multiple service windows per day;
-- days without configured windows resolve Away once the schedule has been deliberately saved;
-- exact hours remain business configuration, not an architectural constant.
+- multiple windows per day;
+- days without windows resolve Away once the schedule has been deliberately saved;
+- exact business hours are configuration, not an architectural constant.
+
+## Backend Force Mode
+
+Implemented.
+
+- `Auto / Force On / Force Off`;
+- highest precedence;
+- separate from normal operational override;
+- non-Auto expires automatically at base-timezone day-end;
+- underlying Temporary Status + Weekly Schedule remain intact.
+
+## Next service window
+
+Implemented and production-accepted.
+
+The deterministic resolver calculates the next human service window from:
+
+- weekly schedule;
+- closed days;
+- active Travel timezone and Travel expiry;
+- current Temporary Status and expiry;
+- Force Mode expiry;
+- timezone transitions;
+- DST behavior.
+
+Public output is privacy-safe. It may expose timing labels but never private event/calendar/travel detail or owner phone information.
+
+## Admin visual contract
+
+The Dashboard Availability and Show Day controls share one compact control language.
+
+Accepted behavior:
+
+- bounded two-card cluster on desktop;
+- stacked cards on mobile;
+- compact collapsed summaries;
+- `Manage availability` / `Manage Show Day` disclosures;
+- normalized headings, status pills and chevrons;
+- Travel `OFF` pill aligned with the same visual system;
+- Weekly Schedule rendered as a compact list inside the narrower card;
+- no large legacy `Save weekly schedule` CTA typography.
 
 ## Public WhatsApp / Availability UI
 
@@ -132,74 +171,133 @@ The existing floating WhatsApp button remains the only persistent floating CTA.
 
 Current public behavior:
 
-- integrated status tab attached to the WhatsApp control;
-- EN labels: `AVAILABLE / LIMITED / AWAY`;
+- integrated status tab attached to WhatsApp;
+- EN labels `AVAILABLE / LIMITED / AWAY`;
 - ES equivalents;
 - explanatory bilingual popover;
-- language follows the page EN/ES state;
+- language follows page state;
 - mobile tap still opens WhatsApp;
-- status refreshes do not create a second CTA;
-- public status does not expose private travel/event details.
+- Away may show deterministic next human service timing;
+- public output does not expose Travel timezone/location/reason or private event data.
 
-Until AI exists, Away does **not** claim that an AI agent is available. WhatsApp remains a leave-message path and Contact/Rental remain deterministic fallbacks.
+Until AI exists, Away does **not** claim an AI agent is available. WhatsApp remains a leave-message path and Contact/Rental remain deterministic fallbacks.
 
 ## Public WhatsApp identity / phone privacy
 
-This is a hard invariant:
+Hard invariant:
 
 - Public pages use the WhatsApp username as the direct-link identity and must not embed the owner phone number in HTML, JavaScript, structured data or visible copy.
 - Availability output must not expose the owner phone number either.
 - If username linking is unavailable, fall back to Contact/Rental rather than exposing a phone number.
-- Phone number may exist only server-side if later required for authenticated provider/webhook operations.
+- Phone details may exist only server-side if required later for authenticated provider/webhook operations.
 
-The earlier SEO-edge regression that could reintroduce a numeric `wa.me` link was fixed and regression-tested.
+## Owner WhatsApp commands — parser prepared, transport future
 
-## Next service window
+A transport-neutral parser is implemented for future verified-owner control.
 
-Not implemented yet.
+Supported command shapes include:
 
-The next deterministic enhancement should calculate a privacy-safe next human service window from:
+- `away 4h`
+- `limited 1h 30m`
+- `away until 23:00`
+- `disponible 45 min`
+- `ausente hasta 23:00`
+- `back` / `volver`
+- `status` / `estado`
 
-- weekly schedule;
-- active travel timezone;
-- current temporary/force state and expiry.
+These map to the same canonical temporary override contract.
 
-Future public output may expose a coarse value such as `nextHumanWindow` or equivalent timing, but must never expose private calendar/event details.
+The real WhatsApp transport is **not live**.
 
-## AI assistant contract — future layer
+Before enabling it:
 
-Once Availability and next-window behavior are deterministic, an optional `SD.Live Assistant` may be added.
+- select provider deliberately;
+- authenticate owner identity server-side;
+- reject unauthenticated senders before parsing;
+- keep provider secrets and owner phone data server-side;
+- never expose a generic unauthenticated webhook that accepts Availability commands.
 
-The assistant may:
+## Availability Core v1 acceptance criteria
 
-- answer approved FAQ/service questions;
+- [x] D1 defines canonical SD.Live-owned availability state.
+- [x] Weekly schedule resolves by timezone/day.
+- [x] Weekly schedule supports multiple windows per day.
+- [x] Manual overrides require explicit expiry and auto-expire.
+- [x] Flexible 15-min–24-h Temporary Status timer exists.
+- [x] Temporary mode + timer use explicit `Apply status` semantics.
+- [x] `Auto / Force On / Force Off` exists as separate top-priority backend state.
+- [x] Travel Mode changes evaluation timezone without forcing Away.
+- [x] Travel Mode auto-expires.
+- [x] Next human service window is deterministic and privacy-safe.
+- [x] `GET /api/availability` is privacy-safe and reflects effective state.
+- [x] Public UI consumes the shared Availability API and keeps one WhatsApp CTA.
+- [x] EN/ES Availability UI follows page language.
+- [x] Public phone privacy is regression-tested.
+- [x] Admin Availability and Show Day controls share a compact coherent visual language.
+- [x] Production smoke verified 15-minute Limited/Away behavior.
+
+**Availability Core v1 is CLOSED/PASS.**
+
+Do not reopen this gate unless a new production regression appears.
+
+## Current Active Gate — SD.Live Assistant + Lead Core
+
+### Architecture
+
+Preferred first implementation:
+
+`Public site / popup → SD.Live API → optional AI → safe tools → SD.Live-owned Lead Core in D1 → notification → human handoff → optional CRM later`
+
+CRM is not a prerequisite.
+
+### Assistant identity
+
+Name: **SD.Live Assistant**.
+
+The assistant must identify itself as an assistant and must not impersonate Samuel.
+
+### Required v1 behavior
+
+The assistant should:
+
 - work bilingually EN/ES;
-- identify Live / Theatre / Sound Design / Post / Systems / Rental / other;
-- collect event/project date, city/location, approximate scope, audience/headcount when relevant, contact details and preferred follow-up;
-- route Contact vs Rental;
-- create/update a lead through an SD.Live-owned validation endpoint;
-- summarize the conversation for human follow-up.
+- identify `Live / Theatre / Sound Design / Systems / Rental / Other`;
+- collect visitor name/contact;
+- collect date;
+- collect city/location;
+- collect venue when relevant;
+- collect service/request type;
+- collect equipment/schedule details when relevant;
+- build a concise grounded summary;
+- consult deterministic Availability Core;
+- answer from approved service/business information;
+- route Contact vs Rental appropriately;
+- create a normalized Lead Core record in D1;
+- generate a useful human handoff.
+
+### AI hard guardrails
 
 The assistant must not:
 
 - invent or negotiate prices;
+- promise availability unless a deterministic backend source confirms it;
 - become authoritative for Rental catalog, quantities or availability;
 - expose Finance/Admin data;
-- promise a booking or availability unless a deterministic backend source explicitly confirms it;
-- invent portfolio credits, capabilities or policies;
-- retain the only copy of lead/transcript data inside a vendor.
+- invent credits, capabilities or policies;
+- retain the only copy of lead/transcript data inside a vendor;
+- block Contact/Rental/WhatsApp when an AI/provider fails.
 
-**AI on demand, not AI by default.** Availability state itself consumes no AI tokens.
+**AI on demand, not AI by default.** Availability itself consumes no AI tokens.
 
-## Lead ownership — future layer
+## Lead ownership
 
-CRM is not a prerequisite.
+Preferred source of truth:
 
-Preferred first implementation:
+`SD.Live Lead API → D1 lead store`
 
-`Contact / Rental / AI → SD.Live Lead API → D1 lead store → notification/handoff`
+Lead Core should own normalized lead state before any optional CRM integration.
 
-A later CRM such as Attio may receive normalized leads after that boundary is stable, but must not become the only source of lead/transcript truth.
+A later CRM such as Attio may receive normalized leads, but must not become the only copy of lead/transcript truth.
 
 ## Human handoff
 
@@ -210,76 +308,76 @@ A useful handoff should include:
 - source page/market;
 - service/request type;
 - date/location;
-- concise AI-generated summary grounded in the actual conversation;
+- venue/equipment/schedule where relevant;
+- concise grounded summary;
 - urgency only when derived from explicit visitor information;
 - direct context to continue the conversation.
 
-The assistant must identify itself as `SD.Live Assistant` and must not impersonate the human owner.
+## Preferred initial stack
+
+- Cloudflare
+- D1
+- Resend
+- OpenAI API
+
+Dapta, Attio/CRM and deeper WhatsApp provider automation remain optional/later.
 
 ## Optional later inputs
 
 Compatible extensions, not current ownership changes:
 
-- **Show Day awareness:** may later contribute a generic limited-response hint, but must not expose event/client detail and must respect explicit Availability precedence.
-- **Calendar busy assist:** may later provide only a coarse busy hint after deciding which calendars/events are safe; private meeting content must never be published.
-- **Lead follow-up timer.**
-- **Client availability link.**
-- **Market/channel routing.**
-- **Status history/analytics.**
+- Show Day awareness as a coarse limited-response hint;
+- privacy-safe Calendar busy assist;
+- lead follow-up timer;
+- client availability link;
+- market/channel routing;
+- status history/analytics;
+- verified-owner WhatsApp command transport.
 
-## Acceptance criteria
+## Runtime history
 
-### Availability Core — completed/current
+Availability foundation and public behavior:
 
-- [x] D1 defines canonical SD.Live-owned availability state.
-- [x] Weekly schedule resolves by timezone/day.
-- [x] Weekly schedule supports multiple windows per day.
-- [x] Manual overrides require explicit expiry and auto-expire.
-- [x] `Auto / Force On / Force Off` exists as separate top-priority backend state.
-- [x] `GET /api/availability` is privacy-safe and reflects effective state.
-- [x] Public UI consumes the shared Availability API and keeps one WhatsApp CTA.
-- [x] EN/ES Availability UI follows page language.
-- [x] Public phone privacy is regression-tested across HTML/JS/edge templates.
-- [x] Admin Availability visual language matches the established Live Mode control family.
+- **PR #159:** public WhatsApp username identity.
+- **PR #160:** Availability Core v1 + bilingual public status.
+- **PR #161/#162:** mobile glow + cache-bust polish.
+- **PR #163:** semantic Availability colors.
+- **PR #164:** persistent integrated status tab attached to WhatsApp.
+- **PR #165:** weekly service hours + Backend Force Mode.
+- **PR #166:** Admin dashboard routing fix.
+- **PR #167:** Availability Admin visual parity.
+- **PR #168:** early Availability docs reconciliation.
 
-### Active continuation
+Travel + next-window:
 
-- [ ] Travel Mode Admin/API writes are implemented and auto-expire.
-- [ ] Travel changes schedule-evaluation timezone without forcing Away.
-- [ ] Next human service window is calculated deterministically and privacy-safely.
+- **PR #169:** Travel Mode controls.
+- **PR #170:** mobile timezone UX.
+- **PR #171:** Travel Mode timezone docs — docs-only.
+- **PR #172:** deterministic next service window.
+- **PR #173:** Force Mode expiry date display fix.
 
-### AI / Lead layer — later
+Admin compact/polish:
 
-- [ ] Owner WhatsApp commands are authenticated before parsing, if that transport is implemented.
-- [ ] AI cannot invent price/catalog/availability/portfolio facts.
-- [ ] AI receives no Finance/Control Center data.
-- [ ] AI-qualified leads pass through an SD.Live-owned validation/storage boundary.
-- [ ] Human handoff is tested end-to-end in EN and ES.
-- [ ] Consent/privacy/script-loading behavior is reviewed before any third-party embed loads.
-- [ ] Provider outage fails to Contact/Rental/WhatsApp rather than blocking lead capture.
+- **PR #174:** compact Availability Admin card.
+- **PR #176:** compact Availability + Show Day control cluster.
+- **PR #177:** visual polish including Weekly Schedule.
+- **PR #178:** final status/chevron/typography parity.
 
-## Provider dependency
+Flexible Temporary Status:
 
-Dapta.ai remains only a candidate. CRM/AI vendors are not prerequisites for the current gate.
+- **PR #179:** flexible timer + owner command parser core.
+- **PR #180:** timer canonical-duration sync fix.
+- **PR #181:** explicit `Apply status` semantics.
 
-Preferred portable architecture:
+Latest closeout checkpoint:
 
-`Public site / WhatsApp → SD.Live Worker/API boundary → optional AI provider → SD.Live lead/handoff boundary → optional CRM`
-
-## Runtime history for this gate
-
-- **PR #160:** Availability Core v1 + public bilingual status behavior + username privacy regression fix.
-- **PR #164:** integrated persistent Availability tab attached to WhatsApp.
-- **PR #165:** weekly service-hours Admin + backend Force Mode.
-- **PR #166:** Admin dashboard routing fix so the Availability runtime is injected on `/admin/`.
-- **PR #167:** Availability Admin visual parity with Live Mode; production visual review accepted.
-
-Latest production checkpoint: `docs/checkpoints/handoff-availability-core-2026-09-01.md`.
+`docs/checkpoints/handoff-availability-v1-closeout-2026-09-01.md`
 
 ## Exact continuation
 
-1. Implement **Travel Mode Admin/API** as a bounded separate slice.
-2. Production-smoke that runtime batch once.
-3. Implement deterministic **next service window** calculation/display.
-4. Only then begin **Lead Core + web AI assistant** design/implementation.
-5. Resend notification/handoff follows Lead Core; Attio/Dapta remain optional later integrations.
+1. Availability Core v1 remains CLOSED/PASS.
+2. Begin **SD.Live Assistant + Lead Core** with D1 Lead schema + safe tool contract.
+3. Define the first public Assistant entry point without displacing Contact/Rental/WhatsApp fallbacks.
+4. Connect Availability as a deterministic tool, not AI-owned truth.
+5. Add Resend notification/handoff after Lead Core exists.
+6. Keep CRM/Attio, Dapta and verified-owner WhatsApp transport optional/later.
