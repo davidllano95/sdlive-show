@@ -1,6 +1,6 @@
 const SHOWDAY_RUNTIME_VERSION = "20260824-2";
 const PUBLIC_AUDIT_RUNTIME_VERSION = "20260831-2";
-const AVAILABILITY_RUNTIME_VERSION = "20260901-1";
+const AVAILABILITY_RUNTIME_VERSION = "20260901-2";
 
 const SHARED_PUBLIC_HEADER_HTML = `
 <header class="site-header" id="siteHeader" data-sdlive-shared-public-header>
