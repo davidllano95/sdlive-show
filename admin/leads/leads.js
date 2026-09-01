@@ -258,6 +258,20 @@
         })
       });
 
+      if (payload.changed) {
+        lead.statusHistory = [
+          {
+            id: 0,
+            leadId: lead.id,
+            fromStatus: payload.previousStatus,
+            toStatus: payload.status,
+            actorEmail: payload.actor,
+            createdAt: new Date().toISOString()
+          },
+          ...(Array.isArray(lead.statusHistory) ? lead.statusHistory : [])
+        ];
+      }
+
       lead.status = payload.status;
       lead.updatedAt = new Date().toISOString();
       renderMetrics();
@@ -314,6 +328,43 @@
     return status;
   }
 
+  function statusHistorySection(lead) {
+    const history = section("Status history");
+    const events = Array.isArray(lead.statusHistory) ? lead.statusHistory : [];
+
+    if (!events.length) {
+      history.appendChild(element(
+        "p",
+        "lead-status-history__empty",
+        "No status changes recorded yet."
+      ));
+      return history;
+    }
+
+    const list = element("div", "lead-status-history");
+    events.forEach((event) => {
+      const item = element("div", "lead-status-history__item");
+      const transition = element("div", "lead-status-history__transition");
+      transition.append(
+        makeStatus(event.fromStatus || "new"),
+        element("span", "lead-status-history__arrow", "→"),
+        makeStatus(event.toStatus || "new")
+      );
+
+      const meta = element("div", "lead-status-history__meta");
+      meta.append(
+        element("span", "", event.actorEmail || "Unknown actor"),
+        element("time", "", formatTimestamp(event.createdAt))
+      );
+
+      item.append(transition, meta);
+      list.appendChild(item);
+    });
+
+    history.appendChild(list);
+    return history;
+  }
+
   function renderDetail(lead) {
     if (!detail) return;
     detail.innerHTML = "";
@@ -329,6 +380,7 @@
     detail.appendChild(header);
 
     detail.appendChild(statusSection(lead));
+    detail.appendChild(statusHistorySection(lead));
 
     const contact = section("Contact");
     const contactGrid = element("div", "lead-detail__grid");
