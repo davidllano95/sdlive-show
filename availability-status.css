@@ -1,26 +1,31 @@
 /* SD.Live Availability — public floating WhatsApp status */
 
 .whatsapp-float[data-availability-state] {
-  --availability-glow-rgb: var(--color-accent-rgb, 160, 137, 229);
+  --availability-available-rgb: 91, 214, 142; /* #5BD68E */
+  --availability-limited-rgb: 245, 183, 72;  /* #F5B748 */
+  --availability-away-rgb: 142, 149, 166;   /* #8E95A6 */
   isolation: isolate;
 }
 
 .whatsapp-float[data-availability-state="available"] {
+  --availability-glow-rgb: var(--availability-available-rgb);
   box-shadow:
     var(--shadow-medium, 0 12px 40px rgba(0, 0, 0, 0.45)),
-    0 0 0 5px rgba(var(--availability-glow-rgb), 0.10),
-    0 0 28px rgba(var(--availability-glow-rgb), 0.42);
-  animation: availability-breathe 3.6s ease-in-out infinite;
+    0 0 0 4px rgba(var(--availability-glow-rgb), 0.08),
+    0 0 24px rgba(var(--availability-glow-rgb), 0.28);
+  animation: availability-breathe 4.2s ease-in-out infinite;
 }
 
 .whatsapp-float[data-availability-state="limited"] {
+  --availability-glow-rgb: var(--availability-limited-rgb);
   box-shadow:
     var(--shadow-medium, 0 12px 40px rgba(0, 0, 0, 0.45)),
     0 0 0 4px rgba(var(--availability-glow-rgb), 0.06),
-    0 0 18px rgba(var(--availability-glow-rgb), 0.22);
+    0 0 18px rgba(var(--availability-glow-rgb), 0.18);
 }
 
 .whatsapp-float[data-availability-state="away"] {
+  --availability-glow-rgb: var(--availability-away-rgb);
   box-shadow: var(--shadow-medium, 0 12px 40px rgba(0, 0, 0, 0.45));
 }
 
@@ -28,18 +33,19 @@
   0%, 100% {
     box-shadow:
       var(--shadow-medium, 0 12px 40px rgba(0, 0, 0, 0.45)),
-      0 0 0 4px rgba(var(--availability-glow-rgb), 0.08),
-      0 0 22px rgba(var(--availability-glow-rgb), 0.30);
+      0 0 0 3px rgba(var(--availability-glow-rgb), 0.07),
+      0 0 20px rgba(var(--availability-glow-rgb), 0.22);
   }
   50% {
     box-shadow:
       var(--shadow-medium, 0 12px 40px rgba(0, 0, 0, 0.45)),
-      0 0 0 7px rgba(var(--availability-glow-rgb), 0.12),
-      0 0 34px rgba(var(--availability-glow-rgb), 0.48);
+      0 0 0 5px rgba(var(--availability-glow-rgb), 0.10),
+      0 0 28px rgba(var(--availability-glow-rgb), 0.34);
   }
 }
 
 .availability-popover {
+  --availability-popover-status: var(--availability-away-rgb, 142, 149, 166);
   position: fixed;
   z-index: 399;
   width: min(290px, calc(100vw - 104px));
@@ -56,6 +62,18 @@
   transform-origin: right center;
   pointer-events: none;
   transition: opacity 220ms ease, transform 280ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.availability-popover[data-availability-state="available"] {
+  --availability-popover-status: 91, 214, 142;
+}
+
+.availability-popover[data-availability-state="limited"] {
+  --availability-popover-status: 245, 183, 72;
+}
+
+.availability-popover[data-availability-state="away"] {
+  --availability-popover-status: 142, 149, 166;
 }
 
 .availability-popover::after {
@@ -80,7 +98,7 @@
 .availability-popover__status {
   display: block;
   margin-bottom: 4px;
-  color: var(--color-accent, #a089e5);
+  color: rgb(var(--availability-popover-status));
   font-family: var(--font-mono, "Sora", system-ui, sans-serif);
   font-size: 10px;
   font-weight: 700;
@@ -104,24 +122,22 @@
   }
 }
 
-/* Touch screens need a more legible halo than desktop hover-capable screens.
-   Keep the same status language, but increase separation from the dark page so
-   Available is visible at a glance on iPhone-sized displays. */
+/* Touch screens keep the status legible without turning the CTA into a neon beacon. */
 @media (hover: none), (pointer: coarse) {
   .whatsapp-float[data-availability-state="available"] {
     box-shadow:
       var(--shadow-medium, 0 12px 40px rgba(0, 0, 0, 0.45)),
-      0 0 0 7px rgba(var(--availability-glow-rgb), 0.18),
-      0 0 34px rgba(var(--availability-glow-rgb), 0.72),
-      0 0 58px rgba(var(--availability-glow-rgb), 0.30);
-    animation: availability-breathe-touch 3.4s ease-in-out infinite;
+      0 0 0 5px rgba(var(--availability-glow-rgb), 0.10),
+      0 0 28px rgba(var(--availability-glow-rgb), 0.36),
+      0 0 44px rgba(var(--availability-glow-rgb), 0.12);
+    animation: availability-breathe-touch 4.2s ease-in-out infinite;
   }
 
   .whatsapp-float[data-availability-state="limited"] {
     box-shadow:
       var(--shadow-medium, 0 12px 40px rgba(0, 0, 0, 0.45)),
-      0 0 0 6px rgba(var(--availability-glow-rgb), 0.11),
-      0 0 28px rgba(var(--availability-glow-rgb), 0.38);
+      0 0 0 4px rgba(var(--availability-glow-rgb), 0.07),
+      0 0 22px rgba(var(--availability-glow-rgb), 0.22);
   }
 }
 
@@ -129,16 +145,16 @@
   0%, 100% {
     box-shadow:
       var(--shadow-medium, 0 12px 40px rgba(0, 0, 0, 0.45)),
-      0 0 0 6px rgba(var(--availability-glow-rgb), 0.15),
-      0 0 30px rgba(var(--availability-glow-rgb), 0.58),
-      0 0 50px rgba(var(--availability-glow-rgb), 0.24);
+      0 0 0 4px rgba(var(--availability-glow-rgb), 0.08),
+      0 0 24px rgba(var(--availability-glow-rgb), 0.30),
+      0 0 38px rgba(var(--availability-glow-rgb), 0.10);
   }
   50% {
     box-shadow:
       var(--shadow-medium, 0 12px 40px rgba(0, 0, 0, 0.45)),
-      0 0 0 9px rgba(var(--availability-glow-rgb), 0.22),
-      0 0 42px rgba(var(--availability-glow-rgb), 0.80),
-      0 0 68px rgba(var(--availability-glow-rgb), 0.34);
+      0 0 0 6px rgba(var(--availability-glow-rgb), 0.12),
+      0 0 32px rgba(var(--availability-glow-rgb), 0.42),
+      0 0 48px rgba(var(--availability-glow-rgb), 0.15);
   }
 }
 
