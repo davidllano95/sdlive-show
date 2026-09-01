@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  ASSISTANT_ORCHESTRATOR_ACTIONS,
   assistantOrchestratorPolicy,
   runAssistantTurn
 } from "../assistant-orchestrator.js";
@@ -14,6 +15,8 @@ function output(nextAction, extra = {}) {
     reply: `reply:${nextAction}`,
     serviceCategory: "live",
     nextAction,
+    slotPatch: null,
+    rentalQuery: null,
     leadDraft: null,
     ...extra
   };
@@ -24,6 +27,7 @@ function makeDeps(modelOutputs, options = {}) {
   const calls = {
     model: [],
     availability: 0,
+    rental: 0,
     applyTurn: 0,
     capture: 0,
     handoff: 0,
@@ -41,12 +45,13 @@ function makeDeps(modelOutputs, options = {}) {
     validateModelOutput: async (raw) => options.invalidValidation
       ? { ok: false, error: "invalid" }
       : { ok: true, output: raw },
-    applyTurn: async (session, modelOutput) => {
+    applyTurn: async (session, slotPatch) => {
       calls.applyTurn += 1;
+      calls.appliedPatch = slotPatch;
       return {
         ...session,
         turns: (session.turns || 0) + 1,
-        lastAction: modelOutput.nextAction
+        appliedPatch: slotPatch
       };
     },
     readAvailability: async () => {
@@ -54,6 +59,19 @@ function makeDeps(modelOutputs, options = {}) {
       return options.availability || {
         availabilityKnown: true,
         status: "available"
+      };
+    },
+    resolveRentalQuery: async (query) => {
+      calls.rental += 1;
+      calls.rentalQuery = query;
+      return options.rentalResult || {
+        readyForBackendEvaluation: true,
+        resolvedItems: [{ key: "wing", quantity: 1 }],
+        unresolved: [],
+        guardrails: {
+          mayQuotePrice: false,
+          mayClaimInventoryAvailability: false
+        }
       };
     },
     getConsentPrompt: async (language) => {
@@ -79,11 +97,25 @@ function makeDeps(modelOutputs, options = {}) {
   };
 }
 
-test("orchestrator policy keeps tools, consent and writes server-controlled", () => {
+test("orchestrator action list mirrors the approved deterministic boundaries", () => {
+  assert.deepEqual(ASSISTANT_ORCHESTRATOR_ACTIONS, [
+    "reply",
+    "check_availability",
+    "check_rental",
+    "request_consent",
+    "capture_lead",
+    "handoff"
+  ]);
+});
+
+test("orchestrator policy keeps tools, slots, consent and writes server-controlled", () => {
   assert.deepEqual(assistantOrchestratorPolicy(), {
+    maxToolHopsPerTurn: 2,
     maxAvailabilityToolCallsPerTurn: 1,
+    maxRentalToolCallsPerTurn: 1,
     modelExecutesToolsDirectly: false,
     modelControlsConsent: false,
+    incrementalSlotsAppliedOncePerTurn: true,
     captureRequiresFreshServerConsent: true,
     handoffRequiresServerLeadId: true,
     notificationFailureRollsBackLead: false,
@@ -93,8 +125,10 @@ test("orchestrator policy keeps tools, consent and writes server-controlled", ()
   });
 });
 
-test("reply turn has no tool or irreversible effects", async () => {
-  const deps = makeDeps([output("reply")]);
+test("reply turn applies one incremental slot patch and has no tool/effect", async () => {
+  const deps = makeDeps([
+    output("reply", { slotPatch: { name: "Alex", project: { city: "Bogotá" } } })
+  ]);
   const result = await runAssistantTurn({
     requestId: "req_test",
     message: "hello",
@@ -103,16 +137,27 @@ test("reply turn has no tool or irreversible effects", async () => {
 
   assert.equal(result.kind, "reply");
   assert.equal(result.session.turns, 1);
+  assert.deepEqual(deps.calls.appliedPatch, {
+    name: "Alex",
+    project: { city: "Bogotá" }
+  });
+  assert.equal(deps.calls.applyTurn, 1);
   assert.equal(deps.calls.availability, 0);
+  assert.equal(deps.calls.rental, 0);
   assert.equal(deps.calls.capture, 0);
   assert.equal(deps.calls.handoff, 0);
   assert.equal(deps.calls.model.length, 1);
 });
 
-test("availability action performs one deterministic tool hop then revalidates model", async () => {
+test("availability hop preserves slots extracted before and after the tool", async () => {
   const deps = makeDeps([
-    output("check_availability"),
-    output("reply", { reply: "Availability explained safely" })
+    output("check_availability", {
+      slotPatch: { name: "Alex", project: { city: "Bogotá" } }
+    }),
+    output("reply", {
+      reply: "Availability explained safely",
+      slotPatch: { contact: { email: "alex@example.com" }, project: { venue: "Teatro" } }
+    })
   ]);
 
   const result = await runAssistantTurn({
@@ -126,13 +171,104 @@ test("availability action performs one deterministic tool hop then revalidates m
   assert.equal(deps.calls.availability, 1);
   assert.equal(deps.calls.model.length, 2);
   assert.equal(deps.calls.applyTurn, 1);
-  assert.deepEqual(deps.calls.model[1].toolResult, {
-    type: "availability",
-    value: { availabilityKnown: true, status: "available" }
+  assert.deepEqual(deps.calls.appliedPatch, {
+    name: "Alex",
+    project: { city: "Bogotá", venue: "Teatro" },
+    contact: { email: "alex@example.com" }
   });
+  assert.deepEqual(deps.calls.model[1].toolResults, [
+    {
+      type: "availability",
+      value: { availabilityKnown: true, status: "available" }
+    }
+  ]);
 });
 
-test("a repeated availability request in the same turn is blocked", async () => {
+test("Rental action resolves only the validated Rental query and returns result to model", async () => {
+  const rentalQuery = {
+    items: [{ name: "Behringer WING", quantity: 1 }],
+    services: []
+  };
+  const deps = makeDeps([
+    output("check_rental", {
+      serviceCategory: "rental",
+      rentalQuery,
+      slotPatch: { equipment: ["Behringer WING"] }
+    }),
+    output("reply", {
+      serviceCategory: "rental",
+      reply: "The WING is listed; current availability still needs backend confirmation."
+    })
+  ]);
+
+  const result = await runAssistantTurn({
+    requestId: "req_test",
+    message: "Do you have a WING?",
+    session: baseSession
+  }, deps);
+
+  assert.equal(result.kind, "reply");
+  assert.equal(deps.calls.rental, 1);
+  assert.deepEqual(deps.calls.rentalQuery, rentalQuery);
+  assert.deepEqual(deps.calls.appliedPatch, { equipment: ["Behringer WING"] });
+  assert.equal(result.toolResults[0].type, "rental");
+  assert.equal(result.toolResults[0].value.guardrails.mayQuotePrice, false);
+});
+
+test("unresolved Rental result is passed through instead of silently substituting", async () => {
+  const unresolved = {
+    readyForBackendEvaluation: false,
+    resolvedItems: [],
+    unresolved: [{ type: "item", requested: "Mystery Console" }],
+    guardrails: { mayQuotePrice: false, mayClaimInventoryAvailability: false }
+  };
+  const deps = makeDeps([
+    output("check_rental", {
+      serviceCategory: "rental",
+      rentalQuery: { items: [{ name: "Mystery Console", quantity: 1 }], services: [] }
+    }),
+    output("reply", {
+      serviceCategory: "rental",
+      reply: "I couldn't match that model."
+    })
+  ], { rentalResult: unresolved });
+
+  const result = await runAssistantTurn({
+    requestId: "req_test",
+    message: "Need a Mystery Console",
+    session: baseSession
+  }, deps);
+
+  assert.equal(result.kind, "reply");
+  assert.deepEqual(result.toolResults[0].value, unresolved);
+  assert.equal(deps.calls.rental, 1);
+});
+
+test("Availability and Rental may each run once in the same turn", async () => {
+  const deps = makeDeps([
+    output("check_availability"),
+    output("check_rental", {
+      rentalQuery: { items: [{ name: "WING", quantity: 1 }], services: [] }
+    }),
+    output("reply", { reply: "Both deterministic checks are complete." })
+  ]);
+
+  const result = await runAssistantTurn({
+    requestId: "req_test",
+    message: "Are you free and do you list a WING?",
+    session: baseSession
+  }, deps);
+
+  assert.equal(result.kind, "reply");
+  assert.equal(deps.calls.availability, 1);
+  assert.equal(deps.calls.rental, 1);
+  assert.equal(deps.calls.model.length, 3);
+  assert.equal(result.toolResults.length, 2);
+  assert.deepEqual(result.toolResults.map((item) => item.type), ["availability", "rental"]);
+  assert.equal(deps.calls.applyTurn, 1);
+});
+
+test("a repeated Availability request in the same turn is blocked", async () => {
   const deps = makeDeps([
     output("check_availability"),
     output("check_availability")
@@ -147,11 +283,53 @@ test("a repeated availability request in the same turn is blocked", async () => 
     (error) => error?.code === "TOOL_LOOP_BLOCKED"
   );
   assert.equal(deps.calls.availability, 1);
-  assert.equal(deps.calls.capture, 0);
+  assert.equal(deps.calls.applyTurn, 0);
 });
 
-test("request_consent returns product-owned prompt without creating a lead", async () => {
-  const deps = makeDeps([output("request_consent")]);
+test("a repeated Rental request in the same turn is blocked", async () => {
+  const query = { items: [{ name: "WING", quantity: 1 }], services: [] };
+  const deps = makeDeps([
+    output("check_rental", { rentalQuery: query }),
+    output("check_rental", { rentalQuery: query })
+  ]);
+
+  await assert.rejects(
+    () => runAssistantTurn({
+      requestId: "req_test",
+      message: "check again",
+      session: baseSession
+    }, deps),
+    (error) => error?.code === "TOOL_LOOP_BLOCKED"
+  );
+  assert.equal(deps.calls.rental, 1);
+  assert.equal(deps.calls.applyTurn, 0);
+});
+
+test("third tool hop is blocked even if it would switch type again", async () => {
+  const deps = makeDeps([
+    output("check_availability"),
+    output("check_rental", {
+      rentalQuery: { items: [{ name: "WING", quantity: 1 }], services: [] }
+    }),
+    output("check_availability")
+  ]);
+
+  await assert.rejects(
+    () => runAssistantTurn({
+      requestId: "req_test",
+      message: "loop",
+      session: baseSession
+    }, deps),
+    (error) => error?.code === "TOOL_LOOP_BLOCKED"
+  );
+  assert.equal(deps.calls.availability, 1);
+  assert.equal(deps.calls.rental, 1);
+});
+
+test("request_consent applies accumulated slots then returns product-owned prompt", async () => {
+  const deps = makeDeps([
+    output("request_consent", { slotPatch: { summary: "Live event inquiry" } })
+  ]);
   const result = await runAssistantTurn({
     requestId: "req_test",
     message: "save it",
@@ -161,6 +339,7 @@ test("request_consent returns product-owned prompt without creating a lead", asy
   assert.equal(result.kind, "request_consent");
   assert.equal(result.reason, "model_requested_consent");
   assert.deepEqual(result.consentPrompt, { language: "en", action: "authorize" });
+  assert.deepEqual(deps.calls.appliedPatch, { summary: "Live event inquiry" });
   assert.equal(deps.calls.capture, 0);
   assert.equal(deps.calls.consentPrompt, 1);
 });
@@ -192,7 +371,7 @@ test("fresh consent allows one lead capture and then notification", async () => 
     summary: "Show"
   };
   const deps = makeDeps(
-    [output("capture_lead", { leadDraft: draft })],
+    [output("capture_lead", { leadDraft: draft, slotPatch: { name: "Client" } })],
     { consentFresh: true, leadId: 77 }
   );
 
@@ -210,6 +389,7 @@ test("fresh consent allows one lead capture and then notification", async () => 
   assert.equal(deps.calls.handoff, 1);
   assert.equal(deps.calls.captureInput.requestId, "req_test");
   assert.deepEqual(deps.calls.captureInput.leadDraft, draft);
+  assert.deepEqual(deps.calls.appliedPatch, { name: "Client" });
 });
 
 test("notification failure does not turn a persisted lead into capture failure", async () => {
@@ -287,4 +467,5 @@ test("unknown nextAction fails closed even if an injected validator is buggy", a
     (error) => error?.code === "ACTION_NOT_ALLOWED"
   );
   assert.equal(deps.calls.capture, 0);
+  assert.equal(deps.calls.rental, 0);
 });
