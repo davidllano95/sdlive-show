@@ -70,6 +70,32 @@ function normalizeWeeklySchedule(value) {
   return { schedule, windowCount };
 }
 
+function validateWeeklyScheduleInput(value) {
+  const source = value && typeof value === "object" && !Array.isArray(value) ? value : {};
+  const schedule = {};
+
+  for (const key of WEEKDAY_KEYS) {
+    const rawWindows = source[key] === undefined ? [] : source[key];
+    if (!Array.isArray(rawWindows) || rawWindows.length > 6) {
+      return { ok: false, error: "invalid_schedule_window" };
+    }
+    schedule[key] = [];
+    for (const raw of rawWindows) {
+      if (!Array.isArray(raw) || raw.length < 2) {
+        return { ok: false, error: "invalid_schedule_window" };
+      }
+      const start = validTime(raw[0]);
+      const end = validTime(raw[1]);
+      if (!start || !end || minutesFromTime(end) <= minutesFromTime(start)) {
+        return { ok: false, error: "invalid_schedule_window" };
+      }
+      schedule[key].push([start, end]);
+    }
+  }
+
+  return { ok: true, schedule };
+}
+
 function emptyProfile() {
   return {
     defaultTimezone: "America/Bogota",
@@ -447,12 +473,13 @@ export function normalizeAvailabilityProfileInput(payload) {
   const body = payload && typeof payload === "object" && !Array.isArray(payload) ? payload : {};
   const defaultTimezone = cleanString(body.defaultTimezone) || "America/Bogota";
   if (!isValidTimeZone(defaultTimezone)) return { ok: false, error: "invalid_timezone" };
-  const normalized = normalizeWeeklySchedule(body.weeklySchedule);
+  const validated = validateWeeklyScheduleInput(body.weeklySchedule);
+  if (!validated.ok) return validated;
   return {
     ok: true,
     value: {
       defaultTimezone,
-      weeklySchedule: normalized.schedule,
+      weeklySchedule: validated.schedule,
       configured: true
     }
   };
