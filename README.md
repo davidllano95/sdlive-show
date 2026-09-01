@@ -24,29 +24,33 @@ When docs disagree, use:
 
 ## Current state
 
-As of **2026-08-31 America/Bogota**:
+As of **2026-09-01 America/Bogota**:
 
 - Finance read-only integration and `/admin/finance/` — **OPERATIONAL / production-smoked PASS**; PR #141 freeze regression remains closed.
 - Admin Calendar + controlled create + multi-day operations — **CLOSED/PASS**.
 - Site Schedule + automatic Show Day + Location — **CLOSED/PASS**.
 - Admin-only Show Day QA override `Auto / Force On / Force Off` — **CLOSED/PASS**.
 - Admin desktop/mobile stabilization — **CLOSED/PASS**; issue #126 completed.
-- Google Calendar integration to `sam@sdlive.show` — **OPERATIONAL / production-smoked PASS through PR #150**: REGISTRO work projection, Site Schedule V2 block projection, read-only manual/recurring overlay and monthly collection reminders.
-- Shared Home-style header on current public route families — **PASS**.
-- Public post-integration visual stabilization — **CLOSED/PASS**; issue #124 completed after representative desktop/mobile production smoke.
-- Rental image-editor parity — **CLOSED/PASS through PR #157**; issue #156 completed after production smoke on Event Labeler, synchronized BetaThree PA and Behringer WING.
-- **Current gate:** no stabilization gate is active; deliberately select the next roadmap module before starting implementation.
+- Public post-integration visual stabilization — **CLOSED/PASS**; issue #124 completed.
+- Rental image-editor parity — **CLOSED/PASS through PR #157**; issue #156 completed.
+- Google Calendar `sam@sdlive.show` secondary projection/read-only overlay — **OPERATIONAL / production-smoked PASS**.
+- **Availability Core v1 — CLOSED/PASS through PR #181.**
+- **Current Active Gate: SD.Live Assistant + Lead Core.**
 - Generic Finance Phase 3 write-back — **BLOCKED**.
 
-The exact current continuation point lives in `PROJECT_STATUS.md` and `docs/checkpoints/handoff-current-state-2026-08-31.md`.
+The exact current continuation point lives in `PROJECT_STATUS.md` and `docs/checkpoints/handoff-availability-v1-closeout-2026-09-01.md`.
 
 ## Change workflow
 
-For material repository changes:
+For runtime changes:
 
-`inspect current main → short branch → implement/update → tests/CI → PR → CI green → squash merge → one production smoke for runtime changes`.
+`inspect current main → short branch → implement/update → tests/CI → PR → CI green → squash merge → one representative production smoke`.
 
-During visual audit, record all findings in a coherent surface first and batch them later. P0/P1 blocking regressions are the normal exception.
+For manual QA with the owner: **one action at a time**.
+
+Do not use Cloudflare → Deployments as a routine manual QA step. Check deployment state only if the owner asks or there is concrete evidence of a deployment anomaly.
+
+For docs-only changes: branch → docs → tests/CI → PR → CI green → squash merge. No production smoke is required.
 
 ## Current architecture
 
@@ -58,7 +62,7 @@ During visual audit, record all findings in a coherent surface first and batch t
 - Forms: Turnstile + D1 + Resend.
 - Languages: EN / ES with persisted preference where supported.
 - Markets: Colombia / International behavior.
-- Public header contract: Home is canonical; current SEO/service landings are normalized at the edge to the same Home header structure, including navigation, CTA, EN/ES, Show Day and Location.
+- Public header contract: Home is canonical; current SEO/service landings are normalized at the edge to the same Home header structure.
 
 ### CMS / media
 
@@ -66,18 +70,17 @@ During visual audit, record all findings in a coherent surface first and batch t
 - R2 binding `MEDIA_BUCKET` → `sdlive-media-production`.
 - Public media domain: `media.sdlive.show`.
 - Hero, Trusted By / Supported Brands, Testimonials, Core Home, Rental/Contact presentation and reusable Media Library are established.
-- Managed logos/images remain R2-owned; presentation-only changes should not duplicate source assets unnecessarily.
+- Managed logos/images remain R2-owned.
 - Visual safeguards and publish failsafe remain part of the Editor boundary.
-- Rental PA uses one canonical CMS image/framing control for the two visible BetaThree units; source, scale and X/Y framing remain synchronized as one composition.
-- Rental image editing is parity-verified across standard cards and Production Tools: Replace/Library, size and X/Y act on the real public image containers, while Save Draft/Publish retain the same presentation semantics.
+- Rental image editing is parity-verified across standard cards, PA and Production Tools.
 
 ### Private Admin / Control Center
 
 All Admin workspaces remain behind Cloudflare Access.
 
-- `/admin/` — lightweight Dashboard / system overview + Show Day Visual QA.
+- `/admin/` — lightweight Dashboard / system overview + compact Availability + Show Day controls.
 - `/admin/finance/` — read-only SD.Live Track analytics/workflow workspace; COP/USD separate.
-- `/admin/calendar/` — Calendar / Operations over `REGISTRO`, including multi-day, controlled create, authenticated Google sync and read-only Google overlay.
+- `/admin/calendar/` — Calendar / Operations over `REGISTRO`, including multi-day and controlled create.
 - `/admin/calendar/site-schedule/` — website-only split-work / Show Day / Location editor.
 - `/admin/editor/` — Site Editor / CMS workspace.
 
@@ -99,6 +102,8 @@ All Admin workspaces remain behind Cloudflare Access.
 | Google Calendar secondary projection / read-only overlay | `sam@sdlive.show` |
 | Automatic public Show Day | Site Schedule + America/Bogota date |
 | Show Day Location | Site Schedule block only |
+| Availability / reachability | D1 Availability Core |
+| Future leads | SD.Live-owned Lead Core in D1 |
 
 ## Finance / AppSheet non-negotiables
 
@@ -121,50 +126,6 @@ Canonical dates:
 - one-day uses end=start;
 - multi-day requires end>=start.
 
-Invoice eligibility:
-
-- canonical end before today → **Por facturar** when otherwise eligible;
-- end today/future/invalid → **Flujo bloqueado**;
-- legacy rows without `Fecha fin` may fall back to `Fecha trabajo`;
-- today is America/Bogota.
-
-Issue #83 mainly remains for aligning AppSheet reminders/bots to the same day-after-`Fecha fin` rule.
-
-## Finance current capabilities
-
-The dedicated workspace includes:
-
-- Por facturar / Cobrable ahora / Flujo bloqueado action queues;
-- Aging drilldowns;
-- Data quality worklists;
-- monthly/all-time analytics and tax reserve;
-- pass-through/third-party retention calculator;
-- header-by-name schema normalization;
-- deterministic date normalization so ambiguous Google-formatted dates do not generate false negative payment durations;
-- `LiventX · Listo para firmar` queue with monthly emphasis from the 20th;
-- direct supplier portal CTA to `https://proveedores.aoscentral.com`.
-
-### Finance reliability closeout — PR #141
-
-A production regression caused `/admin/finance/` to remain on `Connecting to SD.Live Track…` and eventually make Safari unresponsive.
-
-The root cause was a DOM-wide `MutationObserver` in the LiventX portal-link runtime. Its callback changed text/attributes inside the same observed subtree, creating a mutation → callback → mutation loop capable of saturating the main thread. Once saturated, browser timeouts could not execute, which made the issue look like a Google/Sheets connection hang.
-
-PR #141 removed the DOM-wide observer, moved portal-link updates to explicit events, made updates idempotent, cache-busted the affected runtime and expanded Finance freeze regression coverage.
-
-**Production smoke: PASS. Finance loads again and the page remains responsive.**
-
-## LiventX workflow
-
-`LiventX · Listo para firmar` contains records where:
-
-- client is LiventX;
-- evaluation date exists;
-- signature date is missing;
-- record is not paid and is beyond `Pendiente Envio`.
-
-The queue is always visible and receives monthly emphasis from the **20th** through month end. Finance remains read-only and signing occurs externally at `https://proveedores.aoscentral.com`.
-
 ## Calendar / Site Schedule / Show Day
 
 Calendar reads the same `REGISTRO` and supports canonical multi-day spans. Controlled create writes only mapped human/source fields into a safe row and leaves formula/workflow ownership intact.
@@ -178,110 +139,167 @@ Site Schedule is separate website-only D1 presentation state:
 
 Automatic Show Day comes from Site Schedule + America/Bogota. The public visitor toggle is gone. Admin has a temporary QA override `Auto / Force On / Force Off` separate from canonical data and expiring at Bogotá day-end.
 
-Google Calendar is a secondary integration surface, not a source of operational truth. Explicit `Sync Google Calendar` reconciles REGISTRO/AppSheet work into `sam@sdlive.show`; Site Schedule V2 blocks replace only their own SD.Live broad parent projections; manual/recurring Google events are read-only overlay data. PR #150 aligned Google reconciliation with the same `site_schedule_state` store used by Admin and Show Day.
+Google Calendar is a secondary integration surface, not a source of operational truth. No Google → REGISTRO/AppSheet reverse-write path exists.
 
-Future simultaneous Show Day behavior should use explicit **Primary / Secondary** presentation priority instead of cramming multiple Locations into the header.
+Show Day is **CLOSED/PASS**. Do not reopen it unless a new regression appears.
 
-## Availability / Travel Mode
+## Availability Core v1
 
-Availability has a separate Admin-controlled Travel Mode. Travel Mode changes the timezone used to evaluate the saved weekly service hours; **travel does not itself force the public status to Away**.
+Availability is a deterministic SD.Live-owned D1 service.
 
-The Admin timezone selector includes common destinations plus **Use device timezone**. Prefer **Use device timezone** when the phone/computer is already set to the timezone of the place where you are working.
+Effective states:
 
-If the required timezone is not in the selector, choose **Other IANA timezone…** and enter the canonical **IANA timezone identifier** in this format:
+- `available`
+- `limited`
+- `away`
 
-`Area/Location`
+### Precedence
 
-Examples:
+1. Backend Force Mode — `Auto / Force On / Force Off`.
+2. Temporary operational override — `Auto / Available / Limited / Away`.
+3. Weekly service schedule.
+4. Compatibility default before the first deliberate schedule save.
 
-- Bogotá → `America/Bogota`
-- New York → `America/New_York`
-- Los Angeles → `America/Los_Angeles`
-- Madrid → `Europe/Madrid`
-- London → `Europe/London`
-- Singapore → `Asia/Singapore`
-- Sydney → `Australia/Sydney`
-- Auckland → `Pacific/Auckland`
-- Honolulu → `Pacific/Honolulu`
+Force Mode is a separate top-priority layer and does not destroy temporary override or schedule state underneath it.
 
-Rules for manual entry:
+### Weekly Service Hours
 
-- enter the identifier exactly as an IANA timezone, including `/` and `_` where required;
-- use the canonical English/IANA spelling, e.g. `America/Bogota` — not `America/Bogotá`;
-- do **not** enter a city name alone (`Bogotá`), a country (`Colombia`), an abbreviation (`EST`, `COT`) or a raw UTC/GMT offset (`UTC-5`, `GMT+1`);
-- if unsure, use **Use device timezone** after confirming the device is set to the destination timezone rather than guessing an identifier.
+- Monday–Sunday.
+- Multiple windows per day.
+- Days without windows resolve Away after schedule configuration.
+- Evaluation happens in the active Availability timezone.
 
-Travel Mode is bounded: it starts when saved and ends at **11:59 PM on the selected end date in the selected travel timezone**. Turning it off returns weekly service-hour evaluation to the base timezone.
+### Travel Mode
 
-## Public visual stabilization — closed
+Travel Mode is implemented and bounded.
 
-The post-integration public audit is production-verified and issue #124 is closed.
+- temporary IANA timezone;
+- explicit end date;
+- automatic expiry;
+- travel does not itself force Away;
+- travel changes the clock used to evaluate weekly service windows;
+- Admin supports common zones, `Use device timezone`, and `Other IANA timezone…`.
 
-Current merged public corrections include:
+Manual timezone entry must use a canonical IANA identifier such as:
 
-- footer/legal/header consistency;
-- Anima Producciones + Sonique contrast without modifying source R2 media;
-- local contrast/semantics/accessibility fixes;
-- WhatsApp CTA consistency on public service/SEO landings;
-- Rental empty-request protection + browser/backend pricing parity test;
-- BetaThree PA reduced to roughly one card in a three-card desktop PA grid and aligned left;
-- Rental CMS PA framing controls keep the two visible units synchronized as one composition;
-- stable mobile Supported Brands layouts for Misi/Wonderlust;
-- Trusted By mobile glow/luminosity restored;
-- Testimonials progressive disclosure with synchronized reveal, natural short-card height, viewport-preserving collapse, EN/ES expansion preservation, retained glow and height-independent sheen pacing.
+- `America/Bogota`
+- `America/New_York`
+- `Europe/Madrid`
+- `Asia/Singapore`
+- `Australia/Sydney`
 
-Final user production acceptance after PRs #152–#157 confirmed:
+Do not use raw offsets (`UTC-5`), abbreviations (`EST`) or city names alone.
 
-- Testimonials behavior/visual pacing is correct;
-- PA was positioned in CMS, saved, published and verified on desktop and mobile;
-- Misi mobile Supported Brands is side-by-side;
-- Wonderlust mobile Supported Brands is three per row with a single remainder centered;
-- Trusted By mobile glow is present;
-- Event Labeler, BetaThree PA and Behringer WING image controls respond correctly in Site Editor, and the Labeler change was saved/published successfully.
+### Next service window
 
-Do not restart the public visual audit or Rental image-editor smoke unless a new regression appears.
+The next human service window is calculated deterministically from schedule + current override/Force/Travel state.
 
-## Admin stabilization — closed
+The resolver accounts for closed days, expiries, timezone changes and DST.
 
-The full Admin desktop/mobile audit and coherent stabilization batch are complete. Issue #126 is closed.
+Public output remains privacy-safe and does not expose Travel timezone, itinerary, private Calendar details or owner phone data.
 
-Accepted scope includes shared shell/readability/navigation, mobile drawer behavior, Editor CMS scale/order/header contracts, Rental presentation stabilization, Finance LiventX visual cycle, Calendar mobile hierarchy, Site Schedule desktop/mobile workflow and Google Calendar integration.
+### Flexible Temporary Status
 
-Final production verification after PR #150 confirmed:
+Temporary Status uses a flexible timer instead of fixed 1/2/4/8 hour blocks.
 
-- `RENT` projects as four Site Schedule blocks instead of one broad date range;
-- `JPN - Cubo Colsubsidio` and `N. Jade` Site Schedule projections exist;
-- day-5/day-19 09:00 Bogotá collection reminders exist and are transparent;
-- manual/recurring Google items remain untouched by reconciliation;
-- REGISTRO/AppSheet and Site Schedule V2 retain their existing ownership boundaries.
+- minimum 15 minutes;
+- maximum 24 hours;
+- hours + minutes controls;
+- `Auto / Available / Limited / Away` are selection controls;
+- `Apply status` explicitly commits the selection + current timer;
+- pending edits are not silently applied.
 
-Do not restart the Admin audit unless a new regression appears.
+Production smoke verified `0 h / 15 min` with both Limited and Away. Production was returned to Auto after testing.
 
-## Future roadmap highlights
+### Dashboard visual contract
 
-- `docs/roadmap/availability-aware-contact-widget.md`: **Availability-Aware Contact / AI** is eligible for prioritization now that stabilization is closed. It combines weekly service hours, travel mode and expiring manual away overrides, then routes to human WhatsApp or an AI qualification/handoff surface without giving AI pricing/finance authority.
-- `docs/roadmap/sdlive-control-center.md`: includes the documented future **SD.Live Patch** direction; Patch is eligible for prioritization but is not automatically active.
-- `docs/roadmap/future-finance-document-generator-2026-08-25.md`: shared branded generator for **Cuenta de cobro / Cotización / Factura or invoice draft**, reusing existing Finance/Rental/client data and not creating a second finance source of truth. Real Colombian electronic invoicing requires explicit DIAN-compliant design/provider integration before it can be represented as legally valid.
-- Calendar Agenda scope filter: `Full Month` vs `Current + Future`.
-- Controlled Calendar edit/workflow actions after stabilization.
-- Finance reminder delivery hardening.
-- Attio CRM and Dapta.ai remain future candidates only.
-- Show Day favicon/prepaint polish and Primary/Secondary concurrency model remain backlog.
+Availability and Show Day are presented as a compact control cluster.
+
+- bounded two-card desktop layout;
+- stacked mobile layout;
+- coherent typography/status pills/disclosures;
+- `Manage availability` and `Manage Show Day` disclosures;
+- compact Weekly Schedule;
+- stable CSS chevrons;
+- Travel `OFF` and operational status pills share the same visual language.
+
+### Public WhatsApp / Availability
+
+The existing floating WhatsApp control remains the only persistent floating CTA.
+
+- integrated Availability status tab;
+- EN `AVAILABLE / LIMITED / AWAY` plus ES equivalents;
+- bilingual explanatory popover;
+- Away may expose privacy-safe next human service timing;
+- public WhatsApp identity remains username-only;
+- owner phone number is prohibited in public HTML/JS/schema/Availability output.
+
+### Owner WhatsApp commands
+
+A transport-neutral parser is prepared for future verified-owner control, including command shapes such as:
+
+- `away 4h`
+- `away until 23:00`
+- `limited 1h 30m`
+- `back` / `volver`
+- `status` / `estado`
+
+The real WhatsApp transport is **not live yet**. It must authenticate the owner server-side before parsing commands and must not expose owner phone information publicly.
+
+Availability Core v1 is **CLOSED/PASS**. Do not reopen it unless a regression appears.
+
+## Current Active Gate — SD.Live Assistant + Lead Core
+
+Preferred architecture:
+
+`Public site / popup → SD.Live API → optional AI → safe tools → SD.Live-owned Lead Core in D1 → notification → human handoff → optional CRM later`
+
+Assistant name: **SD.Live Assistant**.
+
+The assistant must:
+
+- identify itself as the assistant, not as Samuel;
+- work EN/ES;
+- classify Live / Theatre / Sound Design / Systems / Rental / Other;
+- collect name, contact, date, city, venue, service, equipment, schedule and concise summary;
+- consult deterministic Availability Core;
+- answer only from approved business/service information;
+- create a normalized Lead Core record in D1;
+- produce a useful human handoff.
+
+The assistant must not:
+
+- invent prices;
+- negotiate prices;
+- promise availability without deterministic backend confirmation;
+- become Rental catalog/quantity/availability source of truth;
+- access Finance/Admin data;
+- invent credits, capabilities or policies;
+- leave the only copy of lead/transcript data in an external vendor.
+
+Preferred initial stack:
+
+- Cloudflare
+- D1
+- Resend
+- OpenAI API
+
+CRM/Attio, Dapta and deeper WhatsApp provider automation remain optional later layers.
+
+## Backlog that must not displace the Active Gate
+
+- Mobile Rental Cart total visibility / sticky request summary.
+- SD.Live Patch.
+- Finance Document Generator.
+- Rental availability/double-booking.
+- Calendar workflow additions.
+- AppSheet reminder alignment.
+- Show Day simultaneous Primary/Secondary presentation priority.
 
 ## Relevant docs
 
-- `PROJECT_STATUS.md` — exact current status and continuation point.
-- `docs/checkpoints/handoff-current-state-2026-08-31.md` — latest handoff after PR #157 / issue #156 and roadmap reconciliation.
-- `docs/checkpoints/handoff-public-audit-closeout-2026-08-31.md` — historical handoff after closing the public post-integration audit.
-- `docs/checkpoints/handoff-admin-stabilization-2026-08-31.md` — Admin stabilization + Google Calendar acceptance.
-- `docs/roadmap/post-integration-visual-audit-2026-08-23.md` — completed Admin + public post-integration audit contract.
-- `docs/roadmap/finance-phase2-real-use-2026-08-23.md` — Finance real-use/current workflow details.
-- `docs/roadmap/future-finance-document-generator-2026-08-25.md` — future document generator.
-- `docs/roadmap/calendar-operations-hub-2026-08-23.md` — Calendar/AppSheet/Site Schedule contract.
+- `PROJECT_STATUS.md` — master current state + exact continuation.
+- `docs/checkpoints/handoff-availability-v1-closeout-2026-09-01.md` — latest Availability closeout.
+- `docs/roadmap/availability-aware-contact-widget.md` — Availability / Lead / Assistant contract.
+- `docs/roadmap/mobile-rental-cart-total-visibility.md` — bounded Rental mobile backlog.
 - `ROADMAP_MASTER_CHECKLIST.md` — historical/future backlog; lower precedence than current-state docs.
-
-## Immediate continuation
-
-Admin stabilization is **closed/PASS through PR #150** and issue #126 is completed. Public post-integration stabilization remains **closed/PASS**, and Rental image-editor parity is **closed/PASS through PR #157 / issue #156**. Finance PR #141 remains production-smoked PASS.
-
-**No stabilization gate is active.** Select the next roadmap module deliberately. `Availability-Aware Contact / AI` and `SD.Live Patch` are documented and eligible candidates; neither is automatically active. Generic Finance Phase 3 write-back remains blocked.
