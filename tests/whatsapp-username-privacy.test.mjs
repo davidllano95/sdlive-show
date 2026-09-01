@@ -9,7 +9,7 @@ const publicHtml = execFileSync('git', ['ls-files', '*.html'], { encoding: 'utf8
   .filter(Boolean)
   .filter((path) => !path.startsWith('admin/'));
 
-test('public HTML never exposes a phone-number WhatsApp link or telephone schema', () => {
+test('public HTML never exposes the owner phone number in links, schema, or copy', () => {
   for (const path of publicHtml) {
     const html = fs.readFileSync(path, 'utf8');
     assert.doesNotMatch(html, /https:\/\/wa\.me\/\d{7,}/, `${path} contains a numeric WhatsApp link`);
