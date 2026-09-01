@@ -1,4 +1,5 @@
 const AVAILABILITY_ADMIN_RUNTIME_VERSION = "20260901-6";
+const AVAILABILITY_TEMPORARY_TIMER_VERSION = "20260901-1";
 
 export function applyAvailabilityAdminRuntime(response) {
   const contentType = response?.headers?.get("content-type") || "";
@@ -13,10 +14,12 @@ export function applyAvailabilityAdminRuntime(response) {
           `<link rel="stylesheet" href="/admin/availability-travel-admin.css?v=${AVAILABILITY_ADMIN_RUNTIME_VERSION}" data-sdlive-availability-travel-admin/>` +
           `<link rel="stylesheet" href="/admin/availability-next-window-admin.css?v=${AVAILABILITY_ADMIN_RUNTIME_VERSION}" data-sdlive-availability-next-window-admin/>` +
           `<link rel="stylesheet" href="/admin/availability-compact-layout.css?v=${AVAILABILITY_ADMIN_RUNTIME_VERSION}" data-sdlive-availability-compact-layout/>` +
+          `<link rel="stylesheet" href="/admin/availability-temporary-timer.css?v=${AVAILABILITY_TEMPORARY_TIMER_VERSION}" data-sdlive-availability-temporary-timer/>` +
           `<script defer src="/admin/availability-admin.js?v=${AVAILABILITY_ADMIN_RUNTIME_VERSION}" data-sdlive-availability-admin></script>` +
           `<script defer src="/admin/availability-travel-admin.js?v=${AVAILABILITY_ADMIN_RUNTIME_VERSION}" data-sdlive-availability-travel-admin></script>` +
           `<script defer src="/admin/availability-next-window-admin.js?v=${AVAILABILITY_ADMIN_RUNTIME_VERSION}" data-sdlive-availability-next-window-admin></script>` +
-          `<script defer src="/admin/availability-compact-layout.js?v=${AVAILABILITY_ADMIN_RUNTIME_VERSION}" data-sdlive-availability-compact-layout></script>`,
+          `<script defer src="/admin/availability-compact-layout.js?v=${AVAILABILITY_ADMIN_RUNTIME_VERSION}" data-sdlive-availability-compact-layout></script>` +
+          `<script defer src="/admin/availability-temporary-timer.js?v=${AVAILABILITY_TEMPORARY_TIMER_VERSION}" data-sdlive-availability-temporary-timer></script>`,
           { html: true }
         );
       }
