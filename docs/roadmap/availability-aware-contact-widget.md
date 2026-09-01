@@ -105,6 +105,13 @@ A public response could evolve beyond a boolean while staying privacy-safe:
 
 Do not expose travel itinerary, event names or private reasons publicly.
 
+### Public WhatsApp identity / phone privacy
+
+- Public pages use the WhatsApp username as the contact identity and direct-link target; they must not embed the owner phone number in HTML, JavaScript, structured data or visible copy.
+- If WhatsApp username linking is unavailable for a visitor, fall back to Contact/Rental rather than exposing the phone number.
+- A phone number may exist only in server-side configuration when required for authenticated WhatsApp provider/webhook operations. It is not a public Availability field.
+- Availability changes CTA priority/status; it never changes this privacy boundary.
+
 ## Frontend behavior
 
 The site should use the same resolved state across all public contact surfaces rather than implementing separate clocks in each page.

@@ -14,7 +14,6 @@ const SITE_CONFIG = {
 
   contact: {
     email: "hello@sdlive.show",
-    whatsapp: "573192473948", // digits only: country code + number, no + or spaces
     whatsappUsername: "samd.llano95",
     instagram: "https://www.instagram.com/samd.llano95/",
     linkedin: "https://www.linkedin.com/in/samuel-david-llano-83b484120/"
@@ -1859,7 +1858,7 @@ function applyContactConfig() {
   const whatsappLink = document.getElementById("contactWhatsapp");
   if (whatsappLink) {
     whatsappLink.textContent = `WhatsApp · @${SITE_CONFIG.contact.whatsappUsername}`;
-    whatsappLink.href = `https://wa.me/${SITE_CONFIG.contact.whatsapp}`;
+    whatsappLink.href = `https://wa.me/${SITE_CONFIG.contact.whatsappUsername.replace(/^@/, "")}`;
   }
 
   const instagramLink = document.getElementById("contactInstagram");
@@ -1873,7 +1872,7 @@ function applyContactConfig() {
 
   const whatsappFloat = document.getElementById("whatsappFloat");
   if (whatsappFloat) {
-    whatsappFloat.href = `https://wa.me/${SITE_CONFIG.contact.whatsapp}`;
+    whatsappFloat.href = `https://wa.me/${SITE_CONFIG.contact.whatsappUsername.replace(/^@/, "")}`;
     whatsappFloat.setAttribute("aria-label", `WhatsApp: @${SITE_CONFIG.contact.whatsappUsername}`);
   }
 }
