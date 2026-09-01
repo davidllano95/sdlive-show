@@ -49,6 +49,7 @@ const ALLOWED_CONTACT_KEYS = new Set([
   "preferredChannel"
 ]);
 const ALLOWED_PROJECT_KEYS = new Set(["date", "city", "venue"]);
+const ALLOWED_DETAILS_KEYS = new Set(["equipment", "schedule"]);
 const ALLOWED_RENTAL_QUERY_KEYS = new Set(["items", "services"]);
 const ALLOWED_RENTAL_ITEM_KEYS = new Set(["name", "quantity"]);
 const ALLOWED_RENTAL_SERVICE_KEYS = new Set(["name"]);
@@ -137,7 +138,9 @@ function normalizeContact(value, { partial = false } = {}) {
 
   if (!partial) return all;
   return Object.fromEntries(
-    Object.keys(source).map((key) => [key, all[key]])
+    Object.keys(source)
+      .filter((key) => all[key] !== null)
+      .map((key) => [key, all[key]])
   );
 }
 
@@ -153,18 +156,33 @@ function normalizeProject(value, { partial = false } = {}) {
 
   if (!partial) return all;
   return Object.fromEntries(
-    Object.keys(source).map((key) => [key, all[key]])
+    Object.keys(source)
+      .filter((key) => all[key] !== null)
+      .map((key) => [key, all[key]])
   );
 }
 
+function normalizeEquipment(value, label = "equipment") {
+  if (!Array.isArray(value)) throw new Error(`${label} must be an array`);
+  if (value.length > 20) throw new Error(`${label} has too many items`);
+  return value.map((item) => {
+    const text = cleanString(item, 240);
+    if (!text) throw new Error(`${label} contains an empty item`);
+    return text;
+  });
+}
+
 function normalizeDetails(value) {
-  if (value === undefined || value === null) return {};
-  if (!isPlainObject(value)) throw new Error("leadDraft.details must be an object");
-  const serialized = JSON.stringify(value);
-  if (serialized.length > 12000) throw new Error("leadDraft.details is too large");
-  const forbidden = findForbiddenKey(value, "leadDraft.details");
-  if (forbidden) throw new Error(`forbidden model field: ${forbidden.path}`);
-  return JSON.parse(serialized);
+  if (value === undefined || value === null) {
+    return { equipment: [], schedule: null };
+  }
+  assertAllowedKeys(value, ALLOWED_DETAILS_KEYS, "leadDraft.details");
+  return {
+    equipment: value.equipment === undefined || value.equipment === null
+      ? []
+      : normalizeEquipment(value.equipment, "leadDraft.details.equipment"),
+    schedule: cleanString(value.schedule, 1000) || null
+  };
 }
 
 function normalizeLeadDraft(value, defaultLanguage) {
@@ -195,46 +213,36 @@ function normalizeLeadDraft(value, defaultLanguage) {
   };
 }
 
-function normalizeEquipment(value) {
-  if (!Array.isArray(value)) throw new Error("slotPatch.equipment must be an array");
-  if (value.length > 20) throw new Error("slotPatch.equipment has too many items");
-  return value.map((item) => {
-    const text = cleanString(item, 240);
-    if (!text) throw new Error("slotPatch.equipment contains an empty item");
-    return text;
-  });
-}
-
 function normalizeSlotPatch(value) {
   if (value === undefined || value === null) return null;
   assertAllowedKeys(value, ALLOWED_SLOT_PATCH_KEYS, "slotPatch");
 
   const patch = {};
-  if (Object.hasOwn(value, "serviceCategory")) {
+  if (Object.hasOwn(value, "serviceCategory") && value.serviceCategory !== null) {
     patch.serviceCategory = normalizedService(value.serviceCategory);
   }
-  if (Object.hasOwn(value, "language")) {
+  if (Object.hasOwn(value, "language") && value.language !== null) {
     patch.language = safeLanguage(value.language);
   }
-  if (Object.hasOwn(value, "market")) {
+  if (Object.hasOwn(value, "market") && value.market !== null) {
     patch.market = cleanString(value.market, 40) || null;
   }
-  if (Object.hasOwn(value, "name")) {
+  if (Object.hasOwn(value, "name") && value.name !== null) {
     patch.name = cleanString(value.name, 160) || null;
   }
-  if (Object.hasOwn(value, "contact")) {
+  if (Object.hasOwn(value, "contact") && value.contact !== null) {
     patch.contact = normalizeContact(value.contact, { partial: true });
   }
-  if (Object.hasOwn(value, "project")) {
+  if (Object.hasOwn(value, "project") && value.project !== null) {
     patch.project = normalizeProject(value.project, { partial: true });
   }
-  if (Object.hasOwn(value, "equipment")) {
-    patch.equipment = normalizeEquipment(value.equipment);
+  if (Object.hasOwn(value, "equipment") && value.equipment !== null) {
+    patch.equipment = normalizeEquipment(value.equipment, "slotPatch.equipment");
   }
-  if (Object.hasOwn(value, "schedule")) {
+  if (Object.hasOwn(value, "schedule") && value.schedule !== null) {
     patch.schedule = cleanString(value.schedule, 1000) || null;
   }
-  if (Object.hasOwn(value, "summary")) {
+  if (Object.hasOwn(value, "summary") && value.summary !== null) {
     patch.summary = cleanString(value.summary, 5000) || null;
   }
 
@@ -290,6 +298,178 @@ function normalizeRentalQuery(value) {
     throw new Error("rentalQuery requires at least one item or service");
   }
   return normalized;
+}
+
+function nullableString(maxLength) {
+  return { type: ["string", "null"], maxLength };
+}
+
+function nullableServiceSchema() {
+  return {
+    type: ["string", "null"],
+    enum: [...LEAD_CORE_SERVICE_CATEGORIES, null]
+  };
+}
+
+function strictContactSchema() {
+  return {
+    type: "object",
+    additionalProperties: false,
+    required: ["email", "phone", "whatsapp", "other", "preferredChannel"],
+    properties: {
+      email: nullableString(320),
+      phone: nullableString(80),
+      whatsapp: nullableString(80),
+      other: nullableString(320),
+      preferredChannel: nullableString(40)
+    }
+  };
+}
+
+function strictProjectSchema() {
+  return {
+    type: "object",
+    additionalProperties: false,
+    required: ["date", "city", "venue"],
+    properties: {
+      date: nullableString(40),
+      city: nullableString(240),
+      venue: nullableString(500)
+    }
+  };
+}
+
+export function assistantModelOutputJsonSchema() {
+  const slotPatchSchema = {
+    type: ["object", "null"],
+    additionalProperties: false,
+    required: [
+      "serviceCategory",
+      "language",
+      "market",
+      "name",
+      "contact",
+      "project",
+      "equipment",
+      "schedule",
+      "summary"
+    ],
+    properties: {
+      serviceCategory: nullableServiceSchema(),
+      language: { type: ["string", "null"], enum: ["en", "es", null] },
+      market: nullableString(40),
+      name: nullableString(160),
+      contact: {
+        anyOf: [strictContactSchema(), { type: "null" }]
+      },
+      project: {
+        anyOf: [strictProjectSchema(), { type: "null" }]
+      },
+      equipment: {
+        type: ["array", "null"],
+        maxItems: 20,
+        items: { type: "string", maxLength: 240 }
+      },
+      schedule: nullableString(1000),
+      summary: nullableString(5000)
+    }
+  };
+
+  const rentalQuerySchema = {
+    type: ["object", "null"],
+    additionalProperties: false,
+    required: ["items", "services"],
+    properties: {
+      items: {
+        type: "array",
+        maxItems: 30,
+        items: {
+          type: "object",
+          additionalProperties: false,
+          required: ["name", "quantity"],
+          properties: {
+            name: { type: "string", minLength: 1, maxLength: 240 },
+            quantity: { type: "integer", minimum: 1, maximum: 20 }
+          }
+        }
+      },
+      services: {
+        type: "array",
+        maxItems: 20,
+        items: {
+          type: "object",
+          additionalProperties: false,
+          required: ["name"],
+          properties: {
+            name: { type: "string", minLength: 1, maxLength: 240 }
+          }
+        }
+      }
+    }
+  };
+
+  const leadDraftSchema = {
+    type: ["object", "null"],
+    additionalProperties: false,
+    required: [
+      "serviceCategory",
+      "language",
+      "market",
+      "name",
+      "contact",
+      "project",
+      "summary",
+      "details"
+    ],
+    properties: {
+      serviceCategory: {
+        type: "string",
+        enum: [...LEAD_CORE_SERVICE_CATEGORIES]
+      },
+      language: { type: "string", enum: ["en", "es"] },
+      market: nullableString(40),
+      name: { type: "string", minLength: 1, maxLength: 160 },
+      contact: strictContactSchema(),
+      project: strictProjectSchema(),
+      summary: { type: "string", minLength: 1, maxLength: 5000 },
+      details: {
+        type: "object",
+        additionalProperties: false,
+        required: ["equipment", "schedule"],
+        properties: {
+          equipment: {
+            type: "array",
+            maxItems: 20,
+            items: { type: "string", maxLength: 240 }
+          },
+          schedule: nullableString(1000)
+        }
+      }
+    }
+  };
+
+  return {
+    type: "object",
+    additionalProperties: false,
+    required: [
+      "language",
+      "reply",
+      "serviceCategory",
+      "nextAction",
+      "slotPatch",
+      "rentalQuery",
+      "leadDraft"
+    ],
+    properties: {
+      language: { type: "string", enum: ["en", "es"] },
+      reply: { type: "string", minLength: 1, maxLength: 3000 },
+      serviceCategory: nullableServiceSchema(),
+      nextAction: { type: "string", enum: [...ASSISTANT_NEXT_ACTIONS] },
+      slotPatch: slotPatchSchema,
+      rentalQuery: rentalQuerySchema,
+      leadDraft: leadDraftSchema
+    }
+  };
 }
 
 export function validateAssistantModelOutput(value, context = {}) {
