@@ -1,0 +1,30 @@
+name: Clean WhatsApp privacy dependency artifacts
+
+on:
+  push:
+    branches:
+      - privacy-whatsapp-username
+    paths:
+      - .github/workflows/cleanup-whatsapp-privacy-deps.yml
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: privacy-whatsapp-username
+          fetch-depth: 0
+
+      - name: Remove generated dependency artifacts and self-clean
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git rm -r --ignore-unmatch node_modules package-lock.json
+          git rm .github/workflows/cleanup-whatsapp-privacy-deps.yml
+          git commit -m 'Remove temporary dependency artifacts'
+          git push origin HEAD:privacy-whatsapp-username
