@@ -10,6 +10,7 @@ import {
 } from "./media-presentation-edge.js";
 import { applyRentalPresentationRuntime } from "./rental-presentation-edge.js";
 import { validateRentalPresentationExtras } from "./rental-presentation-contract.js";
+import { handleAvailabilityTravelPut } from "./availability-travel-api.js";
 import {
   googleCalendarDiagnostic,
   mergeGoogleCalendarOverlayResponse,
@@ -77,6 +78,27 @@ async function verifyAdminViaExistingApi(request, env) {
   const data = await response.json().catch(() => null);
   if (!data?.authenticated || !data?.email) return null;
   return { email: String(data.email).toLowerCase() };
+}
+
+async function handleAvailabilityTravelIfRequested(request, env) {
+  if (request.method !== "PUT") return null;
+  const type = request.headers.get("content-type") || "";
+  if (!type.toLowerCase().includes("application/json")) return null;
+
+  const text = await request.clone().text();
+  if (text.length > 12000) return null;
+
+  let body = null;
+  try {
+    body = JSON.parse(text || "{}");
+  } catch {
+    return null;
+  }
+
+  if (String(body?.action || "").trim().toLowerCase() !== "travel") return null;
+  return handleAvailabilityTravelPut(request, env, body, {
+    verifyAdmin: verifyAdminViaExistingApi
+  });
 }
 
 async function validateRentalPut(request) {
@@ -185,6 +207,11 @@ export default {
   async fetch(request, env, ctx) {
     const path = normalizedPath(request);
     const url = new URL(request.url);
+
+    if (path === "/api/admin/availability") {
+      const travelResponse = await handleAvailabilityTravelIfRequested(request, env);
+      if (travelResponse) return travelResponse;
+    }
 
     if (path === ADMIN_CALENDAR_SYNC_PATH) {
       return handleGoogleCalendarSync(request, env);
