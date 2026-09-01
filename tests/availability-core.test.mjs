@@ -108,20 +108,32 @@ test('public runtime decorates the existing WhatsApp button instead of creating 
   assert.doesNotMatch(runtime, /createElement\("a"\)/);
 });
 
-test('touch Availability keeps a stronger visible halo while preserving reduced-motion support', () => {
+test('Availability uses semantic green, amber and muted status colors', () => {
+  const css = fs.readFileSync('availability-status.css', 'utf8');
+  const runtime = fs.readFileSync('availability-status.js', 'utf8');
+  assert.match(css, /--availability-available-rgb:\s*91, 214, 142/);
+  assert.match(css, /--availability-limited-rgb:\s*245, 183, 72/);
+  assert.match(css, /--availability-away-rgb:\s*142, 149, 166/);
+  assert.match(css, /data-availability-state="available"[\s\S]*--availability-glow-rgb:\s*var\(--availability-available-rgb\)/);
+  assert.match(css, /data-availability-state="limited"[\s\S]*--availability-glow-rgb:\s*var\(--availability-limited-rgb\)/);
+  assert.match(runtime, /ensurePopover\(\)\.dataset\.availabilityState = state/);
+});
+
+test('touch Availability keeps a restrained visible halo while preserving reduced-motion support', () => {
   const css = fs.readFileSync('availability-status.css', 'utf8');
   assert.match(css, /@media \(hover: none\), \(pointer: coarse\)/);
   assert.match(
     css,
-    /data-availability-state="available"[\s\S]*0 0 34px rgba\(var\(--availability-glow-rgb\), 0\.72\)[\s\S]*availability-breathe-touch/
+    /data-availability-state="available"[\s\S]*0 0 28px rgba\(var\(--availability-glow-rgb\), 0\.36\)[\s\S]*availability-breathe-touch/
   );
+  assert.doesNotMatch(css, /0 0 42px rgba\(var\(--availability-glow-rgb\), 0\.80\)/);
   assert.match(css, /@keyframes availability-breathe-touch/);
   assert.match(css, /@media \(prefers-reduced-motion: reduce\)[\s\S]*animation:\s*none/);
 });
 
-test('Availability public assets are cache-busted after the mobile glow change', () => {
+test('Availability public assets are cache-busted after the semantic glow change', () => {
   const edge = fs.readFileSync('showday-edge.js', 'utf8');
-  assert.match(edge, /AVAILABILITY_RUNTIME_VERSION = "20260901-2"/);
+  assert.match(edge, /AVAILABILITY_RUNTIME_VERSION = "20260901-3"/);
   assert.match(edge, /availability-status\.css\?v=\$\{AVAILABILITY_RUNTIME_VERSION\}/);
   assert.match(edge, /availability-status\.js\?v=\$\{AVAILABILITY_RUNTIME_VERSION\}/);
 });
