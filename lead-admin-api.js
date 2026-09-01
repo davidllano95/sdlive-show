@@ -73,6 +73,17 @@ export function normalizeLeadStatus(value) {
   return VALID_LEAD_STATUS_SET.has(status) ? status : null;
 }
 
+export function normalizeLeadStatusEvent(row) {
+  return {
+    id: Number(row?.id) || 0,
+    leadId: Number(row?.lead_id) || 0,
+    fromStatus: normalizeLeadStatus(row?.from_status),
+    toStatus: normalizeLeadStatus(row?.to_status) || "new",
+    actorEmail: row?.actor_email ? String(row.actor_email) : null,
+    createdAt: row?.created_at ? String(row.created_at) : null
+  };
+}
+
 export function normalizeLeadAdminRow(row) {
   const source = String(row?.source || row?.type || "other").trim() || "other";
   const status = normalizeLeadStatus(row?.status) || "new";
@@ -101,6 +112,7 @@ export function normalizeLeadAdminRow(row) {
       venue: row?.project_venue ? String(row.project_venue) : null
     },
     details: parseDetails(row?.details_json),
+    statusHistory: [],
     attribution: {
       sourceUrl: row?.source_url ? String(row.source_url) : null,
       referrer: row?.referrer ? String(row.referrer) : null,
@@ -111,6 +123,68 @@ export function normalizeLeadAdminRow(row) {
     createdAt: row?.created_at ? String(row.created_at) : null,
     updatedAt: row?.updated_at ? String(row.updated_at) : null
   };
+}
+
+async function ensureLeadStatusHistorySchema(env) {
+  const db = databaseFromEnv(env);
+
+  await db.prepare(`
+    CREATE TABLE IF NOT EXISTS lead_status_events (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      lead_id INTEGER NOT NULL,
+      from_status TEXT,
+      to_status TEXT NOT NULL,
+      actor_email TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+  `).run();
+
+  await db.prepare(`
+    CREATE INDEX IF NOT EXISTS idx_lead_status_events_lead_id
+    ON lead_status_events (lead_id, created_at DESC)
+  `).run();
+}
+
+export async function attachLeadStatusHistory(env, leads) {
+  if (!Array.isArray(leads) || leads.length === 0) return [];
+
+  await ensureLeadStatusHistorySchema(env);
+
+  const ids = leads
+    .map((lead) => Number(lead?.id))
+    .filter((id) => Number.isInteger(id) && id > 0);
+
+  if (!ids.length) return leads;
+
+  const placeholders = ids.map(() => "?").join(", ");
+  const result = await databaseFromEnv(env)
+    .prepare(`
+      SELECT
+        id,
+        lead_id,
+        from_status,
+        to_status,
+        actor_email,
+        created_at
+      FROM lead_status_events
+      WHERE lead_id IN (${placeholders})
+      ORDER BY created_at DESC, id DESC
+    `)
+    .bind(...ids)
+    .all();
+
+  const byLead = new Map();
+  for (const row of Array.isArray(result?.results) ? result.results : []) {
+    const event = normalizeLeadStatusEvent(row);
+    if (!event.leadId) continue;
+    if (!byLead.has(event.leadId)) byLead.set(event.leadId, []);
+    byLead.get(event.leadId).push(event);
+  }
+
+  return leads.map((lead) => ({
+    ...lead,
+    statusHistory: byLead.get(Number(lead.id)) || []
+  }));
 }
 
 export async function listLeadAdminRows(env, { limit = DEFAULT_LEADS } = {}) {
@@ -157,28 +231,10 @@ export async function listLeadAdminRows(env, { limit = DEFAULT_LEADS } = {}) {
   `);
 
   const result = await statement.bind(safeLimit(limit)).all();
-  return (Array.isArray(result?.results) ? result.results : [])
+  const leads = (Array.isArray(result?.results) ? result.results : [])
     .map(normalizeLeadAdminRow);
-}
 
-async function ensureLeadStatusHistorySchema(env) {
-  const db = databaseFromEnv(env);
-
-  await db.prepare(`
-    CREATE TABLE IF NOT EXISTS lead_status_events (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      lead_id INTEGER NOT NULL,
-      from_status TEXT,
-      to_status TEXT NOT NULL,
-      actor_email TEXT NOT NULL,
-      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-    )
-  `).run();
-
-  await db.prepare(`
-    CREATE INDEX IF NOT EXISTS idx_lead_status_events_lead_id
-    ON lead_status_events (lead_id, created_at DESC)
-  `).run();
+  return attachLeadStatusHistory(env, leads);
 }
 
 export async function updateLeadAdminStatus(
@@ -349,7 +405,8 @@ export async function handleLeadAdminApi(
       ok: true,
       readOnly: false,
       capabilities: {
-        updateStatus: true
+        updateStatus: true,
+        statusHistory: true
       },
       actor: admin.email,
       count: leads.length,
