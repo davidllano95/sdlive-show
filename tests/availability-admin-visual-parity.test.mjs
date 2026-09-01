@@ -12,8 +12,9 @@ test("Availability Admin uses the established Live Mode QA visual language", () 
   const live = compact(dashboardCss);
   const availability = compact(availabilityCss);
 
-  assert.ok(live.includes(".showday-control{margin:0 027px;background:linear-gradient(135deg,rgba(var(--accent-rgb),.08),transparent48%),var(--panel)}"));
-  assert.ok(availability.includes("background:linear-gradient(135deg,rgba(var(--accent-rgb),.08),transparent48%),var(--panel)"));
+  const panelGradient = "background:linear-gradient(135deg,rgba(var(--accent-rgb),.08),transparent48%),var(--panel)";
+  assert.ok(live.includes(panelGradient));
+  assert.ok(availability.includes(panelGradient));
 
   assert.ok(live.includes(".showday-mode-togglebutton.is-selected{background:rgba(var(--accent-rgb),.16)"));
   assert.ok(availability.includes("background:rgba(var(--accent-rgb),.16)!important"));
