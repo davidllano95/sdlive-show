@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex,nofollow,noarchive" />
+  <meta name="color-scheme" content="dark" />
+  <base href="/admin/" />
+  <title>Leads · SD.Live Admin</title>
+  <link rel="icon" href="../assets/icons/favicon.ico" />
+  <link rel="stylesheet" href="./dashboard.css" />
+  <link rel="stylesheet" href="./mobile-dashboard.css" />
+  <link rel="stylesheet" href="./leads/leads.css?v=20260901-1" />
+</head>
+<body>
+  <div class="backoffice">
+    <aside class="app-sidebar" id="appSidebar">
+      <div class="brand">
+        <img class="brand-full" src="../assets/logos/sd-live-header-normal.png" alt="SD.Live" />
+        <img class="brand-symbol" src="../assets/logos/sd-live-header-normal-symbol.png" alt="" aria-hidden="true" />
+        <span>Admin</span>
+      </div>
+
+      <nav class="app-nav" aria-label="Back office">
+        <a class="app-nav__item" href="/admin/">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 3 10.1V21h7v-6h4v6h7V10.1L12 3Zm0 2.1 7 5.6v8.8h-3.5v-6h-7v6H5v-8.8l7-5.6Z"/></svg>
+          <span>Dashboard</span>
+        </a>
+        <a class="app-nav__item" href="/admin/finance/">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4V5Zm2 2v10h12V7H6Zm1.5 7.5h2V16h-2v-1.5Zm3.5-3h2V16h-2v-4.5Zm3.5-3h2V16h-2V8.5Z"/></svg>
+          <span>Finance</span><small>SD.Live Track</small>
+        </a>
+        <a class="app-nav__item" href="/admin/editor/">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 3 13.2 8-6.1 1.3 3.8 6-2.1 1.3-3.8-6.1L6 18 5 3Z"/></svg>
+          <span>Site Editor</span>
+        </a>
+        <a class="app-nav__item" href="https://mail.google.com/" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18v14H3V5Zm2.2 2 6.8 5.1L18.8 7H5.2ZM5 17h14V9.4l-7 5.2-7-5.2V17Z"/></svg>
+          <span>Inbox</span><small>Gmail ↗</small>
+        </a>
+
+        <p class="nav-label">Business</p>
+        <a class="app-nav__item is-active" href="/admin/leads/">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v16H4V4Zm2 3v2h12V7H6Zm0 4v2h8v-2H6Zm0 4v2h10v-2H6Z"/></svg>
+          <span>Leads</span><small>Lead Core</small>
+        </a>
+        <button class="app-nav__item is-disabled" type="button" disabled>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16v12H4V7Zm3-3h10v3h-1.5V5.5h-7V7H7V4Zm-.5 6v6h11v-6h-11Z"/></svg>
+          <span>Rental</span><small>Soon</small>
+        </button>
+        <button class="app-nav__item is-disabled" type="button" disabled>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h7l2 2h9v12H3V5Zm2 2v10h14V9h-7.8l-2-2H5Z"/></svg>
+          <span>Projects</span><small>Soon</small>
+        </button>
+        <a class="app-nav__item" href="/admin/calendar/">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h1.5v2H17V3h1.5v2H21v16H3V5h2V3Zm-.5 7v9h15v-9h-15Z"/></svg>
+          <span>Calendar</span><small>Operations</small>
+        </a>
+
+        <p class="nav-label">Content & system</p>
+        <button class="app-nav__item is-disabled" type="button" disabled>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v16H4V4Zm2 2v7l3-3 3 3 2-2 4 4V6H6Zm0 11v1h12v-1l-4-4-2 2-3-3-3 3v2Z"/></svg>
+          <span>Media</span><small>R2</small>
+        </button>
+        <button class="app-nav__item is-disabled" type="button" disabled>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19V9h3v10H5Zm5 0V4h3v15h-3Zm5 0v-7h3v7h-3Z"/></svg>
+          <span>Analytics</span><small>Soon</small>
+        </button>
+        <button class="app-nav__item is-disabled" type="button" disabled>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h14v14H5V5Zm2 2v10h10V7H7Zm2 2h6v2H9V9Zm0 4h4v2H9v-2Z"/></svg>
+          <span>SEO</span><small>Soon</small>
+        </button>
+      </nav>
+
+      <div class="sidebar-bottom">
+        <span class="secure"><i></i> Cloudflare Access</span>
+        <button id="collapseSidebar" type="button">Collapse</button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <span class="eyebrow"><span class="inline-wordmark" aria-label="SD.Live"><span>SD</span><i aria-hidden="true">.</i><span>Live</span></span> Back Office</span>
+          <h1>Leads</h1>
+        </div>
+        <div class="top-actions">
+          <span class="identity" id="identity">Checking access…</span>
+          <a class="button button--ghost" href="/admin/">Dashboard</a>
+          <a class="button" href="https://mail.google.com/" target="_blank" rel="noopener">Open Inbox ↗</a>
+        </div>
+      </header>
+
+      <section class="content leads-workspace">
+        <div class="welcome leads-welcome">
+          <div>
+            <span class="eyebrow">Lead Core · D1</span>
+            <h2>Real enquiries, one source of truth.</h2>
+            <p>Contact and Rental enquiries captured by the public site are visible here before human follow-up or future Assistant automation.</p>
+          </div>
+          <div class="system-pill" id="leadsStatus">
+            <i></i>
+            <span>Loading Lead Core…</span>
+          </div>
+        </div>
+
+        <div class="metrics leads-metrics">
+          <article class="metric">
+            <span>Loaded</span>
+            <strong id="metricTotal">—</strong>
+            <small>Latest D1 leads</small>
+          </article>
+          <article class="metric">
+            <span>New</span>
+            <strong id="metricNew">—</strong>
+            <small>Awaiting follow-up</small>
+          </article>
+          <article class="metric">
+            <span>Contact</span>
+            <strong id="metricContact">—</strong>
+            <small>General enquiries</small>
+          </article>
+          <article class="metric">
+            <span>Rental</span>
+            <strong id="metricRental">—</strong>
+            <small>Quote requests</small>
+          </article>
+        </div>
+
+        <section class="section leads-toolbar" aria-label="Lead filters">
+          <div class="leads-toolbar__search">
+            <label for="leadSearch">Search</label>
+            <input id="leadSearch" type="search" autocomplete="off" placeholder="Name, email, city, venue or message" />
+          </div>
+          <label>
+            <span>Source</span>
+            <select id="leadSourceFilter">
+              <option value="all">All sources</option>
+              <option value="contact">Contact</option>
+              <option value="rental">Rental</option>
+              <option value="assistant">Assistant</option>
+            </select>
+          </label>
+          <label>
+            <span>Status</span>
+            <select id="leadStatusFilter">
+              <option value="all">All statuses</option>
+              <option value="new">New</option>
+              <option value="contacted">Contacted</option>
+              <option value="quoted">Quoted</option>
+              <option value="confirmed">Confirmed</option>
+              <option value="lost">Lost</option>
+            </select>
+          </label>
+          <div class="leads-toolbar__mode">
+            <span>Mode</span>
+            <strong>Read-only</strong>
+          </div>
+        </section>
+
+        <div class="leads-layout">
+          <section class="section panel leads-list-panel">
+            <div class="section-head leads-section-head">
+              <div>
+                <span class="eyebrow">Inbox view</span>
+                <h3>Lead queue</h3>
+              </div>
+              <span class="leads-count" id="visibleLeadCount">—</span>
+            </div>
+            <div class="leads-list" id="leadList" aria-live="polite">
+              <div class="leads-empty">Loading leads…</div>
+            </div>
+          </section>
+
+          <aside class="section panel lead-detail" id="leadDetail">
+            <div class="lead-detail__empty">
+              <span class="eyebrow">Lead detail</span>
+              <h3>Select an enquiry</h3>
+              <p>Choose a lead from the queue to inspect its contact, project, message and attribution data.</p>
+            </div>
+          </aside>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="./leads/leads.js?v=20260901-1"></script>
+</body>
+</html>
