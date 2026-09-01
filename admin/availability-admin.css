@@ -1,0 +1,76 @@
+.availability-admin-card {
+  grid-column: span 2;
+  display: grid;
+  gap: 14px;
+}
+
+.availability-admin-card__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.availability-admin-card__status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.availability-admin-card__status i {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: currentColor;
+  box-shadow: 0 0 14px currentColor;
+}
+
+.availability-admin-card__meta {
+  color: var(--muted, #9aa0ad);
+  font-size: 12px;
+}
+
+.availability-admin-card__controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.availability-admin-card__controls button,
+.availability-admin-card__controls select {
+  min-height: 36px;
+  border: 1px solid rgba(255,255,255,.13);
+  border-radius: 8px;
+  background: rgba(255,255,255,.04);
+  color: inherit;
+  padding: 7px 11px;
+  font: inherit;
+}
+
+.availability-admin-card__controls button {
+  cursor: pointer;
+}
+
+.availability-admin-card__controls button:hover,
+.availability-admin-card__controls button.is-active {
+  border-color: rgba(160,137,229,.75);
+  background: rgba(160,137,229,.12);
+}
+
+.availability-admin-card__controls button:disabled,
+.availability-admin-card__controls select:disabled {
+  opacity: .5;
+  cursor: wait;
+}
+
+.availability-admin-card__error {
+  color: #ff9a86;
+  font-size: 12px;
+}
+
+@media (max-width: 900px) {
+  .availability-admin-card { grid-column: 1 / -1; }
+}
