@@ -183,10 +183,12 @@
 
   function applyState(nextState) {
     const state = normalizedState(nextState);
+    const firstState = !currentState;
     const changed = Boolean(currentState && currentState !== state);
     const autoShow = shouldAutoShow(state, changed);
     currentState = state;
-    hideTab();
+
+    if (firstState || changed) hideTab();
     button.dataset.availabilityState = state;
     ensurePopover().dataset.availabilityState = state;
     renderCopy();
@@ -194,7 +196,7 @@
     if (autoShow) {
       markAutoShown(state);
       window.setTimeout(() => showPopover({ autoHide: true }), changed ? 120 : AUTO_SHOW_DELAY_MS);
-    } else {
+    } else if (firstState || changed || button.dataset.availabilityReady !== "true") {
       showTab(260);
     }
   }
