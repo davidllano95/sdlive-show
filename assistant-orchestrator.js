@@ -1,12 +1,15 @@
 export const ASSISTANT_ORCHESTRATOR_ACTIONS = Object.freeze([
   "reply",
   "check_availability",
+  "check_rental",
   "request_consent",
   "capture_lead",
   "handoff"
 ]);
 
 const ACTION_SET = new Set(ASSISTANT_ORCHESTRATOR_ACTIONS);
+const TOOL_ACTIONS = new Set(["check_availability", "check_rental"]);
+const MAX_TOOL_HOPS_PER_TURN = 2;
 
 function orchestrationError(code, message) {
   const error = new Error(message || code);
@@ -27,6 +30,10 @@ function validLeadId(value) {
   return Number.isInteger(id) && id > 0 ? id : null;
 }
 
+function plainObject(value) {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
 function validModelOutput(result) {
   if (!result || result.ok !== true || !result.output) {
     throw orchestrationError("PROVIDER_INVALID_OUTPUT", "Validated model output is required");
@@ -38,22 +45,40 @@ function validModelOutput(result) {
   return result.output;
 }
 
+function mergeSlotPatch(current, incoming) {
+  const base = plainObject(current) ? { ...current } : {};
+  if (!plainObject(incoming)) return base;
+
+  for (const [key, value] of Object.entries(incoming)) {
+    if (["contact", "project"].includes(key) && plainObject(value)) {
+      base[key] = {
+        ...(plainObject(base[key]) ? base[key] : {}),
+        ...value
+      };
+    } else {
+      base[key] = value;
+    }
+  }
+  return base;
+}
+
 async function validatedModelTurn({
   message,
   session,
   consentGranted,
-  toolResult = null,
+  toolResults = [],
   deps
 }) {
   const buildModelContext = requiredFunction(deps, "buildModelContext");
   const callModel = requiredFunction(deps, "callModel");
   const validateModelOutput = requiredFunction(deps, "validateModelOutput");
 
-  const context = await buildModelContext(session, { toolResult });
+  const safeToolResults = Array.isArray(toolResults) ? toolResults.slice(0, MAX_TOOL_HOPS_PER_TURN) : [];
+  const context = await buildModelContext(session, { toolResults: safeToolResults });
   const raw = await callModel({
     message,
     context,
-    toolResult
+    toolResults: safeToolResults
   });
   return validModelOutput(
     await validateModelOutput(raw, {
@@ -68,7 +93,7 @@ async function consentIsFresh(consentEvidence, deps) {
   return (await isConsentFresh(consentEvidence)) === true;
 }
 
-async function consentResult({ output, session, reason, deps }) {
+async function consentResult({ output, session, reason, deps, toolResults }) {
   const getConsentPrompt = requiredFunction(deps, "getConsentPrompt");
   return {
     kind: "request_consent",
@@ -77,6 +102,7 @@ async function consentResult({ output, session, reason, deps }) {
     language: output.language,
     serviceCategory: output.serviceCategory,
     session,
+    toolResults,
     consentPrompt: await getConsentPrompt(output.language)
   };
 }
@@ -98,6 +124,29 @@ async function notifyCapturedLead({ leadId, leadDraft, language, deps }) {
   }
 }
 
+async function executeTool(output, deps) {
+  if (output.nextAction === "check_availability") {
+    const readAvailability = requiredFunction(deps, "readAvailability");
+    return {
+      type: "availability",
+      value: await readAvailability()
+    };
+  }
+
+  if (output.nextAction === "check_rental") {
+    if (!output.rentalQuery) {
+      throw orchestrationError("RENTAL_QUERY_REQUIRED", "check_rental requires a validated rentalQuery");
+    }
+    const resolveRentalQuery = requiredFunction(deps, "resolveRentalQuery");
+    return {
+      type: "rental",
+      value: await resolveRentalQuery(output.rentalQuery)
+    };
+  }
+
+  throw orchestrationError("ACTION_NOT_ALLOWED", "Requested action is not a tool action");
+}
+
 export async function runAssistantTurn({
   requestId,
   message,
@@ -112,37 +161,42 @@ export async function runAssistantTurn({
   }
 
   const consentGranted = await consentIsFresh(consentEvidence, deps);
+  const toolResults = [];
+  const usedToolActions = new Set();
+  let mergedSlotPatch = {};
 
   let output = await validatedModelTurn({
     message: safeMessage,
     session,
     consentGranted,
+    toolResults,
     deps
   });
+  mergedSlotPatch = mergeSlotPatch(mergedSlotPatch, output.slotPatch);
 
-  let availability = null;
-  if (output.nextAction === "check_availability") {
-    const readAvailability = requiredFunction(deps, "readAvailability");
-    availability = await readAvailability();
+  while (TOOL_ACTIONS.has(output.nextAction)) {
+    if (usedToolActions.has(output.nextAction)) {
+      throw orchestrationError("TOOL_LOOP_BLOCKED", `${output.nextAction} may run only once per turn`);
+    }
+    if (toolResults.length >= MAX_TOOL_HOPS_PER_TURN) {
+      throw orchestrationError("TOOL_LOOP_BLOCKED", "Assistant tool-hop limit reached");
+    }
+
+    usedToolActions.add(output.nextAction);
+    toolResults.push(await executeTool(output, deps));
 
     output = await validatedModelTurn({
       message: safeMessage,
       session,
       consentGranted,
-      toolResult: {
-        type: "availability",
-        value: availability
-      },
+      toolResults,
       deps
     });
-
-    if (output.nextAction === "check_availability") {
-      throw orchestrationError("TOOL_LOOP_BLOCKED", "Availability may be checked only once per turn");
-    }
+    mergedSlotPatch = mergeSlotPatch(mergedSlotPatch, output.slotPatch);
   }
 
   const applyTurn = requiredFunction(deps, "applyTurn");
-  const nextSession = await applyTurn(session, output);
+  const nextSession = await applyTurn(session, mergedSlotPatch);
 
   if (output.nextAction === "reply") {
     return {
@@ -151,7 +205,7 @@ export async function runAssistantTurn({
       language: output.language,
       serviceCategory: output.serviceCategory,
       session: nextSession,
-      availability
+      toolResults
     };
   }
 
@@ -160,7 +214,8 @@ export async function runAssistantTurn({
       output,
       session: nextSession,
       reason: "model_requested_consent",
-      deps
+      deps,
+      toolResults
     });
   }
 
@@ -172,7 +227,8 @@ export async function runAssistantTurn({
         output,
         session: nextSession,
         reason: "fresh_consent_required",
-        deps
+        deps,
+        toolResults
       });
     }
 
@@ -206,7 +262,7 @@ export async function runAssistantTurn({
       serviceCategory: output.serviceCategory,
       session: nextSession,
       leadId,
-      availability,
+      toolResults,
       ...notification
     };
   }
@@ -234,7 +290,7 @@ export async function runAssistantTurn({
       serviceCategory: output.serviceCategory,
       session: nextSession,
       leadId,
-      availability
+      toolResults
     };
   }
 
@@ -243,9 +299,12 @@ export async function runAssistantTurn({
 
 export function assistantOrchestratorPolicy() {
   return Object.freeze({
+    maxToolHopsPerTurn: MAX_TOOL_HOPS_PER_TURN,
     maxAvailabilityToolCallsPerTurn: 1,
+    maxRentalToolCallsPerTurn: 1,
     modelExecutesToolsDirectly: false,
     modelControlsConsent: false,
+    incrementalSlotsAppliedOncePerTurn: true,
     captureRequiresFreshServerConsent: true,
     handoffRequiresServerLeadId: true,
     notificationFailureRollsBackLead: false,
