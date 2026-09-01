@@ -12,7 +12,8 @@ import { decorateAvailabilityNextWindowResponse } from "./availability-next-wind
 import { applyAvailabilityAdminRuntime } from "./availability-admin-edge.js";
 import { rentalRequestHasSelection } from "./rental-request-validation.js";
 import { financeUpstreamFetch } from "./finance-upstream.js";
-import { canonicalizePublicLeadRequest } from "./lead-core-public-request.js";
+import { preparePublicLeadRequest } from "./lead-core-public-request.js";
+import { persistLeadCoreFromPublicResponse } from "./lead-core-storage.js";
 
 const PUBLIC_FORM_LIMITS = {
   "/api/contact": {
@@ -235,8 +236,24 @@ export default {
     const emptyRental = await rejectEmptyRentalRequest(request, path);
     if (emptyRental) return emptyRental;
 
-    const leadCoreRequest = await canonicalizePublicLeadRequest(request);
-    const response = await appWorker.fetch(leadCoreRequest, env);
+    const preparedLead = await preparePublicLeadRequest(request);
+    const response = await appWorker.fetch(preparedLead.request, env);
+
+    if (preparedLead.lead) {
+      try {
+        await persistLeadCoreFromPublicResponse(
+          env,
+          response,
+          preparedLead.lead
+        );
+      } catch (error) {
+        // The established public form write remains authoritative. Lead Core
+        // enrichment must never turn an already-successful Contact/Rental
+        // capture into a public failure during this storage migration.
+        console.error("[SD.Live] Lead Core storage enrichment failed", error);
+      }
+    }
+
     if (request.method === "GET" && path === FINANCE_PAGE_PATH) {
       return decorateFinanceAdminPage(response);
     }
