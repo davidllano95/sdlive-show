@@ -24,6 +24,23 @@ test("Lead Admin workspace exposes the protected operational status workflow", a
   assert.doesNotMatch(api, /DELETE\s+FROM\s+leads/i);
 });
 
+test("Lead detail renders the auditable status history returned by Lead Core", async () => {
+  const [html, js, css, api] = await Promise.all([
+    source("admin/leads/index.html"),
+    source("admin/leads/leads.js"),
+    source("admin/leads/lead-status-history.css"),
+    source("lead-admin-api.js")
+  ]);
+
+  assert.match(html, /lead-status-history\.css\?v=20260901-1/);
+  assert.match(js, /Status history/);
+  assert.match(js, /lead-status-history__item/);
+  assert.match(js, /actorEmail/);
+  assert.match(api, /statusHistory/);
+  assert.match(api, /attachLeadStatusHistory/);
+  assert.match(css, /\.lead-status-history__transition/);
+});
+
 test("Admin navigation promotes Leads to the live operations workspace", async () => {
   const [entry, edge] = await Promise.all([
     source("admin/leads-dashboard-entry.js"),
@@ -42,7 +59,7 @@ test("Leads workspace loads the shared mobile Admin navigation runtime directly"
   assert.match(html, /\.\/admin-stabilization\.js\?v=20260901-1/);
   assert.ok(
     html.indexOf("./admin-stabilization.js?v=20260901-1") <
-      html.indexOf("./leads/leads.js?v=20260901-2"),
+      html.indexOf("./leads/leads.js?v=20260901-3"),
     "shared Admin runtime should load before the Leads workspace runtime"
   );
 });
