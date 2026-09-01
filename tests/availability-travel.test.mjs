@@ -119,7 +119,7 @@ test('Travel Mode Admin UI uses a real timezone selector with device and custom 
   assert.match(css, /@media \(max-width: 560px\)/);
   assert.match(css, /rgba\(var\(--accent-rgb\)/);
 
-  assert.match(edge, /AVAILABILITY_ADMIN_RUNTIME_VERSION = "20260901-5"/);
+  assert.match(edge, /AVAILABILITY_ADMIN_RUNTIME_VERSION = "20260901-6"/);
   assert.match(edge, /availability-travel-admin\.css\?v=\$\{AVAILABILITY_ADMIN_RUNTIME_VERSION\}/);
   assert.match(edge, /availability-travel-admin\.js\?v=\$\{AVAILABILITY_ADMIN_RUNTIME_VERSION\}/);
 });
