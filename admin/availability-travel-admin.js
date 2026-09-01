@@ -1,18 +1,65 @@
 (() => {
   const ENDPOINT = "/api/admin/availability";
-  const COMMON_TIMEZONES = [
-    "America/Bogota",
-    "America/New_York",
-    "America/Los_Angeles",
-    "Europe/Madrid",
-    "Europe/London",
-    "Australia/Sydney",
-    "Asia/Singapore"
+  const DEVICE_ZONE_VALUE = "__device__";
+  const CUSTOM_ZONE_VALUE = "__custom__";
+  const TIMEZONE_GROUPS = [
+    {
+      label: "Americas",
+      zones: [
+        ["Bogotá", "America/Bogota"],
+        ["New York", "America/New_York"],
+        ["Chicago", "America/Chicago"],
+        ["Denver", "America/Denver"],
+        ["Los Angeles", "America/Los_Angeles"],
+        ["Mexico City", "America/Mexico_City"],
+        ["Toronto", "America/Toronto"],
+        ["Vancouver", "America/Vancouver"],
+        ["São Paulo", "America/Sao_Paulo"],
+        ["Buenos Aires", "America/Argentina/Buenos_Aires"]
+      ]
+    },
+    {
+      label: "Europe",
+      zones: [
+        ["Madrid", "Europe/Madrid"],
+        ["London", "Europe/London"],
+        ["Lisbon", "Europe/Lisbon"],
+        ["Paris", "Europe/Paris"],
+        ["Berlin", "Europe/Berlin"],
+        ["Amsterdam", "Europe/Amsterdam"],
+        ["Rome", "Europe/Rome"],
+        ["Athens", "Europe/Athens"]
+      ]
+    },
+    {
+      label: "Asia & Middle East",
+      zones: [
+        ["Singapore", "Asia/Singapore"],
+        ["Tokyo", "Asia/Tokyo"],
+        ["Seoul", "Asia/Seoul"],
+        ["Hong Kong", "Asia/Hong_Kong"],
+        ["Bangkok", "Asia/Bangkok"],
+        ["Dubai", "Asia/Dubai"],
+        ["Delhi", "Asia/Kolkata"]
+      ]
+    },
+    {
+      label: "Australia & Pacific",
+      zones: [
+        ["Sydney", "Australia/Sydney"],
+        ["Melbourne", "Australia/Melbourne"],
+        ["Brisbane", "Australia/Brisbane"],
+        ["Perth", "Australia/Perth"],
+        ["Auckland", "Pacific/Auckland"]
+      ]
+    }
   ];
 
   let card = null;
   let section = null;
-  let timezoneInput = null;
+  let timezoneSelect = null;
+  let customTimezoneInput = null;
+  let timezoneHint = null;
   let endDateInput = null;
   let statusNode = null;
   let metaNode = null;
@@ -20,6 +67,23 @@
   let startButton = null;
   let stopButton = null;
   let busy = false;
+
+  function deviceTimeZone() {
+    try {
+      return Intl.DateTimeFormat().resolvedOptions().timeZone || "America/Bogota";
+    } catch {
+      return "America/Bogota";
+    }
+  }
+
+  function allKnownZones() {
+    return TIMEZONE_GROUPS.flatMap((group) => group.zones);
+  }
+
+  function labelForTimezone(timeZone) {
+    const match = allKnownZones().find(([, zone]) => zone === timeZone);
+    return match ? `${match[0]} · ${match[1]}` : timeZone;
+  }
 
   function dateIsoInZone(date, timeZone) {
     try {
@@ -37,7 +101,7 @@
   }
 
   function defaultEndDate(timeZone) {
-    return dateIsoInZone(new Date(Date.now() + 7 * 86400000), timeZone || "America/Bogota");
+    return dateIsoInZone(new Date(), timeZone || "America/Bogota");
   }
 
   function formatExpiry(value, timeZone) {
@@ -62,6 +126,62 @@
     }
   }
 
+  function timezoneOptionsMarkup() {
+    const groups = TIMEZONE_GROUPS.map((group) => `
+      <optgroup label="${group.label}">
+        ${group.zones.map(([label, zone]) => `<option value="${zone}">${label} · ${zone}</option>`).join("")}
+      </optgroup>
+    `).join("");
+
+    return `
+      <option value="${DEVICE_ZONE_VALUE}">Use device timezone</option>
+      ${groups}
+      <option value="${CUSTOM_ZONE_VALUE}">Other IANA timezone…</option>
+    `;
+  }
+
+  function selectedTimezone() {
+    if (!timezoneSelect) return "";
+    if (timezoneSelect.value === DEVICE_ZONE_VALUE) return deviceTimeZone();
+    if (timezoneSelect.value === CUSTOM_ZONE_VALUE) return String(customTimezoneInput?.value || "").trim();
+    return String(timezoneSelect.value || "").trim();
+  }
+
+  function syncTimezoneUi({ resetDate = false } = {}) {
+    if (!timezoneSelect) return;
+    const custom = timezoneSelect.value === CUSTOM_ZONE_VALUE;
+    if (customTimezoneInput) {
+      customTimezoneInput.hidden = !custom;
+      customTimezoneInput.disabled = busy || !custom;
+    }
+
+    const zone = selectedTimezone();
+    if (timezoneHint) {
+      timezoneHint.textContent = timezoneSelect.value === DEVICE_ZONE_VALUE
+        ? `This device reports ${deviceTimeZone()}.`
+        : custom
+          ? "Enter a valid IANA timezone, for example Pacific/Honolulu."
+          : "Your weekly service hours will be evaluated in this local time.";
+    }
+
+    if (resetDate && zone && endDateInput) {
+      endDateInput.value = defaultEndDate(zone);
+    }
+  }
+
+  function selectTimezone(timeZone) {
+    if (!timezoneSelect || !timeZone) return;
+    const exact = Array.from(timezoneSelect.options).some((option) => option.value === timeZone);
+    if (exact) {
+      timezoneSelect.value = timeZone;
+      if (customTimezoneInput) customTimezoneInput.value = "";
+    } else {
+      timezoneSelect.value = CUSTOM_ZONE_VALUE;
+      if (customTimezoneInput) customTimezoneInput.value = timeZone;
+    }
+    syncTimezoneUi();
+  }
+
   async function request(payload) {
     const response = await fetch(ENDPOINT, {
       method: payload ? "PUT" : "GET",
@@ -84,9 +204,10 @@
   function setBusy(next) {
     busy = next;
     section?.classList.toggle("is-busy", next);
-    [timezoneInput, endDateInput, startButton, stopButton].forEach((control) => {
+    [timezoneSelect, customTimezoneInput, endDateInput, startButton, stopButton].forEach((control) => {
       if (control) control.disabled = next;
     });
+    syncTimezoneUi();
   }
 
   function render(data, { preserveDraft = false } = {}) {
@@ -98,9 +219,9 @@
     statusNode.textContent = travel.active ? "On" : "Off";
 
     if (travel.active) {
-      metaNode.textContent = `${travel.timezone} · through ${formatExpiry(travel.expiresAt, travel.timezone) || "expiry"}`;
+      metaNode.textContent = `${labelForTimezone(travel.timezone)} · through ${formatExpiry(travel.expiresAt, travel.timezone) || "expiry"}`;
       if (!preserveDraft) {
-        timezoneInput.value = travel.timezone || "";
+        selectTimezone(travel.timezone || "");
         endDateInput.value = dateIsoInZone(new Date(travel.expiresAt), travel.timezone) || "";
       }
       startButton.textContent = "Update travel mode";
@@ -108,9 +229,10 @@
     } else {
       metaNode.textContent = `Off · weekly schedule uses ${profile.defaultTimezone || "America/Bogota"}`;
       if (!preserveDraft) {
-        const fallbackZone = timezoneInput.value || "Europe/Madrid";
-        timezoneInput.value = fallbackZone;
-        if (!endDateInput.value) endDateInput.value = defaultEndDate(fallbackZone);
+        timezoneSelect.value = DEVICE_ZONE_VALUE;
+        if (customTimezoneInput) customTimezoneInput.value = "";
+        syncTimezoneUi();
+        endDateInput.value = defaultEndDate(deviceTimeZone());
       }
       startButton.textContent = "Start travel mode";
       stopButton.hidden = true;
@@ -134,7 +256,7 @@
 
   async function saveTravel() {
     if (busy) return;
-    const timezone = String(timezoneInput.value || "").trim();
+    const timezone = selectedTimezone();
     const endDate = String(endDateInput.value || "").trim();
     if (!timezone || !endDate) {
       feedbackNode.textContent = "Choose a timezone and an end date.";
@@ -157,7 +279,7 @@
       feedbackNode.dataset.state = "success";
     } catch (error) {
       feedbackNode.textContent = error.code === "invalid_travel_timezone"
-        ? "Use a valid IANA timezone, for example Europe/Madrid."
+        ? "Choose a listed timezone or enter a valid IANA timezone under Other."
         : error.code === "invalid_travel_end_date"
           ? "Choose today or a future date within 90 days."
           : (error.message || "Could not save Travel Mode");
@@ -207,19 +329,20 @@
       <small class="availability-admin-section__meta availability-travel__meta" id="availabilityTravelMeta"></small>
 
       <div class="availability-travel__controls">
-        <label>
+        <label class="availability-travel__field">
           <span>Timezone</span>
-          <input id="availabilityTravelTimezone" list="availabilityTravelTimezones" autocomplete="off" spellcheck="false" placeholder="Europe/Madrid" />
+          <select id="availabilityTravelTimezone" aria-describedby="availabilityTravelTimezoneHint">
+            ${timezoneOptionsMarkup()}
+          </select>
+          <input id="availabilityTravelTimezoneCustom" class="availability-travel__custom-zone" autocomplete="off" spellcheck="false" placeholder="Pacific/Honolulu" hidden />
+          <small class="availability-travel__field-hint" id="availabilityTravelTimezoneHint"></small>
         </label>
-        <label>
+        <label class="availability-travel__field">
           <span>Through</span>
           <input id="availabilityTravelEndDate" type="date" />
+          <small class="availability-travel__field-hint">Travel Mode ends at 11:59 PM in the selected timezone.</small>
         </label>
       </div>
-
-      <datalist id="availabilityTravelTimezones">
-        ${COMMON_TIMEZONES.map((zone) => `<option value="${zone}"></option>`).join("")}
-      </datalist>
 
       <div class="availability-travel__actions">
         <button type="button" class="availability-admin-card__apply" id="availabilityTravelStart">Start travel mode</button>
@@ -230,7 +353,9 @@
     `;
 
     schedule.before(section);
-    timezoneInput = section.querySelector("#availabilityTravelTimezone");
+    timezoneSelect = section.querySelector("#availabilityTravelTimezone");
+    customTimezoneInput = section.querySelector("#availabilityTravelTimezoneCustom");
+    timezoneHint = section.querySelector("#availabilityTravelTimezoneHint");
     endDateInput = section.querySelector("#availabilityTravelEndDate");
     statusNode = section.querySelector("#availabilityTravelStatus");
     metaNode = section.querySelector("#availabilityTravelMeta");
@@ -238,10 +363,16 @@
     startButton = section.querySelector("#availabilityTravelStart");
     stopButton = section.querySelector("#availabilityTravelStop");
 
-    timezoneInput.value = "Europe/Madrid";
-    endDateInput.value = defaultEndDate(timezoneInput.value);
-    timezoneInput.addEventListener("change", () => {
-      if (!endDateInput.value) endDateInput.value = defaultEndDate(timezoneInput.value);
+    timezoneSelect.value = DEVICE_ZONE_VALUE;
+    syncTimezoneUi({ resetDate: true });
+    timezoneSelect.addEventListener("change", () => {
+      syncTimezoneUi({ resetDate: section.dataset.travelActive !== "true" });
+      if (timezoneSelect.value === CUSTOM_ZONE_VALUE) customTimezoneInput?.focus();
+    });
+    customTimezoneInput?.addEventListener("change", () => {
+      if (section.dataset.travelActive !== "true" && selectedTimezone()) {
+        endDateInput.value = defaultEndDate(selectedTimezone());
+      }
     });
     startButton.addEventListener("click", saveTravel);
     stopButton.addEventListener("click", stopTravel);
