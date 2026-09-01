@@ -77,11 +77,19 @@
       minutes.value = String(current.minutes);
     }
 
-    function commit() {
+    function readVisibleMinutes() {
       let hourValue = Math.max(0, Math.min(24, Number(hours.value) || 0));
       let minuteValue = Math.max(0, Math.min(59, Number(minutes.value) || 0));
       if (hourValue >= 24) minuteValue = 0;
-      const safe = setSelectMinutes(select, hourValue * 60 + minuteValue);
+      return hourValue * 60 + minuteValue;
+    }
+
+    function syncCanonicalValue() {
+      return setSelectMinutes(select, readVisibleMinutes());
+    }
+
+    function commit() {
+      const safe = syncCanonicalValue();
       const split = splitMinutes(safe);
       hours.value = String(split.hours);
       minutes.value = String(split.minutes);
@@ -95,6 +103,7 @@
     }
 
     [hours, minutes].forEach((input) => {
+      input.addEventListener("input", syncCanonicalValue);
       input.addEventListener("change", commit);
       input.addEventListener("blur", commit);
     });

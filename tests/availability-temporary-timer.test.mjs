@@ -20,10 +20,21 @@ test('Temporary Status exposes a flexible hours/minutes timer instead of visible
   assert.match(css, /font-weight: 400/);
   assert.match(css, /@media \(max-width: 560px\)/);
 
-  assert.match(edge, /AVAILABILITY_TEMPORARY_TIMER_VERSION = "20260901-2"/);
+  assert.match(edge, /AVAILABILITY_TEMPORARY_TIMER_VERSION = "20260901-3"/);
   assert.match(edge, /admin-control-final-polish\.css/);
   assert.match(edge, /availability-temporary-timer\.css\?v=\$\{AVAILABILITY_TEMPORARY_TIMER_VERSION\}/);
   assert.match(edge, /availability-temporary-timer\.js\?v=\$\{AVAILABILITY_TEMPORARY_TIMER_VERSION\}/);
+});
+
+test('Temporary timer synchronizes the canonical hidden duration while the user edits', () => {
+  const runtime = fs.readFileSync('admin/availability-temporary-timer.js', 'utf8');
+
+  assert.match(runtime, /function readVisibleMinutes\(\)/);
+  assert.match(runtime, /function syncCanonicalValue\(\)/);
+  assert.match(runtime, /return setSelectMinutes\(select, readVisibleMinutes\(\)\)/);
+  assert.match(runtime, /input\.addEventListener\("input", syncCanonicalValue\)/);
+  assert.match(runtime, /input\.addEventListener\("change", commit\)/);
+  assert.match(runtime, /input\.addEventListener\("blur", commit\)/);
 });
 
 test('Temporary timer remains an enhancement of the existing canonical override write path', () => {
