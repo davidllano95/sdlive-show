@@ -3,7 +3,9 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {
   evaluateWeeklySchedule,
+  normalizeAvailabilityForceInput,
   normalizeAvailabilityOverrideInput,
+  normalizeAvailabilityProfileInput,
   resolveAvailability
 } from '../availability-core.js';
 
@@ -23,6 +25,12 @@ test('unconfigured schedule preserves the current Available behavior', () => {
   const result = evaluateWeeklySchedule(profile({}, false), noTravel, tuesdayMorningBogota);
   assert.equal(result.status, 'available');
   assert.equal(result.source, 'compatibility-default');
+});
+
+test('a deliberately configured empty schedule resolves Away instead of compatibility Available', () => {
+  const result = evaluateWeeklySchedule(profile({}, true), noTravel, tuesdayMorningBogota);
+  assert.equal(result.status, 'away');
+  assert.equal(result.source, 'weekly-schedule');
 });
 
 test('weekly schedule resolves Available inside a configured local window', () => {
@@ -69,6 +77,75 @@ test('manual Limited override has precedence over the weekly schedule', () => {
   assert.equal(result.source, 'manual-override');
 });
 
+test('backend Force On and Force Off have precedence over temporary and weekly states', () => {
+  const baseProfile = profile({ tue: [['08:00', '18:00']] });
+  const temporary = {
+    mode: 'limited',
+    expiresAt: '2026-09-01T17:00:00.000Z'
+  };
+
+  const forcedOn = resolveAvailability(
+    baseProfile,
+    temporary,
+    noTravel,
+    tuesdayMorningBogota,
+    { mode: 'force_on', expiresOn: '2026-09-01' }
+  );
+  assert.equal(forcedOn.status, 'available');
+  assert.equal(forcedOn.source, 'admin-force');
+  assert.equal(forcedOn.overrideMode, 'force_on');
+
+  const forcedOff = resolveAvailability(
+    baseProfile,
+    { mode: 'available', expiresAt: '2026-09-01T17:00:00.000Z' },
+    noTravel,
+    tuesdayMorningBogota,
+    { mode: 'force_off', expiresOn: '2026-09-01' }
+  );
+  assert.equal(forcedOff.status, 'away');
+  assert.equal(forcedOff.source, 'admin-force');
+  assert.equal(forcedOff.overrideMode, 'force_off');
+});
+
+test('backend Force Mode validates Auto/On/Off and expires on the current base-timezone date', () => {
+  assert.equal(normalizeAvailabilityForceInput({ mode: 'bogus' }, 'America/Bogota', tuesdayMorningBogota).ok, false);
+  assert.deepEqual(
+    normalizeAvailabilityForceInput({ mode: 'force_on' }, 'America/Bogota', tuesdayMorningBogota),
+    {
+      ok: true,
+      value: { mode: 'force_on', expiresOn: '2026-09-01' }
+    }
+  );
+  assert.deepEqual(
+    normalizeAvailabilityForceInput({ mode: 'auto' }, 'America/Bogota', tuesdayMorningBogota),
+    {
+      ok: true,
+      value: { mode: 'auto', expiresOn: null }
+    }
+  );
+});
+
+test('weekly schedule input supports multiple windows and a deliberate all-closed configuration', () => {
+  const normalized = normalizeAvailabilityProfileInput({
+    defaultTimezone: 'America/Bogota',
+    weeklySchedule: {
+      mon: [['08:00', '12:00'], ['13:00', '18:00']],
+      tue: []
+    }
+  });
+  assert.equal(normalized.ok, true);
+  assert.equal(normalized.value.configured, true);
+  assert.deepEqual(normalized.value.weeklySchedule.mon, [['08:00', '12:00'], ['13:00', '18:00']]);
+  assert.deepEqual(normalized.value.weeklySchedule.tue, []);
+
+  const closed = normalizeAvailabilityProfileInput({
+    defaultTimezone: 'America/Bogota',
+    weeklySchedule: {}
+  });
+  assert.equal(closed.ok, true);
+  assert.equal(closed.value.configured, true);
+});
+
 test('manual override requires an explicit bounded duration', () => {
   assert.equal(normalizeAvailabilityOverrideInput({ mode: 'away' }, tuesdayMorningBogota).ok, false);
   assert.equal(normalizeAvailabilityOverrideInput({ mode: 'away', durationMinutes: 5 }, tuesdayMorningBogota).ok, false);
@@ -88,6 +165,25 @@ test('Auto clears temporary override timing', () => {
     ok: true,
     value: { mode: 'auto', startsAt: null, expiresAt: null }
   });
+});
+
+test('Availability backend force and weekly schedule stay separate D1-owned state', () => {
+  const core = fs.readFileSync('availability-core.js', 'utf8');
+  const admin = fs.readFileSync('admin/availability-admin.js', 'utf8');
+  const edge = fs.readFileSync('availability-admin-edge.js', 'utf8');
+
+  assert.match(core, /CREATE TABLE IF NOT EXISTS availability_force_state/);
+  assert.match(core, /expires_on TEXT/);
+  assert.match(core, /action === "force"/);
+  assert.match(core, /action === "profile"/);
+  assert.match(admin, /Backend force mode/);
+  assert.match(admin, /Force On/);
+  assert.match(admin, /Force Off/);
+  assert.match(admin, /Weekly schedule/);
+  assert.match(admin, /action:\s*"force"/);
+  assert.match(admin, /action:\s*"profile"/);
+  assert.match(admin, /Maximum 6 service windows per day/);
+  assert.match(edge, /AVAILABILITY_ADMIN_RUNTIME_VERSION = "20260901-2"/);
 });
 
 test('public runtime contains bilingual copy and follows html lang changes', () => {
