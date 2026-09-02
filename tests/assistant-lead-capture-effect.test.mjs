@@ -128,7 +128,7 @@ class FakeD1 {
       return { meta: { changes: 1 } };
     }
 
-    if (sql.includes("status = 'reserved'") && sql.includes("status = 'failed'")) {
+    if (sql.includes("attempts = attempts + 1") && sql.includes("status = 'failed'")) {
       const [requestId, reservedAt, updatedAt, key] = args;
       const row = this.reservations.get(key);
       if (!row || row.status !== "failed") return { meta: { changes: 0 } };
