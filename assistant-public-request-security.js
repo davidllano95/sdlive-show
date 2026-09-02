@@ -8,7 +8,7 @@ export const ASSISTANT_PUBLIC_REQUEST_POLICY = Object.freeze({
   maxBodyBytes: 32000,
   maxMessageChars: 2500,
   maxSessionTokenChars: 24000,
-  maxTurnstileTokenChars: 4096,
+  maxTurnstileTokenChars: 2048,
   maxPrivacyPolicyVersionChars: 80,
   turnstileAction: "assistant",
   rateLimitBinding: "ASSISTANT_RATE_LIMITER",
