@@ -1,6 +1,6 @@
 import { normalizeLeadCoreInput } from "./lead-core.js";
 
-export const ASSISTANT_IDEMPOTENCY_VERSION = "assistant-idempotency-v1";
+export const ASSISTANT_IDEMPOTENCY_VERSION = "assistant-idempotency-v2";
 
 export const ASSISTANT_IDEMPOTENCY_POLICY = Object.freeze({
   requestIdClientControlled: false,
@@ -8,8 +8,9 @@ export const ASSISTANT_IDEMPOTENCY_POLICY = Object.freeze({
   rawPiiInIdempotencyKey: false,
   leadCreateRequiresEnforcedUniqueKey: true,
   notificationUsesLeadId: true,
-  persistenceImplementation: "not_configured",
-  keyAloneDoesNotProvideDeduplication: true
+  persistenceImplementation: "assistant_effect_reservations",
+  keyAloneDoesNotProvideDeduplication: true,
+  consentGrantedAtAffectsLeadCreateKey: false
 });
 
 function cleanString(value, maxLength = 5000) {
@@ -90,11 +91,15 @@ function consentFingerprint(evidence) {
     throw new Error("Assistant consent evidence is incomplete for idempotency");
   }
 
+  // grantedAt is intentionally validated but excluded from the operation
+  // identity. Two explicit authorization clicks for the same session, policy
+  // and normalized lead are retries of one irreversible Lead create effect,
+  // not two separate leads. The exact timestamp is still persisted as legal
+  // consent evidence and remains subject to the freshness TTL.
   return {
     source: "assistant",
     privacyPolicyVersion,
-    authorizationMethod,
-    grantedAt
+    authorizationMethod
   };
 }
 
