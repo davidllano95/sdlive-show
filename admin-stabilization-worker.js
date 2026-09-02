@@ -13,6 +13,7 @@ import { validateRentalPresentationExtras } from "./rental-presentation-contract
 import { handleAvailabilityTravelPut } from "./availability-travel-api.js";
 import { decorateAvailabilityNextWindowResponse } from "./availability-next-window.js";
 import { handleAssistantLeadsMigrationApi } from "./assistant-admin-leads-migration.js";
+import { handleAssistantStoragePreparationApi } from "./assistant-admin-storage-preparation.js";
 import {
   googleCalendarDiagnostic,
   mergeGoogleCalendarOverlayResponse,
@@ -164,9 +165,6 @@ async function decorateCreatedWorkResponse(response, env, payload) {
       }
     }, response.status);
   } catch (error) {
-    // REGISTRO is canonical. Never roll back or turn a successful work create
-    // into an error merely because the secondary Google Calendar projection is
-    // unavailable.
     console.error("[SD.Live] Work created but Google Calendar projection failed", error);
     return json({
       ...data,
@@ -189,18 +187,12 @@ function scheduleGoogleSyncAfterSiteScheduleMutation(path, request, response, en
     return;
   }
 
-  // PUT only needs to project/update the D1 blocks and remove the broad parent
-  // event. DELETE also restores the broad REGISTRO projection after removing
-  // stale Site Schedule blocks.
   const syncTask = request.method === "DELETE"
     ? syncCalendarProjectionToGoogleCalendar(env)
     : syncSiteScheduleToGoogleCalendar(env);
 
   ctx.waitUntil(
     syncTask.catch((error) => {
-      // Site Schedule remains canonical for website presentation. A Google
-      // Calendar projection failure must never turn a successful schedule save
-      // into an error or write anything back to REGISTRO/AppSheet.
       console.error("[SD.Live] Site Schedule saved but Google Calendar projection failed", error);
     })
   );
@@ -213,6 +205,13 @@ export default {
 
     if (path === "/api/admin/assistant/leads-migrate") {
       const response = await handleAssistantLeadsMigrationApi(request, env, {
+        verifyAdmin: verifyAdminViaExistingApi
+      });
+      if (response) return response;
+    }
+
+    if (path === "/api/admin/assistant/storage-prepare") {
+      const response = await handleAssistantStoragePreparationApi(request, env, {
         verifyAdmin: verifyAdminViaExistingApi
       });
       if (response) return response;
@@ -254,9 +253,6 @@ export default {
     scheduleGoogleSyncAfterSiteScheduleMutation(path, request, response, env, ctx);
 
     if (path === ADMIN_CALENDAR_PATH && request.method === "GET") {
-      // Site Schedule deliberately consumes ?view=source. Keep that route
-      // REGISTRO-only so Google reminders/manual events can never become
-      // website-schedule or Show Day source records.
       if (url.searchParams.get("view") === "source") return response;
       return mergeGoogleCalendarOverlayResponse(response, env);
     }
