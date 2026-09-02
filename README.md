@@ -24,11 +24,11 @@ When docs disagree, use:
 
 ## Current state — 2026-09-02
 
-Current verified runtime `main`:
+Current verified `main` before this docs-only follow-up:
 
-`259b68b2d94b5fca7dcfe13bec79ace40792fff8`
+`5b709f5cb3a7923d25ac1f8062ae3458b02fc806`
 
-This is squash-merged PR #225, **Integrate gated Assistant backend on prepared storage**. PR CI PASS and post-merge `main` Tests #620 PASS.
+This is squash-merged PR #226, **Refresh Assistant rollout docs after backend deployment**. Runtime code remains the backend integrated by PR #225; post-merge CI on `main` is PASS.
 
 ### Closed / production-smoked
 
@@ -68,11 +68,11 @@ Canonical service categories:
 - `rental`
 - `other`
 
-## Current Active Gate — Assistant runtime configuration
+## Current Active Gate — Assistant runtime readiness verification
 
-The Assistant backend is now deployed, but the public Assistant remains **OFF**.
+The Assistant backend is deployed and the public Assistant remains **OFF**.
 
-Production authenticated runtime readiness returned:
+The first authenticated production runtime-readiness probe reported:
 
 - `readyForRuntimeConfiguration: false`
 - `readyForPublicEnablement: false`
@@ -82,14 +82,24 @@ Production authenticated runtime readiness returned:
 - notification configuration: ready
 - Turnstile server secret: ready
 
-Exact missing bindings:
+It identified four missing bindings:
 
 - `ASSISTANT_SESSION_KEY`
 - `ASSISTANT_TURNSTILE_SITE_KEY`
 - `OPENAI_API_KEY`
 - `OPENAI_ASSISTANT_MODEL`
 
+As of the latest owner action on 2026-09-02, all four have been entered in Cloudflare, but this is **owner-reported configuration only until a new authenticated readiness probe verifies them**.
+
 Do **not** enable `ASSISTANT_PUBLIC_ENABLED` yet.
+
+### Turnstile warning to investigate before public enablement
+
+Cloudflare Turnstile currently displays this warning for the existing **SD.Live Forms** widget:
+
+`Siteverify isn't being called for SD.Live Forms`
+
+This must be investigated before final Assistant public enablement. Do not assume yet whether it is a Cloudflare detection false positive or a real server-side validation gap. Verify the actual Contact/Rental Turnstile token-validation path and, if necessary, fix it without weakening the Assistant's separate Turnstile boundary.
 
 ### Storage gate — CLOSED/PASS
 
@@ -175,11 +185,11 @@ Manual QA with the owner: **one action at a time**.
 
 ## Exact continuation
 
-1. Configure the four missing runtime bindings while keeping `ASSISTANT_PUBLIC_ENABLED` absent/false.
-2. Rerun authenticated `GET /api/admin/assistant/readiness`.
-3. Require `readyForRuntimeConfiguration:true` while `readyForPublicEnablement:false` solely because public exposure remains OFF.
+1. Run one authenticated `GET /api/admin/assistant/readiness` now that the four runtime bindings have been entered.
+2. Require `readyForRuntimeConfiguration:true`, all runtime dependencies ready, `missingBindings:[]`, `invalidBindings:[]`, while `publicExposure.enabled:false`.
+3. Investigate the Cloudflare **SD.Live Forms / Siteverify** warning before final public enablement; determine whether Contact/Rental token verification is actually reaching Siteverify.
 4. Reverify/rebase #215 onto current `main`, run CI, and merge the widget while the flag remains OFF.
-5. Only after widget integration PASS, explicitly enable `ASSISTANT_PUBLIC_ENABLED=true`.
+5. Only after widget integration PASS and the Turnstile warning has been dispositioned, explicitly enable `ASSISTANT_PUBLIC_ENABLED=true`.
 6. Perform final Assistant E2E one manual action at a time.
 
 ## Relevant docs

@@ -2,7 +2,7 @@
 
 ## Authority
 
-This checkpoint records the verified rollout state after Assistant storage preparation, final backend integration and the first production runtime-readiness smoke on 2026-09-02 America/Bogota.
+This checkpoint records the verified rollout state after Assistant storage preparation, final backend integration, the first production runtime-readiness smoke, owner runtime binding configuration, and discovery of the Cloudflare Turnstile Siteverify warning on 2026-09-02 America/Bogota.
 
 Source precedence:
 
@@ -18,16 +18,17 @@ Source precedence:
 
 ## Verified main
 
-Current runtime `main`:
+Current `main` before this docs-only follow-up:
 
-`259b68b2d94b5fca7dcfe13bec79ace40792fff8`
+`5b709f5cb3a7923d25ac1f8062ae3458b02fc806`
 
-Squash-merged PR #225: **Integrate gated Assistant backend on prepared storage**.
+This is PR #226, the docs reconciliation after backend deployment. Runtime code remains the backend delivered by squash-merged PR #225.
 
 Verification:
 
-- PR CI PASS;
+- #225 PR CI PASS;
 - post-merge `main` Tests #620 PASS;
+- #226 docs CI and post-merge main CI PASS;
 - production Admin readiness endpoint live;
 - public Assistant still disabled.
 
@@ -55,9 +56,7 @@ Lead sources relevant to Assistant:
 
 ## Assistant storage gate — CLOSED/PASS
 
-The initial production preflight exposed a blocked legacy `leads` CHECK/email schema, Privacy without `assistant`, and missing idempotency storage.
-
-The rollout resolved these safely in stages:
+The rollout resolved the legacy storage constraints safely:
 
 1. exact physical Leads migration preserving IDs/data, legacy `project`, statuses, child rows and indexes;
 2. production post-migration verification: no FK violations, no stale migration objects;
@@ -120,16 +119,9 @@ Old #213: CLOSED WITHOUT MERGE / superseded by #225.
 
 ## CI issue encountered and resolution
 
-Initial #225 CI had 718/720 tests passing. The only two failures came from `assistant-storage-preflight-mount.test.mjs`, which still asserted the earlier preflight-only phase must contain no public Assistant runtime and no `ASSISTANT_RATE_LIMITER`.
+Initial #225 CI had 718/720 tests passing. The only two failures came from stale preflight-stage expectations that required no public Assistant runtime and no `ASSISTANT_RATE_LIMITER`.
 
-Those expectations were obsolete once #225 intentionally integrated the final gated backend. The runtime code was not weakened. The stale tests were updated to verify the current invariants instead:
-
-- `/api/assistant` is present;
-- kill switch is checked before handler execution;
-- dedicated `ASSISTANT_RATE_LIMITER` is present at 30/min;
-- `ASSISTANT_PUBLIC_ENABLED` is not committed in `wrangler`;
-- model configuration is not hard-coded in `wrangler`;
-- Admin storage preflight remains protected and before legacy public pipeline.
+Those expectations were obsolete once #225 intentionally integrated the final gated backend. Runtime code was not weakened. Tests were updated to verify the current invariants instead.
 
 After this change:
 
@@ -139,7 +131,7 @@ After this change:
 
 ## Production runtime readiness — current gate
 
-Authenticated production GET:
+The first authenticated production GET to:
 
 `/api/admin/assistant/readiness`
 
@@ -156,7 +148,7 @@ returned:
 - `notification.ready:true`
 - Turnstile server secret configured: true
 
-Exact missing bindings:
+It reported four missing bindings:
 
 - `ASSISTANT_SESSION_KEY`
 - `ASSISTANT_TURNSTILE_SITE_KEY`
@@ -165,7 +157,41 @@ Exact missing bindings:
 
 `ASSISTANT_SESSION_KEY` must decode from Base64URL to exactly 32 bytes.
 
-Do not enable the public feature while any runtime dependency is missing/invalid.
+### Owner configuration after the first probe
+
+On 2026-09-02 the owner entered all four previously missing bindings in the production Cloudflare Worker configuration while keeping `ASSISTANT_PUBLIC_ENABLED` absent/off.
+
+This is **not yet a runtime PASS**. The next authenticated readiness GET must verify that the deployed Worker sees valid values and returns no missing/invalid bindings.
+
+Expected PASS before touching #215:
+
+- `readyForRuntimeConfiguration:true`;
+- all `dependencies.*.ready:true`;
+- `missingBindings:[]`;
+- `invalidBindings:[]`;
+- `publicExposure.enabled:false`.
+
+`readyForPublicEnablement` is expected to remain false while the public kill switch is OFF.
+
+## Cloudflare Turnstile Siteverify warning
+
+While retrieving the site key from the existing **SD.Live Forms** Turnstile widget, Cloudflare displayed:
+
+`Siteverify isn't being called for SD.Live Forms`
+
+This is now a mandatory security follow-up before final Assistant public enablement.
+
+Do not infer the cause yet. Required investigation:
+
+1. inspect the actual Contact/Rental form submission implementation;
+2. confirm whether Turnstile response tokens are sent to the server;
+3. confirm whether the server verifies those tokens against Cloudflare Siteverify;
+4. determine whether Cloudflare's warning is a detection false positive or a real validation gap;
+5. if a real gap exists, fix and regression-test Contact/Rental;
+6. preserve the Assistant's separate Turnstile boundary;
+7. do not set `ASSISTANT_PUBLIC_ENABLED=true` until this warning is dispositioned.
+
+The warning does not by itself establish that the Assistant's new runtime readiness is invalid; the readiness probe separately reports its Turnstile server-secret/site-key configuration.
 
 ## PR #215 — public widget
 
@@ -181,13 +207,13 @@ Do not merge directly.
 
 Required order:
 
-1. configure the four missing runtime bindings with public flag OFF;
-2. rerun authenticated runtime readiness;
-3. require runtime dependencies all ready;
+1. rerun authenticated runtime readiness after the four bindings were entered;
+2. require runtime dependencies all ready with public flag OFF;
+3. investigate/disposition the SD.Live Forms Siteverify warning before final public enablement;
 4. reverify/rebase #215 onto current `main`;
 5. CI PASS;
 6. merge widget while flag remains OFF;
-7. explicitly enable public flag;
+7. explicitly enable public flag only after security gates are satisfied;
 8. final E2E one manual action at a time.
 
 ## PR #218 — temporary validation
@@ -217,15 +243,6 @@ Hard boundaries:
 
 ## Exact continuation
 
-**Current Active Gate: runtime configuration with public flag OFF.**
+**Current Active Gate: runtime readiness verification with public flag OFF.**
 
-Configure:
-
-1. `ASSISTANT_SESSION_KEY` — 32 random bytes encoded Base64URL;
-2. `ASSISTANT_TURNSTILE_SITE_KEY` — browser/public key for the existing Turnstile widget paired with the already-configured server secret;
-3. `OPENAI_API_KEY` — secret;
-4. `OPENAI_ASSISTANT_MODEL` — valid Responses API model ID.
-
-Keep `ASSISTANT_PUBLIC_ENABLED` absent/false.
-
-Then perform exactly one authenticated production readiness GET and branch the rollout from that result. Do not touch #215 before runtime readiness is fully green.
+Perform exactly one authenticated production readiness GET. If it passes the expected runtime criteria above, continue with the Siteverify investigation and #215 integration path. Do not enable the public Assistant yet.

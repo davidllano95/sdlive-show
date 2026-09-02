@@ -6,11 +6,11 @@
 |---|---|
 | Última reconciliación | **2026-09-02 — America/Bogota** |
 | Rama operativa | `main` |
-| `main` verificado | **`259b68b2d94b5fca7dcfe13bec79ace40792fff8` · PR #225** |
+| `main` verificado antes de este follow-up docs-only | **`5b709f5cb3a7923d25ac1f8062ae3458b02fc806` · PR #226** |
 | Producción | `https://sdlive.show` |
 | Estado macro | **Finance/Calendar/Site Schedule/Show Day/Admin/public stabilization/Rental parity/Availability v1/Lead Core/Assistant storage CLOSED or operational** |
-| Active Gate | **Assistant runtime configuration with public flag OFF** |
-| Siguiente slice técnico | **Configure 4 missing runtime bindings, rerun readiness, then rebase #215** |
+| Active Gate | **Assistant runtime readiness verification with public flag OFF** |
+| Siguiente slice técnico | **Re-run authenticated readiness; then investigate Turnstile Siteverify warning before final public enablement** |
 | Bloqueado | **Generic Finance Phase 3 write-back** |
 
 ## Precedencia
@@ -133,30 +133,37 @@ Final storage preparation came through PR #224. Old draft #216 was closed withou
 
 Old draft #213 was closed without merge as superseded by #225.
 
-## Active Gate — runtime configuration
+## Active Gate — runtime readiness verification
 
-Authenticated production readiness was executed after #225 deployment with the public flag still OFF.
+The first authenticated production readiness probe after #225 showed the backend deployed safely with the public flag OFF and these dependencies already ready:
 
-Result:
-
-- `readyForRuntimeConfiguration: false`
-- `readyForPublicEnablement: false`
-- `publicExposure.enabled: false`
 - `rateLimit.ready: true`
 - `d1Binding.ready: true`
 - `notification.ready: true`
 - Turnstile server secret configured: true
 
-Exact missing bindings:
+It originally reported four missing bindings:
 
 - `ASSISTANT_SESSION_KEY`
 - `ASSISTANT_TURNSTILE_SITE_KEY`
 - `OPENAI_API_KEY`
 - `OPENAI_ASSISTANT_MODEL`
 
-Do not enable the public flag while any of these remain missing/invalid.
+As of the latest owner action on 2026-09-02, all four have now been entered in Cloudflare. This is **not yet a verified PASS**: a fresh authenticated readiness probe must confirm the deployed runtime sees valid values.
 
-Session key contract: Base64URL-encoded exactly 32 bytes.
+Session key contract remains Base64URL-encoded exactly 32 bytes.
+
+`ASSISTANT_PUBLIC_ENABLED` must remain absent/false.
+
+### Turnstile Siteverify warning — mandatory follow-up
+
+Cloudflare Turnstile currently shows this warning for the existing widget **SD.Live Forms**:
+
+`Siteverify isn't being called for SD.Live Forms`
+
+Treat this as a security/anti-bot investigation before final Assistant public enablement. Do not assume whether the warning is a false positive or a real validation gap. Inspect the actual Contact/Rental form path and confirm whether submitted Turnstile tokens are verified server-side against Siteverify. If not, fix that path without weakening the Assistant Turnstile contract.
+
+This warning does **not** by itself prove the Assistant runtime is misconfigured, because the Assistant has its own explicit Turnstile readiness boundary; it is a separate existing-forms verification item that must be dispositioned before public rollout completion.
 
 ## PR #215 — PUBLIC WIDGET
 
@@ -166,12 +173,13 @@ It was prepared on the old #213 lineage. Do not merge it directly.
 
 Required sequence:
 
-1. runtime readiness fully green with public flag OFF;
-2. reverify/rebase #215 onto current `main`;
-3. CI PASS;
-4. merge widget while flag remains OFF;
-5. explicitly enable public flag;
-6. final E2E one action at a time.
+1. fresh runtime readiness fully green with public flag OFF;
+2. investigate/disposition the Turnstile Siteverify warning before final public enablement;
+3. reverify/rebase #215 onto current `main`;
+4. CI PASS;
+5. merge widget while flag remains OFF;
+6. explicitly enable public flag only when security gates are satisfied;
+7. final E2E one action at a time.
 
 ## PR #191 — WHATSAPP OWNER CONTROL
 
@@ -224,9 +232,12 @@ Provider boundary:
 
 Do **not** touch #215 yet.
 
-The exact next operation is:
+The exact next operation is one authenticated production readiness GET. Require:
 
-1. configure `ASSISTANT_SESSION_KEY`, `ASSISTANT_TURNSTILE_SITE_KEY`, `OPENAI_API_KEY`, and `OPENAI_ASSISTANT_MODEL` in production while leaving `ASSISTANT_PUBLIC_ENABLED` absent/false;
-2. rerun authenticated `GET /api/admin/assistant/readiness`;
-3. require runtime dependencies all ready before touching #215;
-4. then rebase/integrate #215 onto current main and rerun CI.
+- `readyForRuntimeConfiguration:true`;
+- all `dependencies.*.ready:true`;
+- `missingBindings:[]`;
+- `invalidBindings:[]`;
+- `publicExposure.enabled:false`.
+
+If that passes, proceed with the Turnstile Siteverify investigation and then the #215 rebase/integration path while keeping the public flag OFF.
