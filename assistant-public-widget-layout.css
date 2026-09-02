@@ -1,0 +1,18 @@
+/* SD.Live Assistant — bounded conversation scrolling patch */
+
+.assistant-panel__conversation {
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+
+.assistant-panel__messages {
+  flex: 0 0 auto;
+  min-height: auto;
+  overflow: visible;
+}
+
+.assistant-panel__consent {
+  flex: 0 0 auto;
+}
