@@ -147,7 +147,8 @@ test("storage policy contains no second lead source of truth or raw content", ()
     uniqueKeyEnforcedByDatabase: true,
     supportedEffect: "lead_create",
     abandonedReservationTtlMs: 300000,
-    leadSourceOfTruth: "leads"
+    leadSourceOfTruth: "leads",
+    runtimeMayEnsureSchema: false
   });
 });
 
