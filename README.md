@@ -17,103 +17,93 @@ When docs disagree, use:
 3. latest dated handoff/checkpoint;
 4. `PROJECT_STATUS.md`;
 5. this README;
-6. `ROADMAP_MASTER_CHECKLIST.md` for historical/future backlog;
+6. `ROADMAP_MASTER_CHECKLIST.md`;
 7. older prompts/ideas/references.
 
 **Stability > novelty.** `UNMERGED != PRODUCTION`, and `CI PASS != PRODUCTION SMOKE PASS`.
 
 ## Current state — 2026-09-02
 
-Current verified runtime `main` before this docs-only reconciliation:
+Runtime baseline before this docs-only reconciliation:
 
-`6ef4c1990a8e4903b38f6fefb334d307634119f8`
+`d1db8019deadc5d84fba9604de7a36f64658aba7` — PR #229.
 
-This is squash-merged PR #228, **Integrate gated Assistant public widget on current main**. PR CI PASS and post-merge `main` Tests #626 PASS.
+Current Assistant milestones:
 
-### Closed / production-verified
-
-- Finance read-only integration and `/admin/finance/` — operational / production-smoked PASS.
-- Admin Calendar + controlled create + multi-day operations — CLOSED/PASS.
-- Site Schedule + automatic Show Day + Location — CLOSED/PASS.
-- Admin Show Day `Auto / Force On / Force Off` — CLOSED/PASS.
-- Admin desktop/mobile stabilization — CLOSED/PASS.
-- Public post-integration visual stabilization — CLOSED/PASS.
-- Rental image-editor parity — CLOSED/PASS through PR #157.
 - Availability Core v1 — CLOSED/PASS.
-- Lead Core Admin workflow through PR #190 — CLOSED/PASS.
-- Assistant Lead physical schema migration — CLOSED/PASS in production.
-- Assistant storage gate (`leads`, `privacy_consents`, idempotency) — CLOSED/PASS in production.
+- Lead Core through PR #190 — CLOSED/PASS.
+- Assistant storage — CLOSED/PASS in production.
 - Assistant backend PR #225 — MERGED / CI PASS / deployed.
-- Assistant runtime configuration — PASS in production with all dependencies ready.
-- Assistant public widget PR #228 — MERGED / CI PASS / deployed but hidden because the public kill switch remains OFF.
+- Assistant runtime configuration — PASS; no missing or invalid bindings.
+- Assistant public widget PR #228 — MERGED / CI PASS / deployed but hidden while the public kill switch is OFF.
+- SD.Live Forms Turnstile Siteverify path — **PRODUCTION PASS** through a non-destructive Contact probe.
 
-Canonical Lead Core statuses: `new`, `contacted`, `quoted`, `confirmed`, `lost`.
+Canonical Lead statuses: `new`, `contacted`, `quoted`, `confirmed`, `lost`.
 
 Relevant Lead sources: `contact`, `rental`, `assistant`.
 
-Canonical service categories: `live`, `theatre`, `sound_design`, `systems`, `rental`, `other`.
+Service categories: `live`, `theatre`, `sound_design`, `systems`, `rental`, `other`.
 
-## Current Active Gate — Turnstile runtime verification before public enablement
+## Current Active Gate — final Assistant public enablement
 
-The Assistant backend and widget are now deployed, but the public Assistant remains **OFF**.
+The Assistant backend, storage, runtime bindings and public widget are ready. The public Assistant remains intentionally **OFF** because `ASSISTANT_PUBLIC_ENABLED` is absent/false.
 
-The authenticated production readiness probe after runtime configuration returned:
+Authenticated readiness is green:
 
-- `readyForRuntimeConfiguration: true`
-- all `dependencies.*.ready: true`
-- `missingBindings: []`
-- `invalidBindings: []`
-- `publicExposure.enabled: false`
-- `readyForPublicEnablement: false` only because `ASSISTANT_PUBLIC_ENABLED` remains OFF
+- `readyForRuntimeConfiguration:true`;
+- all runtime dependencies ready;
+- `missingBindings:[]`;
+- `invalidBindings:[]`;
+- `publicExposure.enabled:false`.
 
-Production smoke after PR #228 also PASS: with the public flag OFF, the Assistant launcher/widget is not rendered publicly.
+`readyForPublicEnablement:false` is expected while the kill switch is OFF.
 
-Do **not** enable `ASSISTANT_PUBLIC_ENABLED` yet.
+### Turnstile warning — dispositioned PASS
 
-### Turnstile warning — mandatory final security gate
-
-Cloudflare Turnstile displays this warning for the existing **SD.Live Forms** widget:
+Cloudflare had displayed:
 
 `Siteverify isn't being called for SD.Live Forms`
 
-Repository inspection confirms the existing Contact/Rental implementation does contain a real server-side Siteverify path:
+Code inspection already established that Contact/Rental send `turnstileToken`, the Worker calls Cloudflare Siteverify, validates `hostname === "sdlive.show"`, validates the expected action (`contact` / `rental`), and rejects failed verification before Lead persistence.
 
-- browser obtains the Turnstile token and includes `turnstileToken` in Contact/Rental payloads;
-- `worker.js` posts the token to Cloudflare `/turnstile/v0/siteverify`;
-- server requires `hostname === "sdlive.show"`;
-- Contact requires Turnstile action `contact`;
-- Rental requires Turnstile action `rental`;
-- failed Turnstile verification returns before Lead creation.
+A real production Contact token was then submitted through the live endpoint while privacy consent was intentionally omitted. The server returned:
 
-Therefore the warning is **not explained by missing Siteverify code**. It is still unresolved at runtime: we must prove that a real production token from the existing widget reaches Siteverify and is associated correctly before calling the warning a false positive or enabling the Assistant publicly.
+`{"ok":false,"error":"Privacy consent is required"}`
 
-The next verification must be non-destructive: generate a valid Contact Turnstile token, let the server verify it, then intentionally fail later request validation so no Lead is created.
+Because privacy validation occurs after successful Turnstile validation, this result proves the live request passed the server-side Siteverify boundary and reached the later consent gate. No Lead was intentionally created by this probe.
 
-### Assistant widget — PR #228
+**Disposition:** the dashboard warning is treated as stale/incomplete Cloudflare detection/association, not an SD.Live missing-Siteverify implementation defect. Reopen only if later runtime evidence contradicts this production proof.
 
-PR #228 is the clean reconstruction of the old #215 widget scope on current `main`.
+## Assistant public widget
 
-It includes:
+PR #228 reconstructed the widget cleanly on current `main` rather than merging obsolete #215 lineage. It provides:
 
-- Contact-section launcher; no second persistent floating CTA;
+- Contact-section launcher only;
 - desktop modal / mobile bottom sheet;
 - EN/ES runtime copy;
-- in-memory-only conversation and sealed session token;
-- explicit Turnstile render/reset per browser operation;
-- current `/api/assistant` request contract;
-- server-owned privacy consent prompt/actions;
-- deterministic email/WhatsApp fallback without owner phone exposure;
-- rendering only when both `ASSISTANT_PUBLIC_ENABLED=true` and a valid `ASSISTANT_TURNSTILE_SITE_KEY` are present.
+- in-memory conversation only;
+- sealed session token;
+- explicit Turnstile token/reset per browser operation;
+- current `/api/assistant` wire contract;
+- server-owned explicit privacy consent actions;
+- deterministic human fallbacks without owner-phone exposure;
+- rendering only when `ASSISTANT_PUBLIC_ENABLED=true` and the site key is valid.
 
-Old PR #215 is **CLOSED WITHOUT MERGE / superseded by #228**. Do not reopen it.
+Production flag-OFF smoke PASS: the widget is hidden while disabled.
 
-### Superseded / held Assistant work
+## Open PR state / work order
 
-- #213 — CLOSED WITHOUT MERGE; superseded by #225.
-- #215 — CLOSED WITHOUT MERGE; superseded by #228.
-- #216 — CLOSED WITHOUT MERGE; superseded by #224.
-- #218 — CLOSED WITHOUT MERGE / TEMP VALIDATION ONLY; do not reopen.
-- #191 — separate Availability owner WhatsApp workstream; do not touch unless explicitly reprioritized.
+The obsolete preparatory Assistant PRs **#192–#212 are CLOSED WITHOUT MERGE**; their validated scope was superseded by the final integrated Assistant backend in #225. Old #213, #215, #216 and temporary #218 are also closed/superseded and must not be reopened.
+
+After cleanup, the repository has exactly **one open operational PR**:
+
+- **#191 — authenticated WhatsApp owner control for Availability.** This is the next workstream after the Assistant public rollout is closed. Its old branch must be reverified/reconstructed on the then-current `main` before merge; Meta/Cloudflare onboarding remains part of activation.
+
+This ordering is deliberate:
+
+1. finish Assistant public enablement + one representative E2E + closeout;
+2. resume #191 WhatsApp owner control;
+3. then continue prioritized roadmap backlog.
 
 ## SD.Live Assistant architecture
 
@@ -128,18 +118,18 @@ Hard boundaries:
 - no invented/negotiated prices;
 - no Availability promise without deterministic backend truth;
 - no second Rental catalog/pricing source;
-- no Finance writes;
+- no Finance reads/writes by the Assistant;
 - explicit privacy consent only;
 - no public schema migration;
 - no owner phone/secrets/provider bodies exposed.
 
 ## Change workflow
 
-Runtime changes:
+Runtime:
 
 `inspect current main → short branch → implement/update → tests/CI → PR → CI green → squash merge → exactly one representative production smoke`.
 
-Docs-only changes:
+Docs-only:
 
 `branch → docs → tests/CI → PR → CI green → squash merge`.
 
@@ -147,11 +137,11 @@ No production smoke for docs-only PRs. Manual QA with the owner: **one action at
 
 ## Exact continuation
 
-1. Keep `ASSISTANT_PUBLIC_ENABLED` OFF.
-2. Perform one non-destructive production validation proving a real token from **SD.Live Forms** reaches server-side Siteverify without creating a Lead.
-3. Re-check/disposition the Cloudflare Siteverify warning.
-4. Only when that security gate is clean, explicitly enable `ASSISTANT_PUBLIC_ENABLED=true`.
-5. Perform final Assistant E2E one manual action at a time, including normal reply, deterministic Availability/Rental behavior, consent, exactly one Lead, notification, duplicate protection, mobile/desktop and EN/ES.
+1. Explicitly set production `ASSISTANT_PUBLIC_ENABLED=true`.
+2. Run one controlled representative Assistant E2E, one manual action at a time, covering a normal conversation through explicit consent and one real QA Lead/handoff while checking deterministic Availability/Rental behavior and no duplicate Lead.
+3. Confirm Contact/Rental still operate normally.
+4. Close/document the Assistant rollout.
+5. Resume PR #191 as the next operational workstream.
 
 ## Relevant docs
 
@@ -159,4 +149,4 @@ No production smoke for docs-only PRs. Manual QA with the owner: **one action at
 - `docs/checkpoints/handoff-assistant-rollout-2026-09-02.md` — latest Assistant rollout checkpoint.
 - `docs/checkpoints/handoff-availability-v1-closeout-2026-09-01.md` — Availability closeout.
 - `docs/roadmap/availability-aware-contact-widget.md` — Availability/Assistant contract.
-- `ROADMAP_MASTER_CHECKLIST.md` — reconciled backlog and rollout checklist.
+- `ROADMAP_MASTER_CHECKLIST.md` — reconciled work order and backlog.
