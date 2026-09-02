@@ -7,6 +7,7 @@ import { openAIProviderConfig } from "./openai-assistant-provider.js";
 
 const SESSION_KEY_BINDING = "ASSISTANT_SESSION_KEY";
 const TURNSTILE_SECRET_BINDING = "TURNSTILE_SECRET_KEY";
+const TURNSTILE_SITE_KEY_BINDING = "ASSISTANT_TURNSTILE_SITE_KEY";
 const D1_BINDING = "CMS_DB";
 
 function text(value, maxLength = 2000) {
@@ -55,11 +56,17 @@ function sessionReadiness(env) {
 }
 
 function turnstileReadiness(env) {
-  const ready = Boolean(text(env?.[TURNSTILE_SECRET_BINDING], 2000));
+  const secretReady = Boolean(text(env?.[TURNSTILE_SECRET_BINDING], 2000));
+  const siteKeyReady = Boolean(text(env?.[TURNSTILE_SITE_KEY_BINDING], 300));
+  const missing = [];
+  if (!secretReady) missing.push(TURNSTILE_SECRET_BINDING);
+  if (!siteKeyReady) missing.push(TURNSTILE_SITE_KEY_BINDING);
   return {
-    ready,
-    missing: ready ? [] : [TURNSTILE_SECRET_BINDING],
-    invalid: []
+    ready: secretReady && siteKeyReady,
+    missing,
+    invalid: [],
+    browserSiteKeyConfigured: siteKeyReady,
+    serverSecretConfigured: secretReady
   };
 }
 
@@ -137,6 +144,7 @@ export function assistantRuntimeReadinessPolicy() {
       "OPENAI_ASSISTANT_MODEL",
       SESSION_KEY_BINDING,
       TURNSTILE_SECRET_BINDING,
+      TURNSTILE_SITE_KEY_BINDING,
       ASSISTANT_RATE_LIMIT_POLICY.binding,
       D1_BINDING,
       "RESEND_API_KEY",
