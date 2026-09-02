@@ -390,24 +390,6 @@ export async function handleAssistantApi(
   const rateLimitResponse = await rateLimit(request, env);
   if (rateLimitResponse) return rateLimitResponse;
 
-  const turnstile = await verifyTurnstile(
-    request,
-    env,
-    validation.value.turnstileToken,
-    validation.security.expectedTurnstileAction,
-    { fetchImpl: turnstileFetch }
-  ).catch(() => ({ ok: false, reason: "siteverify_unavailable" }));
-  if (!turnstile?.ok) {
-    const fallback = assistantFallback("turnstile_failed", validation.value.language);
-    return json({
-      ok: false,
-      version: ASSISTANT_API_VERSION,
-      error: fallback.code,
-      reply: fallback.reply,
-      retryable: fallback.retryable
-    }, fallback.httpStatus);
-  }
-
   const now = nowFactory();
   const requestId = createRequestId({ randomUUID });
   let session;
@@ -431,6 +413,30 @@ export async function handleAssistantApi(
       reply: fallback.reply,
       retryable: expired
     }, expired ? 409 : 400);
+  }
+
+  // Turnstile is the admission check for a new browser session. Once the
+  // server has authenticated and unsealed an existing session token, that
+  // cryptographically sealed token replaces repeated CAPTCHA checks for the
+  // remainder of the in-memory conversation.
+  if (!session.existing) {
+    const turnstile = await verifyTurnstile(
+      request,
+      env,
+      validation.value.turnstileToken,
+      validation.security.expectedTurnstileAction,
+      { fetchImpl: turnstileFetch }
+    ).catch(() => ({ ok: false, reason: "siteverify_unavailable" }));
+    if (!turnstile?.ok) {
+      const fallback = assistantFallback("turnstile_failed", validation.value.language);
+      return json({
+        ok: false,
+        version: ASSISTANT_API_VERSION,
+        error: fallback.code,
+        reply: fallback.reply,
+        retryable: fallback.retryable
+      }, fallback.httpStatus);
+    }
   }
 
   const language = sessionLanguage(session.state, validation.value.language);
@@ -550,7 +556,9 @@ export function assistantApiPolicy() {
     sessionPersistence: "sealed_browser_token",
     transcriptPersistence: false,
     rateLimitBeforeTurnstile: true,
-    turnstileBeforeSessionDecrypt: true,
+    turnstileBeforeSessionDecrypt: false,
+    turnstileRequiredForNewSession: true,
+    sealedSessionReplacesRepeatTurnstile: true,
     leadSourceOfTruth: "leads",
     notificationTransport: "resend",
     financeWrites: false
