@@ -41,10 +41,12 @@ test("browser runtime parses and never persists conversation or sealed session s
   assert.match(js, /let securityToken = ""/);
 });
 
-test("every browser operation carries Turnstile and only the sealed session token", async () => {
+test("browser uses Turnstile for admission and the sealed session token for later operations", async () => {
   const js = await source("assistant-public-widget.js");
-  assert.match(js, /turnstileToken:\s*securityToken/);
   assert.match(js, /if \(sessionToken\) body\.sessionToken = sessionToken/);
+  assert.match(js, /if \(securityToken\) body\.turnstileToken = securityToken/);
+  assert.match(js, /return Boolean\(sessionToken \|\| securityToken\)/);
+  assert.match(js, /appearance:\s*"interaction-only"/);
   assert.match(js, /window\.turnstile\.remove\(widgetId\)/);
   assert.doesNotMatch(js, /\bsessionId\s*:/);
   assert.doesNotMatch(js, /\bslots\s*:/);
