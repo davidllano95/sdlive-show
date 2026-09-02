@@ -32,6 +32,19 @@ const PRIVACY_REQUIRED_COLUMNS = Object.freeze([
   "authorization_method"
 ]);
 
+const IDEMPOTENCY_REQUIRED_COLUMNS = Object.freeze([
+  "idempotency_key",
+  "effect",
+  "status",
+  "request_id",
+  "lead_id",
+  "attempts",
+  "reserved_at",
+  "updated_at",
+  "completed_at",
+  "error_code"
+]);
+
 function databaseFromEnv(env) {
   const db = env?.CMS_DB;
   if (!db || typeof db.prepare !== "function") {
@@ -83,6 +96,21 @@ function checkAllowsLiteral(tableSql, columnName, value) {
   return {
     constrained: true,
     allowed: checks.every((expression) => expression.toLowerCase().includes(literal))
+  };
+}
+
+function checkAllowsAllLiterals(tableSql, columnName, values) {
+  const checks = relevantChecks(tableSql, columnName);
+  if (!checks.length) {
+    return { constrained: false, allowed: true };
+  }
+
+  return {
+    constrained: true,
+    allowed: checks.every((expression) => {
+      const normalized = expression.toLowerCase();
+      return values.every((value) => normalized.includes(`'${String(value).toLowerCase()}'`));
+    })
   };
 }
 
@@ -224,6 +252,43 @@ export function analyzeAssistantPrivacyStorage({
   };
 }
 
+export function analyzeAssistantIdempotencyStorage({
+  columns: columnRows,
+  tableSql,
+  statusIndexSql
+} = {}) {
+  const sql = String(tableSql || "").trim();
+  const columns = columnMap(columnRows);
+  const missing = missingColumns(columns, IDEMPOTENCY_REQUIRED_COLUMNS);
+  const primaryKeyReady = Boolean(columns.get("idempotency_key")?.primaryKey);
+  const effectCheck = checkAllowsAllLiterals(sql, "effect", ["lead_create"]);
+  const statusCheck = checkAllowsAllLiterals(sql, "status", [
+    "reserved",
+    "completed",
+    "failed"
+  ]);
+  const hasStatusIndex = /create\s+index/i.test(String(statusIndexSql || ""));
+
+  let reason = "compatible";
+  if (!sql) reason = "table_missing";
+  else if (missing.length) reason = "required_columns_missing";
+  else if (!primaryKeyReady) reason = "idempotency_key_primary_key_missing";
+  else if (!effectCheck.allowed) reason = "effect_constraint_incompatible";
+  else if (!statusCheck.allowed) reason = "status_constraint_incompatible";
+  else if (!hasStatusIndex) reason = "status_index_missing";
+
+  return {
+    ok: true,
+    ready: reason === "compatible",
+    reason,
+    missingColumns: missing,
+    primaryKeyReady,
+    effectConstraintReady: Boolean(sql) && effectCheck.allowed,
+    statusConstraintReady: Boolean(sql) && statusCheck.allowed,
+    hasStatusIndex
+  };
+}
+
 /**
  * Strictly read-only physical-schema inspection for the future Assistant
  * lead-capture path. Only PRAGMA/SELECT metadata reads are issued here.
@@ -231,7 +296,16 @@ export function analyzeAssistantPrivacyStorage({
 export async function inspectAssistantStoragePreflight(env) {
   const db = databaseFromEnv(env);
 
-  const [leadInfo, leadSchema, privacyInfo, privacySchema, privacyIndex] = await Promise.all([
+  const [
+    leadInfo,
+    leadSchema,
+    privacyInfo,
+    privacySchema,
+    privacyIndex,
+    idempotencyInfo,
+    idempotencySchema,
+    idempotencyIndex
+  ] = await Promise.all([
     db.prepare("PRAGMA table_info(leads)").all(),
     db.prepare(`
       SELECT sql
@@ -254,6 +328,21 @@ export async function inspectAssistantStoragePreflight(env) {
       WHERE type = 'index'
         AND name = 'idx_privacy_consents_lead_source'
       LIMIT 1
+    `).first(),
+    db.prepare("PRAGMA table_info(assistant_effect_reservations)").all(),
+    db.prepare(`
+      SELECT sql
+      FROM sqlite_master
+      WHERE type = 'table'
+        AND name = 'assistant_effect_reservations'
+      LIMIT 1
+    `).first(),
+    db.prepare(`
+      SELECT sql
+      FROM sqlite_master
+      WHERE type = 'index'
+        AND name = 'idx_assistant_effect_reservations_status_updated'
+      LIMIT 1
     `).first()
   ]);
 
@@ -266,14 +355,22 @@ export async function inspectAssistantStoragePreflight(env) {
     tableSql: privacySchema?.sql,
     canonicalIndexSql: privacyIndex?.sql
   });
+  const idempotency = analyzeAssistantIdempotencyStorage({
+    columns: idempotencyInfo?.results,
+    tableSql: idempotencySchema?.sql,
+    statusIndexSql: idempotencyIndex?.sql
+  });
 
   return {
     ok: true,
     readOnly: true,
     readyForAssistantLeadCapture: Boolean(
-      leads.canInsertAssistantLead && privacyConsents.canRecordAssistantConsent
+      leads.canInsertAssistantLead &&
+      privacyConsents.canRecordAssistantConsent &&
+      idempotency.ready
     ),
     leads,
-    privacyConsents
+    privacyConsents,
+    idempotency
   };
 }
