@@ -219,7 +219,7 @@ export async function validateAssistantPublicRequest(request) {
     body.turnstileToken,
     ASSISTANT_PUBLIC_REQUEST_POLICY.maxTurnstileTokenChars + 1
   );
-  if (!turnstileToken) {
+  if (!turnstileToken && !sessionToken) {
     return { ok: false, status: 400, error: "turnstile_required" };
   }
   if (turnstileToken.length > ASSISTANT_PUBLIC_REQUEST_POLICY.maxTurnstileTokenChars) {
@@ -229,7 +229,7 @@ export async function validateAssistantPublicRequest(request) {
   const common = {
     sessionToken: sessionToken || null,
     language: normalizedLanguage(body.language),
-    turnstileToken
+    turnstileToken: turnstileToken || null
   };
   const operation = validateOperationFields(body, common);
   if (!operation.ok) return operation;
@@ -241,6 +241,7 @@ export async function validateAssistantPublicRequest(request) {
     security: {
       expectedTurnstileAction: ASSISTANT_PUBLIC_REQUEST_POLICY.turnstileAction,
       rateLimit: assistantPublicRateLimitConfig(),
+      turnstileRequiredForNewSession: !sessionToken,
       sessionTokenRequiresServerAuthentication: Boolean(sessionToken),
       consentIsExplicitProductAction: operation.operation === "consent"
     }
