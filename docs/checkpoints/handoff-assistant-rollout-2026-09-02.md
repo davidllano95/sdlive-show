@@ -2,7 +2,7 @@
 
 ## Authority
 
-This checkpoint records the verified rollout state after Assistant storage preparation, final backend integration, production runtime configuration PASS, clean public-widget integration and the remaining Cloudflare Turnstile Siteverify gate on 2026-09-02 America/Bogota.
+This checkpoint records the verified rollout state after Assistant storage preparation, final backend integration, production runtime configuration PASS, public-widget integration, real production Siteverify proof and repository PR cleanup on 2026-09-02 America/Bogota.
 
 Source precedence:
 
@@ -16,29 +16,27 @@ Source precedence:
 
 `UNMERGED != PRODUCTION` and `CI PASS != PRODUCTION SMOKE PASS`.
 
-## Verified runtime main
+## Runtime baseline before this docs-only reconciliation
 
-Before this docs-only reconciliation:
+`d1db8019deadc5d84fba9604de7a36f64658aba7` — PR #229.
 
-`6ef4c1990a8e4903b38f6fefb334d307634119f8`
+Production state at this checkpoint:
 
-This is squash-merged PR #228: **Integrate gated Assistant public widget on current main**.
-
-Verification:
-
-- #228 PR CI PASS;
-- post-merge `main` Tests #626 PASS;
-- production Assistant runtime configuration PASS;
-- public kill switch remains OFF;
-- post-#228 production flag-OFF smoke PASS: public launcher/widget is absent as intended.
+- Assistant storage PASS;
+- backend #225 merged/deployed;
+- runtime bindings/readiness PASS;
+- widget #228 merged/deployed;
+- public kill switch still OFF;
+- flag-OFF widget smoke PASS;
+- existing Contact Turnstile Siteverify production proof PASS.
 
 ## Availability / Lead Core / storage
 
 Availability Core v1 remains CLOSED/PASS. Do not reopen without regression.
 
-Lead Core remains CLOSED/PASS with canonical statuses `new`, `contacted`, `quoted`, `confirmed`, `lost` and relevant sources `contact`, `rental`, `assistant`.
+Lead Core remains CLOSED/PASS with statuses `new`, `contacted`, `quoted`, `confirmed`, `lost` and relevant sources `contact`, `rental`, `assistant`.
 
-Assistant storage gate remains CLOSED/PASS:
+Assistant storage remains CLOSED/PASS:
 
 - Assistant Lead insert supported;
 - email nullable;
@@ -57,26 +55,13 @@ Squash merge:
 
 `259b68b2d94b5fca7dcfe13bec79ace40792fff8`
 
-It provides:
-
-- approved EN/ES knowledge/system policy;
-- strict structured model output;
-- deterministic Availability/Rental boundaries;
-- sealed stateless session;
-- explicit consent;
-- Turnstile boundary;
-- dedicated rate limit;
-- idempotent Lead capture;
-- deterministic Resend handoff;
-- OpenAI Responses API with `store:false`;
-- public `POST /api/assistant` behind kill switch;
-- Admin-only runtime readiness.
+It provides approved EN/ES knowledge/system policy, strict structured output, deterministic Availability/Rental boundaries, sealed stateless session, explicit consent, Turnstile, dedicated rate limiting, idempotent Lead capture, deterministic Resend handoff, OpenAI Responses API with `store:false`, public `POST /api/assistant` behind a kill switch and Admin-only runtime readiness.
 
 Old #213 is closed/superseded.
 
 ## Production runtime readiness — PASS
 
-After the owner configured the four originally missing bindings, authenticated production readiness returned:
+Authenticated production readiness after configuration returned:
 
 - `ok:true`;
 - `readyForRuntimeConfiguration:true`;
@@ -93,98 +78,110 @@ After the owner configured the four originally missing bindings, authenticated p
 - `d1Binding.ready:true`;
 - `notification.ready:true`.
 
-This is the expected safe state before public enablement: runtime fully configured, public flag still OFF.
+This is the expected safe pre-enable state. `readyForPublicEnablement:false` is due to the public switch remaining OFF.
 
 ## Assistant widget — PR #228
 
-The old widget draft #215 was based on obsolete #213 lineage, so it was not retargeted or merged.
-
-Instead, only the intended widget scope was reconstructed on the exact current `main` and integrated through PR #228.
+Old draft #215 was not retargeted or merged because it depended on obsolete #213 lineage. Only its intended widget scope was reconstructed on current `main` and integrated through #228.
 
 Included:
 
 - Contact-section launcher; no second persistent floating CTA;
 - desktop modal / mobile bottom sheet;
-- EN/ES runtime copy;
+- EN/ES;
 - no local/session storage or transcript persistence;
 - sealed session token only;
-- Turnstile explicit render with token reset per operation;
-- current #225 browser/API wire contract;
+- Turnstile explicit render/reset per operation;
+- current #225 browser/API contract;
 - server-owned explicit privacy consent actions;
-- deterministic human fallbacks without exposing owner phone;
-- rendering only if `ASSISTANT_PUBLIC_ENABLED=true` and the site key is valid.
+- deterministic human fallback without owner-phone exposure;
+- rendering only if `ASSISTANT_PUBLIC_ENABLED=true` and site key is valid.
 
-PR #228 CI PASS and post-merge Tests #626 PASS.
+PR #228 CI PASS and production flag-OFF smoke PASS.
 
-Production smoke with the flag OFF PASS: no Assistant launcher/widget rendered publicly.
+Old #215 is CLOSED WITHOUT MERGE / superseded by #228.
 
-Old #215 is now **CLOSED WITHOUT MERGE / superseded by #228**. Do not reopen it.
+## SD.Live Forms Turnstile warning — DISPOSITIONED PASS
 
-## Cloudflare Turnstile Siteverify warning — current gate
-
-Cloudflare displays for the existing **SD.Live Forms** widget:
+Cloudflare displayed for the existing **SD.Live Forms** widget:
 
 `Siteverify isn't being called for SD.Live Forms`
 
-Repository investigation completed after the warning was discovered.
+### Code evidence
 
 Confirmed browser path:
 
-- Contact widget renders with action `contact`;
-- Rental widget renders with action `rental`;
+- Contact action = `contact`;
+- Rental action = `rental`;
 - both obtain a token through `window.turnstile.getResponse(...)`;
-- both include `turnstileToken` in their real request payloads.
+- both submit it as `turnstileToken`.
 
 Confirmed server path:
 
 - `worker.js` calls `https://challenges.cloudflare.com/turnstile/v0/siteverify`;
-- it uses `TURNSTILE_SECRET_KEY` server-side;
-- it requires `result.hostname === "sdlive.show"`;
-- it requires the expected action (`contact` or `rental`);
-- failed verification returns before Lead creation.
+- `TURNSTILE_SECRET_KEY` remains server-side;
+- response hostname must equal `sdlive.show`;
+- action must match `contact` / `rental`;
+- failed Turnstile verification returns before Lead persistence.
 
-Therefore the warning is not evidence of missing server-side Siteverify implementation. The remaining uncertainty is runtime observation/association: we have not yet proved that a current real production token from this exact widget is reaching Siteverify in a way Cloudflare associates with **SD.Live Forms**.
+### Real production proof
 
-Do not call the warning a false positive yet.
+A fresh Contact widget token was submitted to live `/api/contact` with a valid synthetic QA name/email/message but **without privacy consent**. The endpoint returned:
 
-### Next safe proof
+`{"ok":false,"error":"Privacy consent is required"}`
 
-Perform one non-destructive Contact validation:
+The Contact handler performs Turnstile verification before the privacy-consent gate. Reaching the privacy error therefore proves the live token passed server-side Siteverify and the request progressed to the next validation stage.
 
-1. obtain a fresh valid Turnstile token from the live Contact widget;
-2. send it through the live Contact endpoint;
-3. intentionally omit/fail a later validation requirement so the request is rejected after Turnstile verification;
-4. verify no Lead is created;
-5. re-check/disposition the Cloudflare warning/telemetry.
+The omission of consent intentionally prevented Lead creation. This was a non-destructive runtime probe.
 
-This proof is required before setting `ASSISTANT_PUBLIC_ENABLED=true`.
+### Disposition
 
-## Public enablement — not yet
+The warning is now treated as **stale/incomplete Cloudflare dashboard detection/association**, not evidence of a missing SD.Live Siteverify implementation. Reopen this gate only if future production behavior contradicts the verified path.
+
+## Open PR cleanup
+
+A repository-wide open-PR audit found one real held workstream (#191) plus stale Assistant preparation PRs #192–#212.
+
+The preparatory drafts #192–#212 are now CLOSED WITHOUT MERGE because final integration #225 superseded their branch-level staging. They must not be reopened individually.
+
+Already closed/superseded:
+
+- #213 → #225;
+- #215 → #228;
+- #216 → #224;
+- #218 → temporary validation only.
+
+After cleanup, exactly one operational PR remains open:
+
+- **#191 — authenticated WhatsApp owner control for Availability**.
+
+Its description was refreshed to remove the stale #190 blocker. It is explicitly **NEXT AFTER Assistant closeout**, not concurrent. Its old branch must be reverified/reconstructed on the then-current `main` before merge, and Meta/Cloudflare onboarding/configuration remains required for activation.
+
+## Current active gate — final Assistant enablement
+
+All pre-enable technical/security gates are PASS.
 
 `ASSISTANT_PUBLIC_ENABLED` remains absent/false.
 
-Only after the Turnstile gate above is clean:
+Exact order:
 
-1. explicitly enable the public flag;
-2. perform final Assistant E2E one manual action at a time;
-3. cover desktop/mobile, EN/ES, normal reply, deterministic Availability/Rental, explicit consent, exactly one Lead, notification, idempotency, provider fallback, Turnstile failure, rate limit and human fallback;
-4. confirm existing Contact/Rental remain functional.
+1. owner explicitly sets production `ASSISTANT_PUBLIC_ENABLED=true`;
+2. run one controlled representative Assistant E2E, one manual action at a time;
+3. verify normal reply, deterministic Availability/Rental boundaries, explicit product-owned consent and exactly one Assistant Lead/handoff;
+4. verify Admin/consent/notification/idempotency and existing Contact/Rental continuity;
+5. document/close Assistant rollout;
+6. resume #191.
 
-## Superseded / separate work
-
-- #213 — CLOSED WITHOUT MERGE / superseded by #225.
-- #215 — CLOSED WITHOUT MERGE / superseded by #228.
-- #216 — CLOSED WITHOUT MERGE / superseded by #224.
-- #218 — CLOSED WITHOUT MERGE / TEMP VALIDATION ONLY.
-- #191 — OPEN / separate Availability owner transport; do not touch unless explicitly reprioritized.
+Do not commit a default-ON public switch to GitHub. Production configuration remains the reversible activation control.
 
 ## Hard boundaries
 
 - no impersonation;
 - no invented/negotiated prices;
 - no AI-owned Availability;
+- no invented Rental availability;
 - no second Rental pricing source;
-- no Finance writes;
+- no Finance reads/writes by Assistant;
 - explicit product-owned consent only;
 - no full transcript persistence;
 - no public owner phone/secrets;
@@ -193,4 +190,4 @@ Only after the Turnstile gate above is clean:
 
 ## Exact continuation
 
-**Current Active Gate: prove the existing SD.Live Forms Turnstile widget reaches server-side Siteverify in production without creating a Lead. Keep `ASSISTANT_PUBLIC_ENABLED` OFF until that evidence is clean.**
+**Turnstile is PASS. Keep scope on the Assistant. The next manual action is explicit production `ASSISTANT_PUBLIC_ENABLED=true`; then run the representative E2E one action at a time. After Assistant closeout, resume #191 WhatsApp owner control.**
