@@ -37,6 +37,15 @@ Availability Core v1 includes multiple weekly windows, closed days, bounded 15mâ
 
 Checkpoint: `docs/checkpoints/handoff-availability-v1-closeout-2026-09-01.md`.
 
+## Public WhatsApp identity / phone privacy
+
+Hard invariant:
+
+- Public pages use the WhatsApp username as the direct-link identity and must not embed the owner phone number in HTML, JavaScript, structured data or visible copy.
+- Availability output must not expose the owner phone number.
+- If username linking is unavailable, fall back to Contact/Rental rather than exposing a phone number.
+- Phone details may exist only server-side if required later for authenticated provider/webhook operations.
+
 ## Lead Core production contract
 
 Lead Core uses the existing D1 `leads` source of truth. Do not create another Lead table.
