@@ -176,13 +176,18 @@
     updateControls();
   }
 
+  function hasSecurityProof() {
+    return Boolean(sessionToken || securityToken);
+  }
+
   function updateControls() {
     const hasMessage = Boolean(String(input?.value || "").trim());
+    const securityReady = hasSecurityProof();
     if (sendButton) {
-      sendButton.disabled = busy || consentPending || !hasMessage || !securityToken;
+      sendButton.disabled = busy || consentPending || !hasMessage || !securityReady;
     }
     consentBox?.querySelectorAll("button[data-consent-action]").forEach((button) => {
-      button.disabled = busy || !securityToken;
+      button.disabled = busy || !securityReady;
     });
   }
 
@@ -225,7 +230,7 @@
   }
 
   async function ensureSecurity() {
-    if (widgetId !== null || !turnstileContainer || !siteKey) return;
+    if (sessionToken || widgetId !== null || !turnstileContainer || !siteKey) return;
     setStatus(text().securityLoading);
     try {
       const turnstile = await loadTurnstile();
@@ -233,6 +238,7 @@
         sitekey: siteKey,
         action: "assistant",
         theme: "dark",
+        appearance: "interaction-only",
         callback(token) {
           securityToken = String(token || "");
           setStatus("");
@@ -267,7 +273,7 @@
     widgetId = null;
     turnstileContainer?.replaceChildren();
     updateControls();
-    if (root?.dataset.open === "true") ensureSecurity();
+    if (root?.dataset.open === "true" && !sessionToken) ensureSecurity();
   }
 
   function safeSessionToken(data) {
@@ -278,10 +284,10 @@
   async function apiRequest(payload) {
     const body = {
       ...payload,
-      language: language(),
-      turnstileToken: securityToken
+      language: language()
     };
     if (sessionToken) body.sessionToken = sessionToken;
+    if (securityToken) body.turnstileToken = securityToken;
 
     const response = await fetch(ENDPOINT, {
       method: "POST",
@@ -299,7 +305,7 @@
 
   function handleApiError(response, data) {
     setStatus("");
-    if (data?.error === "session_expired") {
+    if (data?.error === "session_expired" || data?.error === "session_invalid") {
       sessionToken = null;
       clearConsent();
       appendMessage("system", text().expired, "SD.Live");
@@ -341,7 +347,7 @@
     if (busy || consentPending) return;
     const message = String(input.value || "").trim().slice(0, MAX_MESSAGE_CHARS);
     if (!message) return;
-    if (!securityToken) {
+    if (!hasSecurityProof()) {
       setStatus(text().securityPending);
       return;
     }
@@ -369,7 +375,7 @@
 
   async function submitConsent(action, policyVersion) {
     if (busy || !consentPending) return;
-    if (!securityToken) {
+    if (!hasSecurityProof()) {
       setStatus(text().securityPending);
       return;
     }
@@ -428,7 +434,7 @@
     new MutationObserver((mutations) => {
       if (mutations.some((mutation) => mutation.attributeName === "lang")) {
         localize(document);
-        if (!busy && !securityToken && widgetId !== null) setStatus(text().securityPending);
+        if (!busy && !sessionToken && !securityToken && widgetId !== null) setStatus(text().securityPending);
       }
     }).observe(document.documentElement, { attributes: true, attributeFilter: ["lang"] });
   }
