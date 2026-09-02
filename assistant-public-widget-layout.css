@@ -1,0 +1,20 @@
+/* SD.Live Assistant — Safari-safe consent layout */
+
+.assistant-panel {
+  grid-template-rows: max-content minmax(0, 1fr) max-content max-content;
+}
+
+.assistant-panel__conversation {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.assistant-panel__messages {
+  flex: 1 1 0%;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.assistant-panel__consent {
+  flex: 0 0 auto;
+}
