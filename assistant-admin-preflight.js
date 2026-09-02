@@ -1,8 +1,10 @@
 import { inspectAssistantStoragePreflight } from "./assistant-storage-preflight.js";
 import { inspectAssistantLeadsMigrationPrecheck } from "./assistant-leads-migration-precheck.js";
+import { inspectExactAssistantLeadsMigration } from "./assistant-leads-schema-migration.js";
 
 export const ASSISTANT_STORAGE_PREFLIGHT_PATH = "/api/admin/assistant/preflight";
 export const ASSISTANT_LEADS_MIGRATION_DETAIL = "leads-migration";
+export const ASSISTANT_LEADS_MIGRATION_READINESS_DETAIL = "leads-migration-readiness";
 
 function normalizedPath(request) {
   const url = new URL(request.url);
@@ -27,7 +29,8 @@ export async function handleAssistantStoragePreflightApi(
   {
     verifyAdmin,
     inspectStorage = inspectAssistantStoragePreflight,
-    inspectLeadsMigration = inspectAssistantLeadsMigrationPrecheck
+    inspectLeadsMigration = inspectAssistantLeadsMigrationPrecheck,
+    inspectLeadsMigrationReadiness = inspectExactAssistantLeadsMigration
   } = {}
 ) {
   if (normalizedPath(request) !== ASSISTANT_STORAGE_PREFLIGHT_PATH) return null;
@@ -57,6 +60,8 @@ export async function handleAssistantStoragePreflightApi(
     const detail = new URL(request.url).searchParams.get("detail");
     if (detail === ASSISTANT_LEADS_MIGRATION_DETAIL) {
       payload.migrationPrecheck = await inspectLeadsMigration(env);
+    } else if (detail === ASSISTANT_LEADS_MIGRATION_READINESS_DETAIL) {
+      payload.migrationReadiness = await inspectLeadsMigrationReadiness(env);
     }
 
     return json(payload);
