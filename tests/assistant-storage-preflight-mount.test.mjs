@@ -44,7 +44,7 @@ test("preflight source contains no storage mutation statements", async () => {
   const executableSql = [...inspector.matchAll(/db\.prepare\((?:`([^`]*)`|"([^"]*)")\)/g)]
     .map((match) => String(match[1] || match[2] || "").replace(/\s+/g, " ").trim());
 
-  assert.equal(executableSql.length, 5);
+  assert.equal(executableSql.length, 8);
   for (const sql of executableSql) {
     assert.match(sql, /^(PRAGMA|SELECT)\b/i, sql);
     assert.doesNotMatch(sql, /\b(CREATE|ALTER|DROP|INSERT|UPDATE|DELETE|REPLACE)\b/i, sql);
