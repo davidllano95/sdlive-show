@@ -29,7 +29,7 @@ function readyEnv() {
   };
 }
 
-test("runtime readiness reports all configured dependencies without touching network or D1", () => {
+test("runtime readiness can be configured while public exposure stays disabled", () => {
   const env = readyEnv();
   const result = inspectAssistantRuntimeReadiness(env);
 
@@ -38,6 +38,9 @@ test("runtime readiness reports all configured dependencies without touching net
   assert.equal(result.networkCalls, false);
   assert.equal(result.storageMutations, false);
   assert.equal(result.readyForRuntimeConfiguration, true);
+  assert.equal(result.readyForPublicEnablement, false);
+  assert.equal(result.publicExposure.enabled, false);
+  assert.equal(result.publicExposure.defaultsToDisabled, true);
   assert.equal(result.storagePreflightRequiredSeparately, true);
   assert.deepEqual(result.missingBindings, []);
   assert.deepEqual(result.invalidBindings, []);
@@ -53,10 +56,23 @@ test("runtime readiness reports all configured dependencies without touching net
   assert.equal(serialized.includes(env.ASSISTANT_TURNSTILE_SITE_KEY), false);
 });
 
-test("missing runtime bindings are named without revealing values", () => {
+test("explicit public enablement is reported only after runtime configuration is ready", () => {
+  const env = readyEnv();
+  env.ASSISTANT_PUBLIC_ENABLED = "true";
+  const result = inspectAssistantRuntimeReadiness(env);
+
+  assert.equal(result.readyForRuntimeConfiguration, true);
+  assert.equal(result.readyForPublicEnablement, true);
+  assert.equal(result.publicExposure.enabled, true);
+  assert.deepEqual(result.missingBindings, []);
+});
+
+test("missing runtime bindings are named without treating the launch switch as a secret dependency", () => {
   const result = inspectAssistantRuntimeReadiness({});
 
   assert.equal(result.readyForRuntimeConfiguration, false);
+  assert.equal(result.readyForPublicEnablement, false);
+  assert.equal(result.publicExposure.enabled, false);
   assert.deepEqual(result.invalidBindings, []);
   assert.deepEqual(result.missingBindings, [
     "ASSISTANT_LEAD_NOTIFICATION_FROM",
@@ -78,9 +94,11 @@ test("present but malformed session/model/bindings are reported as invalid, not 
   env.ASSISTANT_SESSION_KEY = "not-32-bytes";
   env.ASSISTANT_RATE_LIMITER = {};
   env.CMS_DB = {};
+  env.ASSISTANT_PUBLIC_ENABLED = "true";
 
   const result = inspectAssistantRuntimeReadiness(env);
   assert.equal(result.readyForRuntimeConfiguration, false);
+  assert.equal(result.readyForPublicEnablement, false);
   assert.deepEqual(result.missingBindings, []);
   assert.deepEqual(result.invalidBindings, [
     "ASSISTANT_RATE_LIMITER",
@@ -90,13 +108,14 @@ test("present but malformed session/model/bindings are reported as invalid, not 
   ]);
 });
 
-test("readiness policy explicitly forbids secret disclosure and runtime effects", () => {
+test("readiness policy explicitly forbids secret disclosure and defaults exposure off", () => {
   assert.deepEqual(assistantRuntimeReadinessPolicy(), {
     readOnly: true,
     networkCalls: false,
     storageMutations: false,
     revealsSecretValues: false,
     storagePreflightRequiredSeparately: true,
+    publicExposureDefaultsToDisabled: true,
     bindings: [
       "OPENAI_API_KEY",
       "OPENAI_ASSISTANT_MODEL",
@@ -107,7 +126,8 @@ test("readiness policy explicitly forbids secret disclosure and runtime effects"
       "CMS_DB",
       "RESEND_API_KEY",
       "ASSISTANT_LEAD_NOTIFICATION_FROM",
-      "ASSISTANT_LEAD_NOTIFICATION_TO"
+      "ASSISTANT_LEAD_NOTIFICATION_TO",
+      "ASSISTANT_PUBLIC_ENABLED"
     ]
   });
 });
