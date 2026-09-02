@@ -8,6 +8,7 @@ import { openAIProviderConfig } from "./openai-assistant-provider.js";
 const SESSION_KEY_BINDING = "ASSISTANT_SESSION_KEY";
 const TURNSTILE_SECRET_BINDING = "TURNSTILE_SECRET_KEY";
 const TURNSTILE_SITE_KEY_BINDING = "ASSISTANT_TURNSTILE_SITE_KEY";
+const PUBLIC_ENABLED_BINDING = "ASSISTANT_PUBLIC_ENABLED";
 const D1_BINDING = "CMS_DB";
 
 function text(value, maxLength = 2000) {
@@ -28,11 +29,7 @@ function base64UrlByteLength(value) {
 function openAIReadiness(env) {
   try {
     openAIProviderConfig(env);
-    return {
-      ready: true,
-      missing: [],
-      invalid: []
-    };
+    return { ready: true, missing: [], invalid: [] };
   } catch {
     const missing = [];
     if (!text(env?.OPENAI_API_KEY, 1000)) missing.push("OPENAI_API_KEY");
@@ -102,6 +99,14 @@ function notificationReadiness(env) {
   };
 }
 
+function publicExposure(env) {
+  return {
+    enabled: text(env?.[PUBLIC_ENABLED_BINDING], 16).toLowerCase() === "true",
+    binding: PUBLIC_ENABLED_BINDING,
+    defaultsToDisabled: true
+  };
+}
+
 export function inspectAssistantRuntimeReadiness(env = {}) {
   const dependencies = {
     openai: openAIReadiness(env),
@@ -111,6 +116,7 @@ export function inspectAssistantRuntimeReadiness(env = {}) {
     d1Binding: d1Readiness(env),
     notification: notificationReadiness(env)
   };
+  const exposure = publicExposure(env);
 
   const missingBindings = [...new Set(
     Object.values(dependencies).flatMap((entry) => entry.missing || [])
@@ -118,14 +124,17 @@ export function inspectAssistantRuntimeReadiness(env = {}) {
   const invalidBindings = [...new Set(
     Object.values(dependencies).flatMap((entry) => entry.invalid || [])
   )].sort();
+  const readyForRuntimeConfiguration = Object.values(dependencies).every((entry) => entry.ready);
 
   return {
     ok: true,
     readOnly: true,
     networkCalls: false,
     storageMutations: false,
-    readyForRuntimeConfiguration: Object.values(dependencies).every((entry) => entry.ready),
+    readyForRuntimeConfiguration,
+    readyForPublicEnablement: readyForRuntimeConfiguration && exposure.enabled,
     storagePreflightRequiredSeparately: true,
+    publicExposure: exposure,
     missingBindings,
     invalidBindings,
     dependencies
@@ -139,6 +148,7 @@ export function assistantRuntimeReadinessPolicy() {
     storageMutations: false,
     revealsSecretValues: false,
     storagePreflightRequiredSeparately: true,
+    publicExposureDefaultsToDisabled: true,
     bindings: Object.freeze([
       "OPENAI_API_KEY",
       "OPENAI_ASSISTANT_MODEL",
@@ -149,7 +159,8 @@ export function assistantRuntimeReadinessPolicy() {
       D1_BINDING,
       "RESEND_API_KEY",
       "ASSISTANT_LEAD_NOTIFICATION_FROM",
-      "ASSISTANT_LEAD_NOTIFICATION_TO"
+      "ASSISTANT_LEAD_NOTIFICATION_TO",
+      PUBLIC_ENABLED_BINDING
     ])
   });
 }
