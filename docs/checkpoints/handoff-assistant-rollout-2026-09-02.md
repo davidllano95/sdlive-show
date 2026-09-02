@@ -2,7 +2,7 @@
 
 ## Authority
 
-This checkpoint records the verified rollout state after Assistant storage preparation, final backend integration, the first production runtime-readiness smoke, owner runtime binding configuration, and discovery of the Cloudflare Turnstile Siteverify warning on 2026-09-02 America/Bogota.
+This checkpoint records the verified rollout state after Assistant storage preparation, final backend integration, production runtime configuration PASS, clean public-widget integration and the remaining Cloudflare Turnstile Siteverify gate on 2026-09-02 America/Bogota.
 
 Source precedence:
 
@@ -16,77 +16,50 @@ Source precedence:
 
 `UNMERGED != PRODUCTION` and `CI PASS != PRODUCTION SMOKE PASS`.
 
-## Verified main
+## Verified runtime main
 
-Current `main` before this docs-only follow-up:
+Before this docs-only reconciliation:
 
-`5b709f5cb3a7923d25ac1f8062ae3458b02fc806`
+`6ef4c1990a8e4903b38f6fefb334d307634119f8`
 
-This is PR #226, the docs reconciliation after backend deployment. Runtime code remains the backend delivered by squash-merged PR #225.
+This is squash-merged PR #228: **Integrate gated Assistant public widget on current main**.
 
 Verification:
 
-- #225 PR CI PASS;
-- post-merge `main` Tests #620 PASS;
-- #226 docs CI and post-merge main CI PASS;
-- production Admin readiness endpoint live;
-- public Assistant still disabled.
+- #228 PR CI PASS;
+- post-merge `main` Tests #626 PASS;
+- production Assistant runtime configuration PASS;
+- public kill switch remains OFF;
+- post-#228 production flag-OFF smoke PASS: public launcher/widget is absent as intended.
 
-## Availability
+## Availability / Lead Core / storage
 
-Availability Core v1 remains CLOSED/PASS. Do not reopen unless a regression appears.
+Availability Core v1 remains CLOSED/PASS. Do not reopen without regression.
 
-## Lead Core
+Lead Core remains CLOSED/PASS with canonical statuses `new`, `contacted`, `quoted`, `confirmed`, `lost` and relevant sources `contact`, `rental`, `assistant`.
 
-Lead workflow/status history remains CLOSED/PASS.
+Assistant storage gate remains CLOSED/PASS:
 
-Canonical statuses:
+- Assistant Lead insert supported;
+- email nullable;
+- Privacy accepts `assistant`;
+- idempotency storage ready;
+- `readyForAssistantLeadCapture:true`;
+- no final FK violations/stale migration objects.
 
-- `new`
-- `contacted`
-- `quoted`
-- `confirmed`
-- `lost`
-
-Lead sources relevant to Assistant:
-
-- `contact`
-- `rental`
-- `assistant`
-
-## Assistant storage gate — CLOSED/PASS
-
-The rollout resolved the legacy storage constraints safely:
-
-1. exact physical Leads migration preserving IDs/data, legacy `project`, statuses, child rows and indexes;
-2. production post-migration verification: no FK violations, no stale migration objects;
-3. Privacy migration preserving existing consent rows and allowing `assistant`;
-4. creation of canonical `assistant_effect_reservations`;
-5. final normal production preflight: `readyForAssistantLeadCapture:true`.
-
-Current storage contract:
-
-- `leads.canInsertAssistantLead:true`
-- `legacyEmailRequired:false`
-- `supportsNonEmailContact:true`
-- `privacyConsents.canRecordAssistantConsent:true`
-- `assistantSourceAllowed:true`
-- `idempotency.ready:true`
-
-Relevant final PRs:
-
-- #223 — exact confirmed Leads migration endpoint — merged and production PASS.
-- #224 — final supported Privacy + idempotency preparation — merged and production PASS.
-
-Old #216: CLOSED WITHOUT MERGE / superseded by #224.
+Relevant final storage PRs: #223 and #224. Old #216 is closed/superseded.
 
 ## Assistant backend — PR #225
 
-Final backend was reconstructed on the exact post-storage `main` instead of merging the old divergent #213 branch.
+PR #225 is MERGED / CI PASS / DEPLOYED.
 
-Included:
+Squash merge:
 
-- approved EN/ES knowledge and system policy;
+`259b68b2d94b5fca7dcfe13bec79ace40792fff8`
+
+It provides:
+
+- approved EN/ES knowledge/system policy;
 - strict structured model output;
 - deterministic Availability/Rental boundaries;
 - sealed stateless session;
@@ -95,140 +68,117 @@ Included:
 - dedicated rate limit;
 - idempotent Lead capture;
 - deterministic Resend handoff;
-- OpenAI Responses API provider boundary;
-- orchestrator-owned tools/effects;
+- OpenAI Responses API with `store:false`;
 - public `POST /api/assistant` behind kill switch;
-- Admin-only `GET /api/admin/assistant/readiness`.
+- Admin-only runtime readiness.
 
-Public kill switch:
+Old #213 is closed/superseded.
 
-`ASSISTANT_PUBLIC_ENABLED`
+## Production runtime readiness — PASS
 
-It remains OFF unless exactly `true`.
+After the owner configured the four originally missing bindings, authenticated production readiness returned:
 
-Provider invariants:
-
-- OpenAI Responses API;
-- Structured Outputs / strict JSON schema;
-- `store:false`;
-- no `previous_response_id`;
-- no provider-managed conversation state;
-- no arbitrary built-in model tools.
-
-Old #213: CLOSED WITHOUT MERGE / superseded by #225.
-
-## CI issue encountered and resolution
-
-Initial #225 CI had 718/720 tests passing. The only two failures came from stale preflight-stage expectations that required no public Assistant runtime and no `ASSISTANT_RATE_LIMITER`.
-
-Those expectations were obsolete once #225 intentionally integrated the final gated backend. Runtime code was not weakened. Tests were updated to verify the current invariants instead.
-
-After this change:
-
-- PR Tests #619 PASS;
-- #225 squash merged;
-- `main` Tests #620 PASS.
-
-## Production runtime readiness — current gate
-
-The first authenticated production GET to:
-
-`/api/admin/assistant/readiness`
-
-returned:
-
-- `ok:true`
-- `readOnly:true`
-- `readyForRuntimeConfiguration:false`
-- `readyForPublicEnablement:false`
-- `publicExposure.enabled:false`
-- `publicExposure.defaultsToDisabled:true`
-- `rateLimit.ready:true`
-- `d1Binding.ready:true`
-- `notification.ready:true`
-- Turnstile server secret configured: true
-
-It reported four missing bindings:
-
-- `ASSISTANT_SESSION_KEY`
-- `ASSISTANT_TURNSTILE_SITE_KEY`
-- `OPENAI_API_KEY`
-- `OPENAI_ASSISTANT_MODEL`
-
-`ASSISTANT_SESSION_KEY` must decode from Base64URL to exactly 32 bytes.
-
-### Owner configuration after the first probe
-
-On 2026-09-02 the owner entered all four previously missing bindings in the production Cloudflare Worker configuration while keeping `ASSISTANT_PUBLIC_ENABLED` absent/off.
-
-This is **not yet a runtime PASS**. The next authenticated readiness GET must verify that the deployed Worker sees valid values and returns no missing/invalid bindings.
-
-Expected PASS before touching #215:
-
+- `ok:true`;
 - `readyForRuntimeConfiguration:true`;
-- all `dependencies.*.ready:true`;
+- `readyForPublicEnablement:false`;
+- `publicExposure.enabled:false`;
 - `missingBindings:[]`;
 - `invalidBindings:[]`;
-- `publicExposure.enabled:false`.
+- `openai.ready:true`;
+- `session.ready:true`;
+- `turnstile.ready:true`;
+- `browserSiteKeyConfigured:true`;
+- `serverSecretConfigured:true`;
+- `rateLimit.ready:true`;
+- `d1Binding.ready:true`;
+- `notification.ready:true`.
 
-`readyForPublicEnablement` is expected to remain false while the public kill switch is OFF.
+This is the expected safe state before public enablement: runtime fully configured, public flag still OFF.
 
-## Cloudflare Turnstile Siteverify warning
+## Assistant widget — PR #228
 
-While retrieving the site key from the existing **SD.Live Forms** Turnstile widget, Cloudflare displayed:
+The old widget draft #215 was based on obsolete #213 lineage, so it was not retargeted or merged.
+
+Instead, only the intended widget scope was reconstructed on the exact current `main` and integrated through PR #228.
+
+Included:
+
+- Contact-section launcher; no second persistent floating CTA;
+- desktop modal / mobile bottom sheet;
+- EN/ES runtime copy;
+- no local/session storage or transcript persistence;
+- sealed session token only;
+- Turnstile explicit render with token reset per operation;
+- current #225 browser/API wire contract;
+- server-owned explicit privacy consent actions;
+- deterministic human fallbacks without exposing owner phone;
+- rendering only if `ASSISTANT_PUBLIC_ENABLED=true` and the site key is valid.
+
+PR #228 CI PASS and post-merge Tests #626 PASS.
+
+Production smoke with the flag OFF PASS: no Assistant launcher/widget rendered publicly.
+
+Old #215 is now **CLOSED WITHOUT MERGE / superseded by #228**. Do not reopen it.
+
+## Cloudflare Turnstile Siteverify warning — current gate
+
+Cloudflare displays for the existing **SD.Live Forms** widget:
 
 `Siteverify isn't being called for SD.Live Forms`
 
-This is now a mandatory security follow-up before final Assistant public enablement.
+Repository investigation completed after the warning was discovered.
 
-Do not infer the cause yet. Required investigation:
+Confirmed browser path:
 
-1. inspect the actual Contact/Rental form submission implementation;
-2. confirm whether Turnstile response tokens are sent to the server;
-3. confirm whether the server verifies those tokens against Cloudflare Siteverify;
-4. determine whether Cloudflare's warning is a detection false positive or a real validation gap;
-5. if a real gap exists, fix and regression-test Contact/Rental;
-6. preserve the Assistant's separate Turnstile boundary;
-7. do not set `ASSISTANT_PUBLIC_ENABLED=true` until this warning is dispositioned.
+- Contact widget renders with action `contact`;
+- Rental widget renders with action `rental`;
+- both obtain a token through `window.turnstile.getResponse(...)`;
+- both include `turnstileToken` in their real request payloads.
 
-The warning does not by itself establish that the Assistant's new runtime readiness is invalid; the readiness probe separately reports its Turnstile server-secret/site-key configuration.
+Confirmed server path:
 
-## PR #215 — public widget
+- `worker.js` calls `https://challenges.cloudflare.com/turnstile/v0/siteverify`;
+- it uses `TURNSTILE_SECRET_KEY` server-side;
+- it requires `result.hostname === "sdlive.show"`;
+- it requires the expected action (`contact` or `rental`);
+- failed verification returns before Lead creation.
 
-Status:
+Therefore the warning is not evidence of missing server-side Siteverify implementation. The remaining uncertainty is runtime observation/association: we have not yet proved that a current real production token from this exact widget is reaching Siteverify in a way Cloudflare associates with **SD.Live Forms**.
 
-- OPEN
-- DRAFT
-- UNMERGED
-- NOT PRODUCTION
-- built on older #213 lineage
+Do not call the warning a false positive yet.
 
-Do not merge directly.
+### Next safe proof
 
-Required order:
+Perform one non-destructive Contact validation:
 
-1. rerun authenticated runtime readiness after the four bindings were entered;
-2. require runtime dependencies all ready with public flag OFF;
-3. investigate/disposition the SD.Live Forms Siteverify warning before final public enablement;
-4. reverify/rebase #215 onto current `main`;
-5. CI PASS;
-6. merge widget while flag remains OFF;
-7. explicitly enable public flag only after security gates are satisfied;
-8. final E2E one manual action at a time.
+1. obtain a fresh valid Turnstile token from the live Contact widget;
+2. send it through the live Contact endpoint;
+3. intentionally omit/fail a later validation requirement so the request is rejected after Turnstile verification;
+4. verify no Lead is created;
+5. re-check/disposition the Cloudflare warning/telemetry.
 
-## PR #218 — temporary validation
+This proof is required before setting `ASSISTANT_PUBLIC_ENABLED=true`.
 
-CLOSED WITHOUT MERGE / TEMP VALIDATION ONLY. Do not reopen or merge.
+## Public enablement — not yet
 
-## PR #191 — separate Availability owner transport
+`ASSISTANT_PUBLIC_ENABLED` remains absent/false.
 
-OPEN / separate workstream. Do not touch unless explicitly reprioritized.
+Only after the Turnstile gate above is clean:
 
-## Assistant architecture
+1. explicitly enable the public flag;
+2. perform final Assistant E2E one manual action at a time;
+3. cover desktop/mobile, EN/ES, normal reply, deterministic Availability/Rental, explicit consent, exactly one Lead, notification, idempotency, provider fallback, Turnstile failure, rate limit and human fallback;
+4. confirm existing Contact/Rental remain functional.
 
-`Public site / widget → /api/assistant → request security → Turnstile → dedicated rate limit → sealed stateless session → OpenAI Responses API + Structured Outputs → deterministic server tools → Lead Core D1 → deterministic handoff → Resend → human follow-up`
+## Superseded / separate work
 
-Hard boundaries:
+- #213 — CLOSED WITHOUT MERGE / superseded by #225.
+- #215 — CLOSED WITHOUT MERGE / superseded by #228.
+- #216 — CLOSED WITHOUT MERGE / superseded by #224.
+- #218 — CLOSED WITHOUT MERGE / TEMP VALIDATION ONLY.
+- #191 — OPEN / separate Availability owner transport; do not touch unless explicitly reprioritized.
+
+## Hard boundaries
 
 - no impersonation;
 - no invented/negotiated prices;
@@ -243,6 +193,4 @@ Hard boundaries:
 
 ## Exact continuation
 
-**Current Active Gate: runtime readiness verification with public flag OFF.**
-
-Perform exactly one authenticated production readiness GET. If it passes the expected runtime criteria above, continue with the Siteverify investigation and #215 integration path. Do not enable the public Assistant yet.
+**Current Active Gate: prove the existing SD.Live Forms Turnstile widget reaches server-side Siteverify in production without creating a Lead. Keep `ASSISTANT_PUBLIC_ENABLED` OFF until that evidence is clean.**
