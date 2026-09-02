@@ -6,22 +6,26 @@ async function source(path) {
   return readFile(new URL(`../${path}`, import.meta.url), "utf8");
 }
 
-test("runtime readiness is mounted only on the authenticated Admin path", async () => {
-  const worker = await source("public-form-rate-limit.js");
+test("runtime readiness is mounted only on the authenticated Admin wrapper", async () => {
+  const [wrapper, publicWorker] = await Promise.all([
+    source("admin-stabilization-worker.js"),
+    source("public-form-rate-limit.js")
+  ]);
 
   assert.match(
-    worker,
+    wrapper,
     /import \{ handleAssistantRuntimeReadinessApi \} from "\.\/assistant-admin-readiness\.js"/
   );
-  assert.match(worker, /if \(path === "\/api\/admin\/assistant\/readiness"\)/);
-  assert.match(worker, /handleAssistantRuntimeReadinessApi\(request, env, \{\s*verifyAdmin: verifyAdminViaExistingApi/);
+  assert.match(wrapper, /if \(path === "\/api\/admin\/assistant\/readiness"\)/);
+  assert.match(wrapper, /handleAssistantRuntimeReadinessApi\(request, env, \{\s*verifyAdmin: verifyAdminViaExistingApi/);
 
-  const readinessIndex = worker.indexOf('if (path === "/api/admin/assistant/readiness")');
-  const publicAssistantIndex = worker.indexOf('if (path === "/api/assistant")');
-  const legacyFormIndex = worker.indexOf("const limited = await enforcePublicFormRateLimit");
+  const readinessIndex = wrapper.indexOf('if (path === "/api/admin/assistant/readiness")');
+  const availabilityIndex = wrapper.indexOf('if (path === "/api/admin/availability")');
   assert.ok(readinessIndex >= 0);
-  assert.ok(publicAssistantIndex > readinessIndex);
-  assert.ok(legacyFormIndex > publicAssistantIndex);
+  assert.ok(availabilityIndex > readinessIndex);
+
+  assert.doesNotMatch(publicWorker, /handleAssistantRuntimeReadinessApi/);
+  assert.doesNotMatch(publicWorker, /\/api\/admin\/assistant\/readiness/);
 });
 
 test("readiness implementation has no network or storage mutation path", async () => {
