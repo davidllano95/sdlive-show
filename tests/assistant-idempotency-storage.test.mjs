@@ -110,9 +110,11 @@ class FakeD1 {
     }
 
     if (sql.includes("SET status = 'failed'") && sql.includes("AND status = 'reserved'")) {
-      const [updatedAt, errorCode, key] = args;
+      const [updatedAt, errorCode, key, requestId] = args;
       const row = this.rows.get(key);
-      if (!row || row.status !== "reserved") return { meta: { changes: 0 } };
+      if (!row || row.status !== "reserved" || row.request_id !== requestId) {
+        return { meta: { changes: 0 } };
+      }
       Object.assign(row, {
         status: "failed",
         updated_at: updatedAt,
@@ -202,6 +204,7 @@ test("failed effect can be retried without changing the unique key", async () =>
   });
   const failed = await failAssistantLeadCreate(e, {
     key: KEY,
+    requestId: REQUEST_1,
     errorCode: "lead_create_failed"
   }, { now: "2026-09-01T23:00:10.000Z" });
   const retry = await reserveAssistantLeadCreate(e, { key: KEY, requestId: REQUEST_2 }, {
@@ -233,6 +236,34 @@ test("stale abandoned reservation can be reclaimed but fresh one cannot", async 
   assert.equal(stale.attempts, 2);
 });
 
+test("late failure from a stale owner cannot fail a reclaimed reservation", async () => {
+  const e = env();
+  await reserveAssistantLeadCreate(e, { key: KEY, requestId: REQUEST_1 }, {
+    now: "2026-09-01T23:00:00.000Z"
+  });
+  const reclaimed = await reserveAssistantLeadCreate(e, { key: KEY, requestId: REQUEST_2 }, {
+    now: "2026-09-01T23:05:01.000Z"
+  });
+  assert.equal(reclaimed.acquired, true);
+
+  const staleFailure = await failAssistantLeadCreate(e, {
+    key: KEY,
+    requestId: REQUEST_1,
+    errorCode: "old_request_failed"
+  }, { now: "2026-09-01T23:05:02.000Z" });
+
+  assert.equal(staleFailure.status, "reserved");
+  assert.equal(e.CMS_DB.rows.get(KEY).request_id, REQUEST_2);
+  assert.equal(e.CMS_DB.rows.get(KEY).error_code, null);
+
+  const ownerFailure = await failAssistantLeadCreate(e, {
+    key: KEY,
+    requestId: REQUEST_2,
+    errorCode: "new_request_failed"
+  }, { now: "2026-09-01T23:05:03.000Z" });
+  assert.equal(ownerFailure.status, "failed");
+});
+
 test("completion is idempotent for the same lead and conflicts for a different lead", async () => {
   const e = env();
   await reserveAssistantLeadCreate(e, { key: KEY, requestId: REQUEST_1 });
@@ -262,6 +293,14 @@ test("invalid key/request/lead identifiers fail before effect execution", async 
     () => completeAssistantLeadCreate(e, { key: KEY, leadId: 0 }),
     /Invalid leadId/
   );
+  await assert.rejects(
+    () => failAssistantLeadCreate(e, {
+      key: KEY,
+      requestId: "client-id",
+      errorCode: "failed"
+    }),
+    /Invalid Assistant requestId/
+  );
 });
 
 test("free-form failure text is reduced to a safe fixed error code", async () => {
@@ -269,6 +308,7 @@ test("free-form failure text is reduced to a safe fixed error code", async () =>
   await reserveAssistantLeadCreate(e, { key: KEY, requestId: REQUEST_1 });
   await failAssistantLeadCreate(e, {
     key: KEY,
+    requestId: REQUEST_1,
     errorCode: "client@example.com had a private failure"
   });
   const row = e.CMS_DB.rows.get(KEY);
