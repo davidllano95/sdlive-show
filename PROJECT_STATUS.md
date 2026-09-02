@@ -6,11 +6,12 @@
 |---|---|
 | Última reconciliación | **2026-09-02 — America/Bogota** |
 | Rama operativa | `main` |
-| `main` runtime verificado antes de este docs-only | **`6ef4c1990a8e4903b38f6fefb334d307634119f8` · PR #228** |
+| Runtime baseline antes de este docs-only | **`d1db8019deadc5d84fba9604de7a36f64658aba7` · PR #229** |
 | Producción | `https://sdlive.show` |
 | Estado macro | **Finance/Calendar/Site Schedule/Show Day/Admin/Rental/Availability/Lead Core/Assistant storage/backend/runtime/widget CLOSED or operational** |
-| Active Gate | **Turnstile production verification before Assistant public enablement** |
+| Active Gate | **Final Assistant public enablement + representative E2E** |
 | Public Assistant | **OFF — `ASSISTANT_PUBLIC_ENABLED` absent/false** |
+| Siguiente workstream | **PR #191 — WhatsApp owner control for Availability, after Assistant closeout** |
 | Bloqueado | **Generic Finance Phase 3 write-back** |
 
 ## Precedencia
@@ -44,7 +45,7 @@ QA manual con owner: **una sola acción por vez**.
 - Availability = D1 Availability Core, no AI-owned truth.
 - Leads = una sola Lead Core D1 source of truth.
 - Assistant no crea un segundo catálogo Rental ni un segundo Lead store.
-- Assistant no escribe Finance.
+- Assistant no lee/escribe Finance.
 - Public Assistant traffic nunca migra schema.
 - Owner phone/secrets/tokens permanecen server-side.
 
@@ -60,22 +61,13 @@ QA manual con owner: **una sola acción por vez**.
 
 ### Assistant storage gate
 
-**CLOSED/PASS in production.**
-
-- Assistant Lead insert supported.
-- Email nullable.
-- Privacy accepts `assistant`.
-- `assistant_effect_reservations` ready.
-- `readyForAssistantLeadCapture:true`.
-- No FK violations or stale migration objects in final verification.
+**CLOSED/PASS in production.** Assistant Lead insert is supported, email is nullable, Privacy accepts `assistant`, idempotency storage is ready and final preflight returned `readyForAssistantLeadCapture:true` with no FK violations/stale migration objects.
 
 Final storage preparation: PR #224. Old #216 is closed/superseded.
 
 ### Assistant backend — PR #225
 
-**MERGED / CI PASS / DEPLOYED.**
-
-Squash merge: `259b68b2d94b5fca7dcfe13bec79ace40792fff8`.
+**MERGED / CI PASS / DEPLOYED.** Squash merge: `259b68b2d94b5fca7dcfe13bec79ace40792fff8`.
 
 Includes `/api/assistant`, hard public kill switch, Admin readiness, Responses API + strict Structured Outputs + `store:false`, sealed stateless session, dedicated rate limiter, deterministic Availability/Rental boundaries, explicit consent, idempotent Lead capture and Resend handoff.
 
@@ -83,7 +75,7 @@ Old #213 is closed/superseded.
 
 ### Assistant runtime configuration — PASS
 
-Authenticated production readiness after the owner configured the required runtime bindings returned:
+Authenticated production readiness returned:
 
 - `readyForRuntimeConfiguration:true`;
 - `missingBindings:[]`;
@@ -100,34 +92,72 @@ Authenticated production readiness after the owner configured the required runti
 
 ### Assistant public widget — PR #228
 
-**MERGED / CI PASS / DEPLOYED BUT HIDDEN.**
+**MERGED / CI PASS / DEPLOYED BUT HIDDEN.** Squash merge: `6ef4c1990a8e4903b38f6fefb334d307634119f8`.
 
-Squash merge: `6ef4c1990a8e4903b38f6fefb334d307634119f8`.
+PR #228 reconstructed only the widget scope on current `main`, avoiding obsolete #213/#215 lineage. It provides Contact launcher, desktop modal/mobile bottom sheet, EN/ES, in-memory state, sealed session token, Turnstile per operation, current backend wire contract, server-owned consent actions and deterministic human fallback.
 
-PR #228 reconstructed only the widget scope on current `main`, avoiding obsolete #213 lineage. It provides Contact launcher, desktop modal/mobile bottom sheet, EN/ES, in-memory state, sealed session token, Turnstile per operation, current backend wire contract, server-owned consent actions and deterministic human fallback.
+Production flag-OFF smoke PASS: no public launcher/widget is rendered.
 
-The widget renders only when both `ASSISTANT_PUBLIC_ENABLED=true` and a valid site key exist. Production smoke with the flag OFF passed: no public Assistant launcher/widget is rendered.
+Old #215 is **CLOSED WITHOUT MERGE / superseded by #228**.
 
-Old PR #215 is **CLOSED WITHOUT MERGE / superseded by #228**.
+### SD.Live Forms Turnstile Siteverify — PASS
 
-## ACTIVE GATE — Turnstile production verification
-
-Cloudflare currently shows for the existing **SD.Live Forms** widget:
+Cloudflare had shown:
 
 `Siteverify isn't being called for SD.Live Forms`
 
-Repository inspection establishes that Siteverify code is present and wired:
+Repository inspection proved the intended server path exists: Contact/Rental submit `turnstileToken`; `worker.js` calls Cloudflare Siteverify; validates `hostname === "sdlive.show"`; validates action `contact`/`rental`; and fails before Lead persistence on invalid Turnstile.
 
-- Contact/Rental browser code reads a Turnstile response token and submits it as `turnstileToken`;
-- `worker.js` sends it to `https://challenges.cloudflare.com/turnstile/v0/siteverify`;
-- the response must have hostname `sdlive.show`;
-- Contact must have action `contact`;
-- Rental must have action `rental`;
-- Turnstile failure returns before Lead persistence.
+Production proof on 2026-09-02 used a fresh valid Contact widget token and deliberately omitted privacy consent. The live endpoint returned:
 
-Therefore this is **not a missing-code finding**. It remains an unresolved runtime/telemetry/association question. Do not call it a false positive until one real production token from the existing widget is observed going through server-side verification.
+`{"ok":false,"error":"Privacy consent is required"}`
 
-Next validation must be non-destructive: obtain a valid Contact Turnstile token, submit it to the real Contact endpoint while intentionally failing a later validation gate, confirm no Lead is created, and then disposition the Cloudflare warning.
+Privacy validation is downstream of Turnstile validation, so this is positive evidence that the live token passed server-side Siteverify and reached the later consent gate. The probe intentionally created no Lead.
+
+**Disposition:** treat the Cloudflare dashboard warning as stale/incomplete detection or association, not a missing Siteverify implementation. Reopen only if later runtime evidence contradicts this proof.
+
+## ACTIVE GATE — final Assistant public enablement
+
+All pre-enable technical/security gates are now PASS. The remaining change is operational and reversible:
+
+1. owner explicitly sets `ASSISTANT_PUBLIC_ENABLED=true` in production;
+2. run one controlled representative end-to-end Assistant smoke, one manual action at a time;
+3. verify one normal flow through explicit consent and one QA Lead/handoff, deterministic Availability/Rental boundaries, no duplicate Lead, and existing Contact/Rental continuity;
+4. close/document Assistant rollout;
+5. move immediately to PR #191.
+
+Do not enable by committing a default-ON flag to GitHub. Production configuration remains the activation control.
+
+## Open PR audit / priority
+
+Repository-wide open-PR audit on 2026-09-02 found old Assistant preparatory drafts #192–#212 plus #191. The preparatory Assistant drafts have now been **CLOSED WITHOUT MERGE** because their validated content is superseded by final integrated backend PR #225.
+
+Also closed/superseded: #213, #215, #216 and temporary #218.
+
+After cleanup there is exactly one open operational PR:
+
+### Priority 1 — finish current Assistant rollout
+
+No open implementation PR remains for this. Complete public enablement + representative E2E + closeout first so we do not mix two runtime rollouts.
+
+### Priority 2 — PR #191 WhatsApp owner control
+
+**OPEN / NEXT AFTER ASSISTANT.**
+
+The user was indeed working on this before the Assistant block. The old #190 smoke blocker in its PR description is removed: #190 and Availability are already CLOSED/PASS.
+
+Do not merge the current old branch directly. After Assistant closeout, reconstruct/reverify its bounded Meta WhatsApp Cloud API scope on then-current `main`, run CI, complete required Meta/Cloudflare onboarding/configuration, then activate and smoke once.
+
+### Priority 3+ — roadmap backlog after #191
+
+Recommended order unless business priorities change:
+
+1. Rental real-time availability + double-booking protection — establishes deterministic inventory truth and improves both Rental and Assistant quality.
+2. Mobile Rental Cart total/sticky summary — contained high-value UX debt.
+3. Rental quote/PDF automation + shared Finance Document Generator foundation.
+4. Calendar/Projects workflow additions.
+5. SD.Live Patch.
+6. CRM/Admin Inbox/analytics/SEO/performance/accessibility/CMS advanced backlog as separately scoped milestones.
 
 ## Assistant architecture and hard boundaries
 
@@ -139,23 +169,13 @@ Never:
 - invent/negotiate prices;
 - promise Availability without backend truth;
 - invent Rental availability;
-- write Finance;
+- read/write Finance;
 - infer privacy consent;
 - persist full transcript;
 - expose secrets/private owner data;
 - use provider-managed conversation state as truth;
 - let public traffic mutate D1 schema.
 
-## Superseded/held work
-
-- #213 — CLOSED WITHOUT MERGE; superseded by #225.
-- #215 — CLOSED WITHOUT MERGE; superseded by #228.
-- #216 — CLOSED WITHOUT MERGE; superseded by #224.
-- #218 — CLOSED WITHOUT MERGE / TEMP VALIDATION ONLY; do not reopen.
-- #191 — OPEN / separate Availability owner WhatsApp workstream; do not touch unless explicitly reprioritized.
-
 ## Exact continuation point
 
-Do **not** enable the public Assistant yet.
-
-The exact next gate is one non-destructive production validation of **SD.Live Forms → server-side Siteverify**. If that proves the real token path is valid and the warning can be dispositioned, explicitly enable `ASSISTANT_PUBLIC_ENABLED=true` and then run final Assistant E2E one manual action at a time.
+**Turnstile gate is closed. Keep scope on the Assistant until its public rollout is fully closed. The next manual action is to explicitly set production `ASSISTANT_PUBLIC_ENABLED=true`; after that, run the final representative E2E one action at a time. Then resume #191.**
