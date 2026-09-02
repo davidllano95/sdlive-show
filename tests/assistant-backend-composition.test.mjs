@@ -64,7 +64,7 @@ test("composition policy keeps model, tools, consent and persistence boundaries 
     rentalAuthority: "deterministic_rental_boundary",
     consentAuthority: "product_server",
     leadSourceOfTruth: "leads",
-    leadCaptureRequiresExplicitPersistenceAdapter: true,
+    leadCapturePersistence: "atomic_d1_lead_consent_idempotency",
     notificationTransport: "resend",
     financeWrites: false
   });
@@ -172,7 +172,7 @@ test("Rental request is resolved only through the deterministic resolver", async
   assert.equal(result.toolResults[0].type, "rental");
 });
 
-test("capture fails closed if irreversible persistence adapter has not been configured", async () => {
+test("capture fails closed if irreversible persistence adapter is explicitly disabled", async () => {
   const leadDraft = {
     serviceCategory: "live",
     language: "en",
@@ -198,6 +198,7 @@ test("capture fails closed if irreversible persistence adapter has not been conf
       consentEvidence: consentEvidence()
     }, {
       providerCall: queueProvider([output("capture_lead", { leadDraft })]),
+      captureLeadEffect: null,
       now: () => NOW
     }),
     (error) => error?.code === "LEAD_CAPTURE_PERSISTENCE_NOT_CONFIGURED"
