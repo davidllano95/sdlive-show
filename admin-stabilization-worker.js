@@ -12,6 +12,7 @@ import { applyRentalPresentationRuntime } from "./rental-presentation-edge.js";
 import { validateRentalPresentationExtras } from "./rental-presentation-contract.js";
 import { handleAvailabilityTravelPut } from "./availability-travel-api.js";
 import { decorateAvailabilityNextWindowResponse } from "./availability-next-window.js";
+import { handleAssistantLeadsMigrationApi } from "./assistant-admin-leads-migration.js";
 import {
   googleCalendarDiagnostic,
   mergeGoogleCalendarOverlayResponse,
@@ -209,6 +210,13 @@ export default {
   async fetch(request, env, ctx) {
     const path = normalizedPath(request);
     const url = new URL(request.url);
+
+    if (path === "/api/admin/assistant/leads-migrate") {
+      const response = await handleAssistantLeadsMigrationApi(request, env, {
+        verifyAdmin: verifyAdminViaExistingApi
+      });
+      if (response) return response;
+    }
 
     if (path === "/api/admin/availability") {
       const travelResponse = await handleAvailabilityTravelIfRequested(request, env);
