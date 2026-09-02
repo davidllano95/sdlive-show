@@ -8,6 +8,7 @@ import {
   isValidAssistantSessionTokenShape,
   validateAssistantPublicRequest
 } from "../assistant-public-request-security.js";
+import { ASSISTANT_PRIVACY_POLICY_VERSION } from "../assistant-consent-contract.js";
 
 const SESSION_TOKEN = `ast1.${"A".repeat(16)}.${"B".repeat(64)}`;
 
@@ -34,12 +35,14 @@ test("policy keeps Assistant on a dedicated bounded public endpoint", () => {
   assert.deepEqual(ASSISTANT_PUBLIC_REQUEST_POLICY.allowedOrigins, ["https://sdlive.show"]);
   assert.equal(ASSISTANT_PUBLIC_REQUEST_POLICY.turnstileAction, "assistant");
   assert.equal(ASSISTANT_PUBLIC_REQUEST_POLICY.rateLimitBinding, "ASSISTANT_RATE_LIMITER");
+  assert.deepEqual(ASSISTANT_PUBLIC_REQUEST_POLICY.operations, ["message", "consent"]);
+  assert.deepEqual(ASSISTANT_PUBLIC_REQUEST_POLICY.consentActions, ["authorize", "cancel"]);
   assert.equal(ASSISTANT_PUBLIC_REQUEST_POLICY.maxBodyBytes, 32000);
   assert.equal(ASSISTANT_PUBLIC_REQUEST_POLICY.maxSessionTokenChars, 24000);
   assert.ok(ASSISTANT_PUBLIC_REQUEST_POLICY.maxMessageChars <= 2500);
 });
 
-test("accepts only message/language/sealed session token/Turnstile from browser", async () => {
+test("message operation accepts only message/language/sealed session token/Turnstile", async () => {
   const result = await validateAssistantPublicRequest(assistantRequest({
     sessionToken: SESSION_TOKEN,
     language: "es",
@@ -48,25 +51,110 @@ test("accepts only message/language/sealed session token/Turnstile from browser"
   }));
 
   assert.equal(result.ok, true);
+  assert.equal(result.operation, "message");
   assert.deepEqual(result.value, {
     sessionToken: SESSION_TOKEN,
     language: "es",
+    turnstileToken: "turnstile-token",
     message: "Necesito sonido para un evento",
-    turnstileToken: "turnstile-token"
+    consentAction: null,
+    privacyPolicyVersion: null
   });
   assert.equal(result.security.expectedTurnstileAction, "assistant");
   assert.equal(result.security.sessionTokenRequiresServerAuthentication, true);
+  assert.equal(result.security.consentIsExplicitProductAction, false);
 });
 
-test("a new conversation omits session token so the server can issue state", async () => {
+test("a new message conversation omits session token so the server can issue state", async () => {
   const result = await validateAssistantPublicRequest(assistantRequest({
     message: "Hello",
     language: "en",
     turnstileToken: "token"
   }));
   assert.equal(result.ok, true);
+  assert.equal(result.operation, "message");
   assert.equal(result.value.sessionToken, null);
   assert.equal(result.security.sessionTokenRequiresServerAuthentication, false);
+});
+
+test("explicit authorize operation requires an authenticated-shaped session and current policy version", async () => {
+  const result = await validateAssistantPublicRequest(assistantRequest({
+    sessionToken: SESSION_TOKEN,
+    language: "es",
+    consentAction: "authorize",
+    privacyPolicyVersion: ASSISTANT_PRIVACY_POLICY_VERSION,
+    turnstileToken: "turnstile-token"
+  }));
+
+  assert.equal(result.ok, true);
+  assert.equal(result.operation, "consent");
+  assert.deepEqual(result.value, {
+    sessionToken: SESSION_TOKEN,
+    language: "es",
+    turnstileToken: "turnstile-token",
+    consentAction: "authorize",
+    privacyPolicyVersion: ASSISTANT_PRIVACY_POLICY_VERSION,
+    message: null
+  });
+  assert.equal(result.security.sessionTokenRequiresServerAuthentication, true);
+  assert.equal(result.security.consentIsExplicitProductAction, true);
+});
+
+test("cancel is also an explicit product action and never needs a model message", async () => {
+  const result = await validateAssistantPublicRequest(assistantRequest({
+    sessionToken: SESSION_TOKEN,
+    consentAction: "cancel",
+    privacyPolicyVersion: ASSISTANT_PRIVACY_POLICY_VERSION,
+    turnstileToken: "token"
+  }));
+  assert.equal(result.ok, true);
+  assert.equal(result.operation, "consent");
+  assert.equal(result.value.consentAction, "cancel");
+  assert.equal(result.value.message, null);
+});
+
+test("consent and message fields can never be mixed in one browser operation", async () => {
+  const result = await validateAssistantPublicRequest(assistantRequest({
+    sessionToken: SESSION_TOKEN,
+    message: "I authorize",
+    consentAction: "authorize",
+    privacyPolicyVersion: ASSISTANT_PRIVACY_POLICY_VERSION,
+    turnstileToken: "token"
+  }));
+  assert.deepEqual(result, {
+    ok: false,
+    status: 400,
+    error: "mixed_operation_not_allowed"
+  });
+});
+
+test("consent operation fails closed without session, action or exact policy version", async () => {
+  const missingSession = await validateAssistantPublicRequest(assistantRequest({
+    consentAction: "authorize",
+    privacyPolicyVersion: ASSISTANT_PRIVACY_POLICY_VERSION,
+    turnstileToken: "token"
+  }));
+  assert.equal(missingSession.error, "consent_requires_session");
+
+  const badAction = await validateAssistantPublicRequest(assistantRequest({
+    sessionToken: SESSION_TOKEN,
+    consentAction: "yes-please",
+    privacyPolicyVersion: ASSISTANT_PRIVACY_POLICY_VERSION,
+    turnstileToken: "token"
+  }));
+  assert.equal(badAction.error, "invalid_consent_action");
+
+  const mismatch = await validateAssistantPublicRequest(assistantRequest({
+    sessionToken: SESSION_TOKEN,
+    consentAction: "authorize",
+    privacyPolicyVersion: "old-policy",
+    turnstileToken: "token"
+  }));
+  assert.deepEqual(mismatch, {
+    ok: false,
+    status: 409,
+    error: "privacy_policy_version_mismatch"
+  });
 });
 
 test("browser can no longer supply a raw sessionId or structured session state", async () => {
