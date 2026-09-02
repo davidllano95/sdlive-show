@@ -120,6 +120,22 @@ test("identical lead-create effect produces the same SHA-256 key", async () => {
   assert.equal(isAssistantLeadCreateIdempotencyKey(first), true);
 });
 
+test("duplicate explicit authorization times for the same session and lead deduplicate", async () => {
+  const first = await buildAssistantLeadCreateIdempotencyKey({
+    sessionId: SESSION_ID,
+    consentEvidence: consent({ grantedAt: "2026-09-01T23:30:00.000Z" }),
+    lead: lead()
+  });
+  const doubleTap = await buildAssistantLeadCreateIdempotencyKey({
+    sessionId: SESSION_ID,
+    consentEvidence: consent({ grantedAt: "2026-09-01T23:30:04.000Z" }),
+    lead: lead()
+  });
+
+  assert.equal(first, doubleTap);
+  assert.equal(ASSISTANT_IDEMPOTENCY_POLICY.consentGrantedAtAffectsLeadCreateKey, false);
+});
+
 test("idempotency key contains no raw lead PII", async () => {
   const key = await buildAssistantLeadCreateIdempotencyKey({
     sessionId: SESSION_ID,
@@ -140,7 +156,7 @@ test("idempotency key contains no raw lead PII", async () => {
   assert.equal(ASSISTANT_IDEMPOTENCY_POLICY.rawPiiInIdempotencyKey, false);
 });
 
-test("meaningful changes create a different lead-create key", async () => {
+test("meaningful operation changes create a different lead-create key", async () => {
   const base = await buildAssistantLeadCreateIdempotencyKey({
     sessionId: SESSION_ID,
     consentEvidence: consent(),
@@ -155,7 +171,7 @@ test("meaningful changes create a different lead-create key", async () => {
     },
     {
       sessionId: SESSION_ID,
-      consentEvidence: consent({ grantedAt: "2026-09-01T23:31:00.000Z" }),
+      consentEvidence: consent({ privacyPolicyVersion: "2026-09-01" }),
       lead: lead()
     },
     {
@@ -222,6 +238,15 @@ test("invalid session or consent fingerprint input fails closed", async () => {
     }),
     /consent evidence is incomplete/
   );
+
+  await assert.rejects(
+    buildAssistantLeadCreateIdempotencyKey({
+      sessionId: SESSION_ID,
+      consentEvidence: consent({ grantedAt: "not-a-date" }),
+      lead: lead()
+    }),
+    /consent evidence is incomplete/
+  );
 });
 
 test("notification idempotency remains lead-id based and matches prepared transport", () => {
@@ -232,8 +257,8 @@ test("notification idempotency remains lead-id based and matches prepared transp
   );
 });
 
-test("contract states that key generation alone is not deduplication", () => {
+test("contract states that database reservation, not hashing alone, enforces deduplication", () => {
   assert.equal(ASSISTANT_IDEMPOTENCY_POLICY.leadCreateRequiresEnforcedUniqueKey, true);
   assert.equal(ASSISTANT_IDEMPOTENCY_POLICY.keyAloneDoesNotProvideDeduplication, true);
-  assert.equal(ASSISTANT_IDEMPOTENCY_POLICY.persistenceImplementation, "not_configured");
+  assert.equal(ASSISTANT_IDEMPOTENCY_POLICY.persistenceImplementation, "assistant_effect_reservations");
 });
