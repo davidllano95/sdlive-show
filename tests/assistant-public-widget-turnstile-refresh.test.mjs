@@ -4,10 +4,12 @@ import { readFile } from "node:fs/promises";
 
 const source = await readFile(new URL("../assistant-public-widget.js", import.meta.url), "utf8");
 
-test("Assistant rebuilds Turnstile after each consumed token", () => {
+test("Assistant consumes Turnstile once and keeps it removed after a sealed session is issued", () => {
   assert.match(source, /window\.turnstile\.remove\(widgetId\)/);
   assert.match(source, /widgetId = null;\s+turnstileContainer\?\.replaceChildren\(\);/s);
-  assert.match(source, /if \(root\?\.dataset\.open === "true"\) ensureSecurity\(\);/);
+  assert.match(source, /if \(root\?\.dataset\.open === "true" && !sessionToken\) ensureSecurity\(\);/);
+  assert.match(source, /if \(sessionToken \|\| widgetId !== null/);
+  assert.match(source, /appearance:\s*"interaction-only"/);
   assert.doesNotMatch(source, /window\.turnstile\.reset\(widgetId\)/);
 });
 
