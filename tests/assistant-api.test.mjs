@@ -75,10 +75,10 @@ async function body(response) {
   return response.json();
 }
 
-test("API policy remains unmounted and explicitly separates message from consent", () => {
+test("API policy reflects the narrow runtime mount and explicitly separates message from consent", () => {
   assert.deepEqual(assistantApiPolicy(), {
     path: "/api/assistant",
-    mounted: false,
+    mounted: true,
     browserOperations: ["message", "consent"],
     consentModelControlled: false,
     consentSingleUseAfterSubmission: true,
@@ -92,7 +92,7 @@ test("API policy remains unmounted and explicitly separates message from consent
   });
 });
 
-test("non-Assistant path is ignored so future Worker mounting can stay narrow", async () => {
+test("non-Assistant path is ignored so Worker mounting stays narrow", async () => {
   const response = await handleAssistantApi(request({ message: "Hi", turnstileToken: "t" }, "/api/contact"), {}, baseOptions());
   assert.equal(response, null);
 });
