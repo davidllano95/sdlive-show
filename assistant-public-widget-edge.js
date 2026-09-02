@@ -1,4 +1,4 @@
-const ASSISTANT_WIDGET_VERSION = "20260902-1";
+const ASSISTANT_WIDGET_VERSION = "20260902-2";
 
 function enabled(env) {
   return String(env?.ASSISTANT_PUBLIC_ENABLED || "").trim().toLowerCase() === "true";
@@ -102,6 +102,7 @@ export function applyAssistantPublicWidgetRuntime(response, env) {
       element(element) {
         element.append(
           `<link rel="stylesheet" href="/assistant-public-widget.css?v=${ASSISTANT_WIDGET_VERSION}" data-sdlive-assistant-widget/>` +
+          `<link rel="stylesheet" href="/assistant-public-widget-layout.css?v=${ASSISTANT_WIDGET_VERSION}" data-sdlive-assistant-widget/>` +
           `<script defer src="/assistant-public-widget.js?v=${ASSISTANT_WIDGET_VERSION}" data-sdlive-assistant-widget></script>`,
           { html: true }
         );
