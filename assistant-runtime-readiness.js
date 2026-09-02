@@ -29,7 +29,8 @@ function openAIReadiness(env) {
     openAIProviderConfig(env);
     return {
       ready: true,
-      missing: []
+      missing: [],
+      invalid: []
     };
   } catch {
     const missing = [];
@@ -37,7 +38,8 @@ function openAIReadiness(env) {
     if (!text(env?.OPENAI_ASSISTANT_MODEL, 128)) missing.push("OPENAI_ASSISTANT_MODEL");
     return {
       ready: false,
-      missing: missing.length ? missing : ["OPENAI_ASSISTANT_MODEL"]
+      missing,
+      invalid: missing.length ? [] : ["OPENAI_ASSISTANT_MODEL"]
     };
   }
 }
@@ -48,7 +50,7 @@ function sessionReadiness(env) {
   return {
     ready: byteLength === 32,
     missing: raw ? [] : [SESSION_KEY_BINDING],
-    invalid: Boolean(raw) && byteLength !== 32
+    invalid: raw && byteLength !== 32 ? [SESSION_KEY_BINDING] : []
   };
 }
 
@@ -56,24 +58,29 @@ function turnstileReadiness(env) {
   const ready = Boolean(text(env?.[TURNSTILE_SECRET_BINDING], 2000));
   return {
     ready,
-    missing: ready ? [] : [TURNSTILE_SECRET_BINDING]
+    missing: ready ? [] : [TURNSTILE_SECRET_BINDING],
+    invalid: []
   };
 }
 
 function limiterReadiness(env) {
   const binding = ASSISTANT_RATE_LIMIT_POLICY.binding;
+  const present = env?.[binding] !== undefined && env?.[binding] !== null;
   const ready = typeof env?.[binding]?.limit === "function";
   return {
     ready,
-    missing: ready ? [] : [binding]
+    missing: present ? [] : [binding],
+    invalid: present && !ready ? [binding] : []
   };
 }
 
 function d1Readiness(env) {
+  const present = env?.[D1_BINDING] !== undefined && env?.[D1_BINDING] !== null;
   const ready = typeof env?.[D1_BINDING]?.prepare === "function";
   return {
     ready,
-    missing: ready ? [] : [D1_BINDING],
+    missing: present ? [] : [D1_BINDING],
+    invalid: present && !ready ? [D1_BINDING] : [],
     storageSchemaCheckedHere: false
   };
 }
@@ -83,7 +90,8 @@ function notificationReadiness(env) {
   const validation = validateAssistantNotificationConfig(config);
   return {
     ready: validation.ok,
-    missing: validation.missing
+    missing: validation.missing,
+    invalid: []
   };
 }
 
@@ -100,15 +108,19 @@ export function inspectAssistantRuntimeReadiness(env = {}) {
   const missingBindings = [...new Set(
     Object.values(dependencies).flatMap((entry) => entry.missing || [])
   )].sort();
+  const invalidBindings = [...new Set(
+    Object.values(dependencies).flatMap((entry) => entry.invalid || [])
+  )].sort();
 
   return {
     ok: true,
     readOnly: true,
     networkCalls: false,
     storageMutations: false,
-    readyForExternalDependencies: Object.values(dependencies).every((entry) => entry.ready),
+    readyForRuntimeConfiguration: Object.values(dependencies).every((entry) => entry.ready),
     storagePreflightRequiredSeparately: true,
     missingBindings,
+    invalidBindings,
     dependencies
   };
 }
