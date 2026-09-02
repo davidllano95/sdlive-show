@@ -60,6 +60,28 @@ test("safe log keeps only bounded operational metadata", () => {
   });
 });
 
+test("Rental action may be logged without retaining Rental payload", () => {
+  const entry = buildAssistantSafeLogEntry("rental_query_resolved", {
+    requestId: "req_123456789012",
+    nextAction: "check_rental",
+    outcome: "ok",
+    rentalReady: true,
+    rentalQuery: {
+      items: [{ name: "WING", quantity: 2 }],
+      customerNote: "private request details"
+    }
+  }, {
+    now: new Date("2026-09-01T23:30:00.000Z")
+  });
+
+  assert.equal(entry.nextAction, "check_rental");
+  assert.equal(entry.rentalReady, true);
+  assert.equal(entry.redacted, true);
+  assert.equal(entry.droppedFieldCount, 1);
+  assert.equal(JSON.stringify(entry).includes("private request details"), false);
+  assert.equal(JSON.stringify(entry).includes("WING"), false);
+});
+
 test("raw PII, messages, tokens, prompts and provider bodies are dropped", () => {
   const entry = buildAssistantSafeLogEntry("model_failed", {
     requestId: "req_abcdefghijkl",
