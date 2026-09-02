@@ -41,6 +41,10 @@ function normalizedPath(request) {
     : url.pathname;
 }
 
+export function assistantPublicEnabled(env) {
+  return String(env?.ASSISTANT_PUBLIC_ENABLED || "").trim().toLowerCase() === "true";
+}
+
 async function verifyAdminViaExistingApi(request, env) {
   const url = new URL(request.url);
   url.pathname = "/api/admin/whoami";
@@ -187,6 +191,12 @@ export default {
     }
 
     if (path === "/api/assistant") {
+      if (!assistantPublicEnabled(env)) {
+        return jsonResponse({
+          ok: false,
+          error: "assistant_unavailable"
+        }, 404);
+      }
       const response = await handleAssistantApi(request, env);
       if (response) return response;
     }
