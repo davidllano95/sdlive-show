@@ -45,7 +45,7 @@ test("every browser operation carries Turnstile and only the sealed session toke
   const js = await source("assistant-public-widget.js");
   assert.match(js, /turnstileToken:\s*securityToken/);
   assert.match(js, /if \(sessionToken\) body\.sessionToken = sessionToken/);
-  assert.match(js, /window\.turnstile\.reset\(widgetId\)/);
+  assert.match(js, /window\.turnstile\.remove\(widgetId\)/);
   assert.doesNotMatch(js, /\bsessionId\s*:/);
   assert.doesNotMatch(js, /\bslots\s*:/);
   assert.doesNotMatch(js, /\bconsentEvidence\s*:/);
