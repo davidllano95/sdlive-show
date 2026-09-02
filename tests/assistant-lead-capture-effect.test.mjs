@@ -250,7 +250,8 @@ test("capture policy requires atomic PII + consent persistence in canonical stor
     initialStatus: "new",
     requiresFreshConsent: true,
     supportsCompletedRetry: true,
-    storesTranscript: false
+    storesTranscript: false,
+    runtimeSchemaMutations: false
   });
 });
 
