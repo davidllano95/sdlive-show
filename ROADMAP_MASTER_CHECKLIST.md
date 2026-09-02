@@ -6,9 +6,9 @@
 
 Last reconciliation: **2026-09-02 — America/Bogota**
 
-Runtime baseline before this docs-only reconciliation:
+Current runtime baseline:
 
-`d1db8019deadc5d84fba9604de7a36f64658aba7` — PR #229.
+`bf93bbbf9f707abea22105753c9d424b82a68b27` — PR #231.
 
 ## Legend
 
@@ -22,20 +22,25 @@ Runtime baseline before this docs-only reconciliation:
 
 **UNMERGED != PRODUCTION. CI PASS != PRODUCTION SMOKE PASS.**
 
-# Current Active Gate — final Assistant public enablement
+# Current Active Gate — Assistant Safari second turn/session continuity
 
-Assistant storage, backend, runtime configuration, widget integration and pre-enable Turnstile verification are PASS. The public feature remains OFF only because `ASSISTANT_PUBLIC_ENABLED` has not yet been explicitly enabled.
+The public Assistant is enabled in production. Runtime bindings, widget integration, Siteverify and the first real OpenAI turn are PASS.
 
-Required order:
+A Safari deadlock was then found between turns: after a successful first turn, Turnstile still looked successful although its token had been consumed; Send stayed disabled and `Enviando…` remained visible.
 
-1. [ ] Owner explicitly sets production `ASSISTANT_PUBLIC_ENABLED=true`.
-2. [ ] Run one controlled representative Assistant E2E, one manual action at a time.
-3. [ ] Confirm a normal response and deterministic Availability/Rental boundaries.
-4. [ ] Complete explicit privacy consent and create exactly one QA Lead with `source=assistant`, `status=new`.
-5. [ ] Confirm consent, Admin visibility, notification and duplicate protection.
-6. [ ] Confirm existing Contact/Rental continuity.
-7. [ ] Close Assistant rollout docs.
-8. [ ] Resume #191 immediately afterward.
+PR #231 fixes that by destroying/recreating Turnstile after each consumed token and clearing stale sending state. It is MERGED, PR CI PASS and `main` CI PASS. The only immediate acceptance step is the production Safari second-turn smoke.
+
+Required order now:
+
+1. [ ] In Safari, send one successful first Assistant turn.
+2. [ ] Confirm `Enviando…` clears after the response.
+3. [ ] Confirm Turnstile visibly regenerates with a fresh verification state.
+4. [ ] Confirm Send becomes available again.
+5. [ ] Send the planned second turn and confirm session continuity retains theatre-show + Bogotá context.
+6. [ ] Mark `SESSION CONTINUITY = PASS` if successful.
+7. [ ] Continue remaining Assistant E2E: explicit consent, exactly one Assistant Lead, idempotency/effects, handoff/notification, deterministic pricing/Availability boundaries, Contact/Rental continuity and mobile smoke if needed.
+8. [ ] Close Assistant rollout docs.
+9. [ ] Resume #191 immediately afterward.
 
 ## A. Lead Core foundation
 
@@ -64,15 +69,13 @@ Final storage PRs: #223 and #224. Old #216 is closed/superseded.
 
 ✅ **MERGED / CI PASS / DEPLOYED.**
 
-Squash merge: `259b68b2d94b5fca7dcfe13bec79ace40792fff8`.
-
 Includes gated `/api/assistant`, Admin readiness, dedicated limiter, Turnstile verification, sealed stateless session, Responses API / strict Structured Outputs / `store:false`, deterministic tools, explicit consent, idempotent Lead capture and Resend handoff.
 
 Old #213 is closed/superseded.
 
 ## D. Runtime configuration/readiness
 
-✅ **PASS IN PRODUCTION WITH PUBLIC FLAG OFF.**
+✅ **PASS IN PRODUCTION / PUBLIC ENABLED.**
 
 - OpenAI ready.
 - Session key ready.
@@ -82,15 +85,24 @@ Old #213 is closed/superseded.
 - Notification config ready.
 - `missingBindings:[]`.
 - `invalidBindings:[]`.
-- `publicExposure.enabled:false`.
+- `readyForPublicEnablement:true` after activation.
+- `publicExposure.enabled:true`.
+- `ASSISTANT_PUBLIC_ENABLED=true`.
 
 ## E. Assistant public widget — PR #228
 
-✅ **MERGED / CI PASS / DEPLOYED / FLAG-OFF SMOKE PASS.**
+✅ **MERGED / CI PASS / DEPLOYED.**
 
-Squash merge: `6ef4c1990a8e4903b38f6fefb334d307634119f8`.
+Widget scope: Contact launcher, desktop modal/mobile sheet, EN/ES, memory-only conversation, sealed token, Turnstile per operation, current API contract, server-owned consent and safe human fallback.
 
-Widget scope: Contact launcher, desktop modal/mobile sheet, EN/ES, memory-only conversation, sealed token, Turnstile per operation, current API contract, server-owned consent and safe human fallback. It renders only when the public flag is true and a valid site key exists.
+Production evidence:
+
+- launcher visible;
+- modal opens;
+- Assistant Turnstile loads and verifies;
+- first real OpenAI turn PASS after API credits were added.
+
+Known non-blocking visual debt: green/olive widget tones should later be aligned with the current violet SD.Live palette.
 
 Old #215 is closed/superseded.
 
@@ -98,93 +110,121 @@ Old #215 is closed/superseded.
 
 ✅ **DISPOSITIONED / PRODUCTION PASS.**
 
-Cloudflare dashboard had shown:
+Cloudflare dashboard had shown `Siteverify isn't being called for SD.Live Forms`.
 
-`Siteverify isn't being called for SD.Live Forms`
+Code audit and a real production Contact probe proved the Siteverify boundary works. A fresh valid token with privacy consent intentionally omitted returned:
 
-Code audit:
+`{"ok":false,"error":"Privacy consent is required"}`
 
-- [x] Contact sends `turnstileToken`.
-- [x] Rental sends `turnstileToken`.
-- [x] server POSTs token to Cloudflare Siteverify.
-- [x] server requires hostname `sdlive.show`.
-- [x] server requires action `contact` / `rental`.
-- [x] Turnstile failure exits before Lead persistence.
+Because consent is downstream of Turnstile, the request necessarily passed server-side Siteverify first. No Lead was created by the probe.
 
-Production proof:
+Reopen only if future production evidence contradicts this result.
 
-- [x] fresh real Contact Turnstile token used against live `/api/contact`;
-- [x] privacy consent intentionally omitted so no Lead should be created;
-- [x] server returned `{"ok":false,"error":"Privacy consent is required"}`;
-- [x] because consent validation is downstream of Turnstile, the result proves Siteverify passed and the request reached the later privacy gate.
+## G. First real Assistant turn
 
-Disposition: the dashboard warning is stale/incomplete detection or association rather than a missing SD.Live Siteverify implementation. Reopen only if later production evidence contradicts this proof.
+✅ **PASS.**
 
-## G. Final Assistant E2E
+Initial fallback was traced to OpenAI API billing/credit availability. After credits were added, the same first-turn scenario returned a valid bounded response requesting date, venue, requested support, rehearsal/show schedule and technical requirements.
+
+This established that the public route, provider integration, structured response path and browser security gate function end to end for one turn.
+
+## H. PR #231 — Turnstile refresh between turns
+
+🟢 **MERGED / PR CI PASS / MAIN CI PASS / PRODUCTION SAFARI SMOKE PENDING.**
+
+Squash merge: `bf93bbbf9f707abea22105753c9d424b82a68b27`.
+
+Implementation:
+
+- `turnstile.remove(widgetId)` after token consumption;
+- clear the Turnstile container;
+- recreate a fresh widget/token while modal remains open;
+- clear stale status on API success/error/network failure;
+- regression coverage for the Safari-visible deadlock.
+
+CI history:
+
+- Tests #631 failed because an old contract assertion still required `turnstile.reset(widgetId)`;
+- this was a stale test contract, not a browser security regression and not an `OPENAI_*` exposure failure;
+- contract test updated to require `turnstile.remove(widgetId)`;
+- Tests #632 PASS on PR head;
+- Tests #633 PASS on merged `main`.
+
+Security protections remain unchanged.
+
+## I. Final Assistant E2E
 
 🚧 **CURRENT ACTIVE GATE.**
 
-Run after explicit public enablement, one manual action at a time. One representative flow should cover as much as possible without generating multiple QA Leads.
+Immediate Safari session-continuity smoke:
+
+Second-turn message:
+
+`The show is October 17, 2026. Venue is still TBD. I need sound design and FOH, with rehearsal on October 16 from 2–8 PM. What else do you need?`
 
 Acceptance:
 
-- [ ] widget visible when enabled;
-- [ ] desktop and mobile usable;
-- [ ] EN/ES works;
-- [ ] normal reply;
-- [ ] Availability uses deterministic truth;
-- [ ] Rental known item resolves through deterministic backend boundary;
-- [ ] ambiguous/unknown Rental item fails closed;
-- [ ] no invented prices/current inventory claims;
-- [ ] consent prompt is product-owned;
-- [ ] explicit authorization required;
+- [ ] first turn succeeds;
+- [ ] stale `Enviando…` disappears;
+- [ ] Turnstile regenerates after first response;
+- [ ] Send re-enables;
+- [ ] second turn sends successfully;
+- [ ] answer retains prior **theatre show** context;
+- [ ] answer retains prior **Bogotá** context;
+- [ ] no need to repeat those prior facts.
+
+After session continuity PASS, continue within the same milestone:
+
+- [ ] explicit privacy consent is product-owned and required;
 - [ ] exactly one Lead created, `source=assistant`, `status=new`;
 - [ ] consent persisted;
 - [ ] Lead visible in Admin;
 - [ ] notification behavior correct;
-- [ ] duplicate submission does not duplicate Lead;
-- [ ] safe fallback behavior remains bounded;
+- [ ] duplicate/effect retry does not duplicate Lead;
+- [ ] Availability uses deterministic truth;
+- [ ] Rental known item resolves through deterministic backend boundary;
+- [ ] ambiguous/unknown Rental item fails closed;
+- [ ] no invented prices/current inventory claims;
 - [ ] existing Contact/Rental continue working;
+- [ ] mobile smoke if applicable;
 - [ ] kill switch remains a valid rollback control.
 
 # Open PR audit and priority
 
-Repository-wide open-PR audit completed 2026-09-02.
+Repository-wide open-PR audit completed again after #231 merge.
 
-Old preparatory Assistant drafts #192–#212 were left open after the final integrated backend superseded them. They are now all **CLOSED WITHOUT MERGE / superseded by #225**. Old #213, #215, #216 and temporary #218 were already closed/superseded.
+Old preparatory Assistant drafts #192–#212 remain **CLOSED WITHOUT MERGE / superseded by #225**. Old #213, #215, #216 and temporary #218 are closed/superseded.
 
-After cleanup, exactly **one operational PR remains open**:
+Exactly **one operational PR remains open**:
 
 ## Priority 1 — finish Assistant rollout
 
-🚧 Current gate. No separate implementation PR remains; activation is production configuration followed by controlled E2E and closeout.
+🚧 Current gate. Do not mix in unrelated runtime work until the Assistant E2E is closed and documented.
 
 ## Priority 2 — PR #191: verified-owner WhatsApp Availability control
 
 🟡 **OPEN / NEXT AFTER ASSISTANT.**
 
-This is the workstream the owner was on before the Assistant block.
-
 Current plan after Assistant closeout:
 
 - do not merge the old branch directly;
 - inspect #191 scope against then-current `main`;
-- reconstruct/rebase only the still-valid WhatsApp owner-control changes;
+- reconstruct/rebase only still-valid WhatsApp owner-control changes;
 - preserve HMAC signature verification, exact owner/phone-number-id allowlisting, D1 message-id idempotency and canonical Availability write path;
 - complete Meta WhatsApp Cloud API / Cloudflare secret configuration;
 - CI green → squash merge → exactly one production smoke.
 
 ## Priority 3 — Rental real-time availability / double-booking protection
 
-⏳ High-value next architecture step because it creates deterministic inventory truth for Rental itself and for the Assistant. Do not let the AI invent this state before the backend exists.
+⏳ Establish deterministic inventory truth for Rental and Assistant.
 
 ## Priority 4 — Mobile Rental Cart total visibility / sticky summary
 
-⏳ Contained public UX debt already observed in production.
+⏳ Contained high-value public UX debt.
 
 ## Priority 5 — Rental quote/PDF + Finance Document Generator foundation
 
-⏳ Build one reusable document engine rather than parallel PDF paths. Real Colombian electronic invoicing remains separate from ordinary quotation/account documents unless legal/provider requirements are explicitly implemented.
+⏳ Build one reusable document engine rather than parallel PDF paths.
 
 ## Priority 6 — Calendar/Projects workflow additions
 
@@ -221,8 +261,9 @@ Current plan after Assistant closeout:
 ✅ Assistant storage gate.  
 ✅ Assistant backend integration.  
 ✅ Assistant runtime configuration.  
-✅ Assistant public widget integration with flag OFF.  
-✅ Existing SD.Live Forms Siteverify verification.
+✅ Assistant public widget integration.  
+✅ Existing SD.Live Forms Siteverify verification.  
+✅ First real Assistant provider turn.
 
 # Source-of-truth boundaries
 
@@ -271,4 +312,4 @@ Current plan after Assistant closeout:
 
 # Exact continuation
 
-**The Turnstile gate is PASS. Finish the current Assistant rollout before changing workstreams: explicitly enable `ASSISTANT_PUBLIC_ENABLED=true`, run the representative E2E, close the Assistant milestone, then resume #191.**
+**PR #231 is merged and green. Run exactly one Safari second-turn/session-continuity smoke. If it passes, finish the remaining Assistant E2E gates and close the milestone before resuming #191.**
