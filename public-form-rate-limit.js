@@ -17,6 +17,7 @@ import { persistLeadCoreFromPublicResponse } from "./lead-core-storage.js";
 import { handleLeadAdminApi } from "./lead-admin-api.js";
 import { applyLeadAdminNavigationRuntime } from "./lead-admin-dashboard-edge.js";
 import { handleAssistantStoragePreflightApi } from "./assistant-admin-preflight.js";
+import { handleAssistantApi } from "./assistant-api.js";
 
 const PUBLIC_FORM_LIMITS = {
   "/api/contact": {
@@ -38,6 +39,10 @@ function normalizedPath(request) {
   return url.pathname.length > 1
     ? url.pathname.replace(/\/+$/, "")
     : url.pathname;
+}
+
+export function assistantPublicEnabled(env) {
+  return String(env?.ASSISTANT_PUBLIC_ENABLED || "").trim().toLowerCase() === "true";
 }
 
 async function verifyAdminViaExistingApi(request, env) {
@@ -182,6 +187,17 @@ export default {
       const response = await handleAssistantStoragePreflightApi(request, env, {
         verifyAdmin: verifyAdminViaExistingApi
       });
+      if (response) return response;
+    }
+
+    if (path === "/api/assistant") {
+      if (!assistantPublicEnabled(env)) {
+        return jsonResponse({
+          ok: false,
+          error: "assistant_unavailable"
+        }, 404);
+      }
+      const response = await handleAssistantApi(request, env);
       if (response) return response;
     }
 

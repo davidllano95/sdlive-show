@@ -15,7 +15,7 @@ function request(path, { method = "POST", ip = "203.0.113.10" } = {}) {
   });
 }
 
-test("only public Contact and Rental POST submissions are rate limited", () => {
+test("only public Contact and Rental POST submissions use the legacy form limiter", () => {
   assert.equal(
     publicFormRateLimitConfig(request("/api/contact"))?.binding,
     "CONTACT_FORM_RATE_LIMITER"
@@ -26,6 +26,7 @@ test("only public Contact and Rental POST submissions are rate limited", () => {
   );
   assert.equal(publicFormRateLimitConfig(request("/api/contact", { method: "GET" })), null);
   assert.equal(publicFormRateLimitConfig(request("/api/admin/whoami")), null);
+  assert.equal(publicFormRateLimitConfig(request("/api/assistant")), null);
 });
 
 test("rate-limit key uses Cloudflare client IP with a deterministic fallback", () => {
@@ -72,7 +73,7 @@ test("allowed request continues and missing production binding fails closed", as
   assert.equal(missing.headers.get("Retry-After"), "60");
 });
 
-test("wrangler keeps stabilization wrapper, stable base worker, Finance page guard, and independent form limits", async () => {
+test("wrangler keeps stabilization wrapper, stable base worker, Finance guard, and independent public limits", async () => {
   const [wranglerText, worker, wrapper] = await Promise.all([
     readFile(new URL("../wrangler.jsonc", import.meta.url), "utf8"),
     readFile(new URL("../public-form-rate-limit.js", import.meta.url), "utf8"),
@@ -91,7 +92,7 @@ test("wrangler keeps stabilization wrapper, stable base worker, Finance page gua
   assert.match(worker, /no-store, no-cache, must-revalidate/);
   assert.match(worker, /import \{ financeUpstreamFetch \} from "\.\/finance-upstream\.js"/);
   assert.match(worker, /fetchImpl: financeUpstreamFetch/);
-  assert.equal(wrangler.ratelimits.length, 2);
+  assert.equal(wrangler.ratelimits.length, 3);
 
   const byName = Object.fromEntries(
     wrangler.ratelimits.map((entry) => [entry.name, entry])
@@ -102,8 +103,10 @@ test("wrangler keeps stabilization wrapper, stable base worker, Finance page gua
     assert.equal(byName[name].simple.period, 60);
   }
 
-  assert.notEqual(
-    byName.CONTACT_FORM_RATE_LIMITER.namespace_id,
-    byName.RENTAL_FORM_RATE_LIMITER.namespace_id
+  assert.equal(byName.ASSISTANT_RATE_LIMITER.simple.limit, 30);
+  assert.equal(byName.ASSISTANT_RATE_LIMITER.simple.period, 60);
+  assert.equal(
+    new Set(wrangler.ratelimits.map((entry) => entry.namespace_id)).size,
+    wrangler.ratelimits.length
   );
 });
