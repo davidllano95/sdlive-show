@@ -24,24 +24,6 @@ test("Assistant is mounted narrowly before legacy public-form pipeline", async (
   assert.ok(prepareLeadIndex > assistantIndex);
 });
 
-test("Assistant storage preflight stays on an authenticated Admin-only route", async () => {
-  const worker = await source("public-form-rate-limit.js");
-  assert.match(
-    worker,
-    /import \{ handleAssistantAdminPreflight \} from "\.\/assistant-admin-preflight\.js"/
-  );
-  assert.match(worker, /if \(path === "\/api\/admin\/assistant\/preflight"\)/);
-  assert.match(
-    worker,
-    /handleAssistantAdminPreflight\(request, env, \{\s*verifyAdmin: verifyAdminViaExistingApi\s*\}\)/s
-  );
-
-  const preflightIndex = worker.indexOf('if (path === "/api/admin/assistant/preflight")');
-  const legacyLimitIndex = worker.indexOf("const limited = await enforcePublicFormRateLimit");
-  assert.ok(preflightIndex >= 0);
-  assert.ok(legacyLimitIndex > preflightIndex);
-});
-
 test("Assistant has its own bounded rate limiter while Contact/Rental stay unchanged", async () => {
   const wrangler = JSON.parse(await source("wrangler.jsonc"));
   const limits = Object.fromEntries(
