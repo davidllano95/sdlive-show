@@ -18,6 +18,8 @@ import { handleLeadAdminApi } from "./lead-admin-api.js";
 import { applyLeadAdminNavigationRuntime } from "./lead-admin-dashboard-edge.js";
 import { handleAssistantApi } from "./assistant-api.js";
 import { handleAssistantRuntimeReadinessApi } from "./assistant-admin-readiness.js";
+import { handleAssistantStoragePreflightApi } from "./assistant-admin-preflight.js";
+import { handleAssistantStoragePreparationApi } from "./assistant-admin-storage-preparation.js";
 
 const PUBLIC_FORM_LIMITS = {
   "/api/contact": {
@@ -185,6 +187,20 @@ export default {
 
     if (path === "/api/admin/assistant/readiness") {
       const response = await handleAssistantRuntimeReadinessApi(request, env, {
+        verifyAdmin: verifyAdminViaExistingApi
+      });
+      if (response) return response;
+    }
+
+    if (path === "/api/admin/assistant/preflight") {
+      const response = await handleAssistantStoragePreflightApi(request, env, {
+        verifyAdmin: verifyAdminViaExistingApi
+      });
+      if (response) return response;
+    }
+
+    if (path === "/api/admin/assistant/storage-prepare") {
+      const response = await handleAssistantStoragePreparationApi(request, env, {
         verifyAdmin: verifyAdminViaExistingApi
       });
       if (response) return response;
