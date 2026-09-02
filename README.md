@@ -20,69 +20,128 @@ When docs disagree, use:
 6. `ROADMAP_MASTER_CHECKLIST.md` for historical/future backlog;
 7. older prompts/ideas/references.
 
-**Stability > novelty.** Do not replace a working source of truth because an older/future document imagines another architecture.
+**Stability > novelty.** `UNMERGED != PRODUCTION`, and `CI PASS != PRODUCTION SMOKE PASS`.
 
-## Current state
+## Current state — 2026-09-02
 
-As of **2026-09-01 America/Bogota**:
+Current verified `main` before this docs-only reconciliation:
 
-- Finance read-only integration and `/admin/finance/` — **OPERATIONAL / production-smoked PASS**; PR #141 freeze regression remains closed.
-- Admin Calendar + controlled create + multi-day operations — **CLOSED/PASS**.
-- Site Schedule + automatic Show Day + Location — **CLOSED/PASS**.
-- Admin-only Show Day QA override `Auto / Force On / Force Off` — **CLOSED/PASS**.
-- Admin desktop/mobile stabilization — **CLOSED/PASS**; issue #126 completed.
-- Public post-integration visual stabilization — **CLOSED/PASS**; issue #124 completed.
-- Rental image-editor parity — **CLOSED/PASS through PR #157**; issue #156 completed.
-- Google Calendar `sam@sdlive.show` secondary projection/read-only overlay — **OPERATIONAL / production-smoked PASS**.
-- **Availability Core v1 — CLOSED/PASS through PR #181.**
-- **Current Active Gate: SD.Live Assistant + Lead Core.**
-- Generic Finance Phase 3 write-back — **BLOCKED**.
+`1c8e594ce84d3f50d7c1412fcb5dfb29c8bc5da9`
 
-The exact current continuation point lives in `PROJECT_STATUS.md` and `docs/checkpoints/handoff-availability-v1-closeout-2026-09-01.md`.
+That commit is PR #190, **Show auditable lead status history**.
 
-## Change workflow
+### Closed / production-smoked
 
-For runtime changes:
+- Finance read-only integration and `/admin/finance/` — operational / production-smoked PASS.
+- Admin Calendar + controlled create + multi-day operations — CLOSED/PASS.
+- Site Schedule + automatic Show Day + Location — CLOSED/PASS.
+- Admin Show Day `Auto / Force On / Force Off` — CLOSED/PASS.
+- Admin desktop/mobile stabilization — CLOSED/PASS.
+- Public post-integration visual stabilization — CLOSED/PASS.
+- Rental image-editor parity — CLOSED/PASS through PR #157.
+- Availability Core v1 — CLOSED/PASS.
+- Lead Core Admin workflow through PR #190 — CLOSED/PASS, including visible auditable status history.
 
-`inspect current main → short branch → implement/update → tests/CI → PR → CI green → squash merge → one representative production smoke`.
+Canonical Lead Core statuses are:
 
-For manual QA with the owner: **one action at a time**.
+- `new`
+- `contacted`
+- `quoted`
+- `confirmed`
+- `lost`
 
-Do not use Cloudflare → Deployments as a routine manual QA step. Check deployment state only if the owner asks or there is concrete evidence of a deployment anomaly.
+Do not use historical `qualified / won / archived` as executable status values.
 
-For docs-only changes: branch → docs → tests/CI → PR → CI green → squash merge. No production smoke is required.
+## Current Active Gate — SD.Live Assistant rollout
 
-## Current architecture
+The Assistant architecture is prepared but **not public and not in production**.
 
-### Public site
+### PR #214 — next rollout slice
 
-- Frontend: vanilla HTML/CSS/JavaScript.
-- Hosting/runtime: Cloudflare Workers + Static Assets.
-- Analytics: GTM + GA4 with consent gating.
-- Forms: Turnstile + D1 + Resend.
-- Languages: EN / ES with persisted preference where supported.
-- Markets: Colombia / International behavior.
-- Public header contract: Home is canonical; current SEO/service landings are normalized at the edge to the same Home header structure.
+**Add read-only Assistant storage preflight**
 
-### CMS / media
+- OPEN / DRAFT / UNMERGED / MERGEABLE.
+- Base: `main`.
+- Head: `f5413158770254061d8b02a1d2c5113117fe5c0e`.
+- CI: Tests #581 PASS.
+- Adds authenticated `GET /api/admin/assistant/preflight`.
+- Read-only metadata inspection only (`PRAGMA` / `SELECT`).
+- Checks `leads`, `privacy_consents`, and `assistant_effect_reservations`.
+- Does not create, alter, insert, update or delete storage.
 
-- D1 binding `CMS_DB` → `sdlive-cms-production`.
-- R2 binding `MEDIA_BUCKET` → `sdlive-media-production`.
-- Public media domain: `media.sdlive.show`.
-- Hero, Trusted By / Supported Brands, Testimonials, Core Home, Rental/Contact presentation and reusable Media Library are established.
-- Managed logos/images remain R2-owned.
-- Visual safeguards and publish failsafe remain part of the Editor boundary.
-- Rental image editing is parity-verified across standard cards, PA and Production Tools.
+This is the **next technical step** after this docs-only milestone.
 
-### Private Admin / Control Center
+### PR #216 — conditional storage preparation
 
-All Admin workspaces remain behind Cloudflare Access.
+**Prepare Assistant storage behind Admin confirmation**
 
-- `/admin/` — lightweight Dashboard / system overview + compact Availability + Show Day controls.
-- `/admin/finance/` — read-only SD.Live Track analytics/workflow workspace; COP/USD separate.
-- `/admin/calendar/` — Calendar / Operations over `REGISTRO`, including multi-day and controlled create.
-- `/admin/calendar/site-schedule/` — website-only split-work / Show Day / Location editor.
-- `/admin/editor/` — Site Editor / CMS workspace.
+- OPEN / DRAFT / UNMERGED / MERGEABLE.
+- Base: PR #214 branch, not `main`.
+- Head: `3ac0338a7896a7429316773dafe73bdf0e767025`.
+- CI: Tests #596 PASS.
+- Admin-only `POST /api/admin/assistant/storage-prepare`.
+- Requires exact confirmation `PREPARE_ASSISTANT_STORAGE`.
+
+Decision rule:
+
+- if #214 reports storage already ready → do not merge/use #216;
+- if only known-safe supported preparation is required → integrate #216, execute once, rerun #214;
+- if a blocked/unknown `leads` schema is reported → do not execute #216; create an exact migration for that physical schema.
+
+### PR #213 — Assistant backend
+
+**Integrate Assistant backend contracts**
+
+- OPEN / DRAFT / UNMERGED / MERGEABLE.
+- Head: `cce1144f8336d22cafe2a9b200de93152bd6bea2`.
+- CI: Tests #594 PASS.
+- Not in production.
+- Public kill switch: `ASSISTANT_PUBLIC_ENABLED`; OFF unless exactly `true`.
+- Admin readiness endpoint prepared: `GET /api/admin/assistant/readiness`.
+- Public Assistant requests never perform D1 schema migration.
+
+### PR #215 — public widget
+
+**Add gated public SD.Live Assistant widget**
+
+- OPEN / DRAFT / UNMERGED / MERGEABLE.
+- Base: PR #213 branch, not `main`.
+- Head: `901961c11b9cd22ebf14cee251e4129b2e2c1be2`.
+- CI: Tests #595 PASS.
+- Not in production.
+- Must not be integrated before #213 is deployed and smoke-tested with the public flag OFF.
+
+### PR #218 — temporary integration validation
+
+- CLOSED WITHOUT MERGE.
+- TEMP VALIDATION ONLY.
+- Tests #598 PASS.
+- Proved #213 + #214 + #216 + router integration can coexist without weakening runtime boundaries.
+- Do not reopen or merge it.
+
+### PR #191 — WhatsApp owner control
+
+- OPEN / UNMERGED / MERGEABLE.
+- Separate from the Assistant Active Gate.
+- Meta WhatsApp Cloud API transport for authenticated Availability owner commands.
+- No AI, no Finance, no Leads coupling.
+- Requires real Meta/Cloudflare configuration before any smoke.
+
+## SD.Live Assistant architecture
+
+`Public site / widget → /api/assistant → request security → Turnstile → dedicated rate limit → sealed stateless session → OpenAI Responses API + Structured Outputs → deterministic server tools → Lead Core D1 → deterministic handoff → Resend → human follow-up`
+
+The Assistant must never:
+
+- impersonate Samuel;
+- invent or negotiate prices;
+- promise Availability without deterministic backend confirmation;
+- become a second Rental catalog/pricing source;
+- write Finance;
+- infer privacy consent on behalf of the user;
+- persist the full transcript;
+- expose secrets/tokens/private owner data;
+- migrate D1 schema during public traffic.
 
 ## Source-of-truth matrix
 
@@ -101,205 +160,39 @@ All Admin workspaces remain behind Cloudflare Access.
 | Website-only Calendar presentation overrides | D1 `site_schedule_state` |
 | Google Calendar secondary projection / read-only overlay | `sam@sdlive.show` |
 | Automatic public Show Day | Site Schedule + America/Bogota date |
-| Show Day Location | Site Schedule block only |
 | Availability / reachability | D1 Availability Core |
-| Future leads | SD.Live-owned Lead Core in D1 |
+| Leads | SD.Live Lead Core in D1 |
+| Assistant runtime state | sealed SD.Live-owned structured session, not provider-side conversation state |
 
-## Finance / AppSheet non-negotiables
+## Change workflow
 
-The finance-system decision remains **repair + integrate, not rewrite**.
+Runtime changes:
 
-- AppSheet remains mobile/offline workflow.
-- `REGISTRO` remains persistence + formula owner.
-- `ID` is durable identity; `_RowNumber` is not.
-- Formula-owned columns remain read-only to Admin forms.
-- COP/USD remain separate; no implicit FX conversion.
-- Browser-facing Finance payloads do not expose Notes, `NUM CONTACTO`, internal row IDs or OAuth tokens.
-- No D1 Finance mirror.
-- **Generic Finance Phase 3 write-back remains blocked.**
-- Calendar controlled create is a separate narrow Operations write path, not a generic Finance editor.
+`inspect current main → short branch → implement/update → tests/CI → PR → CI green → squash merge → exactly one representative production smoke`.
 
-Canonical dates:
+Docs-only changes:
 
-- `Fecha trabajo` = start;
-- `Fecha fin` = end;
-- one-day uses end=start;
-- multi-day requires end>=start.
+`branch → docs → tests/CI → PR → CI green → squash merge`.
 
-## Calendar / Site Schedule / Show Day
+No production smoke for docs-only PRs.
 
-Calendar reads the same `REGISTRO` and supports canonical multi-day spans. Controlled create writes only mapped human/source fields into a safe row and leaves formula/workflow ownership intact.
+Manual QA with the owner: **one action at a time**.
 
-Site Schedule is separate website-only D1 presentation state:
+Do not use Cloudflare deployment state as routine primary truth. Investigate deployment internals only when production conflicts with merged `main`.
 
-- source events may be split into non-overlapping blocks;
-- each block owns Start, End, Show Day boolean and Location;
-- source selector uses ongoing + future work in America/Bogota;
-- Site Schedule never writes split dates, Show Day or Location to Sheets/AppSheet.
+## Exact continuation
 
-Automatic Show Day comes from Site Schedule + America/Bogota. The public visitor toggle is gone. Admin has a temporary QA override `Auto / Force On / Force Off` separate from canonical data and expiring at Bogotá day-end.
+After this docs-only reconciliation is merged:
 
-Google Calendar is a secondary integration surface, not a source of operational truth. No Google → REGISTRO/AppSheet reverse-write path exists.
-
-Show Day is **CLOSED/PASS**. Do not reopen it unless a new regression appears.
-
-## Availability Core v1
-
-Availability is a deterministic SD.Live-owned D1 service.
-
-Effective states:
-
-- `available`
-- `limited`
-- `away`
-
-### Precedence
-
-1. Backend Force Mode — `Auto / Force On / Force Off`.
-2. Temporary operational override — `Auto / Available / Limited / Away`.
-3. Weekly service schedule.
-4. Compatibility default before the first deliberate schedule save.
-
-Force Mode is a separate top-priority layer and does not destroy temporary override or schedule state underneath it.
-
-### Weekly Service Hours
-
-- Monday–Sunday.
-- Multiple windows per day.
-- Days without windows resolve Away after schedule configuration.
-- Evaluation happens in the active Availability timezone.
-
-### Travel Mode
-
-Travel Mode is implemented and bounded.
-
-- temporary IANA timezone;
-- explicit end date;
-- automatic expiry;
-- travel does not itself force Away;
-- travel changes the clock used to evaluate weekly service windows;
-- Admin supports common zones, `Use device timezone`, and `Other IANA timezone…`.
-
-Manual timezone entry must use a canonical IANA identifier such as:
-
-- `America/Bogota`
-- `America/New_York`
-- `Europe/Madrid`
-- `Asia/Singapore`
-- `Australia/Sydney`
-
-Do not use raw offsets (`UTC-5`), abbreviations (`EST`) or city names alone.
-
-### Next service window
-
-The next human service window is calculated deterministically from schedule + current override/Force/Travel state.
-
-The resolver accounts for closed days, expiries, timezone changes and DST.
-
-Public output remains privacy-safe and does not expose Travel timezone, itinerary, private Calendar details or owner phone data.
-
-### Flexible Temporary Status
-
-Temporary Status uses a flexible timer instead of fixed 1/2/4/8 hour blocks.
-
-- minimum 15 minutes;
-- maximum 24 hours;
-- hours + minutes controls;
-- `Auto / Available / Limited / Away` are selection controls;
-- `Apply status` explicitly commits the selection + current timer;
-- pending edits are not silently applied.
-
-Production smoke verified `0 h / 15 min` with both Limited and Away. Production was returned to Auto after testing.
-
-### Dashboard visual contract
-
-Availability and Show Day are presented as a compact control cluster.
-
-- bounded two-card desktop layout;
-- stacked mobile layout;
-- coherent typography/status pills/disclosures;
-- `Manage availability` and `Manage Show Day` disclosures;
-- compact Weekly Schedule;
-- stable CSS chevrons;
-- Travel `OFF` and operational status pills share the same visual language.
-
-### Public WhatsApp / Availability
-
-The existing floating WhatsApp control remains the only persistent floating CTA.
-
-- integrated Availability status tab;
-- EN `AVAILABLE / LIMITED / AWAY` plus ES equivalents;
-- bilingual explanatory popover;
-- Away may expose privacy-safe next human service timing;
-- public WhatsApp identity remains username-only;
-- owner phone number is prohibited in public HTML/JS/schema/Availability output.
-
-### Owner WhatsApp commands
-
-A transport-neutral parser is prepared for future verified-owner control, including command shapes such as:
-
-- `away 4h`
-- `away until 23:00`
-- `limited 1h 30m`
-- `back` / `volver`
-- `status` / `estado`
-
-The real WhatsApp transport is **not live yet**. It must authenticate the owner server-side before parsing commands and must not expose owner phone information publicly.
-
-Availability Core v1 is **CLOSED/PASS**. Do not reopen it unless a regression appears.
-
-## Current Active Gate — SD.Live Assistant + Lead Core
-
-Preferred architecture:
-
-`Public site / popup → SD.Live API → optional AI → safe tools → SD.Live-owned Lead Core in D1 → notification → human handoff → optional CRM later`
-
-Assistant name: **SD.Live Assistant**.
-
-The assistant must:
-
-- identify itself as the assistant, not as Samuel;
-- work EN/ES;
-- classify Live / Theatre / Sound Design / Systems / Rental / Other;
-- collect name, contact, date, city, venue, service, equipment, schedule and concise summary;
-- consult deterministic Availability Core;
-- answer only from approved business/service information;
-- create a normalized Lead Core record in D1;
-- produce a useful human handoff.
-
-The assistant must not:
-
-- invent prices;
-- negotiate prices;
-- promise availability without deterministic backend confirmation;
-- become Rental catalog/quantity/availability source of truth;
-- access Finance/Admin data;
-- invent credits, capabilities or policies;
-- leave the only copy of lead/transcript data in an external vendor.
-
-Preferred initial stack:
-
-- Cloudflare
-- D1
-- Resend
-- OpenAI API
-
-CRM/Attio, Dapta and deeper WhatsApp provider automation remain optional later layers.
-
-## Backlog that must not displace the Active Gate
-
-- Mobile Rental Cart total visibility / sticky request summary.
-- SD.Live Patch.
-- Finance Document Generator.
-- Rental availability/double-booking.
-- Calendar workflow additions.
-- AppSheet reminder alignment.
-- Show Day simultaneous Primary/Secondary presentation priority.
+1. reverify PR #214 against the new `main`;
+2. merge #214 if still clean;
+3. after deployment, perform exactly one manual production action: authenticated `GET /api/admin/assistant/preflight`;
+4. stop and interpret the real production D1 result before touching #216, #213 or #215.
 
 ## Relevant docs
 
-- `PROJECT_STATUS.md` — master current state + exact continuation.
-- `docs/checkpoints/handoff-availability-v1-closeout-2026-09-01.md` — latest Availability closeout.
-- `docs/roadmap/availability-aware-contact-widget.md` — Availability / Lead / Assistant contract.
-- `docs/roadmap/mobile-rental-cart-total-visibility.md` — bounded Rental mobile backlog.
-- `ROADMAP_MASTER_CHECKLIST.md` — historical/future backlog; lower precedence than current-state docs.
+- `PROJECT_STATUS.md` — master current state and exact continuation.
+- `docs/checkpoints/handoff-assistant-rollout-2026-09-02.md` — latest rollout checkpoint.
+- `docs/checkpoints/handoff-availability-v1-closeout-2026-09-01.md` — Availability closeout.
+- `docs/roadmap/availability-aware-contact-widget.md` — Availability/Assistant contract.
+- `ROADMAP_MASTER_CHECKLIST.md` — reconciled backlog and rollout checklist.
