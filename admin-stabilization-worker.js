@@ -13,6 +13,7 @@ import { validateRentalPresentationExtras } from "./rental-presentation-contract
 import { handleAvailabilityTravelPut } from "./availability-travel-api.js";
 import { decorateAvailabilityNextWindowResponse } from "./availability-next-window.js";
 import { handleAssistantLeadsMigrationApi } from "./assistant-admin-leads-migration.js";
+import { handleAssistantStoragePreparationApi } from "./assistant-admin-storage-preparation.js";
 import {
   googleCalendarDiagnostic,
   mergeGoogleCalendarOverlayResponse,
@@ -213,6 +214,13 @@ export default {
 
     if (path === "/api/admin/assistant/leads-migrate") {
       const response = await handleAssistantLeadsMigrationApi(request, env, {
+        verifyAdmin: verifyAdminViaExistingApi
+      });
+      if (response) return response;
+    }
+
+    if (path === "/api/admin/assistant/storage-prepare") {
+      const response = await handleAssistantStoragePreparationApi(request, env, {
         verifyAdmin: verifyAdminViaExistingApi
       });
       if (response) return response;
