@@ -1,3 +1,5 @@
+import { ASSISTANT_PRIVACY_POLICY_VERSION } from "./assistant-consent-contract.js";
+
 export const ASSISTANT_PUBLIC_REQUEST_POLICY = Object.freeze({
   path: "/api/assistant",
   method: "POST",
@@ -7,16 +9,21 @@ export const ASSISTANT_PUBLIC_REQUEST_POLICY = Object.freeze({
   maxMessageChars: 2500,
   maxSessionTokenChars: 24000,
   maxTurnstileTokenChars: 4096,
+  maxPrivacyPolicyVersionChars: 80,
   turnstileAction: "assistant",
   rateLimitBinding: "ASSISTANT_RATE_LIMITER",
-  retryAfterSeconds: 60
+  retryAfterSeconds: 60,
+  operations: Object.freeze(["message", "consent"]),
+  consentActions: Object.freeze(["authorize", "cancel"])
 });
 
 const ALLOWED_BODY_KEYS = new Set([
   "message",
   "language",
   "sessionToken",
-  "turnstileToken"
+  "turnstileToken",
+  "consentAction",
+  "privacyPolicyVersion"
 ]);
 
 function cleanString(value, maxLength) {
@@ -59,6 +66,78 @@ export function assistantPublicRateLimitConfig() {
 export function assistantPublicRateLimitKey(request) {
   const ip = cleanString(request?.headers?.get?.("CF-Connecting-IP"), 120);
   return ip || "unknown-client";
+}
+
+function validateOperationFields(body, common) {
+  const rawConsentAction = cleanString(body.consentAction, 40).toLowerCase();
+  const hasConsentFields = Boolean(
+    rawConsentAction ||
+    body.privacyPolicyVersion !== undefined
+  );
+  const hasMessageField = body.message !== undefined && body.message !== null;
+
+  if (hasConsentFields && hasMessageField) {
+    return { ok: false, status: 400, error: "mixed_operation_not_allowed" };
+  }
+
+  if (hasConsentFields) {
+    if (!common.sessionToken) {
+      return { ok: false, status: 400, error: "consent_requires_session" };
+    }
+    if (!ASSISTANT_PUBLIC_REQUEST_POLICY.consentActions.includes(rawConsentAction)) {
+      return { ok: false, status: 400, error: "invalid_consent_action" };
+    }
+
+    const policyVersion = cleanString(
+      body.privacyPolicyVersion,
+      ASSISTANT_PUBLIC_REQUEST_POLICY.maxPrivacyPolicyVersionChars + 1
+    );
+    if (!policyVersion) {
+      return { ok: false, status: 400, error: "privacy_policy_version_required" };
+    }
+    if (policyVersion.length > ASSISTANT_PUBLIC_REQUEST_POLICY.maxPrivacyPolicyVersionChars) {
+      return { ok: false, status: 400, error: "privacy_policy_version_too_long" };
+    }
+    if (policyVersion !== ASSISTANT_PRIVACY_POLICY_VERSION) {
+      return { ok: false, status: 409, error: "privacy_policy_version_mismatch" };
+    }
+
+    return {
+      ok: true,
+      operation: "consent",
+      value: {
+        ...common,
+        consentAction: rawConsentAction,
+        privacyPolicyVersion: policyVersion,
+        message: null
+      }
+    };
+  }
+
+  const message = cleanString(
+    body.message,
+    ASSISTANT_PUBLIC_REQUEST_POLICY.maxMessageChars + 1
+  );
+  if (!message) {
+    return { ok: false, status: 400, error: "message_required" };
+  }
+  if (message.length > ASSISTANT_PUBLIC_REQUEST_POLICY.maxMessageChars) {
+    return { ok: false, status: 400, error: "message_too_long" };
+  }
+  if (message.includes("\u0000")) {
+    return { ok: false, status: 400, error: "invalid_message" };
+  }
+
+  return {
+    ok: true,
+    operation: "message",
+    value: {
+      ...common,
+      message,
+      consentAction: null,
+      privacyPolicyVersion: null
+    }
+  };
 }
 
 export async function validateAssistantPublicRequest(request) {
@@ -128,17 +207,6 @@ export async function validateAssistantPublicRequest(request) {
     return { ok: false, status: 400, error: "invalid_session_token" };
   }
 
-  const message = cleanString(body.message, ASSISTANT_PUBLIC_REQUEST_POLICY.maxMessageChars + 1);
-  if (!message) {
-    return { ok: false, status: 400, error: "message_required" };
-  }
-  if (message.length > ASSISTANT_PUBLIC_REQUEST_POLICY.maxMessageChars) {
-    return { ok: false, status: 400, error: "message_too_long" };
-  }
-  if (message.includes("\u0000")) {
-    return { ok: false, status: 400, error: "invalid_message" };
-  }
-
   const sessionToken = cleanString(
     body.sessionToken,
     ASSISTANT_PUBLIC_REQUEST_POLICY.maxSessionTokenChars + 1
@@ -158,18 +226,23 @@ export async function validateAssistantPublicRequest(request) {
     return { ok: false, status: 400, error: "turnstile_token_too_long" };
   }
 
+  const common = {
+    sessionToken: sessionToken || null,
+    language: normalizedLanguage(body.language),
+    turnstileToken
+  };
+  const operation = validateOperationFields(body, common);
+  if (!operation.ok) return operation;
+
   return {
     ok: true,
-    value: {
-      sessionToken: sessionToken || null,
-      language: normalizedLanguage(body.language),
-      message,
-      turnstileToken
-    },
+    operation: operation.operation,
+    value: operation.value,
     security: {
       expectedTurnstileAction: ASSISTANT_PUBLIC_REQUEST_POLICY.turnstileAction,
       rateLimit: assistantPublicRateLimitConfig(),
-      sessionTokenRequiresServerAuthentication: Boolean(sessionToken)
+      sessionTokenRequiresServerAuthentication: Boolean(sessionToken),
+      consentIsExplicitProductAction: operation.operation === "consent"
     }
   };
 }
