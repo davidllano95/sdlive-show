@@ -265,6 +265,7 @@ export async function captureAssistantLeadEffect(
     try {
       await failAssistantLeadCreate(env, {
         key,
+        requestId,
         errorCode: error?.code || "lead_capture_failed"
       }, { now });
     } catch {
