@@ -258,13 +258,16 @@
   function resetSecurity() {
     securityToken = "";
     try {
-      if (widgetId !== null && window.turnstile?.reset) {
-        window.turnstile.reset(widgetId);
+      if (widgetId !== null && window.turnstile?.remove) {
+        window.turnstile.remove(widgetId);
       }
     } catch {
-      // A failed reset simply leaves submit disabled until a fresh widget token exists.
+      // Fall through to a full container rebuild below.
     }
+    widgetId = null;
+    turnstileContainer?.replaceChildren();
     updateControls();
+    if (root?.dataset.open === "true") ensureSecurity();
   }
 
   function safeSessionToken(data) {
@@ -295,6 +298,7 @@
   }
 
   function handleApiError(response, data) {
+    setStatus("");
     if (data?.error === "session_expired") {
       sessionToken = null;
       clearConsent();
@@ -307,6 +311,7 @@
   }
 
   function handleApiSuccess(data) {
+    setStatus("");
     safeSessionToken(data);
     const reply = String(data?.reply || "").trim();
     if (reply) appendMessage("assistant", reply);
@@ -352,6 +357,7 @@
       if (!response.ok || !data?.ok) handleApiError(response, data);
       else handleApiSuccess(data);
     } catch {
+      setStatus("");
       appendMessage("system", text().network, "SD.Live");
     } finally {
       busy = false;
@@ -380,6 +386,7 @@
       if (!response.ok || !data?.ok) handleApiError(response, data);
       else handleApiSuccess(data);
     } catch {
+      setStatus("");
       appendMessage("system", text().network, "SD.Live");
     } finally {
       busy = false;
