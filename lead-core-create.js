@@ -2,7 +2,6 @@ import {
   LEAD_CORE_SOURCES,
   normalizeLeadCoreInput
 } from "./lead-core.js";
-import { ensureLeadCoreStorageSchema } from "./lead-core-storage.js";
 
 const LEGACY_REQUIRED_COLUMNS = Object.freeze([
   "id",
@@ -115,14 +114,6 @@ function missingColumns(columns, required) {
   return required.filter((name) => !columns.has(name));
 }
 
-/**
- * Pure compatibility analysis for the existing D1 `leads` table.
- *
- * For legacy CHECK constraints this is deliberately conservative: if a CHECK
- * references `type`, a new canonical source is accepted only when the CHECK
- * expression itself explicitly contains that source literal. We prefer a
- * deliberate migration over silently disguising an Assistant lead as Contact.
- */
 export function analyzeLeadStorageCompatibility({
   source,
   columns: columnRows,
@@ -171,9 +162,6 @@ export function analyzeLeadStorageCompatibility({
     };
   }
 
-  // Direct Lead Core creation always starts at `new`. Existing public Contact
-  // and Rental already prove this status in production, but checking it here
-  // keeps the adapter safe if the physical table is ever replaced.
   const statusCheck = checksDemonstrablyAllowValue(tableSql, "status", "new");
   if (!statusCheck.allowed) {
     return {
@@ -204,17 +192,14 @@ export function analyzeLeadStorageCompatibility({
 }
 
 /**
- * Inspect the real D1 table before any future Assistant write is attempted.
- * No INSERT/UPDATE/DELETE is performed here.
+ * Strictly read-only inspection of the real D1 `leads` table.
+ * It performs only PRAGMA/SELECT metadata reads and never calls schema helpers.
  */
 export async function inspectLeadStorageCompatibility(
   env,
-  source = "assistant",
-  { ensureSchema = ensureLeadCoreStorageSchema } = {}
+  source = "assistant"
 ) {
   const normalized = normalizedSource(source);
-  await ensureSchema(env);
-
   const db = databaseFromEnv(env);
   const [tableInfo, schemaRow] = await Promise.all([
     db.prepare("PRAGMA table_info(leads)").all(),
@@ -276,13 +261,6 @@ function pushBound(columns, placeholders, values, name, value) {
   values.push(value ?? null);
 }
 
-/**
- * Create one canonical Lead Core record in the existing `leads` table.
- *
- * This intentionally does NOT record public privacy consent and is not wired to
- * an HTTP route. A future Assistant endpoint must satisfy its consent/security
- * gate before invoking this adapter.
- */
 export async function createLeadCoreRecord(
   env,
   value,
@@ -329,13 +307,7 @@ export async function createLeadCoreRecord(
 
   pushBound(columns, placeholders, values, "source", lead.source);
   pushBound(columns, placeholders, values, "service_category", lead.serviceCategory);
-  pushBound(
-    columns,
-    placeholders,
-    values,
-    "preferred_contact_channel",
-    lead.contact.preferredChannel
-  );
+  pushBound(columns, placeholders, values, "preferred_contact_channel", lead.contact.preferredChannel);
   pushBound(columns, placeholders, values, "contact_phone", lead.contact.phone);
   pushBound(columns, placeholders, values, "contact_whatsapp", lead.contact.whatsapp);
   pushBound(columns, placeholders, values, "contact_other", lead.contact.other);
