@@ -70,6 +70,22 @@ function canonicalPrivacyIndex(sql) {
     normalized.includes("source");
 }
 
+function exactPrivacyRelatedObjects(objects) {
+  const names = (Array.isArray(objects) ? objects : [])
+    .map((item) => String(item?.name || ""))
+    .filter(Boolean)
+    .sort();
+  const expected = [PRIVACY_INDEX, "privacy_consents"].sort();
+  return names.length === expected.length &&
+    names.every((name, index) => name === expected[index]);
+}
+
+function findSchemaObject(objects, name) {
+  return (Array.isArray(objects) ? objects : []).find(
+    (item) => String(item?.name || "") === name
+  ) || null;
+}
+
 async function temporaryObjectsPresent(db) {
   const placeholders = TEMP_OBJECTS.map(() => "?").join(", ");
   const result = await db
@@ -92,22 +108,14 @@ async function countPrivacyRows(db) {
 }
 
 async function readPrivacySchema(db) {
-  const [table, index] = await Promise.all([
-    db.prepare(`
-      SELECT sql FROM sqlite_master
-      WHERE type = 'table' AND name = 'privacy_consents'
-      LIMIT 1
-    `).first(),
-    db.prepare(`
-      SELECT sql FROM sqlite_master
-      WHERE type = 'index' AND name = '${PRIVACY_INDEX}'
-      LIMIT 1
-    `).first()
-  ]);
-  return {
-    tableSql: String(table?.sql || ""),
-    indexSql: String(index?.sql || "")
-  };
+  const result = await db.prepare(`
+    SELECT type, name, sql
+    FROM sqlite_master
+    WHERE tbl_name = 'privacy_consents'
+      AND sql IS NOT NULL
+    ORDER BY type, name
+  `).all();
+  return Array.isArray(result?.results) ? result.results : [];
 }
 
 export function planAssistantStoragePreparation(preflight = {}) {
@@ -163,7 +171,7 @@ export async function inspectAssistantStoragePreparationReadiness(
   { inspect = inspectAssistantStoragePreflight } = {}
 ) {
   const db = databaseFromEnv(env);
-  const [preflight, schema, tempObjects, fkViolations, privacyCount] = await Promise.all([
+  const [preflight, privacyObjects, tempObjects, fkViolations, privacyCount] = await Promise.all([
     inspect(env),
     readPrivacySchema(db),
     temporaryObjectsPresent(db),
@@ -175,10 +183,15 @@ export async function inspectAssistantStoragePreparationReadiness(
   const blockers = [...plan.blockers];
 
   if (!plan.ready) {
-    if (!exactLegacyPrivacySchema(schema.tableSql)) {
+    const privacyTable = findSchemaObject(privacyObjects, "privacy_consents");
+    const privacyIndex = findSchemaObject(privacyObjects, PRIVACY_INDEX);
+    if (!exactPrivacyRelatedObjects(privacyObjects)) {
+      blockers.push({ area: "privacy_consents", reason: "unexpected_related_schema" });
+    }
+    if (!exactLegacyPrivacySchema(privacyTable?.sql)) {
       blockers.push({ area: "privacy_consents", reason: "unexpected_physical_schema" });
     }
-    if (!canonicalPrivacyIndex(schema.indexSql)) {
+    if (!canonicalPrivacyIndex(privacyIndex?.sql)) {
       blockers.push({ area: "privacy_consents", reason: "unexpected_canonical_index" });
     }
   }
