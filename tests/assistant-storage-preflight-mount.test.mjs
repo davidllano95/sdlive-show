@@ -6,7 +6,7 @@ async function source(path) {
   return readFile(new URL(`../${path}`, import.meta.url), "utf8");
 }
 
-test("preflight is mounted only on the protected Admin route", async () => {
+test("preflight stays protected and ordered before public Assistant runtime", async () => {
   const worker = await source("public-form-rate-limit.js");
 
   assert.match(
@@ -15,25 +15,26 @@ test("preflight is mounted only on the protected Admin route", async () => {
   );
   assert.match(worker, /if \(path === "\/api\/admin\/assistant\/preflight"\)/);
   assert.match(worker, /verifyAdmin: verifyAdminViaExistingApi/);
-
-  assert.doesNotMatch(worker, /handleAssistantApi/);
-  assert.doesNotMatch(worker, /if \(path === "\/api\/assistant"\)/);
+  assert.match(worker, /import \{ handleAssistantApi \} from "\.\/assistant-api\.js"/);
+  assert.match(worker, /if \(path === "\/api\/assistant"\)/);
 
   const preflightIndex = worker.indexOf('if (path === "/api/admin/assistant/preflight")');
+  const publicAssistantIndex = worker.indexOf('if (path === "/api/assistant")');
   const legacyPipelineIndex = worker.indexOf("const limited = await enforcePublicFormRateLimit");
   assert.ok(preflightIndex >= 0);
-  assert.ok(legacyPipelineIndex > preflightIndex);
+  assert.ok(publicAssistantIndex > preflightIndex);
+  assert.ok(legacyPipelineIndex > publicAssistantIndex);
 });
 
-test("preflight PR adds no Assistant public limiter or runtime configuration", async () => {
+test("rollout integration keeps dedicated Assistant limiter without changing stable deploy entry", async () => {
   const wrangler = JSON.parse(await source("wrangler.jsonc"));
   const names = wrangler.ratelimits.map((entry) => entry.name).sort();
 
   assert.deepEqual(names, [
+    "ASSISTANT_RATE_LIMITER",
     "CONTACT_FORM_RATE_LIMITER",
     "RENTAL_FORM_RATE_LIMITER"
   ]);
-  assert.equal("ASSISTANT_RATE_LIMITER" in Object.fromEntries(names.map((name) => [name, true])), false);
   assert.equal("OPENAI_ASSISTANT_MODEL" in wrangler.vars, false);
   assert.equal(wrangler.main, "./admin-stabilization-worker.js");
 });
