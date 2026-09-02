@@ -268,6 +268,7 @@ export async function failAssistantLeadCreate(
   env,
   {
     key,
+    requestId,
     errorCode
   },
   { now = new Date() } = {}
@@ -276,6 +277,7 @@ export async function failAssistantLeadCreate(
   await ensureAssistantIdempotencyStorage(env);
 
   const safeKey = validKey(key);
+  const safeRequestId = validRequestId(requestId);
   const nowIso = iso(now);
   const code = safeErrorCode(errorCode);
 
@@ -287,7 +289,8 @@ export async function failAssistantLeadCreate(
       error_code = ?
     WHERE idempotency_key = ?
       AND status = 'reserved'
-  `).bind(nowIso, code, safeKey).run();
+      AND request_id = ?
+  `).bind(nowIso, code, safeKey, safeRequestId).run();
 
   return publicReservation(await readReservation(db, safeKey), false);
 }
