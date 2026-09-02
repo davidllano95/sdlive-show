@@ -16,6 +16,7 @@ function readyEnv() {
     OPENAI_ASSISTANT_MODEL: "gpt-5-mini",
     ASSISTANT_SESSION_KEY: base64Url32(),
     TURNSTILE_SECRET_KEY: "turnstile-secret-value-that-must-never-leak",
+    ASSISTANT_TURNSTILE_SITE_KEY: "0x4AAAAAA-public-browser-site-key",
     ASSISTANT_RATE_LIMITER: {
       async limit() { return { success: true }; }
     },
@@ -41,12 +42,15 @@ test("runtime readiness reports all configured dependencies without touching net
   assert.deepEqual(result.missingBindings, []);
   assert.deepEqual(result.invalidBindings, []);
   assert.equal(Object.values(result.dependencies).every((entry) => entry.ready), true);
+  assert.equal(result.dependencies.turnstile.browserSiteKeyConfigured, true);
+  assert.equal(result.dependencies.turnstile.serverSecretConfigured, true);
 
   const serialized = JSON.stringify(result);
   assert.equal(serialized.includes(env.OPENAI_API_KEY), false);
   assert.equal(serialized.includes(env.TURNSTILE_SECRET_KEY), false);
   assert.equal(serialized.includes(env.RESEND_API_KEY), false);
   assert.equal(serialized.includes(env.ASSISTANT_SESSION_KEY), false);
+  assert.equal(serialized.includes(env.ASSISTANT_TURNSTILE_SITE_KEY), false);
 });
 
 test("missing runtime bindings are named without revealing values", () => {
@@ -59,6 +63,7 @@ test("missing runtime bindings are named without revealing values", () => {
     "ASSISTANT_LEAD_NOTIFICATION_TO",
     "ASSISTANT_RATE_LIMITER",
     "ASSISTANT_SESSION_KEY",
+    "ASSISTANT_TURNSTILE_SITE_KEY",
     "CMS_DB",
     "OPENAI_API_KEY",
     "OPENAI_ASSISTANT_MODEL",
@@ -97,6 +102,7 @@ test("readiness policy explicitly forbids secret disclosure and runtime effects"
       "OPENAI_ASSISTANT_MODEL",
       "ASSISTANT_SESSION_KEY",
       "TURNSTILE_SECRET_KEY",
+      "ASSISTANT_TURNSTILE_SITE_KEY",
       "ASSISTANT_RATE_LIMITER",
       "CMS_DB",
       "RESEND_API_KEY",
