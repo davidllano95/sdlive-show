@@ -6,9 +6,9 @@
 
 Last reconciliation: **2026-09-02 — America/Bogota**
 
-Current verified runtime baseline:
+Current verified `main` before this docs-only follow-up:
 
-`259b68b2d94b5fca7dcfe13bec79ace40792fff8` — PR #225.
+`5b709f5cb3a7923d25ac1f8062ae3458b02fc806` — PR #226.
 
 ## Legend
 
@@ -22,18 +22,20 @@ Current verified runtime baseline:
 
 **UNMERGED != PRODUCTION. CI PASS != PRODUCTION SMOKE PASS.**
 
-# Current Active Gate — Assistant runtime configuration
+# Current Active Gate — Assistant runtime readiness verification
 
-The backend is deployed and the public feature remains OFF. Production runtime readiness is read-only and reports four missing bindings.
+The backend is deployed and the public feature remains OFF.
 
-Missing:
+The first production readiness probe identified four missing bindings. The owner has now entered all four in Cloudflare:
 
 - `ASSISTANT_SESSION_KEY`
 - `ASSISTANT_TURNSTILE_SITE_KEY`
 - `OPENAI_API_KEY`
 - `OPENAI_ASSISTANT_MODEL`
 
-Already ready:
+This is **owner-reported configuration, not yet verified runtime PASS**. The next action is one authenticated readiness GET.
+
+Already verified ready from the first probe:
 
 - D1 binding
 - Assistant rate limiter
@@ -83,7 +85,7 @@ Completed work includes:
 - `privacy_consents` accepts `assistant`;
 - canonical unique consent index preserved;
 - `assistant_effect_reservations` created with canonical constraints/index;
-- production preflight now returns `readyForAssistantLeadCapture:true`.
+- production preflight returns `readyForAssistantLeadCapture:true`.
 
 Relevant final PRs:
 
@@ -108,27 +110,46 @@ Old #216 is CLOSED WITHOUT MERGE / superseded by #224.
 
 Old #213 is CLOSED WITHOUT MERGE / superseded by #225.
 
-## D. Runtime configuration
+## D. Runtime configuration/readiness
 
 🚧 **CURRENT ACTIVE GATE.**
 
-Production readiness after #225 deployment:
+First production readiness after #225 deployment:
 
 - `readyForRuntimeConfiguration:false`
 - `readyForPublicEnablement:false`
 - public exposure disabled
 - no runtime network/storage mutation in readiness probe
 
-Required next:
+Owner has since configured the four previously missing bindings. Required next:
 
-- configure 32-byte Base64URL `ASSISTANT_SESSION_KEY`;
-- configure public Turnstile site key as `ASSISTANT_TURNSTILE_SITE_KEY`;
-- configure `OPENAI_API_KEY` as secret;
-- configure `OPENAI_ASSISTANT_MODEL`;
-- keep `ASSISTANT_PUBLIC_ENABLED` absent/false;
-- rerun authenticated readiness and require all runtime dependencies ready.
+- rerun authenticated readiness;
+- require `readyForRuntimeConfiguration:true`;
+- require all runtime dependencies ready;
+- require `missingBindings:[]` and `invalidBindings:[]`;
+- require `publicExposure.enabled:false`;
+- keep `ASSISTANT_PUBLIC_ENABLED` absent/false.
 
-## E. PR #215 — public widget
+## E. Turnstile Siteverify warning
+
+🚧 **MANDATORY SECURITY FOLLOW-UP BEFORE FINAL PUBLIC ENABLEMENT.**
+
+Cloudflare Turnstile dashboard currently shows this warning for the existing widget **SD.Live Forms**:
+
+`Siteverify isn't being called for SD.Live Forms`
+
+Required investigation:
+
+- inspect the real Contact/Rental submission path;
+- determine whether submitted Turnstile tokens are actually verified server-side against Cloudflare Siteverify;
+- determine whether the dashboard warning is a detection false positive or a real validation gap;
+- if a gap exists, fix it and regression-test Contact/Rental;
+- do not weaken the Assistant's separate Turnstile validation boundary;
+- close/disposition this warning before `ASSISTANT_PUBLIC_ENABLED=true`.
+
+This warning is not evidence by itself that the Assistant readiness probe will fail; it concerns the existing SD.Live Forms widget and must be investigated separately.
+
+## F. PR #215 — public widget
 
 🟡 **OPEN / DRAFT / UNMERGED / NOT PRODUCTION.**
 
@@ -136,15 +157,15 @@ Required next:
 - Do not merge directly.
 - Reverify/rebase only after runtime readiness is fully green with flag OFF.
 - Merge while flag remains OFF.
-- Explicit public enablement happens only after widget merge + CI.
+- Explicit public enablement happens only after widget merge + CI and after the Turnstile Siteverify warning has been dispositioned.
 
-## F. PR #218 — temporary integration proof
+## G. PR #218 — temporary integration proof
 
 🧪 **CLOSED WITHOUT MERGE / TEMP VALIDATION ONLY / PASS**.
 
 Do not reopen or merge.
 
-## G. PR #191 — Availability owner WhatsApp transport
+## H. PR #191 — Availability owner WhatsApp transport
 
 🟡 **OPEN / separate workstream.**
 
@@ -164,12 +185,14 @@ Do not touch unless explicitly reprioritized.
 - [x] #225 squash merged.
 - [x] `main` post-merge Tests #620 PASS.
 - [x] Authenticated production runtime readiness smoke with public flag OFF.
-- [ ] Configure four missing runtime bindings.
+- [x] Owner entered the four previously missing runtime bindings in Cloudflare (pending runtime verification).
 - [ ] Re-run `/api/admin/assistant/readiness` and reach runtime-ready state with public flag OFF.
+- [ ] Investigate Cloudflare `Siteverify isn't being called for SD.Live Forms` warning.
+- [ ] If real gap, fix server-side Contact/Rental Turnstile verification and regression-test.
 - [ ] Reverify/rebase #215 onto current `main`.
 - [ ] CI PASS for rebased widget.
 - [ ] Merge #215 while flag OFF.
-- [ ] Explicitly enable `ASSISTANT_PUBLIC_ENABLED=true`.
+- [ ] Explicitly enable `ASSISTANT_PUBLIC_ENABLED=true` only after Turnstile warning disposition.
 - [ ] Final Assistant E2E, one manual action at a time.
 - [ ] Confirm existing Contact/Rental remain functional after final enablement.
 
@@ -288,4 +311,4 @@ Do not run as one bundled manual instruction.
 
 # Exact continuation
 
-**Configure the four missing runtime bindings while keeping the public flag OFF, then rerun authenticated runtime readiness. Only after that result is fully green should #215 be rebased/integrated.**
+**Run one authenticated Assistant runtime readiness GET. If fully green with the public flag OFF, investigate/disposition the SD.Live Forms Siteverify warning before final public enablement, then rebase/integrate #215.**
