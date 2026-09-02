@@ -192,14 +192,19 @@ export function analyzeLeadStorageCompatibility({
 }
 
 /**
- * Strictly read-only inspection of the real D1 `leads` table.
- * It performs only PRAGMA/SELECT metadata reads and never calls schema helpers.
+ * Read-only by default. The optional ensureSchema hook exists only for an
+ * explicit migration/test caller; the Assistant runtime never supplies it.
  */
 export async function inspectLeadStorageCompatibility(
   env,
-  source = "assistant"
+  source = "assistant",
+  { ensureSchema = null } = {}
 ) {
   const normalized = normalizedSource(source);
+  if (typeof ensureSchema === "function") {
+    await ensureSchema(env);
+  }
+
   const db = databaseFromEnv(env);
   const [tableInfo, schemaRow] = await Promise.all([
     db.prepare("PRAGMA table_info(leads)").all(),
