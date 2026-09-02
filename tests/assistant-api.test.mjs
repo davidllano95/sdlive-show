@@ -85,7 +85,9 @@ test("API policy reflects the narrow runtime mount and explicitly separates mess
     sessionPersistence: "sealed_browser_token",
     transcriptPersistence: false,
     rateLimitBeforeTurnstile: true,
-    turnstileBeforeSessionDecrypt: true,
+    turnstileBeforeSessionDecrypt: false,
+    turnstileRequiredForNewSession: true,
+    sealedSessionReplacesRepeatTurnstile: true,
     leadSourceOfTruth: "leads",
     notificationTransport: "resend",
     financeWrites: false
@@ -175,8 +177,7 @@ test("explicit authorize click captures directly from sealed structured slots wi
     sessionToken: SESSION_TOKEN,
     language: "es",
     consentAction: "authorize",
-    privacyPolicyVersion: ASSISTANT_PRIVACY_POLICY_VERSION,
-    turnstileToken: "token"
+    privacyPolicyVersion: ASSISTANT_PRIVACY_POLICY_VERSION
   }), {}, baseOptions({
     unsealSession: async () => ({ state, consentEvidence: null }),
     sealSession: async (_env, envelope) => {
@@ -219,8 +220,7 @@ test("cancel never calls model, capture or notification", async () => {
   const response = await handleAssistantApi(request({
     sessionToken: SESSION_TOKEN,
     consentAction: "cancel",
-    privacyPolicyVersion: ASSISTANT_PRIVACY_POLICY_VERSION,
-    turnstileToken: "token"
+    privacyPolicyVersion: ASSISTANT_PRIVACY_POLICY_VERSION
   }), {}, baseOptions({
     unsealSession: async () => ({ state, consentEvidence: null }),
     runTurn: async () => { effects += 1; },
@@ -242,8 +242,7 @@ test("incomplete structured lead fails before claiming submission", async () => 
   const response = await handleAssistantApi(request({
     sessionToken: SESSION_TOKEN,
     consentAction: "authorize",
-    privacyPolicyVersion: ASSISTANT_PRIVACY_POLICY_VERSION,
-    turnstileToken: "token"
+    privacyPolicyVersion: ASSISTANT_PRIVACY_POLICY_VERSION
   }), {}, baseOptions({
     unsealSession: async () => ({ state, consentEvidence: null }),
     createDependencies: () => ({
@@ -269,8 +268,7 @@ test("notification failure after persisted lead returns degraded success, never 
   const response = await handleAssistantApi(request({
     sessionToken: SESSION_TOKEN,
     consentAction: "authorize",
-    privacyPolicyVersion: ASSISTANT_PRIVACY_POLICY_VERSION,
-    turnstileToken: "token"
+    privacyPolicyVersion: ASSISTANT_PRIVACY_POLICY_VERSION
   }), {}, baseOptions({
     unsealSession: async () => ({ state, consentEvidence: null }),
     createDependencies: () => ({
@@ -312,37 +310,68 @@ test("rate limiter blocks before Turnstile and model", async () => {
   assert.equal(modelCalls, 0);
 });
 
-test("Turnstile failure blocks session decrypt and model", async () => {
-  let unsealCalls = 0;
+test("new-session Turnstile failure blocks model before a usable session token is issued", async () => {
   let modelCalls = 0;
+  let sealCalls = 0;
   const response = await handleAssistantApi(request({
-    sessionToken: SESSION_TOKEN,
     message: "Hello",
     turnstileToken: "bad"
   }), {}, baseOptions({
     verifyTurnstile: async () => ({ ok: false, reason: "turnstile_failed" }),
-    unsealSession: async () => { unsealCalls += 1; },
+    sealSession: async () => { sealCalls += 1; return SESSION_TOKEN; },
     runTurn: async () => { modelCalls += 1; }
   }));
 
   const data = await body(response);
   assert.equal(response.status, 400);
   assert.equal(data.error, "turnstile_failed");
-  assert.equal(unsealCalls, 0);
   assert.equal(modelCalls, 0);
+  assert.equal(sealCalls, 0);
 });
 
-test("tampered and expired sealed sessions fail without model or D1 effects", async () => {
+test("authenticated sealed session skips repeat Turnstile and can continue normally", async () => {
+  const state = freshSession("en");
+  let turnstileCalls = 0;
+  let modelCalls = 0;
+  const response = await handleAssistantApi(request({
+    sessionToken: SESSION_TOKEN,
+    message: "Second turn"
+  }), {}, baseOptions({
+    verifyTurnstile: async () => { turnstileCalls += 1; return { ok: false }; },
+    unsealSession: async () => ({ state, consentEvidence: null }),
+    runTurn: async (_env, input) => {
+      modelCalls += 1;
+      return {
+        kind: "reply",
+        language: "en",
+        reply: "Continuing.",
+        serviceCategory: "theatre",
+        session: input.session,
+        toolResults: []
+      };
+    }
+  }));
+
+  const data = await body(response);
+  assert.equal(response.status, 200);
+  assert.equal(data.ok, true);
+  assert.equal(data.kind, "reply");
+  assert.equal(turnstileCalls, 0);
+  assert.equal(modelCalls, 1);
+});
+
+test("tampered and expired sealed sessions fail without Turnstile, model or D1 effects", async () => {
   for (const [code, expectedStatus, expectedError] of [
     ["SESSION_TOKEN_INVALID", 400, "session_invalid"],
     ["SESSION_TOKEN_EXPIRED", 409, "session_expired"]
   ]) {
     let effects = 0;
+    let turnstileCalls = 0;
     const response = await handleAssistantApi(request({
       sessionToken: SESSION_TOKEN,
-      message: "Hello",
-      turnstileToken: "token"
+      message: "Hello"
     }), {}, baseOptions({
+      verifyTurnstile: async () => { turnstileCalls += 1; return { ok: true }; },
       unsealSession: async () => {
         const error = new Error("private token detail");
         error.code = code;
@@ -357,6 +386,7 @@ test("tampered and expired sealed sessions fail without model or D1 effects", as
     const data = await body(response);
     assert.equal(response.status, expectedStatus);
     assert.equal(data.error, expectedError);
+    assert.equal(turnstileCalls, 0);
     assert.equal(effects, 0);
     assert.equal(JSON.stringify(data).includes("private token detail"), false);
   }
