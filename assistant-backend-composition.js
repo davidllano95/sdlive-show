@@ -4,6 +4,7 @@ import {
   isFreshAssistantConsentEvidence
 } from "./assistant-consent-contract.js";
 import { buildAssistantHandoff } from "./assistant-handoff.js";
+import { captureAssistantLeadEffect } from "./assistant-lead-capture-effect.js";
 import {
   assistantModelOutputJsonSchema,
   validateAssistantModelOutput
@@ -85,7 +86,7 @@ export function createAssistantBackendDependencies(
     providerFetch = globalThis.fetch,
     availabilityReader = readAssistantAvailability,
     rentalResolver = resolveAssistantRentalQuery,
-    captureLeadEffect = null,
+    captureLeadEffect = captureAssistantLeadEffect,
     notificationSend = defaultNotificationSend,
     notificationFetch = globalThis.fetch,
     now = () => new Date()
@@ -179,7 +180,7 @@ export function assistantBackendCompositionPolicy() {
     rentalAuthority: "deterministic_rental_boundary",
     consentAuthority: "product_server",
     leadSourceOfTruth: "leads",
-    leadCaptureRequiresExplicitPersistenceAdapter: true,
+    leadCapturePersistence: "atomic_d1_lead_consent_idempotency",
     notificationTransport: "resend",
     financeWrites: false
   });
