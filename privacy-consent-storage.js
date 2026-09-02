@@ -9,6 +9,14 @@ export const WEBSITE_PRIVACY_AUTHORIZATION_METHOD = "website_confirmation_modal"
 
 const schemaPromises = new WeakMap();
 const MIGRATION_TABLE = "privacy_consents__assistant_migration";
+const PRIVACY_REQUIRED_COLUMNS = Object.freeze([
+  "id",
+  "lead_id",
+  "source",
+  "privacy_consent_at",
+  "privacy_policy_version",
+  "authorization_method"
+]);
 
 function databaseFromEnv(env) {
   const db = env?.CMS_DB;
@@ -56,6 +64,73 @@ export function privacyConsentSchemaSupportsAssistant(tableSql) {
   return sourceCheck[1].includes("'assistant'") || sourceCheck[1].includes('"assistant"');
 }
 
+function missingPrivacyColumns(rows) {
+  const names = new Set(
+    (Array.isArray(rows) ? rows : [])
+      .map((row) => String(row?.name || "").trim())
+      .filter(Boolean)
+  );
+  return PRIVACY_REQUIRED_COLUMNS.filter((name) => !names.has(name));
+}
+
+export function analyzePrivacyConsentStorageCompatibility({
+  columns,
+  tableSql,
+  canonicalIndexSql
+} = {}) {
+  const sql = String(tableSql || "").trim();
+  const missingColumns = missingPrivacyColumns(columns);
+  const tableExists = Boolean(sql);
+  const assistantSourceAllowed = tableExists && privacyConsentSchemaSupportsAssistant(sql);
+  const hasCanonicalUniqueIndex = /create\s+unique\s+index/i.test(
+    String(canonicalIndexSql || "")
+  );
+
+  let reason = "compatible";
+  if (!tableExists) reason = "table_missing";
+  else if (missingColumns.length) reason = "required_columns_missing";
+  else if (!assistantSourceAllowed) reason = "assistant_source_not_allowed";
+  else if (!hasCanonicalUniqueIndex) reason = "canonical_unique_index_missing";
+
+  return {
+    ok: true,
+    canRecordAssistantConsent: reason === "compatible",
+    reason,
+    tableExists,
+    missingColumns,
+    assistantSourceAllowed,
+    hasCanonicalUniqueIndex
+  };
+}
+
+/** Strictly read-only privacy-consent schema inspection. */
+export async function inspectPrivacyConsentStorageCompatibility(env) {
+  const db = databaseFromEnv(env);
+  const [tableInfo, tableRow, indexRow] = await Promise.all([
+    db.prepare("PRAGMA table_info(privacy_consents)").all(),
+    db.prepare(`
+      SELECT sql
+      FROM sqlite_master
+      WHERE type = 'table'
+        AND name = 'privacy_consents'
+      LIMIT 1
+    `).first(),
+    db.prepare(`
+      SELECT sql
+      FROM sqlite_master
+      WHERE type = 'index'
+        AND name = 'idx_privacy_consents_lead_source'
+      LIMIT 1
+    `).first()
+  ]);
+
+  return analyzePrivacyConsentStorageCompatibility({
+    columns: tableInfo?.results,
+    tableSql: tableRow?.sql,
+    canonicalIndexSql: indexRow?.sql
+  });
+}
+
 async function readPrivacyConsentTableSql(db) {
   const row = await db.prepare(`
     SELECT sql
@@ -100,14 +175,7 @@ async function rebuildLegacyPrivacyConsentTable(db) {
   ]);
 }
 
-/**
- * Ensure the single canonical privacy-consent table accepts Assistant records.
- *
- * Existing Contact/Rental rows are preserved byte-for-byte at the SQL-column
- * level during the legacy CHECK-constraint rebuild. SQLite cannot alter a
- * CHECK constraint in place, so the migration deliberately rebuilds the same
- * table name rather than introducing a second consent source of truth.
- */
+/** Explicit schema preparation helper. Never called by the Assistant public runtime. */
 export async function ensurePrivacyConsentStorageSchema(env) {
   const db = databaseFromEnv(env);
   if (schemaPromises.has(db)) return schemaPromises.get(db);
@@ -147,12 +215,6 @@ export async function ensurePrivacyConsentStorageSchema(env) {
   return promise;
 }
 
-/**
- * Persist one explicit consent against an already-created lead.
- *
- * This helper does not decide whether a UI interaction constitutes consent.
- * The future Assistant route must make that decision before calling it.
- */
 export async function recordPrivacyConsent(
   env,
   {
