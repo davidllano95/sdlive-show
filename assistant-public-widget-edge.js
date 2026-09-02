@@ -1,4 +1,4 @@
-const ASSISTANT_WIDGET_VERSION = "20260901-1";
+const ASSISTANT_WIDGET_VERSION = "20260902-1";
 
 function enabled(env) {
   return String(env?.ASSISTANT_PUBLIC_ENABLED || "").trim().toLowerCase() === "true";
@@ -44,14 +44,16 @@ function panelHtml(turnstileSiteKey) {
       <button class="assistant-panel__close" type="button" data-sdlive-assistant-close aria-label="Close Assistant">×</button>
     </header>
 
-    <div class="assistant-panel__messages" id="sdliveAssistantMessages" role="log" aria-live="polite" aria-relevant="additions">
-      <article class="assistant-message assistant-message--assistant" data-assistant-welcome>
-        <span class="assistant-message__label">SD.Live Assistant</span>
-        <p data-en="Tell me what you're planning — live sound, theatre, sound design, systems or rental — and I'll help organize the request." data-es="Cuéntame qué estás planeando — sonido en vivo, teatro, diseño sonoro, sistemas o alquiler — y te ayudo a organizar la solicitud.">Tell me what you're planning — live sound, theatre, sound design, systems or rental — and I'll help organize the request.</p>
-      </article>
-    </div>
+    <div class="assistant-panel__conversation">
+      <div class="assistant-panel__messages" id="sdliveAssistantMessages" role="log" aria-live="polite" aria-relevant="additions">
+        <article class="assistant-message assistant-message--assistant" data-assistant-welcome>
+          <span class="assistant-message__label">SD.Live Assistant</span>
+          <p data-en="Tell me what you're planning — live sound, theatre, sound design, systems or rental — and I'll help organize the request." data-es="Cuéntame qué estás planeando — sonido en vivo, teatro, diseño sonoro, sistemas o alquiler — y te ayudo a organizar la solicitud.">Tell me what you're planning — live sound, theatre, sound design, systems or rental — and I'll help organize the request.</p>
+        </article>
+      </div>
 
-    <div class="assistant-panel__consent" id="sdliveAssistantConsent" hidden></div>
+      <div class="assistant-panel__consent" id="sdliveAssistantConsent" hidden></div>
+    </div>
 
     <form class="assistant-panel__composer" id="sdliveAssistantForm">
       <label class="sr-only" for="sdliveAssistantInput" data-en="Message SD.Live Assistant" data-es="Mensaje para SD.Live Assistant">Message SD.Live Assistant</label>

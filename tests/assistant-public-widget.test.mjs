@@ -62,6 +62,26 @@ test("consent UI is rendered from the server contract and uses explicit product 
   assert.doesNotMatch(js, /privacyPolicyVersion:\s*"2026-/);
 });
 
+test("consent stays inside a bounded conversation region instead of competing with outer panel rows", async () => {
+  const edge = await source("assistant-public-widget-edge.js");
+  const css = await source("assistant-public-widget.css");
+
+  assert.match(
+    edge,
+    /assistant-panel__conversation[\s\S]*assistant-panel__messages[\s\S]*assistant-panel__consent/
+  );
+  assert.match(css, /grid-template-rows:\s*auto minmax\(0, 1fr\) auto auto;/);
+  assert.match(
+    css,
+    /\.assistant-panel__conversation\s*\{[\s\S]*?display:\s*flex;[\s\S]*?flex-direction:\s*column;[\s\S]*?overflow:\s*hidden;/
+  );
+  assert.match(
+    css,
+    /\.assistant-panel__messages\s*\{[\s\S]*?flex:\s*1 1 auto;[\s\S]*?overflow-y:\s*auto;/
+  );
+  assert.match(css, /\.assistant-panel__consent\s*\{[\s\S]*?flex:\s*0 0 auto;/);
+});
+
 test("widget has deterministic human fallbacks and exposes no owner phone", async () => {
   const edge = await source("assistant-public-widget-edge.js");
   const js = await source("assistant-public-widget.js");
