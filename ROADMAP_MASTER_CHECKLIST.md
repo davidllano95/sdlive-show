@@ -6,9 +6,9 @@
 
 Last reconciliation: **2026-09-02 — America/Bogota**
 
-Current verified runtime baseline before this docs-only milestone:
+Current verified runtime baseline:
 
-`1c8e594ce84d3f50d7c1412fcb5dfb29c8bc5da9` — PR #190.
+`259b68b2d94b5fca7dcfe13bec79ace40792fff8` — PR #225.
 
 ## Legend
 
@@ -22,7 +22,26 @@ Current verified runtime baseline before this docs-only milestone:
 
 **UNMERGED != PRODUCTION. CI PASS != PRODUCTION SMOKE PASS.**
 
-# Current Active Gate — SD.Live Assistant rollout
+# Current Active Gate — Assistant runtime configuration
+
+The backend is deployed and the public feature remains OFF. Production runtime readiness is read-only and reports four missing bindings.
+
+Missing:
+
+- `ASSISTANT_SESSION_KEY`
+- `ASSISTANT_TURNSTILE_SITE_KEY`
+- `OPENAI_API_KEY`
+- `OPENAI_ASSISTANT_MODEL`
+
+Already ready:
+
+- D1 binding
+- Assistant rate limiter
+- notification routing/provider config
+- Turnstile server secret
+- Assistant storage schema
+
+Do not enable `ASSISTANT_PUBLIC_ENABLED` yet.
 
 ## A. Lead Core foundation
 
@@ -36,9 +55,7 @@ Canonical statuses:
 - `confirmed`
 - `lost`
 
-Historical `qualified / won / archived` are not executable contract values.
-
-Lead sources relevant to current architecture:
+Lead sources:
 
 - `contact`
 - `rental`
@@ -53,121 +70,108 @@ Service categories:
 - `rental`
 - `other`
 
-PR #190 — **MERGED / CI PASS / PRODUCTION SMOKE PASS**. Lead status audit visibility is closed; do not mutate the QA lead again just to repeat smoke.
+## B. Assistant storage gate
 
-## B. PR #214 — read-only storage preflight
+✅ **CLOSED/PASS IN PRODUCTION.**
 
-🚧 **NEXT ROLLOUT SLICE**
+Completed work includes:
 
-Status: **OPEN / DRAFT / UNMERGED / MERGEABLE / CI PASS**.
+- read-only preflight;
+- exact migration of legacy `leads` preserving IDs/data and `project` type;
+- email made nullable;
+- `assistant` Lead type added;
+- `privacy_consents` accepts `assistant`;
+- canonical unique consent index preserved;
+- `assistant_effect_reservations` created with canonical constraints/index;
+- production preflight now returns `readyForAssistantLeadCapture:true`.
 
-- Branch: `preflight/assistant-storage-readonly`.
-- Head: `f5413158770254061d8b02a1d2c5113117fe5c0e`.
-- Tests #581 PASS.
-- Base: `main`.
-- Endpoint: authenticated `GET /api/admin/assistant/preflight`.
-- Metadata reads only (`PRAGMA` / `SELECT`).
-- Checks `leads`, `privacy_consents`, `assistant_effect_reservations`.
-- No create/alter/insert/update/delete.
-- No public Assistant, new limiter, Finance/Rental/Contact/Calendar/Availability changes.
+Relevant final PRs:
 
-After docs reconciliation: reverify #214 against resulting `main`, squash merge if clean, then perform exactly one production action: authenticated GET preflight.
+- #223 — confirmed exact Leads schema migration endpoint — merged and production PASS.
+- #224 — final supported Privacy + idempotency preparation — merged and production PASS.
 
-## C. PR #216 — conditional storage preparation
+Old #216 is CLOSED WITHOUT MERGE / superseded by #224.
 
-🟡 **OPEN / DRAFT / UNMERGED / MERGEABLE / CI PASS**.
+## C. Assistant backend — PR #225
 
-- Base: #214 branch, not `main`.
-- Head: `3ac0338a7896a7429316773dafe73bdf0e767025`.
-- Tests #596 PASS.
-- Admin-only POST `/api/admin/assistant/storage-prepare`.
-- Exact confirmation: `PREPARE_ASSISTANT_STORAGE`.
+✅ **MERGED / CI PASS / DEPLOYED WITH PUBLIC FLAG OFF.**
 
-Decision rule:
+- Squash merge: `259b68b2d94b5fca7dcfe13bec79ace40792fff8`.
+- PR tests PASS.
+- Post-merge `main` Tests #620 PASS.
+- `/api/assistant` mounted behind hard kill switch.
+- `/api/admin/assistant/readiness` mounted Admin-only.
+- dedicated `ASSISTANT_RATE_LIMITER` ready.
+- OpenAI Responses API / Structured Outputs / `store:false`.
+- sealed stateless session.
+- deterministic Availability/Rental/Lead boundaries.
 
-- #214 ready → do not merge/use #216;
-- only supported safe preparation missing → integrate #216, run once, rerun #214;
-- blocked/unknown `leads` schema → do not run #216; implement exact physical-schema migration only.
+Old #213 is CLOSED WITHOUT MERGE / superseded by #225.
 
-## D. PR #213 — Assistant backend
+## D. Runtime configuration
 
-🟡 **OPEN / DRAFT / UNMERGED / MERGEABLE / CI PASS / NOT PRODUCTION**.
+🚧 **CURRENT ACTIVE GATE.**
 
-- Head: `cce1144f8336d22cafe2a9b200de93152bd6bea2`.
-- Tests #594 PASS.
-- Consolidates validated preparatory logic from PRs #192–#212.
-- Includes approved EN/ES knowledge, policy, strict structured model output, deterministic Availability/Rental boundaries, explicit consent, sealed stateless session, Turnstile, dedicated limiter, idempotency, Lead capture, Resend handoff, OpenAI Responses boundary, orchestration and `/api/assistant`.
-- Public kill switch `ASSISTANT_PUBLIC_ENABLED` defaults OFF.
-- Admin readiness endpoint: `GET /api/admin/assistant/readiness`.
-- Public runtime never migrates D1 schema.
+Production readiness after #225 deployment:
 
-Do not merge until storage is ready, runtime readiness is ready, kill switch is OFF and CI passes after rebase/integration.
+- `readyForRuntimeConfiguration:false`
+- `readyForPublicEnablement:false`
+- public exposure disabled
+- no runtime network/storage mutation in readiness probe
+
+Required next:
+
+- configure 32-byte Base64URL `ASSISTANT_SESSION_KEY`;
+- configure public Turnstile site key as `ASSISTANT_TURNSTILE_SITE_KEY`;
+- configure `OPENAI_API_KEY` as secret;
+- configure `OPENAI_ASSISTANT_MODEL`;
+- keep `ASSISTANT_PUBLIC_ENABLED` absent/false;
+- rerun authenticated readiness and require all runtime dependencies ready.
 
 ## E. PR #215 — public widget
 
-🟡 **OPEN / DRAFT / UNMERGED / MERGEABLE / CI PASS / NOT PRODUCTION**.
+🟡 **OPEN / DRAFT / UNMERGED / NOT PRODUCTION.**
 
-- Base: #213 branch.
-- Head: `901961c11b9cd22ebf14cee251e4129b2e2c1be2`.
-- Tests #595 PASS.
-- Contact launcher, desktop modal/mobile bottom sheet, EN/ES, explicit Turnstile, in-memory conversation, sealed session, server-owned consent prompt, deterministic fallbacks.
-- Renders only when `ASSISTANT_PUBLIC_ENABLED=true` and valid Turnstile public key exists.
-
-Do not integrate before #213 is live and backend-smoked with flag OFF.
+- Prepared on old #213 lineage.
+- Do not merge directly.
+- Reverify/rebase only after runtime readiness is fully green with flag OFF.
+- Merge while flag remains OFF.
+- Explicit public enablement happens only after widget merge + CI.
 
 ## F. PR #218 — temporary integration proof
 
 🧪 **CLOSED WITHOUT MERGE / TEMP VALIDATION ONLY / PASS**.
 
-- Head: `6adb15bcf6897032e84fd58ff01f6ca63573782d`.
-- Tests #598 PASS.
-- Validated #213 + #214 + #216 + router coexistence.
-- Runtime was not weakened; only stale temporary test assumptions were corrected.
-- Do not reopen or merge.
+Do not reopen or merge.
 
 ## G. PR #191 — Availability owner WhatsApp transport
 
-🟡 **OPEN / UNMERGED / MERGEABLE**.
+🟡 **OPEN / separate workstream.**
 
-Separate workstream; does not displace Assistant Active Gate.
-
-- Meta WhatsApp Cloud API.
-- Signature verification.
-- Exact `phone_number_id`.
-- Exact owner sender allowlist.
-- Message-id idempotency.
-- Existing Availability owner parser.
-- Canonical Availability write path.
-- Deterministic reply.
-- No AI / Finance / Leads coupling.
-- Requires real Meta/Cloudflare configuration before smoke.
+Do not touch unless explicitly reprioritized.
 
 # Rollout checklist
 
 - [x] Availability Core v1 CLOSED/PASS.
 - [x] Lead Core operational workflow merged.
-- [x] Lead status audit visibility PR #190 production-smoked PASS.
-- [x] Backend architecture consolidated into #213.
-- [x] Read-only storage preflight prepared in #214.
-- [x] Conditional storage preparation prepared in #216.
-- [x] Public widget prepared in #215.
-- [x] Temporary combined integration #218 passed and was closed without merge.
-- [ ] Docs-only reconciliation merged.
-- [ ] Reverify #214 against current main.
-- [ ] Merge #214.
-- [ ] One authenticated production `GET /api/admin/assistant/preflight`.
-- [ ] Interpret actual D1 result.
-- [ ] Use #216 only if real preflight requires supported preparation.
-- [ ] Reach storage-ready state.
-- [ ] Configure runtime with public Assistant flag OFF.
-- [ ] Verify `/api/admin/assistant/readiness` one missing item at a time.
-- [ ] Rebase/integrate #213 and rerun CI.
-- [ ] Merge #213 backend with flag OFF.
-- [ ] One backend production smoke with public Assistant OFF.
-- [ ] Rebase/integrate #215 and rerun CI.
+- [x] Lead status audit visibility production-smoked PASS.
+- [x] Read-only Assistant storage preflight deployed.
+- [x] Exact physical Leads migration completed and verified.
+- [x] Privacy + idempotency storage preparation completed and verified.
+- [x] Storage gate reached `readyForAssistantLeadCapture:true`.
+- [x] Old #213 superseded by clean backend integration #225.
+- [x] #225 CI PASS.
+- [x] #225 squash merged.
+- [x] `main` post-merge Tests #620 PASS.
+- [x] Authenticated production runtime readiness smoke with public flag OFF.
+- [ ] Configure four missing runtime bindings.
+- [ ] Re-run `/api/admin/assistant/readiness` and reach runtime-ready state with public flag OFF.
+- [ ] Reverify/rebase #215 onto current `main`.
+- [ ] CI PASS for rebased widget.
 - [ ] Merge #215 while flag OFF.
 - [ ] Explicitly enable `ASSISTANT_PUBLIC_ENABLED=true`.
 - [ ] Final Assistant E2E, one manual action at a time.
+- [ ] Confirm existing Contact/Rental remain functional after final enablement.
 
 # Final Assistant E2E checklist — later
 
@@ -208,7 +212,9 @@ Do not run as one bundled manual instruction.
 ✅ Admin stabilization through #150.  
 ✅ Public visual audit issue #124.  
 ✅ Rental image-editor parity #157.  
-✅ Availability Core v1.
+✅ Availability Core v1.  
+✅ Lead Core workflow/status audit.  
+✅ Assistant storage gate.
 
 # Source-of-truth boundaries
 
@@ -218,7 +224,7 @@ Do not run as one bundled manual instruction.
 - AppSheet SD.Live Track = mobile/offline workflow.
 - Finance Admin = read-only.
 - ⛔ Generic Finance Phase 3 write-back remains BLOCKED.
-- Assistant has no Finance writes and no Finance reads unless deliberately designed later.
+- Assistant has no Finance write path.
 
 ## Rental
 
@@ -282,6 +288,4 @@ Do not run as one bundled manual instruction.
 
 # Exact continuation
 
-After this docs-only reconciliation is merged:
-
-**Reverify PR #214 against current `main`; if still clean, prepare it for squash merge and merge it. Then ask the owner for exactly one manual production action: authenticated `GET /api/admin/assistant/preflight`. Stop and decide the next branch from that real D1 result.**
+**Configure the four missing runtime bindings while keeping the public flag OFF, then rerun authenticated runtime readiness. Only after that result is fully green should #215 be rebased/integrated.**
