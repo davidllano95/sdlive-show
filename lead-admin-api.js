@@ -1,15 +1,9 @@
+import { LEAD_CORE_STATUSES } from "./lead-core.js";
 import { ensureLeadCoreStorageSchema } from "./lead-core-storage.js";
 
 const MAX_LEADS = 200;
 const DEFAULT_LEADS = 100;
-const VALID_LEAD_STATUSES = Object.freeze([
-  "new",
-  "contacted",
-  "quoted",
-  "confirmed",
-  "lost"
-]);
-const VALID_LEAD_STATUS_SET = new Set(VALID_LEAD_STATUSES);
+const VALID_LEAD_STATUS_SET = new Set(LEAD_CORE_STATUSES);
 
 function normalizedPath(request) {
   const url = new URL(request.url);
