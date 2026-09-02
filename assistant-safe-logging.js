@@ -45,6 +45,7 @@ const SERVICE_SET = new Set(LEAD_CORE_SERVICE_CATEGORIES);
 const NEXT_ACTION_SET = new Set([
   "reply",
   "check_availability",
+  "check_rental",
   "request_consent",
   "capture_lead",
   "handoff"
