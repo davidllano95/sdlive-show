@@ -23,8 +23,10 @@ const EXPECTED_ITEM_KEYS = [
 
 const EXPECTED_SERVICE_KEYS = ["engineering", "streaming", "delivery"];
 
-test("catalog snapshot mirrors current Rental backend identifiers and limits", () => {
+test("Assistant Rental metadata comes from the shared Rental catalog contract", () => {
   const catalog = assistantRentalCatalogSnapshot();
+  assert.equal(catalog.version, "rental-catalog-v1");
+  assert.equal(catalog.assistantVersion, "assistant-rental-query-v2");
   assert.deepEqual(catalog.items.map((item) => item.key), EXPECTED_ITEM_KEYS);
   assert.deepEqual(catalog.services.map((service) => service.key), EXPECTED_SERVICE_KEYS);
 
@@ -45,8 +47,8 @@ test("catalog snapshot mirrors current Rental backend identifiers and limits", (
     }
   );
 
-  assert.equal(catalog.guardrails.catalogSnapshotOnly, true);
-  assert.equal(catalog.guardrails.runtimeMustShareRentalMetadataBeforeIntegration, true);
+  assert.equal(catalog.guardrails.catalogSnapshotOnly, false);
+  assert.equal(catalog.guardrails.sharedRentalMetadata, true);
 });
 
 test("resolves exact product aliases into existing Rental keys", () => {

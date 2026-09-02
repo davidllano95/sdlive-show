@@ -1,116 +1,14 @@
-const CATALOG_SNAPSHOT = Object.freeze({
-  wing: Object.freeze({
-    type: "quantity",
-    maxQuantity: 1,
-    label: "Behringer WING",
-    aliases: ["wing", "behringer wing", "consola wing"]
-  }),
-  flow8: Object.freeze({
-    type: "quantity",
-    maxQuantity: 1,
-    label: "Behringer FLOW 8",
-    aliases: ["flow 8", "flow8", "behringer flow 8", "behringer flow8"]
-  }),
-  lv1: Object.freeze({
-    type: "quantity",
-    maxQuantity: 2,
-    label: "Waves LV1 Classic",
-    aliases: ["lv1", "lv1 classic", "waves lv1", "waves lv1 classic"]
-  }),
-  dl32: Object.freeze({
-    type: "quantity",
-    maxQuantity: 2,
-    label: "Midas DL32",
-    aliases: ["dl32", "midas dl32"]
-  }),
-  stageGrid: Object.freeze({
-    type: "quantity",
-    maxQuantity: 2,
-    label: "StageGrid 4000",
-    aliases: ["stagegrid", "stagegrid 4000", "waves stagegrid", "waves stagegrid 4000"]
-  }),
-  handhelds: Object.freeze({
-    type: "quantity",
-    maxQuantity: 2,
-    label: "Wireless handheld microphones",
-    aliases: [
-      "handheld",
-      "handheld mic",
-      "handheld microphone",
-      "wireless handheld",
-      "wireless handheld mic",
-      "microfono inalambrico de mano",
-      "microfonos inalambricos de mano"
-    ]
-  }),
-  headsets: Object.freeze({
-    type: "quantity",
-    maxQuantity: 6,
-    label: "Wireless headset microphones",
-    aliases: [
-      "headset",
-      "headset mic",
-      "headset microphone",
-      "wireless headset",
-      "wireless headset mic",
-      "diadema",
-      "microfono diadema",
-      "microfonos diadema"
-    ]
-  }),
-  pa: Object.freeze({
-    type: "quantity",
-    maxQuantity: 2,
-    label: "PA",
-    aliases: ["pa", "pa system", "sistema pa", "parlante pa", "parlantes pa"]
-  }),
-  labeler: Object.freeze({
-    type: "binary",
-    maxQuantity: 1,
-    label: "Labeler",
-    aliases: ["labeler", "label printer", "etiquetadora", "impresora de etiquetas"]
-  }),
-  videoServer: Object.freeze({
-    type: "binary",
-    maxQuantity: 1,
-    label: "Video server",
-    aliases: ["video server", "servidor de video", "pc gamer", "gaming pc"]
-  }),
-  monitor: Object.freeze({
-    type: "binary",
-    maxQuantity: 1,
-    label: "Portable monitor",
-    aliases: ["portable monitor", "monitor portatil", "monitor portable"]
-  })
-});
+import {
+  RENTAL_ITEM_CATALOG,
+  RENTAL_SERVICE_CATALOG,
+  rentalCatalogPublicMetadata
+} from "./rental-catalog-contract.js";
 
-const SERVICE_SNAPSHOT = Object.freeze({
-  engineering: Object.freeze({
-    label: "Sound engineering",
-    aliases: [
-      "engineering",
-      "sound engineering",
-      "sound engineer",
-      "audio engineer",
-      "ingenieria de sonido",
-      "ingeniero de sonido"
-    ]
-  }),
-  streaming: Object.freeze({
-    label: "Streaming",
-    aliases: ["streaming", "streaming service", "servicio de streaming"]
-  }),
-  delivery: Object.freeze({
-    label: "Delivery",
-    aliases: ["delivery", "delivery service", "entrega", "transporte"]
-  })
-});
-
-export const ASSISTANT_RENTAL_QUERY_VERSION = "assistant-rental-query-v1";
+export const ASSISTANT_RENTAL_QUERY_VERSION = "assistant-rental-query-v2";
 
 export const ASSISTANT_RENTAL_INTEGRATION_GUARDRAILS = Object.freeze({
-  catalogSnapshotOnly: true,
-  runtimeMustShareRentalMetadataBeforeIntegration: true,
+  catalogSnapshotOnly: false,
+  sharedRentalMetadata: true,
   priceAuthority: "rental_backend",
   quoteRequired: true,
   inventoryAvailability: "unknown",
@@ -163,8 +61,8 @@ function buildAliasMap(snapshot) {
   return map;
 }
 
-const ITEM_ALIAS_MAP = buildAliasMap(CATALOG_SNAPSHOT);
-const SERVICE_ALIAS_MAP = buildAliasMap(SERVICE_SNAPSHOT);
+const ITEM_ALIAS_MAP = buildAliasMap(RENTAL_ITEM_CATALOG);
+const SERVICE_ALIAS_MAP = buildAliasMap(RENTAL_SERVICE_CATALOG);
 
 function emptyBackendItems() {
   return {
@@ -217,7 +115,7 @@ function normalizedServiceRequests(value) {
 }
 
 function resolvedItemSummary(key, quantity) {
-  const entry = CATALOG_SNAPSHOT[key];
+  const entry = RENTAL_ITEM_CATALOG[key];
   return {
     key,
     label: entry.label,
@@ -230,7 +128,7 @@ function resolvedItemSummary(key, quantity) {
 function resolvedServiceSummary(key) {
   return {
     key,
-    label: SERVICE_SNAPSHOT[key].label
+    label: RENTAL_SERVICE_CATALOG[key].label
   };
 }
 
@@ -245,10 +143,7 @@ export function resolveAssistantRentalQuery(value) {
   for (const request of normalizedItemRequests(body.items)) {
     const alias = normalizedAlias(request.name);
     if (!alias) {
-      issues.push({
-        type: "invalid_item_name",
-        index: request.index
-      });
+      issues.push({ type: "invalid_item_name", index: request.index });
       continue;
     }
 
@@ -272,15 +167,12 @@ export function resolveAssistantRentalQuery(value) {
       continue;
     }
 
-    requestedTotals.set(
-      key,
-      (requestedTotals.get(key) || 0) + request.quantity
-    );
+    requestedTotals.set(key, (requestedTotals.get(key) || 0) + request.quantity);
   }
 
   const resolvedItems = [];
   for (const [key, quantity] of requestedTotals.entries()) {
-    const entry = CATALOG_SNAPSHOT[key];
+    const entry = RENTAL_ITEM_CATALOG[key];
     if (quantity > entry.maxQuantity) {
       issues.push({
         type: "quantity_exceeds_current_backend_limit",
@@ -314,10 +206,7 @@ export function resolveAssistantRentalQuery(value) {
   for (const request of normalizedServiceRequests(body.services)) {
     const alias = normalizedAlias(request.name);
     if (!alias) {
-      issues.push({
-        type: "invalid_service_name",
-        index: request.index
-      });
+      issues.push({ type: "invalid_service_name", index: request.index });
       continue;
     }
 
@@ -358,17 +247,8 @@ export function resolveAssistantRentalQuery(value) {
 
 export function assistantRentalCatalogSnapshot() {
   return {
-    version: ASSISTANT_RENTAL_QUERY_VERSION,
-    items: Object.entries(CATALOG_SNAPSHOT).map(([key, entry]) => ({
-      key,
-      label: entry.label,
-      type: entry.type,
-      maxQuantity: entry.maxQuantity
-    })),
-    services: Object.entries(SERVICE_SNAPSHOT).map(([key, entry]) => ({
-      key,
-      label: entry.label
-    })),
+    ...rentalCatalogPublicMetadata(),
+    assistantVersion: ASSISTANT_RENTAL_QUERY_VERSION,
     guardrails: { ...ASSISTANT_RENTAL_INTEGRATION_GUARDRAILS }
   };
 }
