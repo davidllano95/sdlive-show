@@ -1,6 +1,8 @@
 import { inspectAssistantStoragePreflight } from "./assistant-storage-preflight.js";
+import { inspectAssistantLeadsMigrationPrecheck } from "./assistant-leads-migration-precheck.js";
 
 export const ASSISTANT_STORAGE_PREFLIGHT_PATH = "/api/admin/assistant/preflight";
+export const ASSISTANT_LEADS_MIGRATION_DETAIL = "leads-migration";
 
 function normalizedPath(request) {
   const url = new URL(request.url);
@@ -24,7 +26,8 @@ export async function handleAssistantStoragePreflightApi(
   env,
   {
     verifyAdmin,
-    inspectStorage = inspectAssistantStoragePreflight
+    inspectStorage = inspectAssistantStoragePreflight,
+    inspectLeadsMigration = inspectAssistantLeadsMigrationPrecheck
   } = {}
 ) {
   if (normalizedPath(request) !== ASSISTANT_STORAGE_PREFLIGHT_PATH) return null;
@@ -43,13 +46,20 @@ export async function handleAssistantStoragePreflightApi(
 
   try {
     const storage = await inspectStorage(env);
-    return json({
+    const payload = {
       ok: true,
       readOnly: true,
       actor: String(admin.email).toLowerCase(),
       readyForAssistantLeadCapture: Boolean(storage?.readyForAssistantLeadCapture),
       storage
-    });
+    };
+
+    const detail = new URL(request.url).searchParams.get("detail");
+    if (detail === ASSISTANT_LEADS_MIGRATION_DETAIL) {
+      payload.migrationPrecheck = await inspectLeadsMigration(env);
+    }
+
+    return json(payload);
   } catch (error) {
     console.error("[SD.Live] Assistant storage preflight failed", error);
     return json({
