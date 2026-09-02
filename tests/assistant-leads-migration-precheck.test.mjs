@@ -13,7 +13,7 @@ const LEADS_SQL = `
   )
 `;
 
-test("Leads migration precheck reads only schema metadata and filters related DDL", async () => {
+test("Leads migration precheck reads only schema metadata and includes dependent-table DDL objects", async () => {
   const statements = [];
   const env = {
     CMS_DB: {
@@ -51,10 +51,40 @@ test("Leads migration precheck reads only schema metadata and filters related DD
                   sql: "CREATE TABLE privacy_consents (lead_id INTEGER REFERENCES leads(id))"
                 },
                 {
+                  type: "index",
+                  name: "idx_privacy_consents_lead_source",
+                  tbl_name: "privacy_consents",
+                  sql: "CREATE UNIQUE INDEX idx_privacy_consents_lead_source ON privacy_consents (lead_id, source)"
+                },
+                {
+                  type: "trigger",
+                  name: "trg_privacy_consents_audit",
+                  tbl_name: "privacy_consents",
+                  sql: "CREATE TRIGGER trg_privacy_consents_audit AFTER INSERT ON privacy_consents BEGIN SELECT 1; END"
+                },
+                {
+                  type: "table",
+                  name: "rental_requests",
+                  tbl_name: "rental_requests",
+                  sql: "CREATE TABLE rental_requests (lead_id INTEGER REFERENCES leads(id))"
+                },
+                {
+                  type: "index",
+                  name: "idx_rental_requests_lead_id",
+                  tbl_name: "rental_requests",
+                  sql: "CREATE INDEX idx_rental_requests_lead_id ON rental_requests(lead_id)"
+                },
+                {
                   type: "table",
                   name: "unrelated",
                   tbl_name: "unrelated",
                   sql: "CREATE TABLE unrelated (id INTEGER PRIMARY KEY)"
+                },
+                {
+                  type: "index",
+                  name: "idx_unrelated_id",
+                  tbl_name: "unrelated",
+                  sql: "CREATE INDEX idx_unrelated_id ON unrelated(id)"
                 }
               ]
             })
@@ -75,7 +105,11 @@ test("Leads migration precheck reads only schema metadata and filters related DD
   assert.deepEqual(result.relatedSchema.map((item) => item.name), [
     "leads",
     "idx_leads_status",
-    "privacy_consents"
+    "privacy_consents",
+    "idx_privacy_consents_lead_source",
+    "trg_privacy_consents_audit",
+    "rental_requests",
+    "idx_rental_requests_lead_id"
   ]);
 
   assert.equal(statements.length, 2);

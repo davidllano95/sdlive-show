@@ -23,9 +23,29 @@ function referencesLeads(row) {
   return /\breferences\s+(?:"leads"|`leads`|\[leads\]|leads)\b/i.test(sql);
 }
 
+function dependentTableNames(rows) {
+  const names = new Set(["leads"]);
+
+  for (const row of Array.isArray(rows) ? rows : []) {
+    if (String(row?.type || "").toLowerCase() !== "table") continue;
+    if (!referencesLeads(row)) continue;
+
+    const name = String(row?.name || row?.tbl_name || "").trim().toLowerCase();
+    if (name) names.add(name);
+  }
+
+  return names;
+}
+
 function safeSchemaObjects(rows) {
-  return (Array.isArray(rows) ? rows : [])
-    .filter(referencesLeads)
+  const source = Array.isArray(rows) ? rows : [];
+  const dependentTables = dependentTableNames(source);
+
+  return source
+    .filter((row) => {
+      const tableName = String(row?.tbl_name || "").trim().toLowerCase();
+      return dependentTables.has(tableName) || referencesLeads(row);
+    })
     .map((row) => ({
       type: String(row?.type || ""),
       name: String(row?.name || ""),
