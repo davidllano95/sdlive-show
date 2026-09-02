@@ -17,7 +17,6 @@ import { persistLeadCoreFromPublicResponse } from "./lead-core-storage.js";
 import { handleLeadAdminApi } from "./lead-admin-api.js";
 import { applyLeadAdminNavigationRuntime } from "./lead-admin-dashboard-edge.js";
 import { handleAssistantApi } from "./assistant-api.js";
-import { handleAssistantAdminPreflight } from "./assistant-admin-preflight.js";
 
 const PUBLIC_FORM_LIMITS = {
   "/api/contact": {
@@ -222,13 +221,6 @@ export default {
 
     if (path === "/api/admin/leads") {
       const response = await handleLeadAdminApi(request, env, {
-        verifyAdmin: verifyAdminViaExistingApi
-      });
-      if (response) return response;
-    }
-
-    if (path === "/api/admin/assistant/preflight") {
-      const response = await handleAssistantAdminPreflight(request, env, {
         verifyAdmin: verifyAdminViaExistingApi
       });
       if (response) return response;
