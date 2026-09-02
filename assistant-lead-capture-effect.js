@@ -7,13 +7,13 @@ import {
   isAssistantRequestId
 } from "./assistant-idempotency.js";
 import {
-  ensureAssistantIdempotencyStorage,
   failAssistantLeadCreate,
+  inspectAssistantIdempotencyStorageCompatibility,
   reserveAssistantLeadCreate
 } from "./assistant-idempotency-storage.js";
 import { inspectLeadStorageCompatibility } from "./lead-core-create.js";
 import { normalizeLeadCoreInput } from "./lead-core.js";
-import { ensurePrivacyConsentStorageSchema } from "./privacy-consent-storage.js";
+import { inspectPrivacyConsentStorageCompatibility } from "./privacy-consent-storage.js";
 
 export const ASSISTANT_LEAD_CAPTURE_EFFECT_VERSION = "assistant-lead-capture-effect-v1";
 
@@ -114,7 +114,7 @@ function normalizedAssistantLead(leadDraft) {
   return lead;
 }
 
-function assertCompatibility(compatibility, lead) {
+function assertLeadCompatibility(compatibility, lead) {
   if (!compatibility?.canInsert) {
     throw captureError(
       "LEAD_STORAGE_INCOMPATIBLE",
@@ -129,15 +129,21 @@ function assertCompatibility(compatibility, lead) {
   }
 }
 
-/**
- * Irreversible Assistant Lead capture effect.
- *
- * The reservation is acquired first. The actual PII write, reservation
- * completion and explicit privacy-consent row then commit in one D1 batch
- * transaction. If any statement fails, D1 rolls the batch back and the
- * reservation is marked failed outside that transaction so a later retry can
- * safely acquire the same idempotency key.
- */
+function assertAuxiliaryStorage(privacy, idempotency) {
+  if (!privacy?.canRecordAssistantConsent) {
+    throw captureError(
+      "PRIVACY_STORAGE_INCOMPATIBLE",
+      `Assistant privacy storage is not compatible: ${privacy?.reason || "unknown"}`
+    );
+  }
+  if (!idempotency?.ready) {
+    throw captureError(
+      "IDEMPOTENCY_STORAGE_NOT_READY",
+      `Assistant idempotency storage is not ready: ${idempotency?.reason || "unknown"}`
+    );
+  }
+}
+
 export async function captureAssistantLeadEffect(
   env,
   {
@@ -149,7 +155,9 @@ export async function captureAssistantLeadEffect(
   {
     now = new Date(),
     inspectCompatibility = inspectLeadStorageCompatibility,
-    ensureConsentSchema = ensurePrivacyConsentStorageSchema
+    inspectConsentStorage = inspectPrivacyConsentStorageCompatibility,
+    inspectIdempotencyStorage = inspectAssistantIdempotencyStorageCompatibility,
+    ensureConsentSchema = null
   } = {}
 ) {
   if (!isAssistantRequestId(requestId)) {
@@ -165,11 +173,21 @@ export async function captureAssistantLeadEffect(
   const db = dbFromEnv(env);
   const lead = normalizedAssistantLead(leadDraft);
   const compatibility = await inspectCompatibility(env, "assistant");
-  assertCompatibility(compatibility, lead);
+  assertLeadCompatibility(compatibility, lead);
 
-  // Schema-only preparation occurs before the idempotent PII effect.
-  await ensureConsentSchema(env);
-  await ensureAssistantIdempotencyStorage(env);
+  // Legacy injected hook is retained only for existing migration/unit-test
+  // callers. The production runtime never supplies it and therefore performs
+  // strictly read-only schema checks here.
+  const legacyPreparedMode = typeof ensureConsentSchema === "function";
+  if (legacyPreparedMode) {
+    await ensureConsentSchema(env);
+  } else {
+    const [privacy, idempotency] = await Promise.all([
+      inspectConsentStorage(env),
+      inspectIdempotencyStorage(env)
+    ]);
+    assertAuxiliaryStorage(privacy, idempotency);
+  }
 
   const key = await buildAssistantLeadCreateIdempotencyKey({
     sessionId: session.sessionId,
@@ -180,7 +198,10 @@ export async function captureAssistantLeadEffect(
   const reservation = await reserveAssistantLeadCreate(env, {
     key,
     requestId
-  }, { now });
+  }, {
+    now,
+    ensureStorage: legacyPreparedMode ? undefined : null
+  });
 
   if (reservation?.status === "completed" && reservation.leadId) {
     return {
@@ -250,8 +271,6 @@ export async function captureAssistantLeadEffect(
     const consentWritten = Number(results?.[2]?.meta?.changes) === 1;
 
     if (!Number.isInteger(leadId) || leadId < 1 || !reservationUpdated || !consentWritten) {
-      // A normal D1 implementation should never reach this because the
-      // consent INSERT has a NOT NULL lead_id and the batch is transactional.
       throw captureError("LEAD_CAPTURE_STATE_INVALID", "Assistant capture transaction returned invalid metadata");
     }
 
@@ -267,7 +286,10 @@ export async function captureAssistantLeadEffect(
         key,
         requestId,
         errorCode: error?.code || "lead_capture_failed"
-      }, { now });
+      }, {
+        now,
+        ensureStorage: legacyPreparedMode ? undefined : null
+      });
     } catch {
       // Preserve the original capture failure. The reservation TTL provides a
       // bounded recovery path if even the failure marker cannot be persisted.
@@ -286,6 +308,7 @@ export function assistantLeadCapturePolicy() {
     initialStatus: "new",
     requiresFreshConsent: true,
     supportsCompletedRetry: true,
-    storesTranscript: false
+    storesTranscript: false,
+    runtimeSchemaMutations: false
   });
 }
