@@ -6,11 +6,11 @@
 |---|---|
 | Última reconciliación | **2026-09-02 — America/Bogota** |
 | Rama operativa | `main` |
-| `main` verificado antes de este follow-up docs-only | **`5b709f5cb3a7923d25ac1f8062ae3458b02fc806` · PR #226** |
+| `main` runtime verificado antes de este docs-only | **`6ef4c1990a8e4903b38f6fefb334d307634119f8` · PR #228** |
 | Producción | `https://sdlive.show` |
-| Estado macro | **Finance/Calendar/Site Schedule/Show Day/Admin/public stabilization/Rental parity/Availability v1/Lead Core/Assistant storage CLOSED or operational** |
-| Active Gate | **Assistant runtime readiness verification with public flag OFF** |
-| Siguiente slice técnico | **Re-run authenticated readiness; then investigate Turnstile Siteverify warning before final public enablement** |
+| Estado macro | **Finance/Calendar/Site Schedule/Show Day/Admin/Rental/Availability/Lead Core/Assistant storage/backend/runtime/widget CLOSED or operational** |
+| Active Gate | **Turnstile production verification before Assistant public enablement** |
+| Public Assistant | **OFF — `ASSISTANT_PUBLIC_ENABLED` absent/false** |
 | Bloqueado | **Generic Finance Phase 3 write-back** |
 
 ## Precedencia
@@ -23,26 +23,13 @@
 6. `ROADMAP_MASTER_CHECKLIST.md`;
 7. docs/prompts históricos.
 
-**Stability > novelty.**
-
-Reglas de estado:
-
-- `MERGED` no implica automáticamente `PRODUCTION SMOKE PASS`.
-- `CI PASS` no implica producción verificada.
-- `UNMERGED` significa **no producción**.
-- `TEMP VALIDATION ONLY` no autoriza merge.
+**Stability > novelty.** `MERGED` no implica `PRODUCTION SMOKE PASS`; `CI PASS` no implica producción verificada; `UNMERGED` significa no producción.
 
 ## Workflow obligatorio
 
-Runtime:
+Runtime: `inspect current main → short branch → implement → tests/CI → PR → CI green → squash merge → exactly one representative production smoke`.
 
-`inspect current main → short branch → implement → tests/CI → PR → CI green → squash merge → exactly one production smoke when applicable`.
-
-Docs-only:
-
-`branch → docs → CI → PR → merge`.
-
-No production smoke para docs-only.
+Docs-only: `branch → docs → CI → PR → squash merge`. No production smoke para docs-only.
 
 QA manual con owner: **una sola acción por vez**.
 
@@ -50,12 +37,12 @@ QA manual con owner: **una sola acción por vez**.
 
 - GitHub `main` = code truth.
 - Cloudflare Access = barrera real del Admin.
-- Google Sheets `REGISTRO` = persistencia + fórmulas de operaciones/finanzas.
-- AppSheet SD.Live Track = cliente mobile/offline.
+- Google Sheets `REGISTRO` = operations/finance persistence + formulas.
+- AppSheet SD.Live Track = mobile/offline workflow.
 - D1 no es Finance mirror.
 - Rental pricing/quote logic = backend authoritative.
 - Availability = D1 Availability Core, no AI-owned truth.
-- Leads = una sola Lead Core D1 table/source of truth.
+- Leads = una sola Lead Core D1 source of truth.
 - Assistant no crea un segundo catálogo Rental ni un segundo Lead store.
 - Assistant no escribe Finance.
 - Public Assistant traffic nunca migra schema.
@@ -67,125 +54,80 @@ QA manual con owner: **una sola acción por vez**.
 
 **CLOSED/PASS.** No reabrir salvo regresión.
 
-Incluye weekly multiple windows, closed days, bounded temporary Available/Limited/Away, flexible 15m–24h timer, explicit Apply, Force Auto/On/Off, Travel Mode, timezone-safe UI, deterministic next service window incl. DST, public WhatsApp status y owner parser core.
-
-Checkpoint: `docs/checkpoints/handoff-availability-v1-closeout-2026-09-01.md`.
-
 ### Lead Core
 
-Lead workflow/status history through PR #190 remains **CLOSED/PASS**.
-
-Canonical executable Lead statuses:
-
-- `new`
-- `contacted`
-- `quoted`
-- `confirmed`
-- `lost`
-
-Lead sources relevant to current architecture:
-
-- `contact`
-- `rental`
-- `assistant`
-
-Service categories:
-
-- `live`
-- `theatre`
-- `sound_design`
-- `systems`
-- `rental`
-- `other`
+**CLOSED/PASS through PR #190.** Canonical statuses: `new`, `contacted`, `quoted`, `confirmed`, `lost`. Relevant sources: `contact`, `rental`, `assistant`. Service categories: `live`, `theatre`, `sound_design`, `systems`, `rental`, `other`.
 
 ### Assistant storage gate
 
 **CLOSED/PASS in production.**
 
-The legacy physical `leads` schema was migrated safely while preserving IDs/data, legacy `project`, canonical statuses and child rows. Email is nullable and `assistant` is accepted.
+- Assistant Lead insert supported.
+- Email nullable.
+- Privacy accepts `assistant`.
+- `assistant_effect_reservations` ready.
+- `readyForAssistantLeadCapture:true`.
+- No FK violations or stale migration objects in final verification.
 
-Production post-migration/preparation state:
-
-- `leads.canInsertAssistantLead: true`
-- `privacyConsents.canRecordAssistantConsent: true`
-- `idempotency.ready: true`
-- `readyForAssistantLeadCapture: true`
-- foreign-key violations: `0`
-- stale temporary migration objects: none
-
-Final storage preparation came through PR #224. Old draft #216 was closed without merge as superseded.
+Final storage preparation: PR #224. Old #216 is closed/superseded.
 
 ### Assistant backend — PR #225
 
-**MERGED / CI PASS / DEPLOYED WITH PUBLIC FLAG OFF.**
+**MERGED / CI PASS / DEPLOYED.**
 
-- Squash merge: `259b68b2d94b5fca7dcfe13bec79ace40792fff8`.
-- PR CI PASS after correcting two stale preflight-stage test expectations.
-- Post-merge `main` Tests #620 PASS.
-- Public endpoint: `POST /api/assistant`.
-- Public kill switch: `ASSISTANT_PUBLIC_ENABLED`; OFF unless exactly `true`.
-- Admin runtime readiness: `GET /api/admin/assistant/readiness`.
-- OpenAI Responses API + strict Structured Outputs + `store:false`.
-- Sealed stateless session; no provider conversation state.
-- Dedicated Assistant rate limit.
-- Deterministic Lead/consent/idempotency boundaries.
-- No public widget yet.
+Squash merge: `259b68b2d94b5fca7dcfe13bec79ace40792fff8`.
 
-Old draft #213 was closed without merge as superseded by #225.
+Includes `/api/assistant`, hard public kill switch, Admin readiness, Responses API + strict Structured Outputs + `store:false`, sealed stateless session, dedicated rate limiter, deterministic Availability/Rental boundaries, explicit consent, idempotent Lead capture and Resend handoff.
 
-## Active Gate — runtime readiness verification
+Old #213 is closed/superseded.
 
-The first authenticated production readiness probe after #225 showed the backend deployed safely with the public flag OFF and these dependencies already ready:
+### Assistant runtime configuration — PASS
 
-- `rateLimit.ready: true`
-- `d1Binding.ready: true`
-- `notification.ready: true`
-- Turnstile server secret configured: true
+Authenticated production readiness after the owner configured the required runtime bindings returned:
 
-It originally reported four missing bindings:
+- `readyForRuntimeConfiguration:true`;
+- `missingBindings:[]`;
+- `invalidBindings:[]`;
+- `openai.ready:true`;
+- `session.ready:true`;
+- `turnstile.ready:true`;
+- `rateLimit.ready:true`;
+- `d1Binding.ready:true`;
+- `notification.ready:true`;
+- `publicExposure.enabled:false`.
 
-- `ASSISTANT_SESSION_KEY`
-- `ASSISTANT_TURNSTILE_SITE_KEY`
-- `OPENAI_API_KEY`
-- `OPENAI_ASSISTANT_MODEL`
+`readyForPublicEnablement:false` is expected while `ASSISTANT_PUBLIC_ENABLED` remains OFF.
 
-As of the latest owner action on 2026-09-02, all four have now been entered in Cloudflare. This is **not yet a verified PASS**: a fresh authenticated readiness probe must confirm the deployed runtime sees valid values.
+### Assistant public widget — PR #228
 
-Session key contract remains Base64URL-encoded exactly 32 bytes.
+**MERGED / CI PASS / DEPLOYED BUT HIDDEN.**
 
-`ASSISTANT_PUBLIC_ENABLED` must remain absent/false.
+Squash merge: `6ef4c1990a8e4903b38f6fefb334d307634119f8`.
 
-### Turnstile Siteverify warning — mandatory follow-up
+PR #228 reconstructed only the widget scope on current `main`, avoiding obsolete #213 lineage. It provides Contact launcher, desktop modal/mobile bottom sheet, EN/ES, in-memory state, sealed session token, Turnstile per operation, current backend wire contract, server-owned consent actions and deterministic human fallback.
 
-Cloudflare Turnstile currently shows this warning for the existing widget **SD.Live Forms**:
+The widget renders only when both `ASSISTANT_PUBLIC_ENABLED=true` and a valid site key exist. Production smoke with the flag OFF passed: no public Assistant launcher/widget is rendered.
+
+Old PR #215 is **CLOSED WITHOUT MERGE / superseded by #228**.
+
+## ACTIVE GATE — Turnstile production verification
+
+Cloudflare currently shows for the existing **SD.Live Forms** widget:
 
 `Siteverify isn't being called for SD.Live Forms`
 
-Treat this as a security/anti-bot investigation before final Assistant public enablement. Do not assume whether the warning is a false positive or a real validation gap. Inspect the actual Contact/Rental form path and confirm whether submitted Turnstile tokens are verified server-side against Siteverify. If not, fix that path without weakening the Assistant Turnstile contract.
+Repository inspection establishes that Siteverify code is present and wired:
 
-This warning does **not** by itself prove the Assistant runtime is misconfigured, because the Assistant has its own explicit Turnstile readiness boundary; it is a separate existing-forms verification item that must be dispositioned before public rollout completion.
+- Contact/Rental browser code reads a Turnstile response token and submits it as `turnstileToken`;
+- `worker.js` sends it to `https://challenges.cloudflare.com/turnstile/v0/siteverify`;
+- the response must have hostname `sdlive.show`;
+- Contact must have action `contact`;
+- Rental must have action `rental`;
+- Turnstile failure returns before Lead persistence.
 
-## PR #215 — PUBLIC WIDGET
+Therefore this is **not a missing-code finding**. It remains an unresolved runtime/telemetry/association question. Do not call it a false positive until one real production token from the existing widget is observed going through server-side verification.
 
-**Status:** OPEN / DRAFT / UNMERGED / NOT PRODUCTION.
-
-It was prepared on the old #213 lineage. Do not merge it directly.
-
-Required sequence:
-
-1. fresh runtime readiness fully green with public flag OFF;
-2. investigate/disposition the Turnstile Siteverify warning before final public enablement;
-3. reverify/rebase #215 onto current `main`;
-4. CI PASS;
-5. merge widget while flag remains OFF;
-6. explicitly enable public flag only when security gates are satisfied;
-7. final E2E one action at a time.
-
-## PR #191 — WHATSAPP OWNER CONTROL
-
-**Status:** OPEN / separate workstream.
-
-Do not touch unless explicitly reprioritized. It does not displace the Assistant Active Gate.
+Next validation must be non-destructive: obtain a valid Contact Turnstile token, submit it to the real Contact endpoint while intentionally failing a later validation gate, confirm no Lead is created, and then disposition the Cloudflare warning.
 
 ## Assistant architecture and hard boundaries
 
@@ -201,43 +143,19 @@ Never:
 - infer privacy consent;
 - persist full transcript;
 - expose secrets/private owner data;
-- add provider-owned conversation state as source of truth;
-- let public traffic create/alter/drop/rebuild D1 schema.
+- use provider-managed conversation state as truth;
+- let public traffic mutate D1 schema.
 
-Provider boundary:
-
-- OpenAI Responses API;
-- Structured Outputs / strict JSON schema;
-- `store: false`;
-- server orchestrator owns tools and effects;
-- no arbitrary model-executed tools.
-
-## Superseded/temporary Assistant PRs
+## Superseded/held work
 
 - #213 — CLOSED WITHOUT MERGE; superseded by #225.
+- #215 — CLOSED WITHOUT MERGE; superseded by #228.
 - #216 — CLOSED WITHOUT MERGE; superseded by #224.
-- #218 — CLOSED WITHOUT MERGE / TEMP VALIDATION ONLY / do not reopen.
-
-## Backlog that must not displace Active Gate
-
-- Mobile Rental Cart total visibility.
-- PR #191 WhatsApp owner transport.
-- SD.Live Patch.
-- Finance Document Generator.
-- Rental real-time availability/double-booking.
-- Calendar workflow additions.
-- Generic Finance Phase 3 write-back remains blocked.
+- #218 — CLOSED WITHOUT MERGE / TEMP VALIDATION ONLY; do not reopen.
+- #191 — OPEN / separate Availability owner WhatsApp workstream; do not touch unless explicitly reprioritized.
 
 ## Exact continuation point
 
-Do **not** touch #215 yet.
+Do **not** enable the public Assistant yet.
 
-The exact next operation is one authenticated production readiness GET. Require:
-
-- `readyForRuntimeConfiguration:true`;
-- all `dependencies.*.ready:true`;
-- `missingBindings:[]`;
-- `invalidBindings:[]`;
-- `publicExposure.enabled:false`.
-
-If that passes, proceed with the Turnstile Siteverify investigation and then the #215 rebase/integration path while keeping the public flag OFF.
+The exact next gate is one non-destructive production validation of **SD.Live Forms → server-side Siteverify**. If that proves the real token path is valid and the warning can be dispositioned, explicitly enable `ASSISTANT_PUBLIC_ENABLED=true` and then run final Assistant E2E one manual action at a time.
