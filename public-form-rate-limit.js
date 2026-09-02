@@ -7,6 +7,7 @@ import {
   handleSiteScheduleApiV2
 } from "./site-schedule-store-v2.js";
 import { applyShowDayRuntime } from "./showday-edge.js";
+import { applyAssistantPublicWidgetRuntime } from "./assistant-public-widget-edge.js";
 import { handleAvailabilityApi } from "./availability-core.js";
 import { decorateAvailabilityNextWindowResponse } from "./availability-next-window.js";
 import { applyAvailabilityAdminRuntime } from "./availability-admin-edge.js";
@@ -280,9 +281,6 @@ export default {
           preparedLead.lead
         );
       } catch (error) {
-        // The established public form write remains authoritative. Lead Core
-        // enrichment must never turn an already-successful Contact/Rental
-        // capture into a public failure during this storage migration.
         console.error("[SD.Live] Lead Core storage enrichment failed", error);
       }
     }
@@ -297,7 +295,8 @@ export default {
       return applyLeadAdminNavigationRuntime(response);
     }
     if (request.method === "GET") {
-      return applyShowDayRuntime(response);
+      const publicResponse = applyShowDayRuntime(response);
+      return applyAssistantPublicWidgetRuntime(publicResponse, env);
     }
     return response;
   }
