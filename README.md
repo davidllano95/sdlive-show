@@ -24,19 +24,23 @@ When docs disagree, use:
 
 ## Current state — 2026-09-02
 
-Runtime baseline before this docs-only reconciliation:
+Current runtime baseline:
 
-`d1db8019deadc5d84fba9604de7a36f64658aba7` — PR #229.
+`bf93bbbf9f707abea22105753c9d424b82a68b27` — PR #231.
 
-Current Assistant milestones:
+Assistant milestones:
 
 - Availability Core v1 — CLOSED/PASS.
 - Lead Core through PR #190 — CLOSED/PASS.
 - Assistant storage — CLOSED/PASS in production.
 - Assistant backend PR #225 — MERGED / CI PASS / deployed.
-- Assistant runtime configuration — PASS; no missing or invalid bindings.
-- Assistant public widget PR #228 — MERGED / CI PASS / deployed but hidden while the public kill switch is OFF.
-- SD.Live Forms Turnstile Siteverify path — **PRODUCTION PASS** through a non-destructive Contact probe.
+- Assistant runtime configuration — PASS; no missing/invalid bindings.
+- `ASSISTANT_PUBLIC_ENABLED=true` in production.
+- Assistant public widget PR #228 — MERGED / deployed; launcher visible and Turnstile verifies.
+- SD.Live Forms Turnstile Siteverify — PRODUCTION PASS.
+- First real OpenAI Assistant turn — PASS after API credits were added.
+- PR #231 — MERGED / PR CI PASS / `main` CI PASS; fixes Safari Turnstile refresh deadlock between turns.
+- Current manual gate — Safari second-turn/session-continuity smoke.
 
 Canonical Lead statuses: `new`, `contacted`, `quoted`, `confirmed`, `lost`.
 
@@ -44,35 +48,50 @@ Relevant Lead sources: `contact`, `rental`, `assistant`.
 
 Service categories: `live`, `theatre`, `sound_design`, `systems`, `rental`, `other`.
 
-## Current Active Gate — final Assistant public enablement
+## Current Active Gate — Assistant second turn/session continuity
 
-The Assistant backend, storage, runtime bindings and public widget are ready. The public Assistant remains intentionally **OFF** because `ASSISTANT_PUBLIC_ENABLED` is absent/false.
+The Assistant is public. The first real turn already passed. The remaining immediate gate comes from a Safari-specific post-turn deadlock observed before PR #231:
 
-Authenticated readiness is green:
+- browser still showed Turnstile `Success!`;
+- the token had already been consumed internally;
+- Send stayed disabled;
+- `Enviando…` remained visible;
+- a second turn could not be submitted.
 
-- `readyForRuntimeConfiguration:true`;
-- all runtime dependencies ready;
-- `missingBindings:[]`;
-- `invalidBindings:[]`;
-- `publicExposure.enabled:false`.
+PR #231 replaced `turnstile.reset(widgetId)` with a full `turnstile.remove(widgetId)` + container rebuild + fresh widget/token, and clears stale sending status on success/error/network failure.
 
-`readyForPublicEnablement:false` is expected while the kill switch is OFF.
+The first CI run (#631) failed only because a legacy contract test still asserted `turnstile.reset(widgetId)`. The assertion was updated to the new required contract; PR Tests #632 passed and `main` Tests #633 passed after squash merge.
 
-### Turnstile warning — dispositioned PASS
+Security boundaries were not relaxed.
 
-Cloudflare had displayed:
+### One manual smoke now
 
-`Siteverify isn't being called for SD.Live Forms`
+In Safari, run one successful first turn, then confirm:
 
-Code inspection already established that Contact/Rental send `turnstileToken`, the Worker calls Cloudflare Siteverify, validates `hostname === "sdlive.show"`, validates the expected action (`contact` / `rental`), and rejects failed verification before Lead persistence.
+- `Enviando…` clears;
+- Turnstile visibly regenerates;
+- Send becomes available again;
+- this second turn can be sent:
 
-A real production Contact token was then submitted through the live endpoint while privacy consent was intentionally omitted. The server returned:
+`The show is October 17, 2026. Venue is still TBD. I need sound design and FOH, with rehearsal on October 16 from 2–8 PM. What else do you need?`
+
+The answer must retain **theatre show + Bogotá** from the first turn without requiring the user to repeat it.
+
+If this passes: `SESSION CONTINUITY = PASS`, then finish the remaining Assistant E2E gates before starting another milestone.
+
+## Turnstile warning — dispositioned PASS
+
+Cloudflare previously displayed `Siteverify isn't being called for SD.Live Forms`.
+
+Code inspection established that Contact/Rental send `turnstileToken`, the Worker calls Cloudflare Siteverify, validates `hostname === "sdlive.show"`, validates the expected action (`contact` / `rental`), and rejects failed verification before Lead persistence.
+
+A real production Contact token submitted without privacy consent returned:
 
 `{"ok":false,"error":"Privacy consent is required"}`
 
-Because privacy validation occurs after successful Turnstile validation, this result proves the live request passed the server-side Siteverify boundary and reached the later consent gate. No Lead was intentionally created by this probe.
+Because privacy validation occurs after Turnstile validation, this proves the live request passed server-side Siteverify and reached the later consent gate. No Lead was intentionally created.
 
-**Disposition:** the dashboard warning is treated as stale/incomplete Cloudflare detection/association, not an SD.Live missing-Siteverify implementation defect. Reopen only if later runtime evidence contradicts this production proof.
+**Disposition:** treat the dashboard warning as stale/incomplete detection/association unless later runtime evidence contradicts this proof.
 
 ## Assistant public widget
 
@@ -83,27 +102,27 @@ PR #228 reconstructed the widget cleanly on current `main` rather than merging o
 - EN/ES runtime copy;
 - in-memory conversation only;
 - sealed session token;
-- explicit Turnstile token/reset per browser operation;
+- Turnstile required per browser operation;
 - current `/api/assistant` wire contract;
 - server-owned explicit privacy consent actions;
-- deterministic human fallbacks without owner-phone exposure;
-- rendering only when `ASSISTANT_PUBLIC_ENABLED=true` and the site key is valid.
+- deterministic human fallbacks without owner-phone exposure.
 
-Production flag-OFF smoke PASS: the widget is hidden while disabled.
+Known non-blocking visual debt: the launcher/widget still uses green/olive tones that should later be aligned with the current violet SD.Live palette. Keep this after functional E2E closeout.
 
 ## Open PR state / work order
 
-The obsolete preparatory Assistant PRs **#192–#212 are CLOSED WITHOUT MERGE**; their validated scope was superseded by the final integrated Assistant backend in #225. Old #213, #215, #216 and temporary #218 are also closed/superseded and must not be reopened.
+Obsolete preparatory Assistant PRs #192–#212 are CLOSED WITHOUT MERGE. Old #213, #215, #216 and temporary #218 are also closed/superseded and must not be reopened.
 
-After cleanup, the repository has exactly **one open operational PR**:
+After #231 merge, exactly one operational PR remains open:
 
-- **#191 — authenticated WhatsApp owner control for Availability.** This is the next workstream after the Assistant public rollout is closed. Its old branch must be reverified/reconstructed on the then-current `main` before merge; Meta/Cloudflare onboarding remains part of activation.
+- **#191 — authenticated WhatsApp owner control for Availability.** It is the next workstream **after the Assistant rollout is fully closed**. Its old branch must be reverified/reconstructed on then-current `main` before merge; Meta/Cloudflare onboarding remains part of activation.
 
-This ordering is deliberate:
+Current order:
 
-1. finish Assistant public enablement + one representative E2E + closeout;
-2. resume #191 WhatsApp owner control;
-3. then continue prioritized roadmap backlog.
+1. finish Assistant second-turn/session continuity and remaining E2E gates;
+2. close/document Assistant rollout;
+3. resume #191;
+4. continue prioritized roadmap backlog.
 
 ## SD.Live Assistant architecture
 
@@ -111,7 +130,7 @@ This ordering is deliberate:
 
 Hard boundaries:
 
-- `ASSISTANT_PUBLIC_ENABLED` OFF unless exactly `true`;
+- public kill switch remains reversible;
 - OpenAI Responses API with strict Structured Outputs and `store:false`;
 - sealed AES-GCM stateless structured session; no full transcript persistence/provider conversation state;
 - no impersonation of Samuel;
@@ -137,11 +156,10 @@ No production smoke for docs-only PRs. Manual QA with the owner: **one action at
 
 ## Exact continuation
 
-1. Explicitly set production `ASSISTANT_PUBLIC_ENABLED=true`.
-2. Run one controlled representative Assistant E2E, one manual action at a time, covering a normal conversation through explicit consent and one real QA Lead/handoff while checking deterministic Availability/Rental behavior and no duplicate Lead.
-3. Confirm Contact/Rental still operate normally.
-4. Close/document the Assistant rollout.
-5. Resume PR #191 as the next operational workstream.
+1. Run the Safari second-turn/session-continuity smoke for PR #231.
+2. If PASS, finish the remaining Assistant E2E gates: explicit consent, exactly one Assistant Lead, idempotency/effects, handoff/notification, deterministic pricing/Availability boundaries, Contact/Rental continuity and mobile smoke if needed.
+3. Close/document Assistant rollout.
+4. Resume PR #191 as the next operational workstream.
 
 ## Relevant docs
 
