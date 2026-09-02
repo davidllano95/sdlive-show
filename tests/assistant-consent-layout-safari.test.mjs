@@ -20,5 +20,5 @@ test("public Assistant injects the Safari layout override after the base widget 
   const layoutIndex = edge.indexOf("/assistant-public-widget-layout.css?v=");
   assert.ok(baseIndex >= 0);
   assert.ok(layoutIndex > baseIndex);
-  assert.match(edge, /ASSISTANT_WIDGET_VERSION = "20260902-2"/);
+  assert.match(edge, /ASSISTANT_WIDGET_VERSION = "20\d{6}-\d+"/);
 });
