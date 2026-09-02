@@ -352,9 +352,9 @@ async function handleConsentOperation({
 }
 
 /**
- * Fully composed Assistant HTTP handler. It is intentionally transport-only:
- * importing this module does not mount /api/assistant anywhere. Runtime wiring
- * is a separate gate after the pending production smoke is closed.
+ * Fully composed Assistant HTTP handler. This module remains transport-only
+ * and does not self-register routes. The integration runtime mounts it at
+ * /api/assistant from public-form-rate-limit.js.
  */
 export async function handleAssistantApi(
   request,
@@ -543,7 +543,7 @@ export async function handleAssistantApi(
 export function assistantApiPolicy() {
   return Object.freeze({
     path: ASSISTANT_API_PATH,
-    mounted: false,
+    mounted: true,
     browserOperations: Object.freeze(["message", "consent"]),
     consentModelControlled: false,
     consentSingleUseAfterSubmission: true,
