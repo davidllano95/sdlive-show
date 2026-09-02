@@ -24,11 +24,11 @@ When docs disagree, use:
 
 ## Current state — 2026-09-02
 
-Current verified `main` before this docs-only reconciliation:
+Current verified runtime `main`:
 
-`1c8e594ce84d3f50d7c1412fcb5dfb29c8bc5da9`
+`259b68b2d94b5fca7dcfe13bec79ace40792fff8`
 
-That commit is PR #190, **Show auditable lead status history**.
+This is squash-merged PR #225, **Integrate gated Assistant backend on prepared storage**. PR CI PASS and post-merge `main` Tests #620 PASS.
 
 ### Closed / production-smoked
 
@@ -40,9 +40,12 @@ That commit is PR #190, **Show auditable lead status history**.
 - Public post-integration visual stabilization — CLOSED/PASS.
 - Rental image-editor parity — CLOSED/PASS through PR #157.
 - Availability Core v1 — CLOSED/PASS.
-- Lead Core Admin workflow through PR #190 — CLOSED/PASS, including visible auditable status history.
+- Lead Core Admin workflow through PR #190 — CLOSED/PASS.
+- Assistant Lead physical schema migration — CLOSED/PASS in production.
+- Assistant storage gate (`leads`, `privacy_consents`, idempotency) — CLOSED/PASS in production.
+- Assistant backend integration PR #225 — MERGED / CI PASS / deployed with public kill switch OFF.
 
-Canonical Lead Core statuses are:
+Canonical Lead Core statuses:
 
 - `new`
 - `contacted`
@@ -50,98 +53,90 @@ Canonical Lead Core statuses are:
 - `confirmed`
 - `lost`
 
-Do not use historical `qualified / won / archived` as executable status values.
+Relevant Lead sources:
 
-## Current Active Gate — SD.Live Assistant rollout
+- `contact`
+- `rental`
+- `assistant`
 
-The Assistant architecture is prepared but **not public and not in production**.
+Canonical service categories:
 
-### PR #214 — next rollout slice
+- `live`
+- `theatre`
+- `sound_design`
+- `systems`
+- `rental`
+- `other`
 
-**Add read-only Assistant storage preflight**
+## Current Active Gate — Assistant runtime configuration
 
-- OPEN / DRAFT / UNMERGED / MERGEABLE.
-- Base: `main`.
-- Head: `f5413158770254061d8b02a1d2c5113117fe5c0e`.
-- CI: Tests #581 PASS.
-- Adds authenticated `GET /api/admin/assistant/preflight`.
-- Read-only metadata inspection only (`PRAGMA` / `SELECT`).
-- Checks `leads`, `privacy_consents`, and `assistant_effect_reservations`.
-- Does not create, alter, insert, update or delete storage.
+The Assistant backend is now deployed, but the public Assistant remains **OFF**.
 
-This is the **next technical step** after this docs-only milestone.
+Production authenticated runtime readiness returned:
 
-### PR #216 — conditional storage preparation
+- `readyForRuntimeConfiguration: false`
+- `readyForPublicEnablement: false`
+- `ASSISTANT_PUBLIC_ENABLED`: disabled / defaults OFF
+- rate limiter: ready
+- D1 binding: ready
+- notification configuration: ready
+- Turnstile server secret: ready
 
-**Prepare Assistant storage behind Admin confirmation**
+Exact missing bindings:
 
-- OPEN / DRAFT / UNMERGED / MERGEABLE.
-- Base: PR #214 branch, not `main`.
-- Head: `3ac0338a7896a7429316773dafe73bdf0e767025`.
-- CI: Tests #596 PASS.
-- Admin-only `POST /api/admin/assistant/storage-prepare`.
-- Requires exact confirmation `PREPARE_ASSISTANT_STORAGE`.
+- `ASSISTANT_SESSION_KEY`
+- `ASSISTANT_TURNSTILE_SITE_KEY`
+- `OPENAI_API_KEY`
+- `OPENAI_ASSISTANT_MODEL`
 
-Decision rule:
+Do **not** enable `ASSISTANT_PUBLIC_ENABLED` yet.
 
-- if #214 reports storage already ready → do not merge/use #216;
-- if only known-safe supported preparation is required → integrate #216, execute once, rerun #214;
-- if a blocked/unknown `leads` schema is reported → do not execute #216; create an exact migration for that physical schema.
+### Storage gate — CLOSED/PASS
 
-### PR #213 — Assistant backend
+Production storage preflight is fully ready:
 
-**Integrate Assistant backend contracts**
+- `leads.canInsertAssistantLead: true`
+- `privacyConsents.canRecordAssistantConsent: true`
+- `idempotency.ready: true`
+- `readyForAssistantLeadCapture: true`
 
-- OPEN / DRAFT / UNMERGED / MERGEABLE.
-- Head: `cce1144f8336d22cafe2a9b200de93152bd6bea2`.
-- CI: Tests #594 PASS.
-- Not in production.
-- Public kill switch: `ASSISTANT_PUBLIC_ENABLED`; OFF unless exactly `true`.
-- Admin readiness endpoint prepared: `GET /api/admin/assistant/readiness`.
-- Public Assistant requests never perform D1 schema migration.
+The physical Lead migration preserved existing IDs/data and legacy `project` Lead type while adding `assistant` and making email nullable. Privacy now accepts `assistant`, and canonical `assistant_effect_reservations` exists.
+
+### Superseded PRs
+
+- #213 — CLOSED WITHOUT MERGE; superseded by final backend PR #225.
+- #216 — CLOSED WITHOUT MERGE; superseded by final storage preparation PR #224.
+- #218 — CLOSED WITHOUT MERGE / TEMP VALIDATION ONLY; do not reopen.
 
 ### PR #215 — public widget
 
-**Add gated public SD.Live Assistant widget**
-
-- OPEN / DRAFT / UNMERGED / MERGEABLE.
-- Base: PR #213 branch, not `main`.
-- Head: `901961c11b9cd22ebf14cee251e4129b2e2c1be2`.
-- CI: Tests #595 PASS.
-- Not in production.
-- Must not be integrated before #213 is deployed and smoke-tested with the public flag OFF.
-
-### PR #218 — temporary integration validation
-
-- CLOSED WITHOUT MERGE.
-- TEMP VALIDATION ONLY.
-- Tests #598 PASS.
-- Proved #213 + #214 + #216 + router integration can coexist without weakening runtime boundaries.
-- Do not reopen or merge it.
+- OPEN / DRAFT / UNMERGED.
+- Built on the older #213 lineage and must be reverified/rebased onto current `main` before integration.
+- Must remain unmerged until runtime readiness is fully green with public flag OFF.
+- Must be merged with public flag OFF, followed by explicit enablement and final E2E.
 
 ### PR #191 — WhatsApp owner control
 
-- OPEN / UNMERGED / MERGEABLE.
-- Separate from the Assistant Active Gate.
-- Meta WhatsApp Cloud API transport for authenticated Availability owner commands.
-- No AI, no Finance, no Leads coupling.
-- Requires real Meta/Cloudflare configuration before any smoke.
+- OPEN / separate Availability workstream.
+- Do not touch unless explicitly reprioritized.
 
 ## SD.Live Assistant architecture
 
 `Public site / widget → /api/assistant → request security → Turnstile → dedicated rate limit → sealed stateless session → OpenAI Responses API + Structured Outputs → deterministic server tools → Lead Core D1 → deterministic handoff → Resend → human follow-up`
 
-The Assistant must never:
+Hard boundaries:
 
-- impersonate Samuel;
-- invent or negotiate prices;
-- promise Availability without deterministic backend confirmation;
-- become a second Rental catalog/pricing source;
-- write Finance;
-- infer privacy consent on behalf of the user;
-- persist the full transcript;
-- expose secrets/tokens/private owner data;
-- migrate D1 schema during public traffic.
+- public kill switch `ASSISTANT_PUBLIC_ENABLED`, OFF unless exactly `true`;
+- OpenAI Responses API with strict Structured Outputs and `store:false`;
+- sealed AES-GCM stateless structured session; no transcript persistence/provider conversation state;
+- Assistant cannot impersonate Samuel;
+- no invented or negotiated prices;
+- no Availability promise without deterministic backend truth;
+- no second Rental catalog/pricing source;
+- no Finance reads/writes unless deliberately designed later;
+- explicit privacy consent only;
+- no public schema migration;
+- no owner phone/secrets/provider bodies exposed.
 
 ## Source-of-truth matrix
 
@@ -178,21 +173,19 @@ No production smoke for docs-only PRs.
 
 Manual QA with the owner: **one action at a time**.
 
-Do not use Cloudflare deployment state as routine primary truth. Investigate deployment internals only when production conflicts with merged `main`.
-
 ## Exact continuation
 
-After this docs-only reconciliation is merged:
-
-1. reverify PR #214 against the new `main`;
-2. merge #214 if still clean;
-3. after deployment, perform exactly one manual production action: authenticated `GET /api/admin/assistant/preflight`;
-4. stop and interpret the real production D1 result before touching #216, #213 or #215.
+1. Configure the four missing runtime bindings while keeping `ASSISTANT_PUBLIC_ENABLED` absent/false.
+2. Rerun authenticated `GET /api/admin/assistant/readiness`.
+3. Require `readyForRuntimeConfiguration:true` while `readyForPublicEnablement:false` solely because public exposure remains OFF.
+4. Reverify/rebase #215 onto current `main`, run CI, and merge the widget while the flag remains OFF.
+5. Only after widget integration PASS, explicitly enable `ASSISTANT_PUBLIC_ENABLED=true`.
+6. Perform final Assistant E2E one manual action at a time.
 
 ## Relevant docs
 
 - `PROJECT_STATUS.md` — master current state and exact continuation.
-- `docs/checkpoints/handoff-assistant-rollout-2026-09-02.md` — latest rollout checkpoint.
+- `docs/checkpoints/handoff-assistant-rollout-2026-09-02.md` — latest Assistant rollout checkpoint.
 - `docs/checkpoints/handoff-availability-v1-closeout-2026-09-01.md` — Availability closeout.
 - `docs/roadmap/availability-aware-contact-widget.md` — Availability/Assistant contract.
 - `ROADMAP_MASTER_CHECKLIST.md` — reconciled backlog and rollout checklist.
