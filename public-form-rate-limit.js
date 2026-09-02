@@ -16,6 +16,7 @@ import { preparePublicLeadRequest } from "./lead-core-public-request.js";
 import { persistLeadCoreFromPublicResponse } from "./lead-core-storage.js";
 import { handleLeadAdminApi } from "./lead-admin-api.js";
 import { applyLeadAdminNavigationRuntime } from "./lead-admin-dashboard-edge.js";
+import { handleAssistantStoragePreflightApi } from "./assistant-admin-preflight.js";
 
 const PUBLIC_FORM_LIMITS = {
   "/api/contact": {
@@ -176,6 +177,13 @@ export default {
   async fetch(request, env) {
     const path = normalizedPath(request);
     const url = new URL(request.url);
+
+    if (path === "/api/admin/assistant/preflight") {
+      const response = await handleAssistantStoragePreflightApi(request, env, {
+        verifyAdmin: verifyAdminViaExistingApi
+      });
+      if (response) return response;
+    }
 
     if (path === "/api/availability" || path === "/api/admin/availability") {
       const response = await handleAvailabilityApi(request, env, {
