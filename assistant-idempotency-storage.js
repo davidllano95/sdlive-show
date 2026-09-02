@@ -4,6 +4,18 @@ const schemaPromises = new WeakMap();
 const KEY_RE = /^assistant-lead-v1-[a-f0-9]{64}$/;
 const REQUEST_RE = /^req_[a-f0-9]{32}$/;
 const ERROR_CODE_RE = /^[a-z0-9_]{1,80}$/;
+const REQUIRED_COLUMNS = Object.freeze([
+  "idempotency_key",
+  "effect",
+  "status",
+  "request_id",
+  "lead_id",
+  "attempts",
+  "reserved_at",
+  "updated_at",
+  "completed_at",
+  "error_code"
+]);
 
 function dbFromEnv(env) {
   const db = env?.CMS_DB;
@@ -44,6 +56,84 @@ function safeErrorCode(value) {
   return ERROR_CODE_RE.test(code) ? code : "operation_failed";
 }
 
+function checkContainsAll(tableSql, columnName, values) {
+  const sql = String(tableSql || "").toLowerCase();
+  const match = sql.match(new RegExp(`check\\s*\\(([^)]*\\b${columnName}\\b[^)]*)\\)`, "i"));
+  if (!match) return true;
+  const expression = match[1].toLowerCase();
+  return values.every((value) => expression.includes(`'${value}'`));
+}
+
+export function analyzeAssistantIdempotencyStorageCompatibility({
+  columns,
+  tableSql,
+  indexSql
+} = {}) {
+  const rows = Array.isArray(columns) ? columns : [];
+  const names = new Set(rows.map((row) => String(row?.name || "").trim()).filter(Boolean));
+  const missingColumns = REQUIRED_COLUMNS.filter((name) => !names.has(name));
+  const sql = String(tableSql || "").trim();
+  const tableExists = Boolean(sql);
+  const primaryKeyReady = rows.some((row) =>
+    String(row?.name || "") === "idempotency_key" && Number(row?.pk || 0) > 0
+  );
+  const effectConstraintReady = tableExists && checkContainsAll(sql, "effect", ["lead_create"]);
+  const statusConstraintReady = tableExists && checkContainsAll(sql, "status", [
+    "reserved",
+    "completed",
+    "failed"
+  ]);
+  const statusIndexReady = /create\s+index/i.test(String(indexSql || ""));
+
+  let reason = "compatible";
+  if (!tableExists) reason = "table_missing";
+  else if (missingColumns.length) reason = "required_columns_missing";
+  else if (!primaryKeyReady) reason = "idempotency_key_primary_key_missing";
+  else if (!effectConstraintReady) reason = "effect_constraint_incompatible";
+  else if (!statusConstraintReady) reason = "status_constraint_incompatible";
+  else if (!statusIndexReady) reason = "status_index_missing";
+
+  return {
+    ok: true,
+    ready: reason === "compatible",
+    reason,
+    missingColumns,
+    primaryKeyReady,
+    effectConstraintReady,
+    statusConstraintReady,
+    statusIndexReady
+  };
+}
+
+/** Strictly read-only inspection of the Assistant idempotency table. */
+export async function inspectAssistantIdempotencyStorageCompatibility(env) {
+  const db = dbFromEnv(env);
+  const [tableInfo, tableRow, indexRow] = await Promise.all([
+    db.prepare("PRAGMA table_info(assistant_effect_reservations)").all(),
+    db.prepare(`
+      SELECT sql
+      FROM sqlite_master
+      WHERE type = 'table'
+        AND name = 'assistant_effect_reservations'
+      LIMIT 1
+    `).first(),
+    db.prepare(`
+      SELECT sql
+      FROM sqlite_master
+      WHERE type = 'index'
+        AND name = 'idx_assistant_effect_reservations_status_updated'
+      LIMIT 1
+    `).first()
+  ]);
+
+  return analyzeAssistantIdempotencyStorageCompatibility({
+    columns: tableInfo?.results,
+    tableSql: tableRow?.sql,
+    indexSql: indexRow?.sql
+  });
+}
+
+/** Explicit schema preparation helper. Never required by the public capture path. */
 export async function ensureAssistantIdempotencyStorage(env) {
   const db = dbFromEnv(env);
   if (schemaPromises.has(db)) return schemaPromises.get(db);
@@ -79,6 +169,12 @@ export async function ensureAssistantIdempotencyStorage(env) {
     throw error;
   }
   return promise;
+}
+
+async function maybeEnsureStorage(env, ensureStorage) {
+  if (typeof ensureStorage === "function") {
+    await ensureStorage(env);
+  }
 }
 
 async function readReservation(db, key) {
@@ -122,11 +218,12 @@ export async function reserveAssistantLeadCreate(
   },
   {
     now = new Date(),
-    staleAfterMs = ASSISTANT_IDEMPOTENCY_RESERVATION_TTL_MS
+    staleAfterMs = ASSISTANT_IDEMPOTENCY_RESERVATION_TTL_MS,
+    ensureStorage = ensureAssistantIdempotencyStorage
   } = {}
 ) {
   const db = dbFromEnv(env);
-  await ensureAssistantIdempotencyStorage(env);
+  await maybeEnsureStorage(env, ensureStorage);
 
   const safeKey = validKey(key);
   const safeRequestId = validRequestId(requestId);
@@ -229,10 +326,13 @@ export async function completeAssistantLeadCreate(
     key,
     leadId
   },
-  { now = new Date() } = {}
+  {
+    now = new Date(),
+    ensureStorage = ensureAssistantIdempotencyStorage
+  } = {}
 ) {
   const db = dbFromEnv(env);
-  await ensureAssistantIdempotencyStorage(env);
+  await maybeEnsureStorage(env, ensureStorage);
 
   const safeKey = validKey(key);
   const safeLeadId = validLeadId(leadId);
@@ -271,10 +371,13 @@ export async function failAssistantLeadCreate(
     requestId,
     errorCode
   },
-  { now = new Date() } = {}
+  {
+    now = new Date(),
+    ensureStorage = ensureAssistantIdempotencyStorage
+  } = {}
 ) {
   const db = dbFromEnv(env);
-  await ensureAssistantIdempotencyStorage(env);
+  await maybeEnsureStorage(env, ensureStorage);
 
   const safeKey = validKey(key);
   const safeRequestId = validRequestId(requestId);
@@ -304,6 +407,7 @@ export function assistantIdempotencyStoragePolicy() {
     uniqueKeyEnforcedByDatabase: true,
     supportedEffect: "lead_create",
     abandonedReservationTtlMs: ASSISTANT_IDEMPOTENCY_RESERVATION_TTL_MS,
-    leadSourceOfTruth: "leads"
+    leadSourceOfTruth: "leads",
+    runtimeMayEnsureSchema: false
   });
 }
