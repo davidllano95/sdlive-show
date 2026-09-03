@@ -6,20 +6,41 @@ async function source(path) {
   return readFile(new URL(`../${path}`, import.meta.url), "utf8");
 }
 
-test("Assistant uses a three-zone messaging shell with consent inside the conversation scroll", async () => {
+test("Assistant uses a three-zone messaging shell with consent and security inside the conversation scroll", async () => {
   const edge = await source("assistant-public-widget-edge.js");
   const css = await source("assistant-public-widget-chat.css");
 
   assert.match(edge, /Project guidance for creative and technical audio\./);
   assert.match(
     edge,
-    /assistant-panel__messages[\s\S]*assistant-message--assistant[\s\S]*assistant-panel__consent[\s\S]*<\/div>[\s\S]*<\/div>[\s\S]*<form class="assistant-panel__composer"/
+    /assistant-panel__messages[\s\S]*assistant-message--assistant[\s\S]*assistant-security-message[\s\S]*sdliveAssistantTurnstile[\s\S]*assistant-panel__consent[\s\S]*<\/div>[\s\S]*<\/div>[\s\S]*<form class="assistant-panel__composer"/
   );
   assert.match(edge, /assistant-panel__composer-main/);
   assert.match(edge, /assistant-panel__footer[\s\S]*hello@sdlive\.show[\s\S]*WhatsApp/);
   assert.match(css, /grid-template-rows:\s*max-content minmax\(0, 1fr\) max-content;/);
   assert.match(css, /\.assistant-panel__messages\s*\{[\s\S]*?height:\s*100%;[\s\S]*?justify-content:\s*flex-start;[\s\S]*?overflow-y:\s*auto;/);
   assert.match(css, /\.assistant-panel__consent\s*\{[\s\S]*?order:\s*999;/);
+});
+
+test("Turnstile is an inline security message instead of composer chrome", async () => {
+  const edge = await source("assistant-public-widget-edge.js");
+  const css = await source("assistant-public-widget-chat.css");
+  const js = await source("assistant-public-widget.js");
+
+  const messagesIndex = edge.indexOf('class="assistant-panel__messages"');
+  const securityIndex = edge.indexOf('id="sdliveAssistantSecurity"');
+  const turnstileIndex = edge.indexOf('id="sdliveAssistantTurnstile"');
+  const composerIndex = edge.indexOf('<form class="assistant-panel__composer"');
+
+  assert.ok(messagesIndex >= 0);
+  assert.ok(securityIndex > messagesIndex);
+  assert.ok(turnstileIndex > securityIndex);
+  assert.ok(composerIndex > turnstileIndex);
+  assert.match(css, /\.assistant-security-message\s*\{[\s\S]*?align-self:\s*flex-start;/);
+  assert.match(css, /\.assistant-security-message\[hidden\]\s*\{\s*display:\s*none;/);
+  assert.match(js, /securityMessage\.hidden = false/);
+  assert.match(js, /securityMessage\.hidden = true/);
+  assert.match(js, /appearance:\s*"interaction-only"/);
 });
 
 test("Assistant consumes the canonical SD.Live design tokens instead of legacy lime/blue colors", async () => {
@@ -50,18 +71,16 @@ test("primary Assistant actions follow the site's restrained accent-button treat
   assert.match(css, /\.assistant-panel__send\s*\{[\s\S]*?background:\s*rgba\(var\(--assistant-accent-rgb\), 0\.14\);[\s\S]*?color:\s*var\(--color-text\);/);
 });
 
-test("composer is anchored as the final panel row and keeps security unobtrusive", async () => {
+test("composer stays anchored as the final panel row while security remains in the transcript", async () => {
   const edge = await source("assistant-public-widget-edge.js");
   const css = await source("assistant-public-widget-chat.css");
-  const js = await source("assistant-public-widget.js");
 
   assert.match(edge, /<form class="assistant-panel__composer"[\s\S]*assistant-panel__composer-main[\s\S]*sdliveAssistantInput[\s\S]*sdliveAssistantSend/);
   assert.match(css, /\.assistant-panel__composer\s*\{[\s\S]*?border-top:/);
   assert.match(css, /\.assistant-turnstile:empty\s*\{\s*display:\s*none;/);
-  assert.match(js, /appearance:\s*"interaction-only"/);
 });
 
-test("redesign asset loads last and is cache-busted after brand/layout correction", async () => {
+test("redesign asset loads last and is cache-busted after inline security correction", async () => {
   const edge = await source("assistant-public-widget-edge.js");
   const baseIndex = edge.indexOf("/assistant-public-widget.css?v=");
   const layoutIndex = edge.indexOf("/assistant-public-widget-layout.css?v=");
@@ -72,5 +91,5 @@ test("redesign asset loads last and is cache-busted after brand/layout correctio
   assert.ok(layoutIndex > baseIndex);
   assert.ok(chatIndex > layoutIndex);
   assert.ok(jsIndex > chatIndex);
-  assert.match(edge, /ASSISTANT_WIDGET_VERSION = "20260903-2"/);
+  assert.match(edge, /ASSISTANT_WIDGET_VERSION = "20260903-3"/);
 });
