@@ -1,4 +1,4 @@
-const ASSISTANT_WIDGET_VERSION = "20260902-3";
+const ASSISTANT_WIDGET_VERSION = "20260903-1";
 
 function enabled(env) {
   return String(env?.ASSISTANT_PUBLIC_ENABLED || "").trim().toLowerCase() === "true";
@@ -36,10 +36,10 @@ function panelHtml(turnstileSiteKey) {
   <button class="assistant-widget__backdrop" type="button" data-sdlive-assistant-close aria-label="Close Assistant"></button>
   <section class="assistant-panel" id="sdliveAssistantPanel" role="dialog" aria-modal="true" aria-labelledby="sdliveAssistantTitle" tabindex="-1">
     <header class="assistant-panel__header">
-      <div>
+      <div class="assistant-panel__identity">
         <span class="assistant-panel__eyebrow" data-en="AI ASSISTANT" data-es="ASISTENTE CON IA">AI ASSISTANT</span>
         <h2 id="sdliveAssistantTitle">SD.Live Assistant</h2>
-        <p data-en="Project guidance with deterministic SD.Live tools. Human confirmation remains final." data-es="Orientación de proyecto con herramientas determinísticas de SD.Live. La confirmación humana sigue siendo final.">Project guidance with deterministic SD.Live tools. Human confirmation remains final.</p>
+        <p data-en="Project guidance for creative and technical audio." data-es="Orientación para proyectos de audio creativo y técnico.">Project guidance for creative and technical audio.</p>
       </div>
       <button class="assistant-panel__close" type="button" data-sdlive-assistant-close aria-label="Close Assistant">×</button>
     </header>
@@ -50,29 +50,27 @@ function panelHtml(turnstileSiteKey) {
           <span class="assistant-message__label">SD.Live Assistant</span>
           <p data-en="Tell me what you're planning — live sound, theatre, sound design, systems or rental — and I'll help organize the request." data-es="Cuéntame qué estás planeando — sonido en vivo, teatro, diseño sonoro, sistemas o alquiler — y te ayudo a organizar la solicitud.">Tell me what you're planning — live sound, theatre, sound design, systems or rental — and I'll help organize the request.</p>
         </article>
+        <div class="assistant-panel__consent" id="sdliveAssistantConsent" hidden></div>
       </div>
-
-      <div class="assistant-panel__consent" id="sdliveAssistantConsent" hidden></div>
     </div>
 
     <form class="assistant-panel__composer" id="sdliveAssistantForm">
       <label class="sr-only" for="sdliveAssistantInput" data-en="Message SD.Live Assistant" data-es="Mensaje para SD.Live Assistant">Message SD.Live Assistant</label>
-      <textarea id="sdliveAssistantInput" maxlength="2500" rows="2" required data-en-placeholder="Tell me about the show, date, city or what you need…" data-es-placeholder="Cuéntame del show, la fecha, la ciudad o lo que necesitas…" placeholder="Tell me about the show, date, city or what you need…"></textarea>
-      <div class="assistant-panel__composer-row">
-        <div class="assistant-turnstile" id="sdliveAssistantTurnstile" aria-label="Security verification"></div>
+      <div class="assistant-panel__composer-main">
+        <textarea id="sdliveAssistantInput" maxlength="2500" rows="1" required data-en-placeholder="Type your message…" data-es-placeholder="Escribe tu mensaje…" placeholder="Type your message…"></textarea>
         <button class="assistant-panel__send" id="sdliveAssistantSend" type="submit" disabled>
           <span data-en="Send" data-es="Enviar">Send</span>
-          <span aria-hidden="true">→</span>
+          <span class="assistant-panel__send-icon" aria-hidden="true">↗</span>
         </button>
       </div>
+      <div class="assistant-turnstile" id="sdliveAssistantTurnstile" aria-label="Security verification"></div>
       <p class="assistant-panel__status" id="sdliveAssistantStatus" role="status" aria-live="polite"></p>
+      <div class="assistant-panel__footer">
+        <span data-en="Prefer a person?" data-es="¿Prefieres una persona?">Prefer a person?</span>
+        <a href="mailto:hello@sdlive.show">hello@sdlive.show</a>
+        <a href="https://wa.me/samd.llano95" rel="noopener" target="_blank">WhatsApp ↗</a>
+      </div>
     </form>
-
-    <footer class="assistant-panel__footer">
-      <span data-en="Prefer a person?" data-es="¿Prefieres una persona?">Prefer a person?</span>
-      <a href="mailto:hello@sdlive.show">hello@sdlive.show</a>
-      <a href="https://wa.me/samd.llano95" rel="noopener" target="_blank">WhatsApp</a>
-    </footer>
   </section>
 </div>`;
 }
@@ -103,6 +101,7 @@ export function applyAssistantPublicWidgetRuntime(response, env) {
         element.append(
           `<link rel="stylesheet" href="/assistant-public-widget.css?v=${ASSISTANT_WIDGET_VERSION}" data-sdlive-assistant-widget/>` +
           `<link rel="stylesheet" href="/assistant-public-widget-layout.css?v=${ASSISTANT_WIDGET_VERSION}" data-sdlive-assistant-widget/>` +
+          `<link rel="stylesheet" href="/assistant-public-widget-chat.css?v=${ASSISTANT_WIDGET_VERSION}" data-sdlive-assistant-widget/>` +
           `<script defer src="/assistant-public-widget.js?v=${ASSISTANT_WIDGET_VERSION}" data-sdlive-assistant-widget></script>`,
           { html: true }
         );
