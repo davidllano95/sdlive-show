@@ -24,7 +24,11 @@ When docs disagree, use:
 
 ## Current state — 2026-09-03
 
-Current runtime baseline:
+GitHub `main` head at this handoff:
+
+`a5bffc66e711af23f2df01cd440aa0d43344d632`.
+
+Last verified runtime baseline:
 
 `c52a06603c0a6b5cd0cc4425cca11f69cce693d7` — PR #244.
 
@@ -89,23 +93,43 @@ Hard boundaries:
 - no public schema migration;
 - no owner phone/secrets/provider bodies exposed.
 
-## Current Active Gate — #191 WhatsApp owner control for Availability
+## Current Active Gate — #246 WhatsApp owner control for Availability
 
-PR #191 remains open and unmerged. It is now the next operational workstream.
+The old PR #191 has been inspected and is now **historical source material only**. Do not merge its stale branch directly.
 
-Do **not** merge the existing old branch directly. Reconstruct/reverify the bounded scope on current `main`, preserving:
+The live implementation work is:
 
-- Meta webhook HMAC signature verification;
+- PR **#246 — Rebuild verified-owner WhatsApp Availability control**;
+- branch `feature/whatsapp-owner-control-current-main-20260903`;
+- head at handoff `fd4a00929b3bd02c5cc3da0b7338bf90faea911c`;
+- **OPEN / UNMERGED / CI RED**;
+- GitHub Actions **Tests #673 = FAILURE** in `Run tests`;
+- because it is unmerged, #246 has not changed production.
+
+#246 reconstructs the bounded feature on current architecture while preserving:
+
+- raw-body Meta webhook HMAC SHA-256 verification;
 - exact owner sender + `phone_number_id` allowlisting;
-- D1 message-id idempotency / in-flight duplicate protection;
-- existing transport-neutral Availability parser;
-- canonical Availability write path;
+- durable D1 message-id idempotency / reply retry behavior;
+- existing transport-neutral Availability owner parser;
+- canonical `handleAvailabilityApi` write path;
+- hard `WHATSAPP_OWNER_CONTROL_ENABLED` kill switch;
+- Access-protected storage preparation/readiness;
+- **no public D1 DDL**;
+- fail-closed behavior if required schema is missing;
 - server-side owner phone/token/app-secret handling;
-- deterministic confirmations through Meta Cloud API.
+- deterministic confirmations through Meta Cloud API;
+- no AI and no Finance/Contact/Rental/Calendar/Show Day/Assistant scope expansion.
 
-Meta/Cloudflare onboarding and secrets must be completed before activation. Then: CI green → squash merge → one representative production smoke.
+Do **not** configure Meta/Cloudflare rollout yet. The next step is to inspect Tests #673, recover the exact failing assertions, fix only those contracts, and require green CI before merge.
 
-## Work order after #191
+After green CI: squash merge #246 → verify `main` CI → storage preparation/readiness with kill switch OFF → Meta/Cloudflare onboarding → callback verification/subscription → readiness → enable flag → exactly one representative production smoke → return Availability to AUTO. Close #191 without merge as superseded only after #246 is validated/merged.
+
+Detailed checkpoint:
+
+`docs/checkpoints/handoff-whatsapp-owner-control-pr246-2026-09-03.md`
+
+## Work order after #246
 
 1. Rental real-time availability + double-booking protection.
 2. Mobile Rental Cart total/sticky summary.
@@ -132,11 +156,13 @@ No production smoke for docs-only PRs. Manual QA with the owner: **one action at
 
 ## Exact continuation
 
-**Assistant rollout is closed. Inspect PR #191 against current `main`, reconstruct only the still-valid WhatsApp owner-control scope on a fresh branch, and do not merge the stale branch directly.**
+**Resume PR #246 exactly where it is: CI is red at Tests #673. Extract the exact failing assertions, fix only those contracts on `feature/whatsapp-owner-control-current-main-20260903`, rerun CI, and do not merge or touch Meta/Cloudflare rollout configuration until CI is green.**
 
 ## Relevant docs
 
 - `PROJECT_STATUS.md` — master current state and exact continuation.
+- `docs/checkpoints/handoff-whatsapp-owner-control-pr246-2026-09-03.md` — current WhatsApp owner-control handoff.
+- `docs/roadmap/whatsapp-owner-control.md` — #246 architecture and rollout contract.
 - `docs/checkpoints/handoff-assistant-rollout-closeout-2026-09-03.md` — final Assistant rollout closeout.
 - `docs/checkpoints/handoff-availability-v1-closeout-2026-09-01.md` — Availability closeout.
 - `docs/roadmap/availability-aware-contact-widget.md` — Availability/Assistant contract.
