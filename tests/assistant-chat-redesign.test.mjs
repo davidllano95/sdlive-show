@@ -22,9 +22,10 @@ test("Assistant uses a three-zone messaging shell with consent and security insi
   assert.match(css, /\.assistant-panel__consent\s*\{[\s\S]*?order:\s*999;/);
 });
 
-test("Turnstile is an inline security message instead of composer chrome", async () => {
+test("Turnstile remains an inline security message and visibly confirms verification", async () => {
   const edge = await source("assistant-public-widget-edge.js");
   const css = await source("assistant-public-widget-chat.css");
+  const polish = await source("assistant-public-widget-polish.css");
   const js = await source("assistant-public-widget.js");
 
   const messagesIndex = edge.indexOf('class="assistant-panel__messages"');
@@ -36,11 +37,25 @@ test("Turnstile is an inline security message instead of composer chrome", async
   assert.ok(securityIndex > messagesIndex);
   assert.ok(turnstileIndex > securityIndex);
   assert.ok(composerIndex > turnstileIndex);
+  assert.match(edge, /id="sdliveAssistantSecurity" data-state="pending"/);
   assert.match(css, /\.assistant-security-message\s*\{[\s\S]*?align-self:\s*flex-start;/);
-  assert.match(css, /\.assistant-security-message\[hidden\]\s*\{\s*display:\s*none;/);
-  assert.match(js, /securityMessage\.hidden = false/);
-  assert.match(js, /securityMessage\.hidden = true/);
+  assert.match(js, /securityVerified:\s*"Verified — you can continue\."/);
+  assert.match(js, /securityVerified:\s*"Verificado — puedes continuar\."/);
+  assert.match(js, /function confirmSecurity\(\)[\s\S]*securityMessage\.dataset\.state = "verified";[\s\S]*turnstileContainer\.hidden = true;[\s\S]*setSecurityStatus\(text\(\)\.securityVerified\);/);
+  assert.match(js, /callback\(token\)[\s\S]*securityToken = String\(token \|\| ""\);[\s\S]*confirmSecurity\(\);/);
   assert.match(js, /appearance:\s*"interaction-only"/);
+  assert.match(polish, /\.assistant-security-message\[data-state="verified"\]/);
+  assert.match(polish, /\.assistant-turnstile\[hidden\]\s*\{\s*display:\s*none;/);
+});
+
+test("Assistant messages use the official SD.Live symbol instead of the placeholder glyph", async () => {
+  const baseCss = await source("assistant-public-widget-chat.css");
+  const polish = await source("assistant-public-widget-polish.css");
+
+  assert.match(polish, /\.assistant-message--assistant::before\s*\{[\s\S]*?content:\s*"";/);
+  assert.match(polish, /background-image:\s*url\("\/assets\/logos\/sd-live-header-normal-symbol\.png"\);/);
+  assert.match(polish, /background-size:\s*24px 24px;/);
+  assert.match(baseCss, /\.assistant-message--assistant::before/);
 });
 
 test("Assistant consumes the canonical SD.Live design tokens instead of legacy lime/blue colors", async () => {
@@ -80,16 +95,18 @@ test("composer stays anchored as the final panel row while security remains in t
   assert.match(css, /\.assistant-turnstile:empty\s*\{\s*display:\s*none;/);
 });
 
-test("redesign asset loads last and is cache-busted after inline security correction", async () => {
+test("brand polish loads last and the complete Assistant bundle is cache-busted", async () => {
   const edge = await source("assistant-public-widget-edge.js");
   const baseIndex = edge.indexOf("/assistant-public-widget.css?v=");
   const layoutIndex = edge.indexOf("/assistant-public-widget-layout.css?v=");
   const chatIndex = edge.indexOf("/assistant-public-widget-chat.css?v=");
+  const polishIndex = edge.indexOf("/assistant-public-widget-polish.css?v=");
   const jsIndex = edge.indexOf("/assistant-public-widget.js?v=");
 
   assert.ok(baseIndex >= 0);
   assert.ok(layoutIndex > baseIndex);
   assert.ok(chatIndex > layoutIndex);
-  assert.ok(jsIndex > chatIndex);
-  assert.match(edge, /ASSISTANT_WIDGET_VERSION = "20260903-3"/);
+  assert.ok(polishIndex > chatIndex);
+  assert.ok(jsIndex > polishIndex);
+  assert.match(edge, /ASSISTANT_WIDGET_VERSION = "20260903-4"/);
 });
