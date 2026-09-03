@@ -34,6 +34,10 @@ function plainObject(value) {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
+function safeLanguage(value) {
+  return String(value || "").trim().toLowerCase() === "es" ? "es" : "en";
+}
+
 function validModelOutput(result) {
   if (!result || result.ok !== true || !result.output) {
     throw orchestrationError("PROVIDER_INVALID_OUTPUT", "Validated model output is required");
@@ -60,6 +64,48 @@ function mergeSlotPatch(current, incoming) {
     }
   }
   return base;
+}
+
+function rentalRequestedName(rentalQuery, issue) {
+  const items = Array.isArray(rentalQuery?.items) ? rentalQuery.items : [];
+  const requestedQuantity = Number(issue?.requestedQuantity);
+  const match = items.find((item) => Number(item?.quantity) === requestedQuantity) || items[0];
+  const name = String(match?.name || "").trim();
+  return name || String(issue?.key || "requested item").trim();
+}
+
+function rentalFailClosedReply(rentalQuery, result, language) {
+  const lang = safeLanguage(language);
+  const issues = Array.isArray(result?.issues) ? result.issues : [];
+  const unresolved = Array.isArray(result?.unresolved) ? result.unresolved : [];
+  const limitIssue = issues.find((issue) => issue?.type === "quantity_exceeds_current_backend_limit");
+
+  if (limitIssue) {
+    const itemName = rentalRequestedName(rentalQuery, limitIssue);
+    const requested = Number(limitIssue.requestedQuantity) || 0;
+    const maximum = Number(limitIssue.maxQuantity) || 0;
+    if (lang === "es") {
+      return `El catálogo actual de Rental admite hasta ${maximum} unidades de ${itemName}, así que no puedo confirmar una solicitud de ${requested}. Tampoco puedo cotizar el precio ni confirmar disponibilidad de inventario desde esta consulta; ambos requieren una cotización o revisión aparte.`;
+    }
+    return `The current Rental catalog supports up to ${maximum} ${itemName} units, so I can't confirm a request for ${requested}. I also can't quote pricing or confirm inventory availability from this check; both require a separate quote or review.`;
+  }
+
+  if (unresolved.length > 0) {
+    const names = unresolved
+      .map((item) => String(item?.requested || "").trim())
+      .filter(Boolean)
+      .slice(0, 3)
+      .join(", ");
+    if (lang === "es") {
+      return `No pude relacionar ${names || "esa selección"} con el catálogo actual de Rental, así que no voy a sustituir ni adivinar otro equipo. Tampoco puedo cotizar el precio ni confirmar disponibilidad de inventario desde esta consulta; aclara el modelo exacto o solicita una revisión humana.`;
+    }
+    return `I couldn't match ${names || "that selection"} to the current Rental catalog, so I won't substitute or guess another item. I also can't quote pricing or confirm inventory availability from this check; please clarify the exact model or request a human review.`;
+  }
+
+  if (lang === "es") {
+    return "No pude validar esa selección dentro de los límites actuales del catálogo de Rental. No puedo cotizar el precio ni confirmar disponibilidad de inventario desde esta consulta; ajusta la solicitud o solicita una revisión humana.";
+  }
+  return "I couldn't validate that selection within the current Rental catalog limits. I can't quote pricing or confirm inventory availability from this check; please adjust the request or request a human review.";
 }
 
 export function inferAssistantDeterministicSlotPatch(message) {
@@ -197,7 +243,25 @@ export async function runAssistantTurn({
     }
 
     usedToolActions.add(output.nextAction);
-    toolResults.push(await executeTool(output, deps));
+    const toolResult = await executeTool(output, deps);
+    toolResults.push(toolResult);
+
+    // Rental selections that are already conclusively outside the deterministic
+    // boundary must fail closed at the server. Do not ask the model to reason
+    // over the same rejected selection again, because that can cause a second
+    // check_rental request and surface an internal tool-loop error to the user.
+    if (toolResult.type === "rental" && toolResult.value?.readyForBackendEvaluation !== true) {
+      const applyTurn = requiredFunction(deps, "applyTurn");
+      const nextSession = await applyTurn(session, mergedSlotPatch);
+      return {
+        kind: "reply",
+        reply: rentalFailClosedReply(output.rentalQuery, toolResult.value, output.language),
+        language: safeLanguage(output.language),
+        serviceCategory: output.serviceCategory || "rental",
+        session: nextSession,
+        toolResults
+      };
+    }
 
     output = await validatedModelTurn({
       message: safeMessage,
