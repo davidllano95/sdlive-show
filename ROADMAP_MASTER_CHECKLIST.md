@@ -6,7 +6,7 @@
 
 Last reconciliation: **2026-09-03 — America/Bogota**
 
-Current GitHub `main`:
+PR #246 base at creation:
 
 `a5bffc66e711af23f2df01cd440aa0d43344d632`.
 
