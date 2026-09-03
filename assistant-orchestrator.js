@@ -291,7 +291,7 @@ export async function runAssistantTurn({
     }
 
     const handoffLead = requiredFunction(deps, "handoffLead");
-    await handoffLead({
+    await deps.handoffLead({
       leadId,
       leadDraft: output.leadDraft,
       language: output.language
@@ -319,7 +319,6 @@ export function assistantOrchestratorPolicy() {
     modelExecutesToolsDirectly: false,
     modelControlsConsent: false,
     incrementalSlotsAppliedOncePerTurn: true,
-    explicitTbdVenuePersistence: true,
     captureRequiresFreshServerConsent: true,
     handoffRequiresServerLeadId: true,
     notificationFailureRollsBackLead: false,
