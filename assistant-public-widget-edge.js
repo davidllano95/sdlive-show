@@ -1,4 +1,4 @@
-const ASSISTANT_WIDGET_VERSION = "20260903-2";
+const ASSISTANT_WIDGET_VERSION = "20260903-3";
 
 function enabled(env) {
   return String(env?.ASSISTANT_PUBLIC_ENABLED || "").trim().toLowerCase() === "true";
@@ -50,6 +50,13 @@ function panelHtml(turnstileSiteKey) {
           <span class="assistant-message__label">SD.Live Assistant</span>
           <p data-en="Tell me what you're planning — live sound, theatre, sound design, systems or rental — and I'll help organize the request." data-es="Cuéntame qué estás planeando — sonido en vivo, teatro, diseño sonoro, sistemas o alquiler — y te ayudo a organizar la solicitud.">Tell me what you're planning — live sound, theatre, sound design, systems or rental — and I'll help organize the request.</p>
         </article>
+        <article class="assistant-security-message" id="sdliveAssistantSecurity" aria-live="polite">
+          <span class="assistant-message__label" data-en="Security check" data-es="Verificación de seguridad">Security check</span>
+          <div class="assistant-security-message__bubble">
+            <p class="assistant-security-message__status" id="sdliveAssistantSecurityStatus" data-en="Before we start, verify you're human." data-es="Antes de empezar, verifica que eres humano.">Before we start, verify you're human.</p>
+            <div class="assistant-turnstile" id="sdliveAssistantTurnstile" aria-label="Security verification"></div>
+          </div>
+        </article>
         <div class="assistant-panel__consent" id="sdliveAssistantConsent" hidden></div>
       </div>
     </div>
@@ -63,7 +70,6 @@ function panelHtml(turnstileSiteKey) {
           <span class="assistant-panel__send-icon" aria-hidden="true">↗</span>
         </button>
       </div>
-      <div class="assistant-turnstile" id="sdliveAssistantTurnstile" aria-label="Security verification"></div>
       <p class="assistant-panel__status" id="sdliveAssistantStatus" role="status" aria-live="polite"></p>
       <div class="assistant-panel__footer">
         <span data-en="Prefer a person?" data-es="¿Prefieres una persona?">Prefer a person?</span>
