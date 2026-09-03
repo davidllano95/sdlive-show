@@ -22,25 +22,21 @@ When docs disagree, use:
 
 **Stability > novelty.** `UNMERGED != PRODUCTION`, and `CI PASS != PRODUCTION SMOKE PASS`.
 
-## Current state — 2026-09-02
+## Current state — 2026-09-03
 
 Current runtime baseline:
 
-`bf93bbbf9f707abea22105753c9d424b82a68b27` — PR #231.
+`c52a06603c0a6b5cd0cc4425cca11f69cce693d7` — PR #244.
 
-Assistant milestones:
+### Closed/PASS
 
-- Availability Core v1 — CLOSED/PASS.
-- Lead Core through PR #190 — CLOSED/PASS.
-- Assistant storage — CLOSED/PASS in production.
-- Assistant backend PR #225 — MERGED / CI PASS / deployed.
-- Assistant runtime configuration — PASS; no missing/invalid bindings.
-- `ASSISTANT_PUBLIC_ENABLED=true` in production.
-- Assistant public widget PR #228 — MERGED / deployed; launcher visible and Turnstile verifies.
-- SD.Live Forms Turnstile Siteverify — PRODUCTION PASS.
-- First real OpenAI Assistant turn — PASS after API credits were added.
-- PR #231 — MERGED / PR CI PASS / `main` CI PASS; fixes Safari Turnstile refresh deadlock between turns.
-- Current manual gate — Safari second-turn/session-continuity smoke.
+- Availability Core v1.
+- Lead Core through PR #190.
+- Assistant storage/backend/runtime/public widget.
+- Public Assistant activation (`ASSISTANT_PUBLIC_ENABLED=true`).
+- Assistant full production E2E rollout.
+- SD.Live Forms Turnstile Siteverify disposition.
+- Existing Contact and Rental form continuity after Assistant rollout.
 
 Canonical Lead statuses: `new`, `contacted`, `quoted`, `confirmed`, `lost`.
 
@@ -48,81 +44,31 @@ Relevant Lead sources: `contact`, `rental`, `assistant`.
 
 Service categories: `live`, `theatre`, `sound_design`, `systems`, `rental`, `other`.
 
-## Current Active Gate — Assistant second turn/session continuity
+## Assistant rollout — CLOSED / PRODUCTION PASS
 
-The Assistant is public. The first real turn already passed. The remaining immediate gate comes from a Safari-specific post-turn deadlock observed before PR #231:
+The Assistant is public and the rollout is complete. Final evidence is recorded in:
 
-- browser still showed Turnstile `Success!`;
-- the token had already been consumed internally;
-- Send stayed disabled;
-- `Enviando…` remained visible;
-- a second turn could not be submitted.
+`docs/checkpoints/handoff-assistant-rollout-closeout-2026-09-03.md`
 
-PR #231 replaced `turnstile.reset(widgetId)` with a full `turnstile.remove(widgetId)` + container rebuild + fresh widget/token, and clears stale sending status on success/error/network failure.
+Production acceptance covered:
 
-The first CI run (#631) failed only because a legacy contract test still asserted `turnstile.reset(widgetId)`. The assertion was updated to the new required contract; PR Tests #632 passed and `main` Tests #633 passed after squash merge.
+- Safari multi-turn continuity;
+- deterministic persistence of `venue=TBD`;
+- Enter sends / Shift+Enter newline;
+- SD.Live-branded desktop messaging shell;
+- mobile layout and Spanish interaction;
+- Turnstile inline security state and once-per-session behavior;
+- explicit privacy consent with no inference;
+- one QA Assistant Lead (#26) persisted and visible in Admin;
+- privacy consent persistence and atomic idempotency effect;
+- Resend/handoff notification to `hello@sdlive.show`;
+- reload retry without duplicate Lead;
+- deterministic Availability matching the public `AVAILABLE NOW / WhatsApp` state;
+- Rental fail-closed behavior for over-limit, unknown and known catalog items;
+- no invented Rental price or inventory claim;
+- Contact and Rental forms still submit normally.
 
-Security boundaries were not relaxed.
-
-### One manual smoke now
-
-In Safari, run one successful first turn, then confirm:
-
-- `Enviando…` clears;
-- Turnstile visibly regenerates;
-- Send becomes available again;
-- this second turn can be sent:
-
-`The show is October 17, 2026. Venue is still TBD. I need sound design and FOH, with rehearsal on October 16 from 2–8 PM. What else do you need?`
-
-The answer must retain **theatre show + Bogotá** from the first turn without requiring the user to repeat it.
-
-If this passes: `SESSION CONTINUITY = PASS`, then finish the remaining Assistant E2E gates before starting another milestone.
-
-## Turnstile warning — dispositioned PASS
-
-Cloudflare previously displayed `Siteverify isn't being called for SD.Live Forms`.
-
-Code inspection established that Contact/Rental send `turnstileToken`, the Worker calls Cloudflare Siteverify, validates `hostname === "sdlive.show"`, validates the expected action (`contact` / `rental`), and rejects failed verification before Lead persistence.
-
-A real production Contact token submitted without privacy consent returned:
-
-`{"ok":false,"error":"Privacy consent is required"}`
-
-Because privacy validation occurs after Turnstile validation, this proves the live request passed server-side Siteverify and reached the later consent gate. No Lead was intentionally created.
-
-**Disposition:** treat the dashboard warning as stale/incomplete detection/association unless later runtime evidence contradicts this proof.
-
-## Assistant public widget
-
-PR #228 reconstructed the widget cleanly on current `main` rather than merging obsolete #215 lineage. It provides:
-
-- Contact-section launcher only;
-- desktop modal / mobile bottom sheet;
-- EN/ES runtime copy;
-- in-memory conversation only;
-- sealed session token;
-- Turnstile required per browser operation;
-- current `/api/assistant` wire contract;
-- server-owned explicit privacy consent actions;
-- deterministic human fallbacks without owner-phone exposure.
-
-Known non-blocking visual debt: the launcher/widget still uses green/olive tones that should later be aligned with the current violet SD.Live palette. Keep this after functional E2E closeout.
-
-## Open PR state / work order
-
-Obsolete preparatory Assistant PRs #192–#212 are CLOSED WITHOUT MERGE. Old #213, #215, #216 and temporary #218 are also closed/superseded and must not be reopened.
-
-After #231 merge, exactly one operational PR remains open:
-
-- **#191 — authenticated WhatsApp owner control for Availability.** It is the next workstream **after the Assistant rollout is fully closed**. Its old branch must be reverified/reconstructed on then-current `main` before merge; Meta/Cloudflare onboarding remains part of activation.
-
-Current order:
-
-1. finish Assistant second-turn/session continuity and remaining E2E gates;
-2. close/document Assistant rollout;
-3. resume #191;
-4. continue prioritized roadmap backlog.
+Recent rollout PRs include #231, #235, #236–#244. The current widget uses the site palette and official SD.Live symbol; the old green/olive visual debt is closed.
 
 ## SD.Live Assistant architecture
 
@@ -133,6 +79,7 @@ Hard boundaries:
 - public kill switch remains reversible;
 - OpenAI Responses API with strict Structured Outputs and `store:false`;
 - sealed AES-GCM stateless structured session; no full transcript persistence/provider conversation state;
+- Turnstile required to establish a new Assistant session; authenticated sealed session handles later turns;
 - no impersonation of Samuel;
 - no invented/negotiated prices;
 - no Availability promise without deterministic backend truth;
@@ -141,6 +88,35 @@ Hard boundaries:
 - explicit privacy consent only;
 - no public schema migration;
 - no owner phone/secrets/provider bodies exposed.
+
+## Current Active Gate — #191 WhatsApp owner control for Availability
+
+PR #191 remains open and unmerged. It is now the next operational workstream.
+
+Do **not** merge the existing old branch directly. Reconstruct/reverify the bounded scope on current `main`, preserving:
+
+- Meta webhook HMAC signature verification;
+- exact owner sender + `phone_number_id` allowlisting;
+- D1 message-id idempotency / in-flight duplicate protection;
+- existing transport-neutral Availability parser;
+- canonical Availability write path;
+- server-side owner phone/token/app-secret handling;
+- deterministic confirmations through Meta Cloud API.
+
+Meta/Cloudflare onboarding and secrets must be completed before activation. Then: CI green → squash merge → one representative production smoke.
+
+## Work order after #191
+
+1. Rental real-time availability + double-booking protection.
+2. Mobile Rental Cart total/sticky summary.
+3. Rental quote/PDF automation + shared Finance Document Generator foundation.
+4. Calendar/Projects workflow additions.
+5. SD.Live Patch.
+6. CRM/Admin Inbox/analytics/SEO/performance/accessibility/CMS advanced backlog.
+
+## Turnstile Forms warning — dispositioned PASS
+
+Contact/Rental send `turnstileToken`; the Worker verifies Cloudflare Siteverify, hostname and expected action before downstream consent/Lead behavior. A production probe reached the downstream privacy-consent gate, proving Siteverify had passed. Treat the old Cloudflare dashboard warning as stale/incomplete detection unless future runtime evidence contradicts it.
 
 ## Change workflow
 
@@ -156,15 +132,12 @@ No production smoke for docs-only PRs. Manual QA with the owner: **one action at
 
 ## Exact continuation
 
-1. Run the Safari second-turn/session-continuity smoke for PR #231.
-2. If PASS, finish the remaining Assistant E2E gates: explicit consent, exactly one Assistant Lead, idempotency/effects, handoff/notification, deterministic pricing/Availability boundaries, Contact/Rental continuity and mobile smoke if needed.
-3. Close/document Assistant rollout.
-4. Resume PR #191 as the next operational workstream.
+**Assistant rollout is closed. Inspect PR #191 against current `main`, reconstruct only the still-valid WhatsApp owner-control scope on a fresh branch, and do not merge the stale branch directly.**
 
 ## Relevant docs
 
 - `PROJECT_STATUS.md` — master current state and exact continuation.
-- `docs/checkpoints/handoff-assistant-rollout-2026-09-02.md` — latest Assistant rollout checkpoint.
+- `docs/checkpoints/handoff-assistant-rollout-closeout-2026-09-03.md` — final Assistant rollout closeout.
 - `docs/checkpoints/handoff-availability-v1-closeout-2026-09-01.md` — Availability closeout.
 - `docs/roadmap/availability-aware-contact-widget.md` — Availability/Assistant contract.
 - `ROADMAP_MASTER_CHECKLIST.md` — reconciled work order and backlog.
