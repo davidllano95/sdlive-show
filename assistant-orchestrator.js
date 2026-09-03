@@ -108,6 +108,38 @@ function rentalFailClosedReply(rentalQuery, result, language) {
   return "I couldn't validate that selection within the current Rental catalog limits. I can't quote pricing or confirm inventory availability from this check; please adjust the request or request a human review.";
 }
 
+function rentalResultCanReplyDeterministically(result) {
+  const guardrails = plainObject(result?.guardrails) ? result.guardrails : {};
+  const resolvedItems = Array.isArray(result?.resolvedItems) ? result.resolvedItems : [];
+  const resolvedServices = Array.isArray(result?.resolvedServices) ? result.resolvedServices : [];
+  return result?.readyForBackendEvaluation === true
+    && resolvedItems.length + resolvedServices.length > 0
+    && guardrails.mayQuotePrice === false
+    && guardrails.mayClaimInventoryAvailability === false
+    && guardrails.requiresBackendPricingEvaluation === true
+    && guardrails.requiresBackendInventoryEvaluation === true;
+}
+
+function rentalResolvedReply(result, language) {
+  const lang = safeLanguage(language);
+  const resolvedItems = Array.isArray(result?.resolvedItems) ? result.resolvedItems : [];
+  const resolvedServices = Array.isArray(result?.resolvedServices) ? result.resolvedServices : [];
+  const labels = [
+    ...resolvedItems.map((item) => {
+      const label = String(item?.label || item?.key || "").trim();
+      const quantity = Number(item?.quantity) || 1;
+      return quantity > 1 ? `${quantity} × ${label}` : label;
+    }),
+    ...resolvedServices.map((service) => String(service?.label || service?.key || "").trim())
+  ].filter(Boolean).slice(0, 5);
+  const selection = labels.join(", ");
+
+  if (lang === "es") {
+    return `${selection || "La selección solicitada"} aparece en el catálogo actual de Rental dentro de los límites admitidos. No puedo cotizar el precio ni confirmar disponibilidad de inventario desde esta consulta; ambos requieren una cotización o revisión aparte.`;
+  }
+  return `${selection || "The requested selection"} is listed in the current Rental catalog within the supported limits. I can't quote pricing or confirm inventory availability from this check; both require a separate quote or review.`;
+}
+
 export function inferAssistantDeterministicSlotPatch(message) {
   const text = String(message || "").trim();
   if (!text) return {};
@@ -236,6 +268,23 @@ export async function runAssistantTurn({
 
   while (TOOL_ACTIONS.has(output.nextAction)) {
     if (usedToolActions.has(output.nextAction)) {
+      if (output.nextAction === "check_rental") {
+        const priorRentalResult = [...toolResults]
+          .reverse()
+          .find((item) => item?.type === "rental")?.value;
+        if (rentalResultCanReplyDeterministically(priorRentalResult)) {
+          const applyTurn = requiredFunction(deps, "applyTurn");
+          const nextSession = await applyTurn(session, mergedSlotPatch);
+          return {
+            kind: "reply",
+            reply: rentalResolvedReply(priorRentalResult, output.language),
+            language: safeLanguage(output.language),
+            serviceCategory: "rental",
+            session: nextSession,
+            toolResults
+          };
+        }
+      }
       throw orchestrationError("TOOL_LOOP_BLOCKED", `${output.nextAction} may run only once per turn`);
     }
     if (toolResults.length >= MAX_TOOL_HOPS_PER_TURN) {
