@@ -5,7 +5,7 @@
 | Campo | Valor |
 |---|---|
 | Última reconciliación | **2026-09-03 — America/Bogota** |
-| GitHub `main` actual | **`a5bffc66e711af23f2df01cd440aa0d43344d632`** |
+| Base de PR #246 | **`a5bffc66e711af23f2df01cd440aa0d43344d632`** |
 | Runtime baseline verificado | **`c52a06603c0a6b5cd0cc4425cca11f69cce693d7` · PR #244** |
 | Producción | `https://sdlive.show` |
 | Estado macro | **Finance/Calendar/Site Schedule/Show Day/Admin/Rental/Availability/Lead Core/Assistant operational** |
@@ -92,7 +92,7 @@ Verified production behavior:
 - public Assistant enabled and first real provider turn succeeds;
 - Safari multi-turn/session continuity PASS;
 - `venue=TBD` remains authoritative and is not re-asked;
-- Enter → Send and Shift+Enter → newline behavior PASS;
+- Enter → Send and Shift+Enter newline behavior PASS;
 - Turnstile appears as an inline `Security check`, confirms `Verified`, and is required only for the new Assistant session;
 - desktop chat shell PASS: compact header, one central scroll owner, inline consent, composer anchored bottom, SD.Live violet palette;
 - mobile layout + mobile interaction PASS in Spanish;
