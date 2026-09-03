@@ -8,6 +8,7 @@
       close: "Close Assistant",
       securityPending: "Complete the security check to continue.",
       securityLoading: "Loading security check…",
+      securityVerified: "Verified — you can continue.",
       securityFailed: "Security verification is unavailable. You can use email or WhatsApp instead.",
       sending: "Sending…",
       fallback: "The Assistant is temporarily unavailable. No request was submitted. You can continue by email or WhatsApp.",
@@ -22,6 +23,7 @@
       close: "Cerrar Assistant",
       securityPending: "Completa la verificación de seguridad para continuar.",
       securityLoading: "Cargando verificación de seguridad…",
+      securityVerified: "Verificado — puedes continuar.",
       securityFailed: "La verificación de seguridad no está disponible. Puedes usar correo o WhatsApp.",
       sending: "Enviando…",
       fallback: "El Assistant no está disponible temporalmente. No se envió ninguna solicitud. Puedes continuar por correo o WhatsApp.",
@@ -48,6 +50,7 @@
   let siteKey = "";
   let sessionToken = null;
   let securityToken = "";
+  let securityVerified = false;
   let widgetId = null;
   let busy = false;
   let consentPending = false;
@@ -72,8 +75,21 @@
 
   function showSecurity(value = "") {
     if (!securityMessage) return;
+    securityVerified = false;
     securityMessage.hidden = false;
+    securityMessage.dataset.state = "pending";
+    if (turnstileContainer) turnstileContainer.hidden = false;
     setSecurityStatus(value || text().securityPending);
+    scrollMessages();
+  }
+
+  function confirmSecurity() {
+    if (!securityMessage) return;
+    securityVerified = true;
+    securityMessage.hidden = false;
+    securityMessage.dataset.state = "verified";
+    if (turnstileContainer) turnstileContainer.hidden = true;
+    setSecurityStatus(text().securityVerified);
     scrollMessages();
   }
 
@@ -248,7 +264,8 @@
 
   async function ensureSecurity() {
     if (sessionToken) {
-      hideSecurity();
+      if (securityVerified) confirmSecurity();
+      else hideSecurity();
       return;
     }
     if (widgetId !== null || !turnstileContainer || !siteKey) return;
@@ -262,7 +279,7 @@
         appearance: "interaction-only",
         callback(token) {
           securityToken = String(token || "");
-          hideSecurity();
+          confirmSecurity();
           setStatus("");
           updateControls();
         },
@@ -297,10 +314,11 @@
     turnstileContainer?.replaceChildren();
     updateControls();
     if (sessionToken) {
-      hideSecurity();
+      if (securityVerified) confirmSecurity();
+      else hideSecurity();
       return;
     }
-    if (root?.dataset.open === "true") ensureSecurity();
+    if (root?.dataset.open === "true" && !sessionToken) ensureSecurity();
   }
 
   function safeSessionToken(data) {
@@ -334,19 +352,23 @@
     setStatus("");
     if (data?.error === "session_expired" || data?.error === "session_invalid") {
       sessionToken = null;
+      securityVerified = false;
       clearConsent();
       appendMessage("system", text().expired, "SD.Live");
       return;
     }
     const safeReply = String(data?.reply || "").trim();
     appendMessage("system", safeReply || text().fallback, "SD.Live");
-    if (response?.status === 404) sessionToken = null;
+    if (response?.status === 404) {
+      sessionToken = null;
+      securityVerified = false;
+    }
   }
 
   function handleApiSuccess(data) {
     setStatus("");
     safeSessionToken(data);
-    if (sessionToken) hideSecurity();
+    if (sessionToken && securityVerified) confirmSecurity();
     const reply = String(data?.reply || "").trim();
     if (reply) appendMessage("assistant", reply);
 
@@ -437,7 +459,7 @@
     document.body.classList.add("sdlive-assistant-open");
     localize(root);
     panel.focus({ preventScroll: true });
-    if (hasSecurityProof()) hideSecurity();
+    if (securityVerified) confirmSecurity();
     ensureSecurity();
   }
 
@@ -463,7 +485,8 @@
     new MutationObserver((mutations) => {
       if (mutations.some((mutation) => mutation.attributeName === "lang")) {
         localize(document);
-        if (!busy && !sessionToken && !securityToken && widgetId !== null) showSecurity(text().securityPending);
+        if (securityVerified) confirmSecurity();
+        else if (!busy && !sessionToken && !securityToken && widgetId !== null) showSecurity(text().securityPending);
       }
     }).observe(document.documentElement, { attributes: true, attributeFilter: ["lang"] });
   }
