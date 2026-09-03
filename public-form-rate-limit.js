@@ -19,6 +19,8 @@ import { handleLeadAdminApi } from "./lead-admin-api.js";
 import { applyLeadAdminNavigationRuntime } from "./lead-admin-dashboard-edge.js";
 import { handleAssistantStoragePreflightApi } from "./assistant-admin-preflight.js";
 import { handleAssistantApi } from "./assistant-api.js";
+import { handleWhatsAppOwnerWebhook } from "./whatsapp-owner-webhook.js";
+import { handleWhatsAppOwnerAdminApi } from "./whatsapp-owner-admin.js";
 
 const PUBLIC_FORM_LIMITS = {
   "/api/contact": {
@@ -183,6 +185,14 @@ export default {
   async fetch(request, env) {
     const path = normalizedPath(request);
     const url = new URL(request.url);
+
+    const whatsappWebhookResponse = await handleWhatsAppOwnerWebhook(request, env);
+    if (whatsappWebhookResponse) return whatsappWebhookResponse;
+
+    const whatsappOwnerAdminResponse = await handleWhatsAppOwnerAdminApi(request, env, {
+      verifyAdmin: verifyAdminViaExistingApi
+    });
+    if (whatsappOwnerAdminResponse) return whatsappOwnerAdminResponse;
 
     if (path === "/api/admin/assistant/preflight") {
       const response = await handleAssistantStoragePreflightApi(request, env, {
