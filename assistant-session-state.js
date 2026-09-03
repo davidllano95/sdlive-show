@@ -3,6 +3,36 @@ import { LEAD_CORE_SERVICE_CATEGORIES } from "./lead-core.js";
 const SERVICE_SET = new Set(LEAD_CORE_SERVICE_CATEGORIES);
 const SESSION_VERSION = "assistant-session-v1";
 const MAX_TURNS = 60;
+const LEAD_MARKETS = new Set(["colombia", "international"]);
+const LEAD_CONTACT_CHANNELS = new Set(["email", "phone", "whatsapp", "other"]);
+const MONTHS = Object.freeze({
+  january: 1,
+  january: 1,
+  enero: 1,
+  february: 2,
+  febrero: 2,
+  march: 3,
+  marzo: 3,
+  april: 4,
+  abril: 4,
+  may: 5,
+  mayo: 5,
+  june: 6,
+  junio: 6,
+  july: 7,
+  julio: 7,
+  august: 8,
+  agosto: 8,
+  september: 9,
+  sept: 9,
+  septiembre: 9,
+  october: 10,
+  octubre: 10,
+  november: 11,
+  noviembre: 11,
+  december: 12,
+  diciembre: 12
+});
 
 export const ASSISTANT_SESSION_STORAGE_POLICY = Object.freeze({
   persistence: "none",
@@ -112,6 +142,83 @@ function validateBaseState(state) {
   if (!Number.isInteger(turns) || turns < 0 || turns > MAX_TURNS) {
     throw new Error("Invalid Assistant turn count");
   }
+}
+
+function normalizedWord(value) {
+  return cleanString(value, 40)
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\.$/, "");
+}
+
+function validDateParts(year, month, day) {
+  if (!Number.isInteger(year) || !Number.isInteger(month) || !Number.isInteger(day)) return false;
+  const date = new Date(Date.UTC(year, month - 1, day));
+  return date.getUTCFullYear() === year &&
+    date.getUTCMonth() === month - 1 &&
+    date.getUTCDate() === day;
+}
+
+function isoDate(year, month, day) {
+  if (!validDateParts(year, month, day)) return null;
+  return `${String(year).padStart(4, "0")}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+
+function leadDateValue(value) {
+  const raw = cleanString(value, 40);
+  if (!raw) return null;
+
+  const iso = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (iso) return isoDate(Number(iso[1]), Number(iso[2]), Number(iso[3]));
+
+  const monthFirst = raw.match(/^([A-Za-zÀ-ÿ.]+)\s+(\d{1,2})(?:st|nd|rd|th)?(?:,)?\s+(\d{4})$/i);
+  if (monthFirst) {
+    const month = MONTHS[normalizedWord(monthFirst[1])];
+    if (month) return isoDate(Number(monthFirst[3]), month, Number(monthFirst[2]));
+  }
+
+  const dayFirst = raw.match(/^(\d{1,2})(?:st|nd|rd|th)?\s+(?:de\s+)?([A-Za-zÀ-ÿ.]+)(?:\s+de)?\s+(\d{4})$/i);
+  if (dayFirst) {
+    const month = MONTHS[normalizedWord(dayFirst[2])];
+    if (month) return isoDate(Number(dayFirst[3]), month, Number(dayFirst[1]));
+  }
+
+  return null;
+}
+
+function leadMarketValue(value) {
+  const market = cleanString(value, 40).toLowerCase();
+  return LEAD_MARKETS.has(market) ? market : null;
+}
+
+function leadContactValue(value) {
+  const contact = contactValue(value);
+  const preferred = cleanString(contact.preferredChannel, 40).toLowerCase();
+  return {
+    ...contact,
+    preferredChannel: LEAD_CONTACT_CHANNELS.has(preferred) ? preferred : null
+  };
+}
+
+function deterministicLeadSummary(slots) {
+  const existing = nullableString(slots.summary, 5000);
+  if (existing) return existing;
+
+  const parts = [];
+  const service = nullableString(slots.serviceCategory, 80);
+  const project = projectValue(slots.project);
+  const equipment = equipmentValue(slots.equipment);
+  const schedule = nullableString(slots.schedule, 1000);
+
+  if (service) parts.push(`Service: ${service}`);
+  if (project.date) parts.push(`Project date: ${project.date}`);
+  if (project.city) parts.push(`City: ${project.city}`);
+  if (project.venue) parts.push(`Venue: ${project.venue}`);
+  if (equipment.length) parts.push(`Equipment / technical needs: ${equipment.join(", ")}`);
+  if (schedule) parts.push(`Schedule: ${schedule}`);
+
+  return parts.length ? parts.join(". ").slice(0, 5000) : null;
 }
 
 export function createAssistantSessionState({
@@ -255,17 +362,21 @@ export function assistantSessionModelContext(state) {
 export function assistantSessionLeadDraft(state) {
   validateBaseState(state);
   const slots = cloneState(state.slots || emptySlots("en"));
+  const project = projectValue(slots.project);
   return {
     serviceCategory: slots.serviceCategory,
-    language: slots.language,
-    market: slots.market,
+    language: languageValue(slots.language),
+    market: leadMarketValue(slots.market),
     name: slots.name,
-    contact: slots.contact,
-    project: slots.project,
-    summary: slots.summary,
+    contact: leadContactValue(slots.contact),
+    project: {
+      ...project,
+      date: leadDateValue(project.date)
+    },
+    summary: deterministicLeadSummary(slots),
     details: {
-      equipment: slots.equipment,
-      schedule: slots.schedule
+      equipment: equipmentValue(slots.equipment),
+      schedule: nullableString(slots.schedule, 1000)
     }
   };
 }
