@@ -6,15 +6,18 @@ async function source(path) {
   return readFile(new URL(`../${path}`, import.meta.url), "utf8");
 }
 
-test("Wrangler deploys the narrow WhatsApp owner wrapper over the stable worker", async () => {
+test("Wrangler keeps the stable Admin worker as deploy entry and mounts WhatsApp owner routes beneath it", async () => {
   const wrangler = JSON.parse(await source("wrangler.jsonc"));
-  assert.equal(wrangler.main, "./whatsapp-owner-worker.js");
+  assert.equal(wrangler.main, "./admin-stabilization-worker.js");
 
-  const wrapper = await source("whatsapp-owner-worker.js");
-  assert.match(wrapper, /import baseWorker from "\.\/admin-stabilization-worker\.js"/);
-  assert.match(wrapper, /handleWhatsAppOwnerWebhook/);
-  assert.match(wrapper, /handleWhatsAppOwnerAdminApi/);
-  assert.match(wrapper, /return baseWorker\.fetch\(request, env, ctx\)/);
+  const stableWorker = await source("admin-stabilization-worker.js");
+  assert.match(stableWorker, /import baseWorker from "\.\/public-form-rate-limit\.js"/);
+
+  const runtime = await source("public-form-rate-limit.js");
+  assert.match(runtime, /handleWhatsAppOwnerWebhook/);
+  assert.match(runtime, /handleWhatsAppOwnerAdminApi/);
+  assert.match(runtime, /verifyAdmin:\s*verifyAdminViaExistingApi/);
+  assert.match(runtime, /let response = await appWorker\.fetch\(preparedLead\.request, env\)/);
 });
 
 test("public WhatsApp webhook contains no schema migration DDL", async () => {
