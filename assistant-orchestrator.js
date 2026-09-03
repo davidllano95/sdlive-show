@@ -291,7 +291,7 @@ export async function runAssistantTurn({
     }
 
     const handoffLead = requiredFunction(deps, "handoffLead");
-    await deps.handoffLead({
+    await handoffLead({
       leadId,
       leadDraft: output.leadDraft,
       language: output.language
