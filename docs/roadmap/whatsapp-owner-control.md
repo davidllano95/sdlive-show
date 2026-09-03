@@ -19,11 +19,11 @@ Examples already supported by the transport-neutral parser:
 
 `Meta WhatsApp Cloud API -> /api/webhooks/whatsapp -> Meta HMAC verification -> kill switch -> exact phone_number_id -> exact owner sender -> D1 message-id idempotency -> availability-owner-control -> canonical handleAvailabilityApi -> Availability Core -> deterministic Meta reply`
 
-The deploy entry is a narrow wrapper:
+The established production entrypoint remains unchanged:
 
-`whatsapp-owner-worker.js -> admin-stabilization-worker.js`
+`wrangler.jsonc -> admin-stabilization-worker.js -> public-form-rate-limit.js`
 
-Every route outside the WhatsApp webhook/readiness/storage-preparation endpoints falls through unchanged to the established stable worker.
+The WhatsApp webhook/readiness/storage-preparation handlers are mounted inside `public-form-rate-limit.js`, below the stabilization entrypoint. Every unrelated route continues through the existing worker chain unchanged.
 
 ## Hard boundaries
 
