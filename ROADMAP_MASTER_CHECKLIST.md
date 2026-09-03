@@ -6,7 +6,11 @@
 
 Last reconciliation: **2026-09-03 — America/Bogota**
 
-Current runtime baseline:
+Current GitHub `main`:
+
+`a5bffc66e711af23f2df01cd440aa0d43344d632`.
+
+Last verified runtime baseline:
 
 `c52a06603c0a6b5cd0cc4425cca11f69cce693d7` — PR #244.
 
@@ -22,30 +26,52 @@ Current runtime baseline:
 
 **UNMERGED != PRODUCTION. CI PASS != PRODUCTION SMOKE PASS.**
 
-# Current Active Gate — PR #191 WhatsApp owner control for Availability
+# Current Active Gate — PR #246 WhatsApp owner control for Availability
 
-🚧 **ACTIVE / OPEN / UNMERGED.**
+🚧 **ACTIVE / OPEN / UNMERGED / CI RED.**
 
-The Assistant rollout is now CLOSED/PASS, so #191 becomes the approved next workstream.
+The stale PR #191 has already been inspected and reconstructed rather than merged directly.
 
-Do **not** merge `feature/whatsapp-owner-control` directly. Its branch predates the completed Assistant rollout and must be reconstructed/reverified on current `main`.
+Current implementation:
 
-Required order:
+- PR **#246 — Rebuild verified-owner WhatsApp Availability control**;
+- branch `feature/whatsapp-owner-control-current-main-20260903`;
+- head at handoff `fd4a00929b3bd02c5cc3da0b7338bf90faea911c`;
+- base at PR creation `a5bffc66e711af23f2df01cd440aa0d43344d632`;
+- 13 changed files;
+- GitHub Actions **Tests #673 = FAILURE** in `Run tests`;
+- #246 remains unmerged and therefore is not production.
 
-1. [ ] Inspect the existing #191 diff against current `main`.
-2. [ ] Identify only still-valid bounded WhatsApp owner-control behavior.
-3. [ ] Create a fresh short branch from current `main`.
-4. [ ] Preserve Meta webhook HMAC signature verification.
-5. [ ] Preserve exact owner sender + `phone_number_id` allowlisting.
-6. [ ] Preserve D1 WhatsApp message-id idempotency and in-flight duplicate protection.
-7. [ ] Reuse the existing Availability owner parser and canonical Availability write path.
-8. [ ] Keep owner phone/token/app secret server-side and out of public config/repo vars.
-9. [ ] Complete Meta WhatsApp Cloud API / Cloudflare onboarding and secrets.
-10. [ ] Run tests/CI, open PR, require green CI, squash merge.
-11. [ ] Run exactly one representative production smoke.
-12. [ ] Close/document #191 before starting the next runtime milestone.
+Detailed checkpoint:
 
-No AI is required for #191.
+`docs/checkpoints/handoff-whatsapp-owner-control-pr246-2026-09-03.md`
+
+Completed reconstruction work:
+
+1. [x] Inspect old #191 behavior against current architecture.
+2. [x] Reconstruct only still-valid bounded owner-control behavior on a fresh branch.
+3. [x] Preserve raw-body Meta HMAC signature verification.
+4. [x] Preserve exact owner sender + `phone_number_id` allowlisting.
+5. [x] Preserve D1 WhatsApp message-id idempotency and reply retry semantics.
+6. [x] Reuse existing Availability owner parser and canonical `handleAvailabilityApi` path.
+7. [x] Add hard `WHATSAPP_OWNER_CONTROL_ENABLED` kill switch.
+8. [x] Remove public-webhook schema creation and add Access-protected explicit storage preparation.
+9. [x] Shield historical Availability schema guards from this public transport so missing schema fails closed instead of running DDL.
+10. [x] Add Admin readiness/storage routes and regression tests.
+11. [ ] Extract exact failing assertions from Tests #673.
+12. [ ] Fix only those failing contracts while preserving the security/source-of-truth boundaries.
+13. [ ] Rerun CI and require green.
+14. [ ] Squash merge #246.
+15. [ ] Verify `main` CI after merge.
+16. [ ] Run storage preparation and readiness with kill switch still OFF.
+17. [ ] Complete Meta WhatsApp Cloud API / Cloudflare onboarding and bindings/secrets.
+18. [ ] Verify callback/subscriptions and readiness.
+19. [ ] Enable the kill switch only when readiness passes.
+20. [ ] Run exactly one representative owner-number production smoke and return Availability to AUTO.
+21. [ ] Close old #191 without merge as superseded after #246 is validated/merged.
+22. [ ] Mark WhatsApp owner control CLOSED/PASS before starting the next runtime milestone.
+
+No AI is required for #246.
 
 # A. Availability Core foundation
 
@@ -135,11 +161,13 @@ Old preparatory Assistant PRs #192–#212, old #213/#215/#216 and temporary #218
 
 Contact/Rental submit Turnstile tokens and the Worker verifies Siteverify, hostname and action before downstream consent/Lead behavior. Reopen only if new runtime evidence contradicts that proof.
 
-# Priority 1 — PR #191: verified-owner WhatsApp Availability control
+# Priority 1 — PR #246: verified-owner WhatsApp Availability control
 
 🚧 **CURRENT ACTIVE GATE.**
 
-See top of this checklist. The old branch is reference material only; reconstruct on current `main`.
+Do not touch Meta/Cloudflare rollout configuration while CI is red. Resume by extracting the exact failing assertions from Tests #673 and fixing only those contracts on the current #246 branch.
+
+Old PR #191 is historical source material only and must not be merged directly.
 
 # Priority 2 — Rental real-time availability / double-booking protection
 
@@ -215,6 +243,8 @@ See top of this checklist. The old branch is reference material only; reconstruc
 
 - D1 Availability Core is authoritative;
 - AI consumes it as a deterministic tool;
+- WhatsApp owner control must use the same canonical parser/write path;
+- public WhatsApp traffic must not migrate D1 schema;
 - Travel/private timezone data is not public business context;
 - public owner-phone leakage is prohibited.
 
@@ -240,4 +270,4 @@ See top of this checklist. The old branch is reference material only; reconstruc
 
 # Exact continuation
 
-**Assistant rollout is CLOSED/PASS. Start #191 by inspecting its old diff and reconstructing the still-valid WhatsApp owner-control scope on a fresh branch from current `main`; do not merge the stale branch directly.**
+**Resume PR #246 at Tests #673. Extract the exact failing assertions, fix only those contracts on `feature/whatsapp-owner-control-current-main-20260903`, rerun CI, and do not merge or touch Meta/Cloudflare rollout configuration until CI is green.**
