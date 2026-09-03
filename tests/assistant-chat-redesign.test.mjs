@@ -48,13 +48,13 @@ test("Turnstile remains an inline security message and visibly confirms verifica
   assert.match(polish, /\.assistant-turnstile\[hidden\]\s*\{\s*display:\s*none;/);
 });
 
-test("Assistant messages use the official SD.Live symbol instead of the placeholder glyph", async () => {
+test("Assistant messages use the square SD.Live app icon instead of the malformed header symbol crop", async () => {
   const baseCss = await source("assistant-public-widget-chat.css");
   const polish = await source("assistant-public-widget-polish.css");
 
   assert.match(polish, /\.assistant-message--assistant::before\s*\{[\s\S]*?content:\s*"";/);
-  assert.match(polish, /background-image:\s*url\("\/assets\/logos\/sd-live-header-normal-symbol\.png"\);/);
-  assert.match(polish, /background-size:\s*24px 24px;/);
+  assert.match(polish, /background-image:\s*url\("\/assets\/icons\/icon-192\.png"\);/);
+  assert.match(polish, /background-size:\s*26px 26px;/);
   assert.match(baseCss, /\.assistant-message--assistant::before/);
 });
 
@@ -108,5 +108,5 @@ test("brand polish loads last and the complete Assistant bundle is cache-busted"
   assert.ok(chatIndex > layoutIndex);
   assert.ok(polishIndex > chatIndex);
   assert.ok(jsIndex > polishIndex);
-  assert.match(edge, /ASSISTANT_WIDGET_VERSION = "20260903-4"/);
+  assert.match(edge, /ASSISTANT_WIDGET_VERSION = "20260903-5"/);
 });
