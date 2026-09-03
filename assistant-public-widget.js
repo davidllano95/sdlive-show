@@ -479,6 +479,12 @@
     });
     form.addEventListener("submit", submitMessage);
     input.addEventListener("input", updateControls);
+    input.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" || event.shiftKey || event.isComposing) return;
+      event.preventDefault();
+      if (sendButton.disabled) return;
+      form.requestSubmit(sendButton);
+    });
     document.addEventListener("keydown", (event) => {
       if (event.key === "Escape" && root.dataset.open === "true") close();
     });
