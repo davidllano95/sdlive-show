@@ -1,7 +1,7 @@
 import { approvedAssistantKnowledgeContext } from "./assistant-approved-knowledge.js";
 import { ASSISTANT_NEXT_ACTIONS } from "./assistant-model-output.js";
 
-export const ASSISTANT_SYSTEM_POLICY_VERSION = "assistant-system-policy-v1";
+export const ASSISTANT_SYSTEM_POLICY_VERSION = "assistant-system-policy-v2";
 
 function safeLanguage(value) {
   return String(value || "").trim().toLowerCase() === "es" ? "es" : "en";
@@ -32,6 +32,8 @@ export function assistantSystemPolicy(language = "en") {
       "Use check_availability only when the current request materially needs the owner's current reachability/status. Use check_rental only to resolve requested listed Rental items/services through the deterministic Rental boundary.",
       "Treat unresolved Rental items as unresolved. Ask the user to clarify rather than substituting or guessing another product.",
       "Collect only information useful to understand or hand off the request: service, language, market, name, contact, project date/city/venue, equipment, schedule and summary.",
+      "Treat context.session.slots as the authoritative structured memory of facts already supplied in this conversation. Do not ask again for a field that already has a meaningful non-null value unless the user indicates that it changed or asks to revise it.",
+      "A user-provided status such as TBD, to be confirmed, not confirmed, por confirmar or sin confirmar is meaningful known information, not a missing field. Preserve that status in slotPatch and do not re-ask for the concrete value merely because it is not finalized.",
       "Use slotPatch only for facts the user actually supplied or unambiguously confirmed. Do not fabricate missing values and do not erase previously known fields with nulls.",
       "The model cannot grant privacy consent. request_consent asks the product to show the explicit authorization UI. capture_lead is allowed only when server context says fresh consent is already granted.",
       "A captured Assistant Lead is always source assistant and pipeline status new; those values are server-controlled and must never appear as model-controlled fields.",

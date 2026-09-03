@@ -62,6 +62,20 @@ function mergeSlotPatch(current, incoming) {
   return base;
 }
 
+export function inferAssistantDeterministicSlotPatch(message) {
+  const text = String(message || "").trim();
+  if (!text) return {};
+
+  const venueIsUnconfirmed = [
+    /\bvenue\s+(?:(?:is|remains?)\s+)?(?:still\s+)?(?:tbd|to be (?:confirmed|determined)|not (?:yet )?confirmed)\b/i,
+    /\b(?:venue|lugar|sede)\s+(?:(?:es|est[aá]|sigue)\s+)?(?:(?:a[uú]n|todav[ií]a)\s+)?(?:tbd|por confirmar|sin confirmar)\b/i
+  ].some((pattern) => pattern.test(text));
+
+  return venueIsUnconfirmed
+    ? { project: { venue: "TBD" } }
+    : {};
+}
+
 async function validatedModelTurn({
   message,
   session,
@@ -163,7 +177,7 @@ export async function runAssistantTurn({
   const consentGranted = await consentIsFresh(consentEvidence, deps);
   const toolResults = [];
   const usedToolActions = new Set();
-  let mergedSlotPatch = {};
+  let mergedSlotPatch = inferAssistantDeterministicSlotPatch(safeMessage);
 
   let output = await validatedModelTurn({
     message: safeMessage,
