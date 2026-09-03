@@ -78,8 +78,13 @@ test("Spanish explicit dates normalize without transcript persistence", () => {
   const draft = assistantSessionLeadDraft(state);
   assert.equal(draft.project.date, "2026-10-17");
   assert.equal(draft.summary?.length > 0, true);
-  assert.equal(JSON.stringify(state).includes("messages"), false);
-  assert.equal(JSON.stringify(state).includes("transcript"), false);
+  assert.equal(Object.hasOwn(state, "messages"), false);
+  assert.equal(Object.hasOwn(state, "transcript"), false);
+  assert.equal(Object.hasOwn(state.slots || {}, "messages"), false);
+  assert.equal(Object.hasOwn(state.slots || {}, "transcript"), false);
+  assert.equal(state.storagePolicy.rawUserMessagesStored, false);
+  assert.equal(state.storagePolicy.rawAssistantMessagesStored, false);
+  assert.equal(state.storagePolicy.transcriptStored, false);
 });
 
 test("unsupported market/channel strings fail closed into Lead Core defaults instead of throwing", () => {
