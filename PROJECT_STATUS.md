@@ -5,13 +5,13 @@
 | Campo | Valor |
 |---|---|
 | Última reconciliación | **2026-09-03 — America/Bogota** |
-| Rama operativa | `main` |
-| Runtime baseline actual | **`c52a06603c0a6b5cd0cc4425cca11f69cce693d7` · PR #244** |
+| GitHub `main` actual | **`a5bffc66e711af23f2df01cd440aa0d43344d632`** |
+| Runtime baseline verificado | **`c52a06603c0a6b5cd0cc4425cca11f69cce693d7` · PR #244** |
 | Producción | `https://sdlive.show` |
 | Estado macro | **Finance/Calendar/Site Schedule/Show Day/Admin/Rental/Availability/Lead Core/Assistant operational** |
-| Active Gate | **PR #191 — reconstruct/reverify authenticated WhatsApp owner control for Availability on current `main`** |
+| Active Gate | **PR #246 — reconstructed verified-owner WhatsApp control for Availability; OPEN / UNMERGED / CI RED** |
 | Public Assistant | **ON / CLOSED-PASS — `ASSISTANT_PUBLIC_ENABLED=true`** |
-| Siguiente workstream | **#191 WhatsApp owner control → Rental real-time availability/double-booking → mobile Rental cart → quote/PDF foundation** |
+| Siguiente workstream | **#246 WhatsApp owner control → Rental real-time availability/double-booking → mobile Rental cart → quote/PDF foundation** |
 | Bloqueado | **Generic Finance Phase 3 write-back** |
 
 ## Precedencia
@@ -46,10 +46,10 @@ QA manual con owner: **una sola acción por vez**.
 - Leads = una sola Lead Core D1 source of truth.
 - Assistant no crea un segundo catálogo Rental ni un segundo Lead store.
 - Assistant no lee/escribe Finance.
-- Public Assistant traffic nunca migra schema.
+- Public traffic nunca debe migrar D1 schema desde rutas públicas.
 - Owner phone/secrets/tokens permanecen server-side.
 - Assistant usa OpenAI Responses API + strict Structured Outputs + `store:false`.
-- La sesión es stateless y sellada con AES-GCM; no se persiste transcript completo.
+- La sesión Assistant es stateless y sellada con AES-GCM; no se persiste transcript completo.
 - Turnstile se exige para iniciar una sesión nueva; después, la sesión sellada autenticada sustituye verificaciones repetidas sin relajar el rate limit ni el backend gate.
 - Consentimiento de privacidad es explícito y product-owned; nunca se infiere.
 
@@ -112,31 +112,69 @@ Verified production behavior:
 
 **Rollback control remains valid:** `ASSISTANT_PUBLIC_ENABLED` is the public kill switch.
 
-The Assistant milestone is now closed. Do not keep doing Assistant polish unless a new production regression or explicit product request justifies reopening it.
+The Assistant milestone is closed. Do not keep doing Assistant polish unless a new production regression or explicit product request justifies reopening it.
 
 ## SD.Live Forms Turnstile Siteverify
 
 **CLOSED/PASS.** Contact/Rental send `turnstileToken`; server verifies Cloudflare Siteverify, hostname and action before downstream consent/Lead behavior. The old dashboard warning was dispositioned as stale/incomplete detection unless future runtime evidence contradicts the proof.
 
-# ACTIVE GATE — PR #191 WhatsApp owner control for Availability
+# ACTIVE GATE — PR #246 WhatsApp owner control for Availability
 
-PR #191 remains **OPEN / UNMERGED** and is now the next operational workstream.
+PR #246 — **Rebuild verified-owner WhatsApp Availability control** — is the current implementation gate.
 
-Do **not** merge its old branch directly. Its base predates the completed Assistant rollout. Required approach:
+Current verified handoff state:
 
-1. inspect #191 diff and contract against current `main` (`c52a06603c0a6b5cd0cc4425cca11f69cce693d7` or newer);
-2. reconstruct/rebase only still-valid bounded WhatsApp owner-control changes on a fresh short branch;
-3. preserve Meta webhook HMAC signature verification;
-4. preserve exact owner sender + `phone_number_id` allowlisting;
-5. preserve D1 WhatsApp message-id idempotency and in-flight duplicate protection;
-6. reuse the canonical Availability owner parser/write path; no second Availability store or command engine;
-7. keep owner phone/token/app secret server-side;
-8. complete required Meta WhatsApp Cloud API + Cloudflare configuration/onboarding;
-9. tests/CI green → PR → squash merge → exactly one representative production smoke.
+- state: **OPEN / UNMERGED**;
+- branch: `feature/whatsapp-owner-control-current-main-20260903`;
+- head: `fd4a00929b3bd02c5cc3da0b7338bf90faea911c`;
+- base at creation: `a5bffc66e711af23f2df01cd440aa0d43344d632`;
+- changed files: 13;
+- GitHub Actions: **Tests #673 = FAILURE**;
+- failing workflow step: `Run tests`;
+- merge is forbidden until CI is green;
+- because #246 is unmerged, it is **not production** and production behavior remains unchanged by this work.
 
-No AI is required for #191.
+Detailed handoff: `docs/checkpoints/handoff-whatsapp-owner-control-pr246-2026-09-03.md`.
 
-# Priority after #191
+## Why old PR #191 is not the implementation branch
+
+PR #191 remains historical source material only and must not be merged directly. Its branch predates the completed Assistant rollout and included runtime `CREATE TABLE IF NOT EXISTS` reachable from public webhook traffic, which violates the current no-public-DDL invariant.
+
+#246 reconstructs only the still-valid intended behavior on current `main`.
+
+## #246 architecture and required boundaries
+
+- Meta callback/webhook route: `/api/webhooks/whatsapp`.
+- Raw-body `X-Hub-Signature-256` HMAC SHA-256 verification before POST processing.
+- Exact `WHATSAPP_PHONE_NUMBER_ID` allowlist.
+- Exact normalized `WHATSAPP_OWNER_NUMBER` allowlist.
+- Explicit `WHATSAPP_OWNER_ACTOR_EMAIL`; no fallback owner identity.
+- Durable D1 message-ID idempotency and reply retry semantics.
+- Reuse existing transport-neutral Availability owner parser.
+- Execute through canonical `handleAvailabilityApi`; no second Availability store/write engine.
+- Public WhatsApp transport performs no D1 schema migration.
+- Historical Availability schema guards are shielded on this public transport; missing schema must fail closed rather than execute DDL.
+- Access-protected storage preparation and readiness endpoints.
+- `WHATSAPP_OWNER_CONTROL_ENABLED` hard kill switch; runtime execution remains OFF until rollout readiness is complete.
+- Provider response bodies and private owner/secrets never exposed.
+- No AI and no Finance/Contact/Rental/Calendar/Show Day/Assistant scope expansion.
+
+## Exact next action
+
+Do **not** configure Meta or Cloudflare yet and do not redesign the feature.
+
+1. inspect GitHub Actions **Tests #673** for #246;
+2. recover the exact failing assertions from the `Run tests` step;
+3. fix only those failing contracts on the existing #246 branch while preserving every boundary above;
+4. rerun CI and require green;
+5. squash merge #246 only after green CI;
+6. verify `main` CI;
+7. then perform bounded rollout: storage preparation → readiness → Meta/Cloudflare config → callback verification/subscription → readiness → enable flag → exactly one representative production smoke;
+8. close #191 without merge as superseded only after #246 is validated/merged.
+
+No AI is required for this milestone.
+
+# Priority after #246
 
 1. Rental real-time availability + double-booking protection.
 2. Mobile Rental Cart total/sticky summary.
@@ -160,4 +198,4 @@ No AI is required for #191.
 
 # Exact continuation point
 
-**Assistant rollout is CLOSED/PASS. Resume #191 by inspecting/reconstructing the bounded WhatsApp owner-control scope on current `main`; do not merge the stale #191 branch directly.**
+**Resume PR #246 exactly where it is: CI is red at Tests #673. Extract the failing assertions, fix only those contracts, rerun CI, and do not merge or touch Meta/Cloudflare production configuration until CI is green.**
