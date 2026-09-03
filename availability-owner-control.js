@@ -88,6 +88,43 @@ async function availabilityJson(response) {
   return data;
 }
 
+function noOpDdlStatement() {
+  const result = { success: true, meta: { changes: 0 } };
+  return {
+    bind() { return this; },
+    async run() { return result; },
+    async all() { return { results: [] }; },
+    async first() { return null; }
+  };
+}
+
+/**
+ * Availability Core predates the current no-public-DDL invariant and performs
+ * idempotent CREATE TABLE guards on first use. This transport must not execute
+ * them. Mask DDL only; all SELECT/INSERT/UPDATE operations still delegate to
+ * the canonical CMS_DB binding and therefore the canonical Availability path.
+ */
+export function availabilityEnvWithoutPublicDdl(env) {
+  const db = env?.CMS_DB;
+  if (!db || typeof db.prepare !== "function") return env;
+
+  const shieldedDb = new Proxy(db, {
+    get(target, property) {
+      if (property === "prepare") {
+        return (sql) => {
+          const statement = String(sql || "");
+          if (/^\s*(?:CREATE|ALTER|DROP)\b/i.test(statement)) return noOpDdlStatement();
+          return target.prepare(sql);
+        };
+      }
+      const value = target[property];
+      return typeof value === "function" ? value.bind(target) : value;
+    }
+  });
+
+  return { ...env, CMS_DB: shieldedDb };
+}
+
 /**
  * Execute one already-authenticated owner command through the canonical
  * Availability API contract. This module has no WhatsApp transport/auth logic
@@ -109,9 +146,10 @@ export async function executeAvailabilityOwnerCommand(
 
   const language = normalizeLanguage(text);
   const verifyOwner = async () => ({ email: configuredActor });
+  const runtimeEnv = availabilityEnvWithoutPublicDdl(env);
 
   const current = await availabilityJson(
-    await availabilityHandler(jsonRequest("GET"), env, {
+    await availabilityHandler(jsonRequest("GET"), runtimeEnv, {
       verifyAdmin: verifyOwner
     })
   );
@@ -143,7 +181,7 @@ export async function executeAvailabilityOwnerCommand(
   }
 
   const saved = await availabilityJson(
-    await availabilityHandler(jsonRequest("PUT", command.payload), env, {
+    await availabilityHandler(jsonRequest("PUT", command.payload), runtimeEnv, {
       verifyAdmin: verifyOwner
     })
   );
