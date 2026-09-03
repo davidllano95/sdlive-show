@@ -41,6 +41,8 @@
   let input;
   let sendButton;
   let status;
+  let securityMessage;
+  let securityStatus;
   let turnstileContainer;
   let consentBox;
   let siteKey = "";
@@ -62,6 +64,21 @@
 
   function setStatus(value = "") {
     if (status) status.textContent = String(value || "");
+  }
+
+  function setSecurityStatus(value = "") {
+    if (securityStatus) securityStatus.textContent = String(value || "");
+  }
+
+  function showSecurity(value = "") {
+    if (!securityMessage) return;
+    securityMessage.hidden = false;
+    setSecurityStatus(value || text().securityPending);
+    scrollMessages();
+  }
+
+  function hideSecurity() {
+    if (securityMessage) securityMessage.hidden = true;
   }
 
   function localize(scope = document) {
@@ -230,8 +247,12 @@
   }
 
   async function ensureSecurity() {
-    if (sessionToken || widgetId !== null || !turnstileContainer || !siteKey) return;
-    setStatus(text().securityLoading);
+    if (sessionToken) {
+      hideSecurity();
+      return;
+    }
+    if (widgetId !== null || !turnstileContainer || !siteKey) return;
+    showSecurity(text().securityLoading);
     try {
       const turnstile = await loadTurnstile();
       widgetId = turnstile.render(turnstileContainer, {
@@ -241,22 +262,24 @@
         appearance: "interaction-only",
         callback(token) {
           securityToken = String(token || "");
+          hideSecurity();
           setStatus("");
           updateControls();
         },
         "expired-callback"() {
           securityToken = "";
-          setStatus(text().securityPending);
+          showSecurity(text().securityPending);
           updateControls();
         },
         "error-callback"() {
           securityToken = "";
-          setStatus(text().securityFailed);
+          showSecurity(text().securityFailed);
           updateControls();
         }
       });
+      if (!securityToken) setSecurityStatus(text().securityPending);
     } catch {
-      setStatus(text().securityFailed);
+      showSecurity(text().securityFailed);
       updateControls();
     }
   }
@@ -273,7 +296,11 @@
     widgetId = null;
     turnstileContainer?.replaceChildren();
     updateControls();
-    if (root?.dataset.open === "true" && !sessionToken) ensureSecurity();
+    if (sessionToken) {
+      hideSecurity();
+      return;
+    }
+    if (root?.dataset.open === "true") ensureSecurity();
   }
 
   function safeSessionToken(data) {
@@ -319,6 +346,7 @@
   function handleApiSuccess(data) {
     setStatus("");
     safeSessionToken(data);
+    if (sessionToken) hideSecurity();
     const reply = String(data?.reply || "").trim();
     if (reply) appendMessage("assistant", reply);
 
@@ -348,7 +376,7 @@
     const message = String(input.value || "").trim().slice(0, MAX_MESSAGE_CHARS);
     if (!message) return;
     if (!hasSecurityProof()) {
-      setStatus(text().securityPending);
+      showSecurity(text().securityPending);
       return;
     }
 
@@ -376,7 +404,7 @@
   async function submitConsent(action, policyVersion) {
     if (busy || !consentPending) return;
     if (!hasSecurityProof()) {
-      setStatus(text().securityPending);
+      showSecurity(text().securityPending);
       return;
     }
 
@@ -409,6 +437,7 @@
     document.body.classList.add("sdlive-assistant-open");
     localize(root);
     panel.focus({ preventScroll: true });
+    if (hasSecurityProof()) hideSecurity();
     ensureSecurity();
   }
 
@@ -434,7 +463,7 @@
     new MutationObserver((mutations) => {
       if (mutations.some((mutation) => mutation.attributeName === "lang")) {
         localize(document);
-        if (!busy && !sessionToken && !securityToken && widgetId !== null) setStatus(text().securityPending);
+        if (!busy && !sessionToken && !securityToken && widgetId !== null) showSecurity(text().securityPending);
       }
     }).observe(document.documentElement, { attributes: true, attributeFilter: ["lang"] });
   }
@@ -448,11 +477,13 @@
     input = document.getElementById("sdliveAssistantInput");
     sendButton = document.getElementById("sdliveAssistantSend");
     status = document.getElementById("sdliveAssistantStatus");
+    securityMessage = document.getElementById("sdliveAssistantSecurity");
+    securityStatus = document.getElementById("sdliveAssistantSecurityStatus");
     turnstileContainer = document.getElementById("sdliveAssistantTurnstile");
     consentBox = document.getElementById("sdliveAssistantConsent");
     siteKey = String(root.dataset.turnstileSitekey || "").trim();
 
-    if (!panel || !messages || !form || !input || !sendButton || !turnstileContainer || !consentBox || !siteKey) {
+    if (!panel || !messages || !form || !input || !sendButton || !securityMessage || !securityStatus || !turnstileContainer || !consentBox || !siteKey) {
       root.remove();
       document.querySelectorAll("[data-sdlive-assistant-entry]").forEach((entry) => entry.remove());
       return;
