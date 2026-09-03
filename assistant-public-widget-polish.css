@@ -3,10 +3,10 @@
 .assistant-message--assistant::before {
   content: "";
   background-color: rgba(var(--assistant-accent-rgb), 0.09);
-  background-image: url("/assets/logos/sd-live-header-normal-symbol.png");
+  background-image: url("/assets/icons/icon-192.png");
   background-repeat: no-repeat;
   background-position: center;
-  background-size: 24px 24px;
+  background-size: 26px 26px;
   color: transparent;
   font-size: 0;
 }

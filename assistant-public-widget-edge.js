@@ -1,4 +1,4 @@
-const ASSISTANT_WIDGET_VERSION = "20260903-4";
+const ASSISTANT_WIDGET_VERSION = "20260903-5";
 
 function enabled(env) {
   return String(env?.ASSISTANT_PUBLIC_ENABLED || "").trim().toLowerCase() === "true";
