@@ -15,6 +15,15 @@ Examples already supported by the transport-neutral parser:
 - `status`
 - Spanish equivalents such as `ausente 2h`, `limitado 30m`, `ausente hasta 23:00`, `volver`, `estado`
 
+## Follow-up public UX requirement
+
+This remains in scope even if it ships after the verified-owner WhatsApp control rollout:
+
+- When the canonical Availability state is `AWAY`, the public site must show the AI chatbot **instead of** the WhatsApp contact button.
+- The WhatsApp button must not remain available as the primary public contact CTA while `AWAY` is active.
+- The switch must derive from the existing canonical Availability state; do not create a second availability/status source of truth for this UX behavior.
+- This requirement is intentionally separate from the owner-command transport and does not block the current Meta/Cloudflare onboarding gate, but it is required follow-up work before Availability UX is considered fully complete.
+
 ## Architecture
 
 `Meta WhatsApp Cloud API -> /api/webhooks/whatsapp -> Meta HMAC verification -> kill switch -> exact phone_number_id -> exact owner sender -> D1 message-id idempotency -> availability-owner-control -> canonical handleAvailabilityApi -> Availability Core -> deterministic Meta reply`
@@ -27,7 +36,7 @@ The WhatsApp webhook/readiness/storage-preparation handlers are mounted inside `
 
 ## Hard boundaries
 
-- No AI is involved.
+- No AI is involved in the verified-owner WhatsApp command transport.
 - Availability Core remains the only Availability source of truth.
 - The owner transport does not implement a second Availability write path.
 - `WHATSAPP_OWNER_CONTROL_ENABLED` is a hard runtime kill switch; anything other than literal `true` keeps command execution off.
