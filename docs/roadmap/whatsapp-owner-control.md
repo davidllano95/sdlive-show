@@ -24,6 +24,44 @@ This remains in scope even if it ships after the verified-owner WhatsApp control
 - The switch must derive from the existing canonical Availability state; do not create a second availability/status source of truth for this UX behavior.
 - This requirement is intentionally separate from the owner-command transport and does not block the current Meta/Cloudflare onboarding gate, but it is required follow-up work before Availability UX is considered fully complete.
 
+## Follow-up Show Day owner control
+
+Show Day control from the same verified-owner WhatsApp channel is also in scope as a **separate follow-up after the current Availability/Meta rollout is CLOSED/PASS**.
+
+The implementation must reuse the existing canonical Show Day override model rather than creating a second Show Day state or writing presentation flags directly. The existing production modes are:
+
+- `auto` — return control to the existing Site Schedule automatic Show Day logic;
+- `force_on` — force Show Day on for the current `America/Bogota` day and require a public Location;
+- `force_off` — force Show Day off for the current `America/Bogota` day.
+
+The current Admin implementation persists those overrides in `CMS_DB/showday_override_state`; temporary force modes expire after their stored Bogotá date and then effective behavior returns to `auto`. WhatsApp must preserve those same semantics.
+
+Expected owner-command surface should include concise English/Spanish equivalents for:
+
+- Show Day status;
+- force Show Day on with required Location;
+- force Show Day off;
+- return Show Day to automatic mode.
+
+Exact command wording can be finalized during implementation, but parser behavior must be deterministic and unambiguous. Example intent shapes include `showday on <location>`, `showday off`, `showday auto`, and `showday status`, with equivalent Spanish forms.
+
+Architecture requirement:
+
+`verified owner WhatsApp -> existing Meta/HMAC/phone_number_id/owner/idempotency boundary -> transport-neutral Show Day owner adapter -> canonical Show Day override validation/persistence -> existing Show Day status resolver -> deterministic WhatsApp reply`
+
+Hard rules for this follow-up:
+
+- do not modify Site Schedule blocks to simulate an override;
+- do not write Show Day state to REGISTRO, Google Sheets or AppSheet;
+- do not create a second Show Day table or source of truth;
+- preserve the existing `auto` / `force_on` / `force_off` semantics and Bogotá-day expiry;
+- `force_on` must continue to require Location;
+- reuse the same exact verified owner, Meta signature validation, phone-number ID validation and durable message-id idempotency already established for Availability commands;
+- return a deterministic confirmation showing the effective Show Day state and whether it is automatic or overridden;
+- this scope expansion must not delay or destabilize the current Meta onboarding/Availability activation gate.
+
+This follow-up intentionally supersedes the earlier #246 boundary that excluded Show Day **only for the completed Availability implementation**; it does not retroactively change #246 or reopen the closed Show Day module. It is a new transport integration against that already-closed canonical module.
+
 ## Architecture
 
 `Meta WhatsApp Cloud API -> /api/webhooks/whatsapp -> Meta HMAC verification -> kill switch -> exact phone_number_id -> exact owner sender -> D1 message-id idempotency -> availability-owner-control -> canonical handleAvailabilityApi -> Availability Core -> deterministic Meta reply`
