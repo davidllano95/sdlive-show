@@ -524,7 +524,9 @@ export function buildFinanceSummary(rows, { now = new Date() } = {}) {
   const blockedNetByCurrency = emptyCurrencyTotals();
   const receivedByCurrency = emptyCurrencyTotals();
   const paidFeesByCurrency = emptyCurrencyTotals();
-  const thirdPartyGrossByCurrency = emptyCurrencyTotals();
+  const thirdPartyCommittedGrossByCurrency = emptyCurrencyTotals();
+  const thirdPartyCollectedGrossByCurrency = emptyCurrencyTotals();
+  const thirdPartyPendingCollectionGrossByCurrency = emptyCurrencyTotals();
   const thirdPartyPayableByCurrency = emptyCurrencyTotals();
   const agingMap = new Map();
   const priority = [];
@@ -545,6 +547,7 @@ export function buildFinanceSummary(rows, { now = new Date() } = {}) {
   let paidMissingReceivedCount = 0;
   let collectionBlockedCount = 0;
   let unsupportedCurrencyCount = 0;
+  let thirdPartyCommitmentCount = 0;
   let thirdPartyPaymentCount = 0;
   let invalidThirdPartyAllocationCount = 0;
 
@@ -558,6 +561,29 @@ export function buildFinanceSummary(rows, { now = new Date() } = {}) {
 
     const state = recordCell(row, "Estado");
     const netAmount = numericValue(recordCell(row, "Valor Neto"));
+    const grossAmount = numericValue(recordCell(row, "Valor bruto"));
+    const thirdPartyGross = numericValue(recordCell(row, "Cobro terceros"));
+    const hasThirdPartyValue = thirdPartyGross !== null && thirdPartyGross !== 0;
+    let validThirdPartyCommitment = false;
+
+    if (hasThirdPartyValue) {
+      if (
+        thirdPartyGross > 0 &&
+        grossAmount !== null &&
+        grossAmount > 0 &&
+        thirdPartyGross <= grossAmount
+      ) {
+        validThirdPartyCommitment = true;
+        thirdPartyCommitmentCount += 1;
+        addCurrencyAmount(thirdPartyCommittedGrossByCurrency, currency, thirdPartyGross);
+        if (!isPaidState(state)) {
+          addCurrencyAmount(thirdPartyPendingCollectionGrossByCurrency, currency, thirdPartyGross);
+        }
+      } else {
+        invalidThirdPartyAllocationCount += 1;
+      }
+    }
+
     const isLiventX = cleanString(recordCell(row, "Cliente")).toLowerCase() === "liventx";
     const evaluatedAt = cleanString(recordCell(row, "Fecha evaluación"));
     const signedAt = cleanString(recordCell(row, "Fecha firma"));
@@ -581,7 +607,6 @@ export function buildFinanceSummary(rows, { now = new Date() } = {}) {
 
     if (isPendingInvoiceState(state)) {
       const eligibility = pendingInvoiceEligibility(row, todayKey);
-      const grossAmount = numericValue(recordCell(row, "Valor bruto"));
       if (eligibility.invoiceReady) {
         toInvoiceCount += 1;
         addCurrencyAmount(toInvoiceGrossByCurrency, currency, grossAmount);
@@ -611,18 +636,20 @@ export function buildFinanceSummary(rows, { now = new Date() } = {}) {
     if (isPaidState(state)) {
       paidCount += 1;
       const received = numericValue(recordCell(row, "Valor Recibido"));
-      const gross = numericValue(recordCell(row, "Valor bruto"));
-      const thirdPartyGross = numericValue(recordCell(row, "Cobro terceros"));
       if (received === null) {
         paidMissingReceivedCount += 1;
         qualityQueues.missingReceivedAmount.push(publicQualityItem(row, currency, rawCurrency));
       }
 
-      if (thirdPartyGross !== null && thirdPartyGross > 0) {
-        const allocation = calculateThirdPartyAllocation({ gross, received, thirdPartyGross });
+      if (validThirdPartyCommitment) {
+        const allocation = calculateThirdPartyAllocation({
+          gross: grossAmount,
+          received,
+          thirdPartyGross
+        });
         if (allocation) {
           thirdPartyPaymentCount += 1;
-          addCurrencyAmount(thirdPartyGrossByCurrency, currency, allocation.gross);
+          addCurrencyAmount(thirdPartyCollectedGrossByCurrency, currency, allocation.gross);
           addCurrencyAmount(thirdPartyPayableByCurrency, currency, allocation.payable);
         } else {
           invalidThirdPartyAllocationCount += 1;
@@ -755,6 +782,9 @@ export function buildFinanceSummary(rows, { now = new Date() } = {}) {
     }));
 
   const receivedTotals = finalizedCurrencyTotals(receivedByCurrency);
+  const thirdPartyCommittedGrossTotals = finalizedCurrencyTotals(thirdPartyCommittedGrossByCurrency);
+  const thirdPartyCollectedGrossTotals = finalizedCurrencyTotals(thirdPartyCollectedGrossByCurrency);
+  const thirdPartyPendingCollectionGrossTotals = finalizedCurrencyTotals(thirdPartyPendingCollectionGrossByCurrency);
   const thirdPartyPayableTotals = finalizedCurrencyTotals(thirdPartyPayableByCurrency);
   const ownCashReceivedByCurrency = {
     COP: roundMoney(receivedTotals.COP - thirdPartyPayableTotals.COP),
@@ -793,8 +823,12 @@ export function buildFinanceSummary(rows, { now = new Date() } = {}) {
       missingReceivedAmountCount: paidMissingReceivedCount
     },
     thirdParty: {
+      commitmentCount: thirdPartyCommitmentCount,
       paymentCount: thirdPartyPaymentCount,
-      grossByCurrency: finalizedCurrencyTotals(thirdPartyGrossByCurrency),
+      committedGrossByCurrency: thirdPartyCommittedGrossTotals,
+      grossByCurrency: thirdPartyCollectedGrossTotals,
+      collectedGrossByCurrency: thirdPartyCollectedGrossTotals,
+      pendingCollectionGrossByCurrency: thirdPartyPendingCollectionGrossTotals,
       payableByCurrency: thirdPartyPayableTotals,
       ownCashReceivedByCurrency,
       invalidAllocationCount: invalidThirdPartyAllocationCount

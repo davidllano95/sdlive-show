@@ -36,8 +36,10 @@
       assumption: "Management allocation only: retentions are prorated across your gross share and each third-party gross share. This does not change the legal/tax owner of a withholding certificate.",
       noPersist: "Calculator only · nothing is saved or sent to Google Sheets.",
       unnamed: "Third party",
-      cardLabel: "Third-party payments",
-      cardGross: "Gross collected",
+      cardLabel: "Third-party obligations",
+      cardCommitted: "Registered gross",
+      cardCollectedNet: "Estimated net on collected jobs",
+      cardPending: "Gross not collected yet",
       cardOpen: "Open calculator",
       cardLoading: "Loading third-party totals…",
       cardUnavailable: "Third-party totals unavailable"
@@ -72,8 +74,10 @@
       assumption: "Asignación interna de gestión: las retenciones se prorratean entre tu parte bruta y la parte bruta de cada tercero. Esto no cambia el titular legal/tributario de un certificado de retención.",
       noPersist: "Solo calculador · no guarda ni envía datos a Google Sheets.",
       unnamed: "Tercero",
-      cardLabel: "Pagos a terceros",
-      cardGross: "Bruto cobrado",
+      cardLabel: "Obligaciones a terceros",
+      cardCommitted: "Bruto registrado",
+      cardCollectedNet: "Neto estimado en trabajos cobrados",
+      cardPending: "Bruto aún no cobrado",
       cardOpen: "Abrir calculadora",
       cardLoading: "Cargando totales de terceros…",
       cardUnavailable: "Totales de terceros no disponibles"
@@ -212,10 +216,10 @@
       return;
     }
 
-    if (count) count.textContent = String(thirdPartySummary.paymentCount || 0);
-    if (money) money.textContent = moneyPair(thirdPartySummary.payableByCurrency);
+    if (count) count.textContent = String(thirdPartySummary.commitmentCount || 0);
+    if (money) money.textContent = moneyPair(thirdPartySummary.committedGrossByCurrency);
     if (detail) {
-      detail.textContent = `${t("cardGross")}: ${moneyPair(thirdPartySummary.grossByCurrency)} · ${t("cardOpen")} →`;
+      detail.textContent = `${t("cardCollectedNet")}: ${moneyPair(thirdPartySummary.payableByCurrency)} · ${t("cardPending")}: ${moneyPair(thirdPartySummary.pendingCollectionGrossByCurrency)} · ${t("cardOpen")} →`;
     }
   }
 
