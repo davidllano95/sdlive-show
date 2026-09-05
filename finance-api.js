@@ -153,6 +153,30 @@ function isPendingInvoiceState(value) {
   return cleanString(value).toLowerCase() === "pendiente envio";
 }
 
+function calculateThirdPartyAllocation({ gross, received, thirdPartyGross }) {
+  if (
+    gross === null ||
+    received === null ||
+    thirdPartyGross === null ||
+    gross <= 0 ||
+    received < 0 ||
+    received > gross ||
+    thirdPartyGross < 0 ||
+    thirdPartyGross > gross
+  ) {
+    return null;
+  }
+
+  const retentionRate = (gross - received) / gross;
+  const thirdPartyRetention = thirdPartyGross * retentionRate;
+  const thirdPartyPayable = thirdPartyGross - thirdPartyRetention;
+  return {
+    gross: roundMoney(thirdPartyGross),
+    retention: roundMoney(thirdPartyRetention),
+    payable: roundMoney(thirdPartyPayable)
+  };
+}
+
 function dateKey(year, month, day) {
   const date = new Date(Date.UTC(year, month - 1, day));
   if (
@@ -500,6 +524,8 @@ export function buildFinanceSummary(rows, { now = new Date() } = {}) {
   const blockedNetByCurrency = emptyCurrencyTotals();
   const receivedByCurrency = emptyCurrencyTotals();
   const paidFeesByCurrency = emptyCurrencyTotals();
+  const thirdPartyGrossByCurrency = emptyCurrencyTotals();
+  const thirdPartyPayableByCurrency = emptyCurrencyTotals();
   const agingMap = new Map();
   const priority = [];
   const toInvoiceQueue = [];
@@ -519,6 +545,8 @@ export function buildFinanceSummary(rows, { now = new Date() } = {}) {
   let paidMissingReceivedCount = 0;
   let collectionBlockedCount = 0;
   let unsupportedCurrencyCount = 0;
+  let thirdPartyPaymentCount = 0;
+  let invalidThirdPartyAllocationCount = 0;
 
   for (const row of records) {
     const currency = normalizedCurrency(recordCell(row, "Moneda"));
@@ -583,9 +611,22 @@ export function buildFinanceSummary(rows, { now = new Date() } = {}) {
     if (isPaidState(state)) {
       paidCount += 1;
       const received = numericValue(recordCell(row, "Valor Recibido"));
+      const gross = numericValue(recordCell(row, "Valor bruto"));
+      const thirdPartyGross = numericValue(recordCell(row, "Cobro terceros"));
       if (received === null) {
         paidMissingReceivedCount += 1;
         qualityQueues.missingReceivedAmount.push(publicQualityItem(row, currency, rawCurrency));
+      }
+
+      if (thirdPartyGross !== null && thirdPartyGross > 0) {
+        const allocation = calculateThirdPartyAllocation({ gross, received, thirdPartyGross });
+        if (allocation) {
+          thirdPartyPaymentCount += 1;
+          addCurrencyAmount(thirdPartyGrossByCurrency, currency, allocation.gross);
+          addCurrencyAmount(thirdPartyPayableByCurrency, currency, allocation.payable);
+        } else {
+          invalidThirdPartyAllocationCount += 1;
+        }
       }
 
       const paymentDateKey = sheetDateKey(recordCell(row, "Fecha pago"));
@@ -713,6 +754,13 @@ export function buildFinanceSummary(rows, { now = new Date() } = {}) {
       byCurrency: finalizedCurrencyTotals(entry.byCurrency)
     }));
 
+  const receivedTotals = finalizedCurrencyTotals(receivedByCurrency);
+  const thirdPartyPayableTotals = finalizedCurrencyTotals(thirdPartyPayableByCurrency);
+  const ownCashReceivedByCurrency = {
+    COP: roundMoney(receivedTotals.COP - thirdPartyPayableTotals.COP),
+    USD: roundMoney(receivedTotals.USD - thirdPartyPayableTotals.USD)
+  };
+
   return {
     recordCount: records.length,
     toInvoice: {
@@ -740,9 +788,16 @@ export function buildFinanceSummary(rows, { now = new Date() } = {}) {
     },
     received: {
       paidCount,
-      amountByCurrency: finalizedCurrencyTotals(receivedByCurrency),
+      amountByCurrency: receivedTotals,
       feesByCurrency: finalizedCurrencyTotals(paidFeesByCurrency),
       missingReceivedAmountCount: paidMissingReceivedCount
+    },
+    thirdParty: {
+      paymentCount: thirdPartyPaymentCount,
+      grossByCurrency: finalizedCurrencyTotals(thirdPartyGrossByCurrency),
+      payableByCurrency: thirdPartyPayableTotals,
+      ownCashReceivedByCurrency,
+      invalidAllocationCount: invalidThirdPartyAllocationCount
     },
     dataQuality: {
       paidMissingReceivedAmountCount: qualityQueues.missingReceivedAmount.length,
@@ -750,6 +805,7 @@ export function buildFinanceSummary(rows, { now = new Date() } = {}) {
       unpaidMissingAgingCount: qualityQueues.missingAging.length,
       paidMissingPaymentDateCount: qualityQueues.missingPaymentDate.length,
       invalidPaymentDurationCount: qualityQueues.invalidPaymentDuration.length,
+      invalidThirdPartyAllocationCount,
       queues: qualityQueues
     }
   };
