@@ -299,7 +299,7 @@ test("pending invoices become facturable only after Fecha fin has passed in Bogo
   assert.equal(summary.receivables.priority.length, 0);
 });
 
-test("finance summary endpoint reads REGISTRO through Fecha fin and omits private/raw fields", async () => {
+test("finance summary endpoint reads REGISTRO through Cobro terceros and omits private/raw fields", async () => {
   const calls = [];
   const fetchImpl = async (url, options = {}) => {
     calls.push({ url: String(url), options });
@@ -312,7 +312,7 @@ test("finance summary endpoint reads REGISTRO through Fecha fin and omits privat
     }
 
     return new Response(JSON.stringify({
-      range: "REGISTRO!A1:AB3000",
+      range: "REGISTRO!A1:AC3000",
       majorDimension: "ROWS",
       values: [[...EXPECTED_FINANCE_HEADERS], ...SAMPLE_ROWS]
     }), {
@@ -334,7 +334,7 @@ test("finance summary endpoint reads REGISTRO through Fecha fin and omits privat
   const body = await response.json();
   assert.equal(body.ok, true);
   assert.equal(body.access, "read-only");
-  assert.equal(body.schema.columnCount, 28);
+  assert.equal(body.schema.columnCount, 29);
   assert.equal(body.summary.recordCount, 6);
   assert.equal(body.summary.receivables.netByCurrency.COP, 900);
   assert.equal(body.summary.receivables.netByCurrency.USD, 450);
@@ -347,7 +347,7 @@ test("finance summary endpoint reads REGISTRO through Fecha fin and omits privat
 
   assert.equal(calls.length, 2);
   assert.match(calls[1].url, /REGISTRO/);
-  assert.match(calls[1].url, /A1%3AAB3000/);
+  assert.match(calls[1].url, /A1%3AAC3000/);
   assert.match(calls[1].url, /valueRenderOption=UNFORMATTED_VALUE/);
   assert.match(calls[1].url, /dateTimeRenderOption=SERIAL_NUMBER/);
 });
