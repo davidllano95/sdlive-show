@@ -1,8 +1,26 @@
 # Finance structured third-party amounts + PILA calculator — 2026-09-05
 
-**Status:** ACTIVE DESIGN / IMPLEMENTATION GATE  
+**Status:** THIRD-PARTY CARD MERGED / ANALYTICS + PILA NEXT  
 **Scope:** SD.Live Track `REGISTRO` + AppSheet capture + read-only Finance dashboard analytics + local PILA estimator.  
 **Source-of-truth boundary:** Google Sheets `REGISTRO` remains persistent Finance storage; AppSheet remains the mobile/offline writer; `/admin/finance/` remains read-only against Finance data.
+
+## Checkpoint — 2026-09-05
+
+Merged PR #249 as squash commit `c2b2ff1eb977d0d2d0c532abc3fbf65a61c9bd5e`.
+
+Completed:
+
+- live Sheet/AppSheet field `Cobro terceros` / `Cobro por terceros (bruto)`;
+- Finance read contract through column AC with 29 canonical fields;
+- paid-row pass-through reconciliation by COP/USD using the established proportional-retention model;
+- summary outputs for third-party gross, estimated third-party payable and own cash after pass-through;
+- invalid third-party allocations are surfaced instead of silently clamped;
+- bilingual `Pagos a terceros` / `Third-party payments` card in Finance;
+- the card is keyboard/touch/click accessible and opens the existing pass-through calculator instead of creating a duplicate calculator;
+- Finance remains read-only; the card uses a GET-only summary request;
+- CI PASS on PR head before merge.
+
+Next gate after production smoke: selected-year/monthly reconciliation, then the year-versioned 2026 PILA estimator.
 
 ## Why
 
@@ -167,12 +185,12 @@ The dashboard may offer the month's structured own-income figures as a suggested
 
 ## 6. Safe implementation order
 
-1. Add `Cobro terceros` to Google Sheets `REGISTRO` after `Fecha fin` and verify existing formulas/records are unchanged.
-2. Regenerate the AppSheet `REGISTRO` column structure; configure numeric type, validation and forms; smoke one blank and one populated record.
-3. Extend Finance read contract from the Sheet to include the structured field while keeping normalized-header mapping and privacy boundaries.
-4. Add canonical derived pass-through analytics + tests; integrate into Finance dashboard without changing old KPI semantics silently.
-5. Add annual/monthly reconciliation views.
-6. Implement the year-versioned 2026 PILA estimator + deterministic unit tests against official-rule examples.
-7. Run full tests, deploy, and production-smoke Finance desktop/mobile.
+1. ✅ Add `Cobro terceros` to Google Sheets `REGISTRO` after `Fecha fin` and verify existing formulas/records are unchanged.
+2. ✅ Regenerate the AppSheet `REGISTRO` column structure; configure numeric type, validation and forms; smoke the field in live capture/edit.
+3. ✅ Extend Finance read contract from the Sheet to include the structured field while keeping normalized-header mapping and privacy boundaries.
+4. ✅ Add canonical paid-row pass-through summary + tests and integrate the clickable `Pagos a terceros` card with the existing calculator without changing old KPI semantics.
+5. ⏳ Add selected-year/monthly reconciliation views.
+6. ⏳ Implement the year-versioned 2026 PILA estimator + deterministic unit tests against official-rule examples.
+7. ⏳ Production-smoke Finance desktop/mobile after each merged checkpoint.
 
 No Finance production code should assume the new Sheet field exists until steps 1–2 are complete and verified.
