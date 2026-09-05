@@ -17,7 +17,7 @@ const ENV = {
 test("finance schema validator requires the documented REGISTRO fields", () => {
   assert.deepEqual(validateFinanceHeaders([...EXPECTED_FINANCE_HEADERS]), {
     ok: true,
-    columnCount: 28,
+    columnCount: 29,
     mismatchAt: null
   });
 
@@ -26,7 +26,7 @@ test("finance schema validator requires the documented REGISTRO fields", () => {
 
   assert.deepEqual(validateFinanceHeaders(drifted), {
     ok: false,
-    columnCount: 28,
+    columnCount: 29,
     mismatchAt: 10
   });
 });
@@ -53,7 +53,7 @@ test("finance health is admin-only", async () => {
   });
 });
 
-test("finance health exchanges refresh token and reads REGISTRO through Fecha fin", async () => {
+test("finance health exchanges refresh token and reads REGISTRO through Cobro terceros", async () => {
   const calls = [];
   const fetchImpl = async (url, options = {}) => {
     calls.push({ url: String(url), options });
@@ -70,7 +70,7 @@ test("finance health exchanges refresh token and reads REGISTRO through Fecha fi
     }
 
     return new Response(JSON.stringify({
-      range: "REGISTRO!A1:AB1",
+      range: "REGISTRO!A1:AC1",
       majorDimension: "ROWS",
       values: [[...EXPECTED_FINANCE_HEADERS]]
     }), {
@@ -93,10 +93,10 @@ test("finance health exchanges refresh token and reads REGISTRO through Fecha fi
     ok: true,
     source: "google-sheets",
     access: "read-only",
-    range: "REGISTRO!A1:AB1",
+    range: "REGISTRO!A1:AC1",
     schema: {
       ok: true,
-      columnCount: 28,
+      columnCount: 29,
       mismatchAt: null
     }
   });
@@ -116,7 +116,7 @@ test("finance health exchanges refresh token and reads REGISTRO through Fecha fi
     calls[1].url,
     /sheets\.googleapis\.com\/v4\/spreadsheets\/spreadsheet-id\/values\/REGISTRO/
   );
-  assert.match(calls[1].url, /A1%3AAB1/);
+  assert.match(calls[1].url, /A1%3AAC1/);
   assert.match(calls[1].url, /valueRenderOption=UNFORMATTED_VALUE/);
   assert.match(calls[1].url, /dateTimeRenderOption=SERIAL_NUMBER/);
   assert.equal(
@@ -141,7 +141,7 @@ test("finance health fails closed when REGISTRO schema drifts", async () => {
     drifted.pop();
 
     return new Response(JSON.stringify({
-      range: "REGISTRO!A1:AA1",
+      range: "REGISTRO!A1:AB1",
       values: [drifted]
     }), {
       status: 200,
@@ -163,5 +163,5 @@ test("finance health fails closed when REGISTRO schema drifts", async () => {
   assert.equal(body.ok, false);
   assert.equal(body.access, "read-only");
   assert.equal(body.schema.ok, false);
-  assert.equal(body.schema.columnCount, 27);
+  assert.equal(body.schema.columnCount, 28);
 });

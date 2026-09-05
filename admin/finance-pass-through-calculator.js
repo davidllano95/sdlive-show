@@ -1,7 +1,9 @@
 (() => {
   const ROOT_ID = "financePassThroughCalculator";
+  const CARD_ID = "financeThirdPartyCard";
   const MAX_PARTIES = 8;
   let nextPartyId = 2;
+  let thirdPartySummary = null;
 
   const copy = {
     en: {
@@ -33,7 +35,12 @@
       errorParties: "Third-party gross cannot exceed the total invoiced.",
       assumption: "Management allocation only: retentions are prorated across your gross share and each third-party gross share. This does not change the legal/tax owner of a withholding certificate.",
       noPersist: "Calculator only · nothing is saved or sent to Google Sheets.",
-      unnamed: "Third party"
+      unnamed: "Third party",
+      cardLabel: "Third-party payments",
+      cardGross: "Gross collected",
+      cardOpen: "Open calculator",
+      cardLoading: "Loading third-party totals…",
+      cardUnavailable: "Third-party totals unavailable"
     },
     es: {
       eyebrow: "Dinero de terceros",
@@ -64,7 +71,12 @@
       errorParties: "El bruto de terceros no puede superar el total cobrado.",
       assumption: "Asignación interna de gestión: las retenciones se prorratean entre tu parte bruta y la parte bruta de cada tercero. Esto no cambia el titular legal/tributario de un certificado de retención.",
       noPersist: "Solo calculador · no guarda ni envía datos a Google Sheets.",
-      unnamed: "Tercero"
+      unnamed: "Tercero",
+      cardLabel: "Pagos a terceros",
+      cardGross: "Bruto cobrado",
+      cardOpen: "Abrir calculadora",
+      cardLoading: "Cargando totales de terceros…",
+      cardUnavailable: "Totales de terceros no disponibles"
     }
   };
 
@@ -89,6 +101,10 @@
       maximumFractionDigits: currency === "COP" ? 0 : 2,
       minimumFractionDigits: currency === "COP" ? 0 : 2
     }).format(Number.isFinite(amount) ? amount : 0);
+  }
+
+  function moneyPair(totals = {}) {
+    return `COP ${formatMoney("COP", totals.COP)} · USD ${formatMoney("USD", totals.USD)}`;
   }
 
   function partyRows(root) {
@@ -180,6 +196,86 @@
     return row;
   }
 
+  function renderThirdPartyCard() {
+    const card = document.getElementById(CARD_ID);
+    if (!card) return;
+    card.querySelector("[data-third-party-label]").textContent = t("cardLabel");
+    card.setAttribute("aria-label", `${t("cardLabel")}. ${t("cardOpen")}`);
+
+    const count = card.querySelector("[data-third-party-count]");
+    const money = card.querySelector("[data-third-party-money]");
+    const detail = card.querySelector("[data-third-party-detail]");
+    if (!thirdPartySummary) {
+      if (count) count.textContent = "—";
+      if (money) money.textContent = t("cardLoading");
+      if (detail) detail.textContent = `${t("cardOpen")} →`;
+      return;
+    }
+
+    if (count) count.textContent = String(thirdPartySummary.paymentCount || 0);
+    if (money) money.textContent = moneyPair(thirdPartySummary.payableByCurrency);
+    if (detail) {
+      detail.textContent = `${t("cardGross")}: ${moneyPair(thirdPartySummary.grossByCurrency)} · ${t("cardOpen")} →`;
+    }
+  }
+
+  async function loadThirdPartyCard() {
+    try {
+      const response = await fetch("/api/admin/finance/summary", {
+        credentials: "same-origin",
+        cache: "no-store"
+      });
+      const data = await response.json();
+      if (!response.ok || data?.ok === false || !data?.summary?.thirdParty) throw new Error("third-party summary unavailable");
+      thirdPartySummary = data.summary.thirdParty;
+      renderThirdPartyCard();
+    } catch (error) {
+      const card = document.getElementById(CARD_ID);
+      if (!card) return;
+      const count = card.querySelector("[data-third-party-count]");
+      const money = card.querySelector("[data-third-party-money]");
+      const detail = card.querySelector("[data-third-party-detail]");
+      if (count) count.textContent = "—";
+      if (money) money.textContent = t("cardUnavailable");
+      if (detail) detail.textContent = `${t("cardOpen")} →`;
+    }
+  }
+
+  function focusCalculator(root) {
+    root.scrollIntoView?.({ behavior: "smooth", block: "start" });
+    root.querySelector("[data-invoiced]")?.focus?.({ preventScroll: true });
+  }
+
+  function ensureThirdPartyCard(root) {
+    if (document.getElementById(CARD_ID)) return;
+    const metrics = document.querySelector(".finance-metrics");
+    if (!metrics) return;
+
+    const card = document.createElement("article");
+    card.className = "finance-card finance-card--warning";
+    card.id = CARD_ID;
+    card.tabIndex = 0;
+    card.setAttribute("role", "button");
+    card.style.cursor = "pointer";
+    card.innerHTML = `
+      <span class="finance-card__label" data-third-party-label></span>
+      <strong data-third-party-count>—</strong>
+      <div class="finance-money" data-third-party-money></div>
+      <small data-third-party-detail></small>
+    `;
+
+    const activate = () => focusCalculator(root);
+    card.addEventListener("click", activate);
+    card.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" && event.key !== " ") return;
+      event.preventDefault();
+      activate();
+    });
+    metrics.appendChild(card);
+    renderThirdPartyCard();
+    loadThirdPartyCard();
+  }
+
   function refreshCopy(root) {
     root.querySelectorAll("[data-copy]").forEach((element) => { element.textContent = t(element.dataset.copy); });
     root.querySelectorAll("[data-label]").forEach((element) => { element.textContent = t(element.dataset.label); });
@@ -187,6 +283,7 @@
       button.textContent = t("remove");
       button.setAttribute("aria-label", t("remove"));
     });
+    renderThirdPartyCard();
     calculate(root);
   }
 
@@ -290,6 +387,7 @@
       if (event.target.closest(".finance-language-control button[data-lang]")) window.setTimeout(() => refreshCopy(section), 0);
     });
 
+    ensureThirdPartyCard(section);
     refreshCopy(section);
   }
 
