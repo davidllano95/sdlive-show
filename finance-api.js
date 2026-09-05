@@ -1,7 +1,7 @@
 const GOOGLE_TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token";
 const GOOGLE_SHEETS_API_BASE = "https://sheets.googleapis.com/v4/spreadsheets";
-const FINANCE_HEADER_RANGE = "REGISTRO!A1:AB1";
-const FINANCE_DATA_RANGE = "REGISTRO!A1:AB3000";
+const FINANCE_HEADER_RANGE = "REGISTRO!A1:AC1";
+const FINANCE_DATA_RANGE = "REGISTRO!A1:AC3000";
 const SUPPORTED_CURRENCIES = Object.freeze(["COP", "USD"]);
 const LIVENTX_SIGNING_REVIEW_DAY = 20;
 
@@ -33,7 +33,8 @@ export const EXPECTED_FINANCE_HEADERS = Object.freeze([
   "Valor Recibido",
   "MES PAGO KEY",
   "NUM CONTACTO",
-  "Fecha fin"
+  "Fecha fin",
+  "Cobro terceros"
 ]);
 
 const FIELD_INDEX = Object.freeze(
