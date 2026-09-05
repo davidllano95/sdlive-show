@@ -57,7 +57,7 @@ test("pass-through calculator rejects impossible allocations", () => {
   assert.equal(calculate({ invoiced: 0, received: 0 }).code, "missing_totals");
 });
 
-test("Finance workspace loads the local calculator with a bilingual clear reset and no write-back path", () => {
+test("Finance workspace loads the local calculator with a bilingual clear reset and read-only third-party card", () => {
   const html = readFileSync(new URL("../admin/finance/index.html", import.meta.url), "utf8");
   const ui = readFileSync(new URL("../admin/finance-pass-through-calculator.js", import.meta.url), "utf8");
   const css = readFileSync(new URL("../admin/finance-pass-through-calculator.css", import.meta.url), "utf8");
@@ -77,8 +77,16 @@ test("Finance workspace loads the local calculator with a bilingual clear reset 
   assert.match(ui, /partiesRoot\.innerHTML = ""/);
   assert.match(ui, /partiesRoot\.appendChild\(partyRow\(1\)\)/);
   assert.match(ui, /nextPartyId = 2/);
-  assert.doesNotMatch(ui, /\/api\/admin\/finance/);
-  assert.doesNotMatch(ui, /fetch\s*\(/);
+
+  assert.match(ui, /Pagos a terceros/);
+  assert.match(ui, /financeThirdPartyCard/);
+  assert.match(ui, /\/api\/admin\/finance\/summary/);
+  assert.match(ui, /credentials: "same-origin"/);
+  assert.match(ui, /cache: "no-store"/);
+  assert.match(ui, /scrollIntoView/);
+  assert.match(ui, /data-invoiced/);
+  assert.doesNotMatch(ui, /method:\s*["'](?:POST|PUT|PATCH|DELETE)["']/i);
+
   assert.ok(css.includes(".finance-pass-through__results"));
   assert.ok(css.includes(".finance-pass-through__party-actions"));
   assert.ok(css.includes(".finance-pass-through__clear"));
