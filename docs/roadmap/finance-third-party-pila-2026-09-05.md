@@ -1,6 +1,6 @@
 # Finance structured third-party amounts + PILA calculator — 2026-09-05
 
-**Status:** THIRD-PARTY CARD MERGED / ANALYTICS + PILA NEXT  
+**Status:** THIRD-PARTY OBLIGATIONS CLOSED / SELECTED-YEAR ANALYTICS NEXT  
 **Scope:** SD.Live Track `REGISTRO` + AppSheet capture + read-only Finance dashboard analytics + local PILA estimator.  
 **Source-of-truth boundary:** Google Sheets `REGISTRO` remains persistent Finance storage; AppSheet remains the mobile/offline writer; `/admin/finance/` remains read-only against Finance data.
 
@@ -15,12 +15,26 @@ Completed:
 - paid-row pass-through reconciliation by COP/USD using the established proportional-retention model;
 - summary outputs for third-party gross, estimated third-party payable and own cash after pass-through;
 - invalid third-party allocations are surfaced instead of silently clamped;
-- bilingual `Pagos a terceros` / `Third-party payments` card in Finance;
+- bilingual third-party card in Finance;
 - the card is keyboard/touch/click accessible and opens the existing pass-through calculator instead of creating a duplicate calculator;
 - Finance remains read-only; the card uses a GET-only summary request;
 - CI PASS on PR head before merge.
 
-Next gate after production smoke: selected-year/monthly reconciliation, then the year-versioned 2026 PILA estimator.
+Follow-up PR #250 `Finance: show third-party obligations before collection` was merged after CI and Cloudflare checks passed.
+
+PR #250 completed the obligation-view semantics:
+
+- every valid row with `Cobro terceros > 0` is counted as a registered third-party obligation even when the client has not paid yet;
+- card label is now `Obligaciones a terceros` / `Third-party obligations`;
+- card shows registered gross by COP/USD;
+- card separately shows estimated net payable for collected jobs and gross still not collected from clients;
+- collected-job proportional-retention math remains unchanged;
+- no Finance write-back, D1 mirror or AppSheet ownership change was introduced;
+- legacy compatibility field `grossByCurrency` remains collected-job gross while explicit committed/collected/pending fields are exposed;
+- production desktop smoke PASS: live Finance showed one obligation at COP 100,000 before collection;
+- interaction smoke PASS: clicking the card scrolls to/focuses the existing calculator.
+
+Next gate: selected-year/monthly reconciliation, then the year-versioned 2026 PILA estimator.
 
 ## Why
 
@@ -188,9 +202,9 @@ The dashboard may offer the month's structured own-income figures as a suggested
 1. ✅ Add `Cobro terceros` to Google Sheets `REGISTRO` after `Fecha fin` and verify existing formulas/records are unchanged.
 2. ✅ Regenerate the AppSheet `REGISTRO` column structure; configure numeric type, validation and forms; smoke the field in live capture/edit.
 3. ✅ Extend Finance read contract from the Sheet to include the structured field while keeping normalized-header mapping and privacy boundaries.
-4. ✅ Add canonical paid-row pass-through summary + tests and integrate the clickable `Pagos a terceros` card with the existing calculator without changing old KPI semantics.
+4. ✅ Add canonical pass-through summary + tests and integrate the clickable `Obligaciones a terceros` card with the existing calculator without changing old KPI semantics; include pre-collection obligations and production interaction smoke.
 5. ⏳ Add selected-year/monthly reconciliation views.
 6. ⏳ Implement the year-versioned 2026 PILA estimator + deterministic unit tests against official-rule examples.
-7. ⏳ Production-smoke Finance desktop/mobile after each merged checkpoint.
+7. ⏳ Production-smoke Finance desktop/mobile after each remaining merged checkpoint.
 
 No Finance production code should assume the new Sheet field exists until steps 1–2 are complete and verified.
