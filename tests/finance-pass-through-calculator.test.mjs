@@ -78,7 +78,7 @@ test("Finance workspace loads the local calculator with a bilingual clear reset 
   assert.match(ui, /partiesRoot\.appendChild\(partyRow\(1\)\)/);
   assert.match(ui, /nextPartyId = 2/);
 
-  assert.match(ui, /Pagos a terceros/);
+  assert.match(ui, /Obligaciones a terceros/);
   assert.match(ui, /financeThirdPartyCard/);
   assert.match(ui, /\/api\/admin\/finance\/summary/);
   assert.match(ui, /credentials: "same-origin"/);

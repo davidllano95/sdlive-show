@@ -53,8 +53,12 @@ test("finance summary separates third-party gross, payable and own cash by curre
   ], { now: new Date("2026-09-05T13:00:00-05:00") });
 
   assert.deepEqual(summary.thirdParty, {
+    commitmentCount: 2,
     paymentCount: 2,
+    committedGrossByCurrency: { COP: 100000, USD: 300 },
     grossByCurrency: { COP: 100000, USD: 300 },
+    collectedGrossByCurrency: { COP: 100000, USD: 300 },
+    pendingCollectionGrossByCurrency: { COP: 0, USD: 0 },
     payableByCurrency: { COP: 90000, USD: 270 },
     ownCashReceivedByCurrency: { COP: 505000, USD: 630 },
     invalidAllocationCount: 0
