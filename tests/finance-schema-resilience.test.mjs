@@ -46,8 +46,11 @@ function rowFor(headers, values) {
 }
 
 test("Finance dashboard resolves canonical fields by header name instead of fixed column position", async () => {
-  const headers = EXPECTED_FINANCE_HEADERS.filter((header) => header !== "Fecha fin");
+  const headers = EXPECTED_FINANCE_HEADERS.filter(
+    (header) => header !== "Fecha fin" && header !== "Cobro terceros"
+  );
   headers.splice(1, 0, "  FECHA FIN  ");
+  headers.splice(4, 0, "  COBRO TERCEROS  ");
 
   // This test verifies header-name resilience, not clock boundaries. Keep the
   // end date deliberately far in the future so the assertion cannot become
@@ -60,6 +63,7 @@ test("Finance dashboard resolves canonical fields by header name instead of fixe
     Moneda: "COP",
     "Valor bruto": 1000000,
     "Valor Neto": 900000,
+    "Cobro terceros": 250000,
     Estado: "Pendiente Envio",
     ID: "private-id"
   });
@@ -73,7 +77,7 @@ test("Finance dashboard resolves canonical fields by header name instead of fixe
     }
 
     return new Response(JSON.stringify({
-      range: "REGISTRO!A1:AB3000",
+      range: "REGISTRO!A1:AC3000",
       majorDimension: "ROWS",
       values: [headers, ongoing]
     }), {
@@ -96,7 +100,7 @@ test("Finance dashboard resolves canonical fields by header name instead of fixe
   const body = await response.json();
   assert.equal(body.ok, true);
   assert.equal(body.schema.ok, true);
-  assert.equal(body.schema.columnCount, 28);
+  assert.equal(body.schema.columnCount, 29);
   assert.equal(body.summary.toInvoice.count, 0);
   assert.equal(body.summary.receivables.workflowBlockedCount, 1);
   assert.equal(body.summary.workQueues.blocked[0].client, "Multi-day client");
