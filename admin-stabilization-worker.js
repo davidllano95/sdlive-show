@@ -15,6 +15,7 @@ import { decorateAvailabilityNextWindowResponse } from "./availability-next-wind
 import { handleAssistantLeadsMigrationApi } from "./assistant-admin-leads-migration.js";
 import { handleAssistantStoragePreparationApi } from "./assistant-admin-storage-preparation.js";
 import { handleAssistantRuntimeReadinessApi } from "./assistant-admin-readiness.js";
+import { handleFinanceThirdPartyDashboardApi } from "./finance-third-party-dashboard-api.js";
 import {
   googleCalendarDiagnostic,
   mergeGoogleCalendarOverlayResponse,
@@ -229,6 +230,13 @@ export default {
 
     if (path === "/api/admin/assistant/readiness") {
       const response = await handleAssistantRuntimeReadinessApi(request, env, {
+        verifyAdmin: verifyAdminViaExistingApi
+      });
+      if (response) return response;
+    }
+
+    if (path === "/api/admin/finance/dashboard") {
+      const response = await handleFinanceThirdPartyDashboardApi(request, env, {
         verifyAdmin: verifyAdminViaExistingApi
       });
       if (response) return response;
