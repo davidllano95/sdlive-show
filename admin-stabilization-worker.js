@@ -16,6 +16,7 @@ import { handleAssistantLeadsMigrationApi } from "./assistant-admin-leads-migrat
 import { handleAssistantStoragePreparationApi } from "./assistant-admin-storage-preparation.js";
 import { handleAssistantRuntimeReadinessApi } from "./assistant-admin-readiness.js";
 import { handleFinanceThirdPartyDashboardApi } from "./finance-third-party-dashboard-api.js";
+import { handleFinanceThirdPartyOperationsApi } from "./finance-third-party-operations-api.js";
 import {
   googleCalendarDiagnostic,
   mergeGoogleCalendarOverlayResponse,
@@ -237,6 +238,16 @@ export default {
 
     if (path === "/api/admin/finance/dashboard") {
       const response = await handleFinanceThirdPartyDashboardApi(request, env, {
+        verifyAdmin: verifyAdminViaExistingApi
+      });
+      if (response) return response;
+    }
+
+    if (
+      path === "/api/admin/finance/third-party/obligations" ||
+      path === "/api/admin/finance/third-party/mark-paid"
+    ) {
+      const response = await handleFinanceThirdPartyOperationsApi(request, env, {
         verifyAdmin: verifyAdminViaExistingApi
       });
       if (response) return response;
