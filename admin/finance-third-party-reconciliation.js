@@ -1,47 +1,32 @@
 (() => {
-  const MONTHS = {
-    en: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
-    es: ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
-  };
-
   const COPY = {
     en: {
       eyebrow: "Third-party reconciliation",
-      title: "Own money vs pass-through money",
-      note: "Management reconciliation only · tax/legal treatment is not determined here",
-      current: "Current third-party outstanding",
-      billed: "Client billed",
-      ownGross: "Own gross",
-      thirdGross: "Third-party gross",
-      bank: "Bank received",
-      ownCash: "Own cash",
-      payable: "Est. third-party payable",
-      actualPaid: "Actually paid to third parties",
-      fees: "Fees / retentions",
-      monthly: "Monthly reconciliation",
-      month: "Month",
+      title: "Third-party balances",
+      note: "COP only · current balance, money collected for each third party, and actual payments made",
+      thirdParty: "Third party",
+      debt: "Amount owed",
+      collected: "Collected for third party",
+      paid: "Paid to third party",
+      total: "Total",
+      unassigned: "Unassigned",
       loading: "Loading third-party reconciliation…",
       unavailable: "Third-party reconciliation unavailable",
-      empty: "No reconciliation data for this year."
+      empty: "No third-party balances in COP."
     },
     es: {
       eyebrow: "Conciliación de terceros",
-      title: "Dinero propio vs dinero de terceros",
-      note: "Conciliación de gestión · aquí no se determina el tratamiento tributario/legal",
-      current: "Obligación actual con terceros",
-      billed: "Facturado al cliente",
-      ownGross: "Bruto propio",
-      thirdGross: "Bruto de terceros",
-      bank: "Recibido en banco",
-      ownCash: "Flujo propio",
-      payable: "Neto estimado a terceros",
-      actualPaid: "Pagado realmente a terceros",
-      fees: "Fees / retenciones",
-      monthly: "Conciliación mensual",
-      month: "Mes",
+      title: "Saldos con terceros",
+      note: "Solo COP · saldo actual, dinero cobrado para cada tercero y pagos realmente realizados",
+      thirdParty: "Tercero",
+      debt: "Deuda a terceros",
+      collected: "Cobrado de terceros",
+      paid: "Pagado a terceros",
+      total: "Total",
+      unassigned: "Sin desglose",
       loading: "Cargando conciliación de terceros…",
       unavailable: "Conciliación de terceros no disponible",
-      empty: "No hay datos de conciliación para este año."
+      empty: "No hay saldos de terceros en COP."
     }
   };
 
@@ -57,14 +42,20 @@
     return COPY[language()][key] || COPY.en[key] || key;
   }
 
-  function formatMoney(currency, value) {
+  function formatCop(value) {
     const amount = Number(value || 0);
-    return new Intl.NumberFormat(currency === "COP" ? "es-CO" : "en-US", {
+    return new Intl.NumberFormat("es-CO", {
       style: "currency",
-      currency,
-      minimumFractionDigits: currency === "COP" ? 0 : 2,
-      maximumFractionDigits: currency === "COP" ? 0 : 2
+      currency: "COP",
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
     }).format(Number.isFinite(amount) ? amount : 0);
+  }
+
+  function displayThirdPartyName(value) {
+    const name = String(value || "").trim();
+    if (name === "Sin desglose") return text("unassigned");
+    return name || text("unassigned");
   }
 
   function ensureStyles() {
@@ -73,22 +64,16 @@
     style.id = "financeThirdPartyReconciliationStyles";
     style.textContent = `
       .finance-third-party-reconciliation { margin-top: 26px; }
-      .finance-third-party-current { margin-left: auto; text-align: right; }
-      .finance-third-party-current strong { display: block; margin-top: 4px; }
-      .finance-third-party-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
-      .finance-third-party-metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 14px 0 16px; }
-      .finance-third-party-metrics div { padding: 10px 12px; border: 1px solid var(--line, rgba(255,255,255,.1)); border-radius: 10px; }
-      .finance-third-party-metrics span { display: block; font-size: 12px; opacity: .68; }
-      .finance-third-party-metrics strong { display: block; margin-top: 4px; font-size: 14px; }
-      .finance-third-party-table-wrap { overflow-x: auto; }
-      .finance-third-party-table { width: 100%; border-collapse: collapse; font-size: 12px; }
-      .finance-third-party-table th, .finance-third-party-table td { padding: 8px 7px; border-top: 1px solid var(--line, rgba(255,255,255,.08)); text-align: right; white-space: nowrap; }
-      .finance-third-party-table th:first-child, .finance-third-party-table td:first-child { text-align: left; }
+      .finance-third-party-table-wrap { overflow-x: auto; margin-top: 14px; }
+      .finance-third-party-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+      .finance-third-party-table th,
+      .finance-third-party-table td { padding: 11px 9px; border-top: 1px solid var(--line, rgba(255,255,255,.08)); text-align: right; white-space: nowrap; }
+      .finance-third-party-table th:first-child,
+      .finance-third-party-table td:first-child { text-align: left; }
+      .finance-third-party-table tbody tr:first-child td { border-top-color: var(--line, rgba(255,255,255,.12)); }
+      .finance-third-party-table tfoot td { font-weight: 700; border-top: 1px solid var(--line, rgba(255,255,255,.18)); }
+      .finance-third-party-name { font-weight: 650; }
       .finance-third-party-status { padding: 14px; opacity: .72; }
-      @media (max-width: 900px) {
-        .finance-third-party-grid { grid-template-columns: 1fr; }
-        .finance-third-party-current { margin-left: 0; text-align: left; }
-      }
     `;
     document.head.appendChild(style);
   }
@@ -111,52 +96,6 @@
     return section;
   }
 
-  function metric(label, value) {
-    return `<div><span>${label}</span><strong>${value}</strong></div>`;
-  }
-
-  function currencyPanel(currency, data) {
-    const monthly = data?.monthly || [];
-    const rows = monthly.map((row) => `
-      <tr>
-        <td>${MONTHS[language()][Number(row.month || 1) - 1] || row.month}</td>
-        <td>${formatMoney(currency, row.ownGross)}</td>
-        <td>${formatMoney(currency, row.thirdPartyGross)}</td>
-        <td>${formatMoney(currency, row.ownCashReceived)}</td>
-        <td>${formatMoney(currency, row.actualThirdPartyPaid)}</td>
-      </tr>
-    `).join("");
-
-    return `
-      <article class="finance-panel">
-        <div class="finance-panel__head"><div><span class="finance-currency-tag">${currency}</span><h4>${text("title")}</h4></div></div>
-        <div class="finance-third-party-metrics">
-          ${metric(text("billed"), formatMoney(currency, data?.billedGross))}
-          ${metric(text("ownGross"), formatMoney(currency, data?.ownGross))}
-          ${metric(text("thirdGross"), formatMoney(currency, data?.thirdPartyGross))}
-          ${metric(text("bank"), formatMoney(currency, data?.bankReceived))}
-          ${metric(text("ownCash"), formatMoney(currency, data?.ownCashReceived))}
-          ${metric(text("payable"), formatMoney(currency, data?.estimatedThirdPartyPayable))}
-          ${metric(text("actualPaid"), formatMoney(currency, data?.actualThirdPartyPaid))}
-          ${metric(text("fees"), formatMoney(currency, data?.fees))}
-        </div>
-        <div class="finance-subsection"><span>${text("monthly")}</span></div>
-        <div class="finance-third-party-table-wrap">
-          <table class="finance-third-party-table">
-            <thead><tr>
-              <th>${text("month")}</th>
-              <th>${text("ownGross")}</th>
-              <th>${text("thirdGross")}</th>
-              <th>${text("ownCash")}</th>
-              <th>${text("actualPaid")}</th>
-            </tr></thead>
-            <tbody>${rows}</tbody>
-          </table>
-        </div>
-      </article>
-    `;
-  }
-
   function render() {
     const section = ensureSection();
     if (!section) return;
@@ -165,20 +104,50 @@
       return;
     }
 
-    const year = Number(document.getElementById("financeYear")?.value || state.payload.analytics?.defaultYear);
-    const data = state.payload.analytics?.thirdPartyReconciliation?.[String(year)];
-    const outstanding = state.payload.thirdPartyLedger?.allTime?.currentOutstandingByCurrency || {};
+    const entries = Array.isArray(state.payload.thirdPartyLedger?.copByThirdParty)
+      ? state.payload.thirdPartyLedger.copByThirdParty
+      : [];
+
+    const totals = entries.reduce((sum, entry) => ({
+      debt: sum.debt + Number(entry?.debt || 0),
+      collected: sum.collected + Number(entry?.collected || 0),
+      paid: sum.paid + Number(entry?.paid || 0)
+    }), { debt: 0, collected: 0, paid: 0 });
+
+    const rows = entries.map((entry) => `
+      <tr>
+        <td class="finance-third-party-name">${displayThirdPartyName(entry?.name)}</td>
+        <td>${formatCop(entry?.debt)}</td>
+        <td>${formatCop(entry?.collected)}</td>
+        <td>${formatCop(entry?.paid)}</td>
+      </tr>
+    `).join("");
 
     section.innerHTML = `
       <div class="finance-section-title">
         <div><span class="eyebrow">${text("eyebrow")}</span><h4>${text("title")}</h4></div>
-        <div class="finance-third-party-current">
-          <span class="finance-section-note">${text("current")}</span>
-          <strong>COP ${formatMoney("COP", outstanding.COP)} · USD ${formatMoney("USD", outstanding.USD)}</strong>
-        </div>
+        <span class="finance-currency-tag">COP</span>
       </div>
       <p class="finance-section-note">${text("note")}</p>
-      ${data ? `<div class="finance-third-party-grid">${currencyPanel("COP", data.COP)}${currencyPanel("USD", data.USD)}</div>` : `<div class="finance-third-party-status">${text("empty")}</div>`}
+      ${entries.length ? `
+        <div class="finance-third-party-table-wrap">
+          <table class="finance-third-party-table">
+            <thead><tr>
+              <th>${text("thirdParty")}</th>
+              <th>${text("debt")}</th>
+              <th>${text("collected")}</th>
+              <th>${text("paid")}</th>
+            </tr></thead>
+            <tbody>${rows}</tbody>
+            <tfoot><tr>
+              <td>${text("total")}</td>
+              <td>${formatCop(totals.debt)}</td>
+              <td>${formatCop(totals.collected)}</td>
+              <td>${formatCop(totals.paid)}</td>
+            </tr></tfoot>
+          </table>
+        </div>
+      ` : `<div class="finance-third-party-status">${text("empty")}</div>`}
     `;
   }
 
@@ -201,9 +170,6 @@
   }
 
   function bind() {
-    document.addEventListener("change", (event) => {
-      if (event.target?.id === "financeYear") render();
-    });
     document.addEventListener("click", (event) => {
       if (event.target?.closest?.(".finance-language-control button[data-lang]")) {
         setTimeout(render, 0);
