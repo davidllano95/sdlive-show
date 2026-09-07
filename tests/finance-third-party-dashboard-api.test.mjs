@@ -105,7 +105,7 @@ function fakeFetch(url) {
   throw new Error(`Unexpected fetch: ${value}`);
 }
 
-test("enhanced Finance endpoint joins PAGO_TERCEROS facts without exposing private row data", async () => {
+test("enhanced Finance endpoint exposes only the third-party name needed for COP reconciliation, not private row data", async () => {
   const response = await handleFinanceThirdPartyDashboardApi(
     new Request("https://sdlive.show/api/admin/finance/dashboard"),
     ENV,
@@ -133,10 +133,19 @@ test("enhanced Finance endpoint joins PAGO_TERCEROS facts without exposing priva
   assert.equal(reconciliation.estimatedThirdPartyPayable, 180000);
   assert.equal(reconciliation.actualThirdPartyPaid, 180000);
 
+  assert.deepEqual(body.thirdPartyLedger.copByThirdParty, [
+    {
+      name: "Private third party name",
+      debt: 0,
+      collected: 180000,
+      paid: 180000
+    }
+  ]);
+
   const serialized = JSON.stringify(body);
   assert.equal(serialized.includes("private-work-id"), false);
   assert.equal(serialized.includes("private-third-id"), false);
-  assert.equal(serialized.includes("Private third party name"), false);
+  assert.equal(serialized.includes("Private third party name"), true);
   assert.equal(serialized.includes("private parent note"), false);
   assert.equal(serialized.includes("private third-party note"), false);
   assert.equal(serialized.includes("+57-private"), false);

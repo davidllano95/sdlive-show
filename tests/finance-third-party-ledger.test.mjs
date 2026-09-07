@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import { EXPECTED_FINANCE_HEADERS } from "../finance-api.js";
 import {
   EXPECTED_THIRD_PARTY_HEADERS,
+  buildThirdPartyCopByName,
   buildThirdPartyLedger,
   validateThirdPartyHeaders
 } from "../finance-third-party-dashboard-api.js";
@@ -73,6 +74,63 @@ test("ledger derives child/work balances from persisted facts and keeps unassign
   assert.equal(ledger.allTime.currentOutstandingByCurrency.COP, 230000);
   assert.equal(ledger.allTime.childStateCounts.Parcial, 1);
   assert.equal(ledger.allTime.stateCounts["Desglose incompleto"], 1);
+});
+
+test("COP by-name reconciliation shows current debt, collected money, actual payments and unassigned obligations", () => {
+  const parents = [
+    financeRow({
+      "ID": "cop-paid",
+      "Moneda": "COP",
+      "Valor bruto": 1000000,
+      "Valor Recibido": 900000,
+      "Estado": "Pagado",
+      "Cobro terceros": 300000
+    }),
+    financeRow({
+      "ID": "cop-not-paid",
+      "Moneda": "COP",
+      "Valor bruto": 500000,
+      "Valor Recibido": 450000,
+      "Estado": "Cuenta enviada",
+      "Cobro terceros": 100000
+    }),
+    financeRow({
+      "ID": "usd-paid",
+      "Moneda": "USD",
+      "Valor bruto": 1000,
+      "Valor Recibido": 900,
+      "Estado": "Pagado",
+      "Cobro terceros": 200
+    })
+  ];
+  const children = [
+    thirdRow({
+      "ID tercero": "t-cop-1",
+      "Trabajo ID": "cop-paid",
+      "Tercero": "Nicolas",
+      "Bruto tercero": 100000,
+      "Valor pagado tercero": 40000
+    }),
+    thirdRow({
+      "ID tercero": "t-cop-2",
+      "Trabajo ID": "cop-not-paid",
+      "Tercero": "Nicolas",
+      "Bruto tercero": 100000,
+      "Valor pagado tercero": 0
+    }),
+    thirdRow({
+      "ID tercero": "t-usd",
+      "Trabajo ID": "usd-paid",
+      "Tercero": "USD Person",
+      "Bruto tercero": 200,
+      "Valor pagado tercero": 180
+    })
+  ];
+
+  assert.deepEqual(buildThirdPartyCopByName(parents, children), [
+    { name: "Nicolas", debt: 140000, collected: 90000, paid: 40000 },
+    { name: "Sin desglose", debt: 180000, collected: 180000, paid: 0 }
+  ].sort((a, b) => b.debt - a.debt || a.name.localeCompare(b.name, "es")));
 });
 
 test("ledger preserves payment-state priority before client collection and flags overpayment", () => {
@@ -190,4 +248,5 @@ test("ledger never reads the seven legacy derived cells as source facts", () => 
   assert.equal(ledger.allTime.actualPaidByCurrency.USD, 180);
   assert.equal(ledger.allTime.currentOutstandingByCurrency.USD, 0);
   assert.equal(ledger.allTime.childStateCounts.Pagado, 1);
+  assert.deepEqual(ledger.copByThirdParty, []);
 });
