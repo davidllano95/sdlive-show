@@ -4,15 +4,14 @@
 
 | Campo | Valor |
 |---|---|
-| Última reconciliación | **2026-09-03 — America/Bogota** |
-| Base de PR #246 | **`a5bffc66e711af23f2df01cd440aa0d43344d632`** |
-| Runtime baseline verificado | **`c52a06603c0a6b5cd0cc4425cca11f69cce693d7` · PR #244** |
+| Última reconciliación | **2026-09-07 — America/Bogota** |
+| GitHub `main` | **`d4d036bed5203d655dff8ff875f7188868845176` · PR #253** |
 | Producción | `https://sdlive.show` |
 | Estado macro | **Finance/Calendar/Site Schedule/Show Day/Admin/Rental/Availability/Lead Core/Assistant operational** |
-| Active Gate | **PR #246 — reconstructed verified-owner WhatsApp control for Availability; OPEN / UNMERGED / CI RED** |
-| Public Assistant | **ON / CLOSED-PASS — `ASSISTANT_PUBLIC_ENABLED=true`** |
-| Siguiente workstream | **#246 WhatsApp owner control → Rental real-time availability/double-booking → mobile Rental cart → quote/PDF foundation** |
-| Bloqueado | **Generic Finance Phase 3 write-back** |
+| Active Gate | **Finance third-party operational closeout: one bounded production `Marcar pagado` smoke** |
+| Next Gate | **2026 PILA estimator in Finance** |
+| WhatsApp owner control | **PR #246 merged; Meta/Cloudflare rollout intentionally paused** |
+| Bloqueado | **Generic Finance write-back / D1 Finance mirror / bidirectional sync** |
 
 ## Precedencia
 
@@ -34,147 +33,135 @@ Docs-only: `branch → docs → CI → PR → squash merge`. No production smoke
 
 QA manual con owner: **una sola acción por vez**.
 
-## Architectural invariants
+# Architectural invariants
 
 - GitHub `main` = code truth.
 - Cloudflare Access = barrera real del Admin.
-- Google Sheets `REGISTRO` = operations/finance persistence + formulas.
-- AppSheet SD.Live Track = mobile/offline workflow.
-- D1 no es Finance mirror.
+- Google Sheets = Finance persistence.
+- `REGISTRO` = parent work/payment table.
+- `PAGO_TERCEROS` = physical child ledger for third-party obligations/payments.
+- AppSheet SD.Live Track = primary mobile/offline Finance workflow.
+- D1 is not a Finance mirror.
+- General Finance Admin remains read-only.
+- **Only approved Finance write exception:** PR #253 may record a real third-party payment by writing only `PAGO_TERCEROS.J = Valor pagado tercero` and `K = Fecha pago tercero`, after server-side re-read/revalidation.
+- Generic Finance write-back remains blocked.
 - Rental pricing/quote logic = backend authoritative.
 - Availability = D1 Availability Core, no AI-owned truth.
-- Leads = una sola Lead Core D1 source of truth.
-- Assistant no crea un segundo catálogo Rental ni un segundo Lead store.
-- Assistant no lee/escribe Finance.
-- Public traffic nunca debe migrar D1 schema desde rutas públicas.
-- Owner phone/secrets/tokens permanecen server-side.
-- Assistant usa OpenAI Responses API + strict Structured Outputs + `store:false`.
-- La sesión Assistant es stateless y sellada con AES-GCM; no se persiste transcript completo.
-- Turnstile se exige para iniciar una sesión nueva; después, la sesión sellada autenticada sustituye verificaciones repetidas sin relajar el rate limit ni el backend gate.
-- Consentimiento de privacidad es explícito y product-owned; nunca se infiere.
+- Leads = one Lead Core D1 source of truth.
+- Assistant does not read/write Finance and does not create a second Rental catalog/Lead store.
+- Public traffic must never migrate D1 schema.
+- Owner phone/secrets/tokens stay server-side.
+- Assistant uses OpenAI Responses API + strict Structured Outputs + `store:false`.
+- Assistant session remains stateless/sealed; no full-transcript persistence.
+- Privacy consent remains explicit and product-owned.
 
-# CLOSED / PASS
+# Current Active Gate — Finance third-party operational closeout
 
-## Availability Core v1
+Detailed handoff:
 
-**CLOSED/PASS.** No reabrir salvo regresión.
+`docs/checkpoints/handoff-finance-third-party-operational-2026-09-07.md`
 
-## Lead Core
+Roadmap:
 
-**CLOSED/PASS through PR #190.** Canonical statuses: `new`, `contacted`, `quoted`, `confirmed`, `lost`. Relevant sources: `contact`, `rental`, `assistant`. Service categories: `live`, `theatre`, `sound_design`, `systems`, `rental`, `other`.
+`docs/roadmap/finance-third-party-pila-2026-09-05.md`
 
-## Assistant storage/backend/runtime
+## Completed sequence
 
-**CLOSED/PASS IN PRODUCTION.** Storage, `privacy_consents`, `assistant_effect_reservations`, Lead Core integration, `/api/assistant`, dedicated rate limit, sealed session, deterministic tools, explicit consent, idempotent Lead capture and Resend handoff are operational.
+- ✅ PR #249 — structured `Cobro terceros` parent field through Finance read contract.
+- ✅ PR #250 — pre-collection third-party obligation semantics/card.
+- ✅ PR #251 — physical `PAGO_TERCEROS` ledger integration + selected-year/monthly reconciliation backend.
+- ✅ PR #252 — visible COP reconciliation by third-party name: `Deuda`, `Cobrado`, `Pagado`.
+- ✅ PR #253 — operational obligations queue + bounded Admin Finance `Marcar pagado` action.
+- ✅ AppSheet `Terceros` tab owner-verified to hide fully paid debt and show only outstanding obligations.
 
-Key foundation PRs:
+Merged commits:
 
-- #224 — final Assistant storage preparation;
-- #225 — backend/runtime integration;
-- #228 — public widget;
-- #231 — Safari post-turn recovery;
-- #235 — Turnstile once per Assistant session;
-- #236/#237 — messaging-shell redesign + SD.Live palette/layout correction;
-- #238/#239 — inline security confirmation + official SD.Live avatar;
-- #240 — deterministic `venue=TBD` persistence;
-- #241 — Enter sends / Shift+Enter newline;
-- #242 — hardened consent → Lead draft boundary;
-- #243/#244 — deterministic Rental fail-closed boundaries, including valid-item repeated-tool recovery.
+- #249 `c2b2ff1eb977d0d2d0c532abc3fbf65a61c9bd5e`
+- #250 `4dcf3fe90f50fbaf77f41227f9b8b4ce4c6db1bf`
+- #251 `b312b4e7f47ff5526f1bace8325aa85e4a4a1b02`
+- #252 `b02bda1406ba152884aa9b4b2976c7cd9141aba4`
+- #253 `d4d036bed5203d655dff8ff875f7188868845176`
 
-Old preparatory PRs #192–#212, old #213/#215/#216 and temporary #218 remain closed/superseded. Do not reopen them.
+## Current third-party semantics
 
-## Assistant rollout — FINAL PRODUCTION CLOSEOUT 2026-09-03
+### Reconciliation section
 
-**CLOSED / PRODUCTION PASS.** Detailed checkpoint: `docs/checkpoints/handoff-assistant-rollout-closeout-2026-09-03.md`.
+**COP only**, grouped by third-party name:
 
-Verified production behavior:
+- `Tercero`
+- `Deuda a terceros` = current balance still owed
+- `Cobrado de terceros` = proportional third-party amount after the parent is actually paid with valid `Valor Recibido`
+- `Pagado a terceros` = persisted actual third-party payments
 
-- public Assistant enabled and first real provider turn succeeds;
-- Safari multi-turn/session continuity PASS;
-- `venue=TBD` remains authoritative and is not re-asked;
-- Enter → Send and Shift+Enter newline behavior PASS;
-- Turnstile appears as an inline `Security check`, confirms `Verified`, and is required only for the new Assistant session;
-- desktop chat shell PASS: compact header, one central scroll owner, inline consent, composer anchored bottom, SD.Live violet palette;
-- mobile layout + mobile interaction PASS in Spanish;
-- consent is never inferred from name/contact/follow-up intent;
-- Data authorization UI fully visible and explicit;
-- exactly one QA Assistant Lead created: **Lead #26 / Samuel / `samuel.qa@example.com` / source Assistant / service Theatre / status New**;
-- Lead #26 persisted with `2026-10-17`, Bogotá and venue `TBD` and is visible in Admin;
-- consent persistence PASS: Lead + consent + idempotency effect are atomic and success requires consent write;
-- Resend/handoff notification PASS to `hello@sdlive.show`;
-- reload/idempotency PASS: no duplicate Samuel Lead was created;
-- deterministic Availability PASS: Assistant returned `available + WhatsApp`, matching the public Availability widget;
-- Rental over-limit PASS: 3x Waves LV1 Classic rejected against catalog max 2, with no invented price/inventory;
-- Rental unknown-item PASS: Yamaha DM7 not silently substituted and no invented price/inventory;
-- Rental known-item PASS: Behringer WING recognized, while price/inventory remain explicitly unconfirmed;
-- existing Contact form continuity PASS: `Message received. Thanks for reaching out.`;
-- existing Rental form continuity PASS: `Quote request received. I'll contact you with availability and the final rental quote.`.
+Unassigned amount remains visible as `Sin desglose`.
 
-**Rollback control remains valid:** `ASSISTANT_PUBLIC_ENABLED` is the public kill switch.
+### Operational card
 
-The Assistant milestone is closed. Do not keep doing Assistant polish unless a new production regression or explicit product request justifies reopening it.
+- not in collection workflow → hidden;
+- 🟠 `Esperando pago del cliente` → workflow complete, client not paid;
+- 🟢 `Listo para pagar` → parent `Pagado`, valid `Valor Recibido`, positive third-party balance;
+- fully paid → disappears;
+- `Sin desglose` cannot be marked paid.
 
-## SD.Live Forms Turnstile Siteverify
+### Mark paid
 
-**CLOSED/PASS.** Contact/Rental send `turnstileToken`; server verifies Cloudflare Siteverify, hostname and action before downstream consent/Lead behavior. The old dashboard warning was dispositioned as stale/incomplete detection unless future runtime evidence contradicts the proof.
+Endpoints:
 
-# ACTIVE GATE — PR #246 WhatsApp owner control for Availability
+- `GET /api/admin/finance/third-party/obligations`
+- `POST /api/admin/finance/third-party/mark-paid`
 
-PR #246 — **Rebuild verified-owner WhatsApp Availability control** — is the current implementation gate.
-
-Current verified handoff state:
-
-- state: **OPEN / UNMERGED**;
-- branch: `feature/whatsapp-owner-control-current-main-20260903`;
-- head: `fd4a00929b3bd02c5cc3da0b7338bf90faea911c`;
-- base at creation: `a5bffc66e711af23f2df01cd440aa0d43344d632`;
-- changed files: 13;
-- GitHub Actions: **Tests #673 = FAILURE**;
-- failing workflow step: `Run tests`;
-- merge is forbidden until CI is green;
-- because #246 is unmerged, it is **not production** and production behavior remains unchanged by this work.
-
-Detailed handoff: `docs/checkpoints/handoff-whatsapp-owner-control-pr246-2026-09-03.md`.
-
-## Why old PR #191 is not the implementation branch
-
-PR #191 remains historical source material only and must not be merged directly. Its branch predates the completed Assistant rollout and included runtime `CREATE TABLE IF NOT EXISTS` reachable from public webhook traffic, which violates the current no-public-DDL invariant.
-
-#246 reconstructs only the still-valid intended behavior on current `main`.
-
-## #246 architecture and required boundaries
-
-- Meta callback/webhook route: `/api/webhooks/whatsapp`.
-- Raw-body `X-Hub-Signature-256` HMAC SHA-256 verification before POST processing.
-- Exact `WHATSAPP_PHONE_NUMBER_ID` allowlist.
-- Exact normalized `WHATSAPP_OWNER_NUMBER` allowlist.
-- Explicit `WHATSAPP_OWNER_ACTOR_EMAIL`; no fallback owner identity.
-- Durable D1 message-ID idempotency and reply retry semantics.
-- Reuse existing transport-neutral Availability owner parser.
-- Execute through canonical `handleAvailabilityApi`; no second Availability store/write engine.
-- Public WhatsApp transport performs no D1 schema migration.
-- Historical Availability schema guards are shielded on this public transport; missing schema must fail closed rather than execute DDL.
-- Access-protected storage preparation and readiness endpoints.
-- `WHATSAPP_OWNER_CONTROL_ENABLED` hard kill switch; runtime execution remains OFF until rollout readiness is complete.
-- Provider response bodies and private owner/secrets never exposed.
-- No AI and no Finance/Contact/Rental/Calendar/Show Day/Assistant scope expansion.
+The POST re-reads both tables, recalculates eligibility/balance server-side, writes only physical `PAGO_TERCEROS!J:K`, re-reads, then verifies the obligation is no longer pending.
 
 ## Exact next action
 
-Do **not** configure Meta or Cloudflare yet and do not redesign the feature.
+Run **one** representative production smoke of PR #253 if a safe obligation is available:
 
-1. inspect GitHub Actions **Tests #673** for #246;
-2. recover the exact failing assertions from the `Run tests` step;
-3. fix only those failing contracts on the existing #246 branch while preserving every boundary above;
-4. rerun CI and require green;
-5. squash merge #246 only after green CI;
-6. verify `main` CI;
-7. then perform bounded rollout: storage preparation → readiness → Meta/Cloudflare config → callback verification/subscription → readiness → enable flag → exactly one representative production smoke;
-8. close #191 without merge as superseded only after #246 is validated/merged.
+1. confirm one item is `Listo para pagar`;
+2. use `Marcar pagado` once;
+3. verify it disappears from the operational queue/card;
+4. verify `Valor pagado tercero` and `Fecha pago tercero` changed in Sheets/AppSheet after sync;
+5. verify the AppSheet `Terceros` tab does not show the fully paid item.
 
-No AI is required for this milestone.
+If there is no safe real/test obligation, do not manufacture production data only for the smoke; document it as deferred.
 
-# Priority after #246
+After pass/defer: move to the **2026 PILA estimator**.
+
+# Next Gate — 2026 PILA estimator
+
+Browser-local/year-versioned planning calculator in `/admin/finance/`.
+
+Hard boundaries:
+
+- no Sheet/AppSheet/D1 writes;
+- exact current 2026 rules/FSP thresholds must be verified before coding final parameters;
+- support personal-services and own-account/different-contract modes as specified in the Finance roadmap;
+- do not automatically include or exclude `Cobro terceros` from statutory PILA income;
+- clearly label estimator/planning status and unsupported scenarios.
+
+# WhatsApp owner control — merged, rollout paused
+
+PR #246 was merged as `4fc02a565317c802c07fed78e6d25bd231eeb70b`.
+
+Its security/architecture contract remains valid, but Meta/Cloudflare onboarding and live owner-number activation are **not the active workstream**. Do not restart rollout unless explicitly requested.
+
+The old PR #191 remains superseded historical source material and must not be merged.
+
+# Closed modules — do not reopen without regression
+
+- Availability Core v1.
+- Lead Core through PR #190.
+- Assistant storage/backend/runtime/widget/full E2E rollout.
+- SD.Live Forms Turnstile Siteverify disposition.
+- Calendar controlled create + multi-day.
+- Site Schedule / automatic Show Day / Location.
+- Show Day Admin force control.
+- Admin stabilization.
+- Public visual stabilization.
+- Rental image-editor parity.
+- Finance general read-only dashboard foundation.
+- Finance third-party schema/ledger/reconciliation implementation through PR #253, except the pending representative production write smoke.
+
+# Priority after PILA
 
 1. Rental real-time availability + double-booking protection.
 2. Mobile Rental Cart total/sticky summary.
@@ -183,19 +170,6 @@ No AI is required for this milestone.
 5. SD.Live Patch.
 6. CRM/Admin Inbox/analytics/SEO/performance/accessibility/CMS advanced backlog.
 
-# Closed modules — do not reopen without regression
-
-- Finance read-only / regression closeout.
-- Calendar controlled create + multi-day.
-- Site Schedule / automatic Show Day / Location.
-- Show Day Admin force control.
-- Admin stabilization.
-- Public visual stabilization.
-- Rental image-editor parity.
-- Availability Core v1.
-- Lead Core workflow/status audit.
-- Assistant storage/backend/runtime/widget/E2E rollout.
-
 # Exact continuation point
 
-**Resume PR #246 exactly where it is: CI is red at Tests #673. Extract the failing assertions, fix only those contracts, rerun CI, and do not merge or touch Meta/Cloudflare production configuration until CI is green.**
+**Inspect current `main` at/after `d4d036bed5203d655dff8ff875f7188868845176`. Do one bounded production smoke of Finance third-party `Marcar pagado` if a safe obligation exists. If it passes—or is explicitly deferred for lack of a safe item—start exact-source verification and implementation planning for the 2026 PILA estimator. Do not redesign AppSheet/Sheets without concrete regression evidence.**
