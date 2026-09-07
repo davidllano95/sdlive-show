@@ -302,6 +302,95 @@ function childDerived({ brutoTercero, valorPagado, valorBruto, valorRecibido }) 
   };
 }
 
+function addCopThirdPartyBucket(buckets, name, { debt = 0, collected = 0, paid = 0 } = {}) {
+  const displayName = cleanString(name) || "Sin nombre";
+  const key = displayName.toLocaleLowerCase("es-CO");
+  if (!buckets.has(key)) {
+    buckets.set(key, { name: displayName, debt: 0, collected: 0, paid: 0 });
+  }
+  const bucket = buckets.get(key);
+  bucket.debt += Number.isFinite(Number(debt)) ? Number(debt) : 0;
+  bucket.collected += Number.isFinite(Number(collected)) ? Number(collected) : 0;
+  bucket.paid += Number.isFinite(Number(paid)) ? Number(paid) : 0;
+}
+
+export function buildThirdPartyCopByName(financeRows, thirdPartyRows) {
+  const works = new Map();
+  const buckets = new Map();
+
+  for (const row of Array.isArray(financeRows) ? financeRows : []) {
+    const id = cleanString(financeCell(row, "ID"));
+    if (!id || normalizedCurrency(financeCell(row, "Moneda")) !== "COP") continue;
+
+    const gross = numericValue(financeCell(row, "Valor bruto"));
+    const received = numericValue(financeCell(row, "Valor Recibido"));
+    const cobroTerceros = numericValue(financeCell(row, "Cobro terceros"));
+    if (
+      gross === null || gross <= 0 ||
+      cobroTerceros === null || cobroTerceros <= 0 || cobroTerceros > gross
+    ) continue;
+
+    works.set(id, {
+      row,
+      gross,
+      received,
+      cobroTerceros,
+      sumChildGross: 0
+    });
+  }
+
+  for (const row of Array.isArray(thirdPartyRows) ? thirdPartyRows : []) {
+    const work = works.get(cleanString(thirdPartyCell(row, "Trabajo ID")));
+    if (!work) continue;
+
+    const brutoTercero = numericValue(thirdPartyCell(row, "Bruto tercero"));
+    const valorPagado = numericValue(thirdPartyCell(row, "Valor pagado tercero"));
+    if (brutoTercero === null || brutoTercero <= 0) continue;
+
+    const derived = childDerived({
+      brutoTercero,
+      valorPagado,
+      valorBruto: work.gross,
+      valorRecibido: work.received
+    });
+    work.sumChildGross += brutoTercero;
+
+    const clientPaid = cleanString(financeCell(work.row, "Estado")).toLowerCase() === "pagado";
+    const collected = clientPaid && derived.factor !== null
+      ? brutoTercero * derived.factor
+      : 0;
+
+    addCopThirdPartyBucket(buckets, thirdPartyCell(row, "Tercero"), {
+      debt: Math.max(derived.saldo ?? 0, 0),
+      collected,
+      paid: derived.paid
+    });
+  }
+
+  for (const work of works.values()) {
+    const unassignedGross = work.cobroTerceros > work.sumChildGross
+      ? work.cobroTerceros - work.sumChildGross
+      : 0;
+    if (unassignedGross <= 0) continue;
+
+    const factor = allocationFactor(work.gross, work.received);
+    const debt = unassignedGross * (factor === null ? 1 : factor);
+    const clientPaid = cleanString(financeCell(work.row, "Estado")).toLowerCase() === "pagado";
+    const collected = clientPaid && factor !== null ? unassignedGross * factor : 0;
+
+    addCopThirdPartyBucket(buckets, "Sin desglose", { debt, collected, paid: 0 });
+  }
+
+  return [...buckets.values()]
+    .map((entry) => ({
+      name: entry.name,
+      debt: roundMoney(entry.debt),
+      collected: roundMoney(entry.collected),
+      paid: roundMoney(entry.paid)
+    }))
+    .sort((a, b) => b.debt - a.debt || a.name.localeCompare(b.name, "es"));
+}
+
 function workState({ cobroTerceros, childCount, sumChildGross, saldoPendiente, pagadoTerceros, valorRecibido }) {
   if (cobroTerceros === null || cobroTerceros <= 0) return "";
   if (childCount === 0) return "Sin desglose";
@@ -511,6 +600,7 @@ export function buildThirdPartyLedger(financeRows, thirdPartyRows) {
       stateCounts,
       childStateCounts
     },
+    copByThirdParty: buildThirdPartyCopByName(financeRows, thirdPartyRows),
     years,
     byYear,
     dataQuality
