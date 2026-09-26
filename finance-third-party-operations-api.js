@@ -172,13 +172,13 @@ function buildOperationalObligations(financeRows, thirdEntries) {
     if (!parent) continue;
 
     const gross = number(thirdCell(row, "Bruto tercero"));
-    const paid = number(thirdCell(row, "Valor pagado tercero")) ?? 0;
+    const paid = money(number(thirdCell(row, "Valor pagado tercero")) ?? 0);
     if (gross === null || gross <= 0) continue;
     detailByWork.set(workId, (detailByWork.get(workId) || 0) + gross);
 
     const factor = allocationFactor(parent.gross, parent.received);
-    const base = factor === null ? gross : gross * factor;
-    const debt = base - paid;
+    const base = money(factor === null ? gross : gross * factor);
+    const debt = money(base - paid);
     if (!(debt > 0)) continue;
 
     let status = null;
@@ -192,7 +192,7 @@ function buildOperationalObligations(financeRows, thirdEntries) {
       project: clean(financeCell(parent.row, "Proyecto / Show")),
       client: clean(financeCell(parent.row, "Cliente")),
       currency: parent.currency,
-      amount: money(debt),
+      amount: debt,
       status,
       canMarkPaid: status === "ready_to_pay",
       _rowNumber: entry.rowNumber,
@@ -207,7 +207,7 @@ function buildOperationalObligations(financeRows, thirdEntries) {
     if (!(unassignedGross > 0)) continue;
 
     const factor = allocationFactor(parent.gross, parent.received);
-    const debt = unassignedGross * (factor === null ? 1 : factor);
+    const debt = money(unassignedGross * (factor === null ? 1 : factor));
     if (!(debt > 0)) continue;
 
     let status = null;
@@ -221,7 +221,7 @@ function buildOperationalObligations(financeRows, thirdEntries) {
       project: clean(financeCell(parent.row, "Proyecto / Show")),
       client: clean(financeCell(parent.row, "Cliente")),
       currency: parent.currency,
-      amount: money(debt),
+      amount: debt,
       status,
       canMarkPaid: false,
       _rowNumber: null,
@@ -344,7 +344,7 @@ export async function handleFinanceThirdPartyOperationsApi(
       return json({ ok: false, error: "Third-party obligation is not ready to pay" }, 409);
     }
 
-    const newPaid = target._currentPaid + target.amount;
+    const newPaid = money(target._currentPaid + target.amount);
     const date = bogotaDate(now);
     await writePayment(env, target._rowNumber, newPaid, date, fetchImpl);
 
