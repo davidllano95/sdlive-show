@@ -68,6 +68,26 @@ const parents = [
     "Estado": "Pagado",
     "Valor Recibido": 900,
     "Cobro terceros": 200
+  }),
+  financeRow({
+    "ID": "precision-production",
+    "Cliente": "Production client",
+    "Proyecto / Show": "Precision regression",
+    "Moneda": "COP",
+    "Valor bruto": 900000,
+    "Estado": "Pagado",
+    "Valor Recibido": 893106,
+    "Cobro terceros": 450000
+  }),
+  financeRow({
+    "ID": "subcent-closed",
+    "Cliente": "Precision client",
+    "Proyecto / Show": "Sub-cent closed",
+    "Moneda": "USD",
+    "Valor bruto": 3,
+    "Estado": "Pagado",
+    "Valor Recibido": 1,
+    "Cobro terceros": 1
   })
 ];
 
@@ -97,6 +117,20 @@ function makeThirdRows() {
       "Trabajo ID": "usd-ready",
       "Tercero": "Alex",
       "Bruto tercero": 200
+    }),
+    thirdRow({
+      "ID tercero": "third-production-precision",
+      "Trabajo ID": "precision-production",
+      "Tercero": "Nicolas",
+      "Bruto tercero": 450000,
+      "Valor pagado tercero": 446535
+    }),
+    thirdRow({
+      "ID tercero": "third-subcent",
+      "Trabajo ID": "subcent-closed",
+      "Tercero": "Alex",
+      "Bruto tercero": 1,
+      "Valor pagado tercero": 0.33
     })
   ];
 }
@@ -167,8 +201,9 @@ test("operational obligations only include collection-ready and client-paid rows
   assert.equal(response.status, 200);
   const body = await response.json();
   assert.equal(body.ok, true);
-  assert.equal(body.count, 3);
+  assert.equal(body.count, 4);
   assert.equal(body.items.some((item) => item.project === "Blocked show"), false);
+  assert.equal(body.items.some((item) => item.project === "Sub-cent closed"), false);
 
   const waiting = body.items.find((item) => item.project === "Waiting show");
   assert.equal(waiting.status, "waiting_client");
@@ -181,8 +216,13 @@ test("operational obligations only include collection-ready and client-paid rows
   assert.equal(ready.canMarkPaid, true);
   assert.match(ready.ref, /^tp_[0-9a-f]{16}$/);
 
+  const productionRegression = body.items.find((item) => item.project === "Precision regression");
+  assert.equal(productionRegression.status, "ready_to_pay");
+  assert.equal(productionRegression.amount, 18);
+  assert.equal(productionRegression.canMarkPaid, true);
+
   assert.deepEqual(body.totals.waitingClient, { count: 1, COP: 200000, USD: 0 });
-  assert.deepEqual(body.totals.readyToPay, { count: 2, COP: 140000, USD: 180 });
+  assert.deepEqual(body.totals.readyToPay, { count: 3, COP: 140018, USD: 180 });
 });
 
 test("mark-paid re-reads facts, writes only J/K, and removes the paid obligation", async () => {
@@ -219,6 +259,44 @@ test("mark-paid re-reads facts, writes only J/K, and removes the paid obligation
   assert.equal(writes.length, 1);
   assert.match(writes[0].url, /PAGO_TERCEROS!J3:K3/);
   assert.deepEqual(writes[0].body.values, [[180000, "2026-09-06"]]);
+});
+
+test("production precision regression settles 446535 to the exact 446553 payable", async () => {
+  const { fakeFetch, writes } = createFakeFetch();
+  const listResponse = await handleFinanceThirdPartyOperationsApi(
+    new Request("https://sdlive.show/api/admin/finance/third-party/obligations"),
+    ENV,
+    { verifyAdmin, fetchImpl: fakeFetch }
+  );
+  const listed = await listResponse.json();
+  const precision = listed.items.find((item) => item.project === "Precision regression");
+
+  assert.equal(precision.amount, 18);
+
+  const response = await handleFinanceThirdPartyOperationsApi(
+    new Request("https://sdlive.show/api/admin/finance/third-party/mark-paid", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ref: precision.ref })
+    }),
+    ENV,
+    {
+      verifyAdmin,
+      fetchImpl: fakeFetch,
+      now: new Date("2026-09-21T21:22:00-05:00")
+    }
+  );
+
+  assert.equal(response.status, 200);
+  const body = await response.json();
+  assert.equal(body.ok, true);
+  assert.equal(body.payment.amount, 18);
+  assert.equal(body.payment.date, "2026-09-21");
+  assert.equal(body.items.some((item) => item.ref === precision.ref), false);
+
+  assert.equal(writes.length, 1);
+  assert.match(writes[0].url, /PAGO_TERCEROS!J6:K6/);
+  assert.deepEqual(writes[0].body.values, [[446553, "2026-09-21"]]);
 });
 
 test("mark-paid rejects an obligation still waiting on the client", async () => {
