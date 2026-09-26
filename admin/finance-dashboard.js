@@ -80,7 +80,7 @@
         <div>
           <span class="eyebrow">SD.Live Track · Finance</span>
           <h3>Finance dashboard</h3>
-          <p>Cash, production, clients, receivables and collection performance from the private read-only finance source.</p>
+          <p>Owner-attributable cash and production are primary. Full billed and bank-received transaction facts stay visible separately for reconciliation and tax review.</p>
         </div>
         <div class="finance-heading__actions">
           <label class="finance-year-control">
@@ -93,34 +93,34 @@
 
       <div class="finance-metrics">
         <article class="finance-card">
-          <span class="finance-card__label">To invoice</span>
+          <span class="finance-card__label">To invoice · yours</span>
           <strong id="financeToInvoiceCount">—</strong>
           <div class="finance-money" id="financeToInvoiceMoney">Loading…</div>
-          <small>Work not yet put into collection</small>
+          <small>Owner share of work ready to invoice</small>
         </article>
         <article class="finance-card finance-card--accent">
-          <span class="finance-card__label">Collectible now</span>
+          <span class="finance-card__label">Collectible now · yours</span>
           <strong id="financeReceivableCount">—</strong>
           <div class="finance-money" id="financeReceivableMoney">Loading…</div>
-          <small>Invoice sent and workflow complete</small>
+          <small>Owner share with invoice sent and workflow complete</small>
         </article>
         <article class="finance-card finance-card--warning">
-          <span class="finance-card__label">Workflow blocked</span>
+          <span class="finance-card__label">Workflow blocked · yours</span>
           <strong id="financeBlockedCount">—</strong>
           <div class="finance-money" id="financeBlockedMoney">Loading…</div>
-          <small>Outstanding but not ready for collection</small>
+          <small>Owner share outstanding but not ready for collection</small>
         </article>
         <article class="finance-card">
-          <span class="finance-card__label">Received all-time</span>
+          <span class="finance-card__label">Received all-time · yours</span>
           <strong id="financePaidCount">—</strong>
           <div class="finance-money" id="financeReceivedMoney">Loading…</div>
-          <small id="financeFees">Recorded fees: —</small>
+          <small id="financeFees">Recorded client withholding / fees: —</small>
         </article>
       </div>
 
       <div class="finance-section-title">
         <div>
-          <span class="eyebrow">Cash received</span>
+          <span class="eyebrow">Owner cash received</span>
           <h4>Monthly performance</h4>
         </div>
         <span class="finance-period-label" id="financePeriodLabel">—</span>
@@ -129,35 +129,35 @@
       <div class="finance-currency-grid">
         <article class="finance-panel finance-currency-panel">
           <div class="finance-panel__head">
-            <div><span class="finance-currency-tag">COP</span><h4>Received in COP</h4></div>
+            <div><span class="finance-currency-tag">COP</span><h4>Your cash in COP</h4></div>
           </div>
           <div class="finance-mini-metrics">
             <div><span>Total</span><strong id="financeCopTotal">—</strong></div>
             <div><span>Best month</span><strong id="financeCopBest">—</strong><small id="financeCopBestMonth">—</small></div>
             <div><span>Monthly avg</span><strong id="financeCopAverage">—</strong><small id="financeCopAverageBasis">—</small></div>
           </div>
-          <div class="finance-chart" id="financeCopMonthlyChart" aria-label="Monthly COP received chart"></div>
+          <div class="finance-chart" id="financeCopMonthlyChart" aria-label="Monthly owner COP received chart"></div>
         </article>
 
         <article class="finance-panel finance-currency-panel">
           <div class="finance-panel__head">
-            <div><span class="finance-currency-tag">USD</span><h4>Received in USD</h4></div>
+            <div><span class="finance-currency-tag">USD</span><h4>Your cash in USD</h4></div>
           </div>
           <div class="finance-mini-metrics">
             <div><span>Total</span><strong id="financeUsdTotal">—</strong></div>
             <div><span>Best month</span><strong id="financeUsdBest">—</strong><small id="financeUsdBestMonth">—</small></div>
             <div><span>Monthly avg</span><strong id="financeUsdAverage">—</strong><small id="financeUsdAverageBasis">—</small></div>
           </div>
-          <div class="finance-chart" id="financeUsdMonthlyChart" aria-label="Monthly USD received chart"></div>
+          <div class="finance-chart" id="financeUsdMonthlyChart" aria-label="Monthly owner USD received chart"></div>
         </article>
       </div>
 
       <div class="finance-section-title">
         <div>
-          <span class="eyebrow">Production vs cash</span>
-          <h4>Generated vs received</h4>
+          <span class="eyebrow">Owner production vs cash</span>
+          <h4>Generated vs received · yours</h4>
         </div>
-        <span class="finance-section-note">Net work by work date vs cash by payment date</span>
+        <span class="finance-section-note">Owner gross by work date vs owner cash by payment date</span>
       </div>
 
       <div class="finance-currency-grid">
@@ -172,8 +172,34 @@
       </div>
 
       <div class="finance-section-title">
-        <div><span class="eyebrow">Clients</span><h4>Revenue concentration</h4></div>
-        <span class="finance-section-note">Based on cash received</span>
+        <div><span class="eyebrow">Reconciliation totals</span><h4>Full transaction facts</h4></div>
+        <span class="finance-section-note">Raw billed and bank-received totals · includes third-party pass-through</span>
+      </div>
+
+      <div class="finance-currency-grid">
+        <article class="finance-panel">
+          <div class="finance-panel__head"><div><span class="finance-currency-tag">COP</span><h4>Transaction totals</h4></div></div>
+          <div class="finance-performance-grid">
+            <div><span>Total billed</span><strong id="financeTxnCopBilled">—</strong></div>
+            <div><span>Bank received</span><strong id="financeTxnCopBank">—</strong></div>
+            <div><span>Third-party gross</span><strong id="financeTxnCopThirdGross">—</strong></div>
+            <div><span>Third-party payable</span><strong id="financeTxnCopThirdPayable">—</strong></div>
+          </div>
+        </article>
+        <article class="finance-panel">
+          <div class="finance-panel__head"><div><span class="finance-currency-tag">USD</span><h4>Transaction totals</h4></div></div>
+          <div class="finance-performance-grid">
+            <div><span>Total billed</span><strong id="financeTxnUsdBilled">—</strong></div>
+            <div><span>Bank received</span><strong id="financeTxnUsdBank">—</strong></div>
+            <div><span>Third-party gross</span><strong id="financeTxnUsdThirdGross">—</strong></div>
+            <div><span>Third-party payable</span><strong id="financeTxnUsdThirdPayable">—</strong></div>
+          </div>
+        </article>
+      </div>
+
+      <div class="finance-section-title">
+        <div><span class="eyebrow">Clients</span><h4>Your revenue concentration</h4></div>
+        <span class="finance-section-note">Based on owner cash received after proportional third-party pass-through</span>
       </div>
 
       <div class="finance-currency-grid">
@@ -188,8 +214,8 @@
       </div>
 
       <div class="finance-section-title">
-        <div><span class="eyebrow">Accounts receivable</span><h4>Unpaid aging</h4></div>
-        <span class="finance-section-note">Current outstanding net balances</span>
+        <div><span class="eyebrow">Accounts receivable</span><h4>Unpaid aging · yours</h4></div>
+        <span class="finance-section-note">Current owner-attributable billed balances</span>
       </div>
 
       <div class="finance-currency-grid">
@@ -217,7 +243,7 @@
 
       <div class="finance-section-title">
         <div><span class="eyebrow">Planning</span><h4>Tax reserve</h4></div>
-        <span class="finance-section-note">Management reserve only · not taxes owed</span>
+        <span class="finance-section-note">Uses total bank received · planning reserve only · not taxes owed</span>
       </div>
 
       <article class="finance-panel finance-tax-panel">
@@ -225,7 +251,7 @@
         <form class="finance-tax-settings" id="financeTaxForm">
           <label class="finance-toggle-row">
             <input type="checkbox" id="financeTaxEnabled" />
-            <span><strong>Enable tax reserve</strong><small>Calculate a planning reserve from cash received.</small></span>
+            <span><strong>Enable tax reserve</strong><small>Calculate a planning reserve from total bank cash received. This does not determine taxable income.</small></span>
           </label>
           <label><span>COP reserve %</span><input id="financeTaxCopRate" type="number" min="0" max="100" step="0.01" inputmode="decimal" placeholder="e.g. 25" /></label>
           <label><span>USD reserve %</span><input id="financeTaxUsdRate" type="number" min="0" max="100" step="0.01" inputmode="decimal" placeholder="e.g. 20" /></label>
@@ -237,7 +263,7 @@
       <div class="finance-detail-grid finance-detail-grid--bottom">
         <article class="finance-panel finance-panel--priority">
           <div class="finance-panel__head">
-            <div><span class="eyebrow">Collection queue</span><h4>Priority</h4></div>
+            <div><span class="eyebrow">Collection queue</span><h4>Priority · yours</h4></div>
             <span class="finance-records">Oldest collectible first</span>
           </div>
           <div class="finance-priority" id="financePriority"><div class="finance-empty">Loading collection queue…</div></div>
@@ -365,7 +391,7 @@
     if (!root) return;
     root.innerHTML = "";
     if (!rows?.length) {
-      root.innerHTML = '<div class="finance-empty">No received revenue in this currency for the selected year.</div>';
+      root.innerHTML = '<div class="finance-empty">No owner cash received in this currency for the selected year.</div>';
       return;
     }
     const max = Math.max(...rows.map((row) => Number(row.amount || 0)), 1);
@@ -424,7 +450,7 @@
     if (!root) return;
     root.innerHTML = "";
     if (!rows?.length) {
-      root.innerHTML = '<div class="finance-empty finance-empty--compact">No outstanding balances.</div>';
+      root.innerHTML = '<div class="finance-empty finance-empty--compact">No outstanding owner balances.</div>';
       return;
     }
     rows.forEach((row) => {
@@ -493,7 +519,7 @@
     const values = [
       ["Average to pay", payment.averageDays === null || payment.averageDays === undefined ? "—" : `${payment.averageDays} days`],
       ["Median to pay", payment.medianDays === null || payment.medianDays === undefined ? "—" : `${payment.medianDays} days`],
-      ["Top 3 concentration", `${concentration.top3SharePercent || 0}%`],
+      ["Top 3 owner concentration", `${concentration.top3SharePercent || 0}%`],
       ["Recorded fees", formatMoney(currency, fees.total || 0)],
       ["Effective fee rate", `${fees.effectiveRatePercent || 0}%`],
       ["Paid sample", `${payment.sampleSize || 0} payments`]
@@ -534,16 +560,17 @@
     root.append(head, metrics, slow);
   }
 
-  function renderQuality(summary, analytics) {
+  function renderQuality(rawSummary, rawAnalytics, ownerSummary, ownerAnalytics) {
     const root = document.getElementById("financeQuality");
     if (!root) return;
     root.innerHTML = "";
     const checks = [
-      ["Paid rows missing received amount", summary.received?.missingReceivedAmountCount || 0],
-      ["Unsupported currencies", summary.dataQuality?.unsupportedCurrencyCount || 0],
-      ["Unpaid rows missing aging", analytics.dataQuality?.unpaidMissingAgingCount || 0],
-      ["Paid rows missing payment date", analytics.dataQuality?.paidMissingPaymentDateCount || 0],
-      ["Invalid payment durations", analytics.dataQuality?.invalidPaymentDurationCount || 0]
+      ["Paid rows missing received amount", rawSummary.received?.missingReceivedAmountCount || 0],
+      ["Unsupported currencies", rawSummary.dataQuality?.unsupportedCurrencyCount || 0],
+      ["Unpaid rows missing aging", rawAnalytics.dataQuality?.unpaidMissingAgingCount || 0],
+      ["Paid rows missing payment date", rawAnalytics.dataQuality?.paidMissingPaymentDateCount || 0],
+      ["Invalid payment durations", rawAnalytics.dataQuality?.invalidPaymentDurationCount || 0],
+      ["Owner allocations needing review", ownerSummary.dataQuality?.invalidOwnerAllocationCount || ownerAnalytics.dataQuality?.invalidOwnerAllocationCount || 0]
     ];
     checks.forEach(([label, count]) => {
       const item = document.createElement("div");
@@ -587,20 +614,37 @@
       const detail = document.createElement("small");
       if (!reserve.enabled || !data) {
         title.textContent = "Not configured";
-        detail.textContent = `Received ${formatMoney(currency, totalReceived)} · set a reserve rate when ready.`;
+        detail.textContent = `Bank received ${formatMoney(currency, totalReceived)} · set a reserve rate when ready.`;
       } else {
         title.textContent = formatMoney(currency, data.reserveTotal);
-        detail.textContent = `${data.ratePercent}% reserve · after reserve ${formatMoney(currency, data.afterReserve)}`;
+        detail.textContent = `${data.ratePercent}% of bank received · after reserve ${formatMoney(currency, data.afterReserve)}`;
       }
       card.append(tag, title, detail);
       root.appendChild(card);
     });
   }
 
+  function renderTransactionTotals(yearData) {
+    const totals = yearData?.transactionTotals || {};
+    const mapping = {
+      COP: ["financeTxnCopBilled", "financeTxnCopBank", "financeTxnCopThirdGross", "financeTxnCopThirdPayable"],
+      USD: ["financeTxnUsdBilled", "financeTxnUsdBank", "financeTxnUsdThirdGross", "financeTxnUsdThirdPayable"]
+    };
+    for (const [currency, ids] of Object.entries(mapping)) {
+      const values = totals[currency] || {};
+      setText(ids[0], formatMoney(currency, values.billed || 0));
+      setText(ids[1], formatMoney(currency, values.bankReceived || 0));
+      setText(ids[2], formatMoney(currency, values.thirdPartyGross || 0));
+      setText(ids[3], formatMoney(currency, values.thirdPartyPayable || 0));
+    }
+  }
+
   function renderYear(year) {
     if (!state.payload) return;
-    const analytics = state.payload.analytics || {};
-    const yearData = analytics.byYear?.[String(year)];
+    const managementAnalytics = state.payload.ownerAnalytics || state.payload.analytics || {};
+    const rawAnalytics = state.payload.analytics || {};
+    const yearData = managementAnalytics.byYear?.[String(year)];
+    const rawYearData = rawAnalytics.byYear?.[String(year)] || {};
     if (!yearData) return;
     state.selectedYear = year;
     setText("financePeriodLabel", `${year} · YTD through ${MONTHS[(yearData.received?.COP?.averageMonthCount || 1) - 1] || "year end"}`);
@@ -619,35 +663,38 @@
       setText(averageBasisId, `${received.averageMonthCount} month${received.averageMonthCount === 1 ? "" : "s"} including zero months`);
       renderLineChart(
         monthlyChartId,
-        [{ label: "Received", values: received.monthly.map((entry) => entry.amount) }],
+        [{ label: "Your cash", values: received.monthly.map((entry) => entry.amount) }],
         currency,
-        `${currency} cash received by month in ${year}`
+        `${currency} owner cash received by month in ${year}`
       );
       const comparison = yearData.generatedVsReceived[currency] || [];
       renderLineChart(
         generatedChartId,
         [
-          { label: "Generated", values: comparison.map((entry) => entry.generated) },
-          { label: "Received", values: comparison.map((entry) => entry.received) }
+          { label: "Generated · yours", values: comparison.map((entry) => entry.generated) },
+          { label: "Received · yours", values: comparison.map((entry) => entry.received) }
         ],
         currency,
-        `${currency} generated versus received in ${year}`
+        `${currency} owner generated versus received in ${year}`
       );
     });
 
+    renderTransactionTotals(yearData);
     renderTopClients("financeTopClientsCop", yearData.topClients.COP, "COP");
     renderTopClients("financeTopClientsUsd", yearData.topClients.USD, "USD");
     setText("financeCopConcentration", `Top 3 · ${yearData.clientConcentration.COP.top3SharePercent}%`);
     setText("financeUsdConcentration", `Top 3 · ${yearData.clientConcentration.USD.top3SharePercent}%`);
     renderPerformance("financePerformanceCop", "COP", yearData);
     renderPerformance("financePerformanceUsd", "USD", yearData);
-    renderTaxReserve(yearData, yearData.received);
+    renderTaxReserve(rawYearData, rawYearData.received || {});
   }
 
   function renderPayload(data) {
     state.payload = data;
-    const summary = data.summary || {};
-    const analytics = data.analytics || {};
+    const rawSummary = data.summary || {};
+    const rawAnalytics = data.analytics || {};
+    const summary = data.ownerSummary || rawSummary;
+    const analytics = data.ownerAnalytics || rawAnalytics;
     const receivables = summary.receivables || {};
     const received = summary.received || {};
 
@@ -659,15 +706,15 @@
     setText("financeBlockedMoney", moneyPair(receivables.workflowBlockedNetByCurrency));
     setText("financePaidCount", String(received.paidCount || 0));
     setText("financeReceivedMoney", moneyPair(received.amountByCurrency));
-    setText("financeFees", `Recorded fees: ${moneyPair(received.feesByCurrency)}`);
-    setText("financeRecordCount", `${summary.recordCount || 0} records`);
+    setText("financeFees", `Recorded client withholding / fees: ${moneyPair(rawSummary.received?.feesByCurrency)}`);
+    setText("financeRecordCount", `${rawSummary.recordCount || summary.recordCount || 0} records`);
 
     renderPriority(receivables.priority || []);
     renderAging("financeAgingCop", analytics.receivables?.aging?.COP || [], "COP");
     renderAging("financeAgingUsd", analytics.receivables?.aging?.USD || [], "USD");
     renderDebtors("financeDebtorsCop", analytics.receivables?.topDebtors?.COP || [], "COP");
     renderDebtors("financeDebtorsUsd", analytics.receivables?.topDebtors?.USD || [], "USD");
-    renderQuality(summary, analytics);
+    renderQuality(rawSummary, rawAnalytics, summary, analytics);
     syncTaxForm(data.settings);
 
     const select = document.getElementById("financeYear");
@@ -689,7 +736,7 @@
     const source = document.getElementById("financeSource");
     source?.classList.remove("is-error");
     if (source?.querySelector("span")) {
-      source.querySelector("span").textContent = `Live · ${summary.recordCount || 0} records · Google Sheets`;
+      source.querySelector("span").textContent = `Live · owner management + raw bank facts · ${rawSummary.recordCount || 0} records`;
     }
   }
 
