@@ -149,13 +149,16 @@ Desired model:
 
 Current code requires audit because several core Finance views still use full `Valor Neto` / `Valor Recibido`, while the third-party subsystem separately computes `ownCashReceived`.
 
+A dedicated read-only **Paid to third parties** history view is also required. It must remain separate from the current obligations queue and show persisted payments even after fully paid obligations disappear. Minimum fields: third-party name, payment date, amount paid, currency, client and project/show. Canonical detail and acceptance criteria live in `docs/roadmap/finance-owner-money-and-third-party-history-2026-09-26.md`.
+
 ## Exact next action
 
 1. audit Google Sheets + AppSheet formulas and persisted/virtual fields for `Valor bruto`, `Valor Neto`, `Valor Recibido`, `Cobro terceros` and third-party-derived values;
 2. compare those semantics with Finance Admin `generated`, `received`, Top Clients, receivables, averages/charts and tax-reserve bases;
 3. define one canonical owner-money metric while preserving full/raw transaction totals separately;
-4. implement deterministic tests and a bounded Finance Admin change only after the audit confirms the exact mismatch;
-5. after this ownership gate passes, start the 2026 PILA estimator.
+4. add the read-only paid-to-third-parties historical view from `PAGO_TERCEROS` persisted payment facts;
+5. implement deterministic tests and a bounded Finance Admin change only after the audit confirms the exact mismatch;
+6. after this ownership gate passes, start the 2026 PILA estimator.
 
 # Next Gate — 2026 PILA estimator
 
@@ -203,4 +206,4 @@ The old PR #191 remains superseded historical source material and must not be me
 
 # Exact continuation point
 
-**Inspect current `main` at/after `5a0f7cc263930c134ecc0733427ac1812c5ed739`. Finance third-party payment operations are CLOSED/PASS. Audit owner-money vs pass-through-money semantics across Sheets/AppSheet/Admin, preserving full/raw transaction totals. Only after that audit is reconciled should the 2026 PILA estimator begin.**
+**Inspect current `main` at/after `5a0f7cc263930c134ecc0733427ac1812c5ed739`. Finance third-party payment operations are CLOSED/PASS. Audit owner-money vs pass-through-money semantics across Sheets/AppSheet/Admin, preserving full/raw transaction totals, and add a read-only historical view of actual third-party payments by name/date/work. Only after that audit is reconciled should the 2026 PILA estimator begin.**
