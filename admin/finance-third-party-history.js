@@ -4,6 +4,7 @@
       eyebrow: "Third-party payment history",
       title: "Registered payments to third parties",
       note: "Read-only · current cumulative paid fact per obligation. This is not an event-level log of every partial payment.",
+      year: "Year",
       allYears: "All years",
       allCurrencies: "All currencies",
       search: "Filter by third party",
@@ -14,13 +15,13 @@
       currency: "Currency",
       amount: "Registered paid",
       total: "Filtered total",
-      empty: "No registered third-party payments match these filters.",
-      unavailable: "Third-party payment history unavailable"
+      empty: "No registered third-party payments match these filters."
     },
     es: {
       eyebrow: "Historial de pagos a terceros",
       title: "Pagos registrados a terceros",
       note: "Solo lectura · monto pagado acumulado actual por obligación. No es un log de eventos de cada pago parcial.",
+      year: "Año",
       allYears: "Todos los años",
       allCurrencies: "Todas las monedas",
       search: "Filtrar por tercero",
@@ -31,8 +32,7 @@
       currency: "Moneda",
       amount: "Pagado registrado",
       total: "Total filtrado",
-      empty: "No hay pagos registrados a terceros con estos filtros.",
-      unavailable: "Historial de pagos a terceros no disponible"
+      empty: "No hay pagos registrados a terceros con estos filtros."
     }
   };
 
@@ -75,7 +75,6 @@
       .finance-third-party-history__controls select { border:1px solid var(--line, rgba(255,255,255,.12)); border-radius:9px; background:rgba(255,255,255,.035); color:inherit; padding:8px 9px; }
       .finance-third-party-history__controls input { min-width:min(260px, 80vw); }
       .finance-third-party-history__summary { display:flex; flex-wrap:wrap; gap:10px 18px; align-items:center; margin:10px 0; }
-      .finance-third-party-history__summary strong { font-size:14px; }
       .finance-third-party-history__table-wrap { overflow-x:auto; margin-top:10px; }
       .finance-third-party-history__table { width:100%; border-collapse:collapse; font-size:13px; }
       .finance-third-party-history__table th,
@@ -103,17 +102,23 @@
     section.className = "finance-third-party-history";
     const reconciliation = document.getElementById("financeThirdPartyReconciliation");
     if (reconciliation?.parentElement === overview) reconciliation.insertAdjacentElement("afterend", section);
-    else overview.appendChild(section);
+    else {
+      const clientTitle = [...overview.querySelectorAll(".finance-section-title")]
+        .find((node) => ["Clients", "Clientes"].includes(node.querySelector(".eyebrow")?.textContent?.trim()));
+      if (clientTitle) overview.insertBefore(section, clientTitle);
+      else overview.appendChild(section);
+    }
     return section;
   }
 
   function filteredItems() {
     const items = Array.isArray(state.history?.items) ? state.history.items : [];
-    const query = state.query.trim().toLocaleLowerCase(language() === "es" ? "es-CO" : "en-US");
+    const locale = language() === "es" ? "es-CO" : "en-US";
+    const query = state.query.trim().toLocaleLowerCase(locale);
     return items.filter((item) => {
       if (state.year && !String(item.date || "").startsWith(`${state.year}-`)) return false;
       if (state.currency && item.currency !== state.currency) return false;
-      if (query && !String(item.name || "").toLocaleLowerCase(language() === "es" ? "es-CO" : "en-US").includes(query)) return false;
+      if (query && !String(item.name || "").toLocaleLowerCase(locale).includes(query)) return false;
       return true;
     });
   }
@@ -126,9 +131,18 @@
     controls.className = "finance-third-party-history__controls";
 
     const yearLabel = document.createElement("label");
-    yearLabel.append(document.createTextNode("Year"));
+    yearLabel.append(document.createTextNode(text("year")));
     const yearSelect = document.createElement("select");
-    yearSelect.innerHTML = `<option value="">${text("allYears")}</option>${years.map((year) => `<option value="${year}">${year}</option>`).join("")}`;
+    const allYearsOption = document.createElement("option");
+    allYearsOption.value = "";
+    allYearsOption.textContent = text("allYears");
+    yearSelect.appendChild(allYearsOption);
+    years.forEach((year) => {
+      const option = document.createElement("option");
+      option.value = year;
+      option.textContent = year;
+      yearSelect.appendChild(option);
+    });
     yearSelect.value = state.year;
     yearSelect.addEventListener("change", () => {
       state.year = yearSelect.value;
@@ -139,7 +153,12 @@
     const currencyLabel = document.createElement("label");
     currencyLabel.append(document.createTextNode(text("currency")));
     const currencySelect = document.createElement("select");
-    currencySelect.innerHTML = `<option value="">${text("allCurrencies")}</option><option value="COP">COP</option><option value="USD">USD</option>`;
+    [["", text("allCurrencies")], ["COP", "COP"], ["USD", "USD"]].forEach(([value, label]) => {
+      const option = document.createElement("option");
+      option.value = value;
+      option.textContent = label;
+      currencySelect.appendChild(option);
+    });
     currencySelect.value = state.currency;
     currencySelect.addEventListener("change", () => {
       state.currency = currencySelect.value;
@@ -212,65 +231,68 @@
     if (!section || !state.history) return;
     ensureStyles();
     const items = Array.isArray(state.history.items) ? state.history.items : [];
-    section.innerHTML = `
-      <div class="finance-section-title">
-        <div><span class="eyebrow">${text("eyebrow")}</span><h4>${text("title")}</h4></div>
-        <span class="finance-records">${state.history.count || 0}</span>
-      </div>
-      <p class="finance-section-note">${text("note")}</p>
-      <div class="finance-third-party-history__summary" data-third-party-history-summary></div>
-    `;
+    section.innerHTML = "";
+
+    const title = document.createElement("div");
+    title.className = "finance-section-title";
+    const titleText = document.createElement("div");
+    const eyebrow = document.createElement("span");
+    eyebrow.className = "eyebrow";
+    eyebrow.textContent = text("eyebrow");
+    const heading = document.createElement("h4");
+    heading.textContent = text("title");
+    titleText.append(eyebrow, heading);
+    const count = document.createElement("span");
+    count.className = "finance-records";
+    count.textContent = String(state.history.count || 0);
+    title.append(titleText, count);
+
+    const note = document.createElement("p");
+    note.className = "finance-section-note";
+    note.textContent = text("note");
+    const summary = document.createElement("div");
+    summary.className = "finance-third-party-history__summary";
+    summary.dataset.thirdPartyHistorySummary = "true";
+    section.append(title, note, summary);
+
     buildControls(section, items);
+
     const wrap = document.createElement("div");
     wrap.className = "finance-third-party-history__table-wrap";
-    wrap.innerHTML = `
-      <table class="finance-third-party-history__table">
-        <thead><tr>
-          <th>${text("date")}</th>
-          <th>${text("name")}</th>
-          <th>${text("client")}</th>
-          <th>${text("project")}</th>
-          <th>${text("currency")}</th>
-          <th>${text("amount")}</th>
-        </tr></thead>
-        <tbody data-third-party-history-body></tbody>
-      </table>
-    `;
+    const table = document.createElement("table");
+    table.className = "finance-third-party-history__table";
+    const head = document.createElement("thead");
+    const headRow = document.createElement("tr");
+    [text("date"), text("name"), text("client"), text("project"), text("currency"), text("amount")].forEach((label) => {
+      const cell = document.createElement("th");
+      cell.textContent = label;
+      headRow.appendChild(cell);
+    });
+    head.appendChild(headRow);
+    const body = document.createElement("tbody");
+    body.dataset.thirdPartyHistoryBody = "true";
+    table.append(head, body);
+    wrap.appendChild(table);
     section.appendChild(wrap);
     renderRows();
   }
 
-  async function load() {
-    const section = ensureSection();
-    if (!section) return;
-    try {
-      const response = await fetch("/api/admin/finance/dashboard", {
-        credentials: "same-origin",
-        cache: "no-store"
-      });
-      const type = response.headers.get("content-type") || "";
-      if (!type.includes("application/json")) throw new Error("Unexpected response");
-      const data = await response.json();
-      if (!response.ok || data?.ok === false) throw new Error(data?.error || `Request failed (${response.status})`);
-      state.history = data.thirdPartyPaidHistory || { count: 0, items: [], totalsByCurrency: { COP: 0, USD: 0 } };
-      render();
-    } catch (error) {
-      section.innerHTML = `<div class="finance-third-party-history__empty">${text("unavailable")}: ${error.message}</div>`;
-    }
+  function renderPayload(data) {
+    state.history = data?.thirdPartyPaidHistory || {
+      count: 0,
+      items: [],
+      totalsByCurrency: { COP: 0, USD: 0 }
+    };
+    render();
   }
 
-  function init() {
-    if (document.getElementById("financeOverview")) {
-      load();
-      return;
-    }
-    const observer = new MutationObserver(() => {
-      if (!document.getElementById("financeOverview")) return;
-      observer.disconnect();
-      load();
-    });
-    observer.observe(document.body, { childList: true, subtree: true });
-  }
+  document.addEventListener("click", (event) => {
+    if (!event.target?.closest?.(".finance-language-control button[data-lang]")) return;
+    setTimeout(render, 0);
+  });
 
-  init();
+  window.SDLiveFinanceThirdPartyHistory = {
+    renderPayload,
+    refresh: render
+  };
 })();
