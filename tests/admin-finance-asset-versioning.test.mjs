@@ -8,6 +8,7 @@ const dashboardPage = readFileSync(new URL("../admin/index.html", import.meta.ur
 test("Finance workspace runtime assets are versioned", () => {
   assert.match(financePage, /finance-dashboard\.js\?v=\d{8}-\d+/);
   assert.match(financePage, /finance-dashboard-i18n\.js\?v=\d{8}-\d+/);
+  assert.match(financePage, /finance-third-party-history\.js\?v=\d{8}-\d+/);
   assert.match(financePage, /finance-page\.js\?v=\d{8}-\d+/);
 });
 
