@@ -6,6 +6,7 @@ for (const file of [
   "../admin/dashboard.js",
   "../admin/finance-dashboard.js",
   "../admin/finance-third-party-history.js",
+  "../admin/finance-third-party-history-loader.js",
   "../admin/finance-runtime-stability.js"
 ]) {
   test(`${file} parses as browser JavaScript`, () => {
