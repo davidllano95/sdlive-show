@@ -5,6 +5,7 @@ import { readFileSync } from "node:fs";
 for (const file of [
   "../admin/dashboard.js",
   "../admin/finance-dashboard.js",
+  "../admin/finance-third-party-history.js",
   "../admin/finance-runtime-stability.js"
 ]) {
   test(`${file} parses as browser JavaScript`, () => {
