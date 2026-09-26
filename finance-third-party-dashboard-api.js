@@ -10,6 +10,8 @@ import {
   buildFinanceAnalytics,
   readFinanceSettings
 } from "./finance-dashboard-api.js";
+import { buildOwnerFinanceProjection } from "./finance-owner-money.js";
+import { buildThirdPartyPaymentHistory } from "./finance-third-party-payment-history.js";
 
 const GOOGLE_SHEETS_API_BASE = "https://sheets.googleapis.com/v4/spreadsheets";
 const THIRD_PARTY_RANGE = "PAGO_TERCEROS!A1:N3000";
@@ -670,6 +672,12 @@ export async function handleFinanceThirdPartyDashboardApi(
       now,
       taxReserveSettings: settings.taxReserve
     });
+    const owner = buildOwnerFinanceProjection(finance.rows, {
+      now,
+      rawSummary: summary,
+      rawAnalytics: analytics
+    });
+    const thirdPartyPaidHistory = buildThirdPartyPaymentHistory(finance.rows, thirdParty.rows);
     analytics.thirdPartyReconciliation = ledger.byYear;
     analytics.thirdPartyYears = ledger.years;
 
@@ -685,7 +693,12 @@ export async function handleFinanceThirdPartyDashboardApi(
         thirdPartyActual: ledger.allTime
       },
       analytics,
+      ownerSummary: owner.summary,
+      ownerAnalytics: owner.analytics,
+      transactionTotals: owner.transactionTotals,
+      ownerContract: owner.contract,
       thirdPartyLedger: ledger,
+      thirdPartyPaidHistory,
       settings
     });
   } catch (error) {
