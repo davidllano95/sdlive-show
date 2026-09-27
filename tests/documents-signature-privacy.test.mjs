@@ -64,19 +64,17 @@ function fakeSequenceEnv() {
       params,
       bind(...values) { return statement(statementText, values); },
       async first() {
-        if (statementText.includes("SELECT * FROM doc_sequences") && statementText.includes("WHERE series_key = ?")) {
+        if (statementText.includes("doc_sequences") && params.length === 1) {
           return rows.find((row) => row.series_key === params[0]) || null;
         }
         throw new Error(`Unexpected first SQL: ${statementText}`);
       },
       async all() {
-        if (statementText.includes("FROM doc_sequences") && statementText.includes("ORDER BY is_test DESC")) {
-          return { results: rows };
-        }
+        if (statementText.includes("doc_sequences")) return { results: rows };
         throw new Error(`Unexpected all SQL: ${statementText}`);
       },
       async run() {
-        if (statementText.includes("INSERT INTO doc_sequences")) {
+        if (statementText.includes("doc_sequences") && params.length === 6) {
           rows.push({
             series_key: params[0], issuer_id: params[1], doc_type: params[2], next_value: params[3],
             display_pattern: params[4], is_test: 1, bootstrapped_at: null, bootstrap_note: null,
