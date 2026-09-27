@@ -102,7 +102,7 @@ test("draft/editor policies keep numbering and signature closed", () => {
   assert.equal(draftPolicy.draftsConsumeNumbers, false);
   assert.equal(draftPolicy.previewReadsSignatureBytes, false);
   assert.equal(draftPolicy.previewContainsUsableSignature, false);
-  assert.equal(draftPolicy.updateUsesDraftRevisionCas, true);
+  assert.equal(draftPolicy.saveUsesDraftRevisionCas, true);
   assert.equal(draftPolicy.profileEditsWriteBackFromDocument, false);
   assert.equal(apiPolicy.adminOnly, true);
   assert.equal(apiPolicy.draftsConsumeNumbers, false);
