@@ -4,11 +4,11 @@
 >
 > **Authority:** current GitHub `main` + verified production behavior → current schema/config → latest checkpoint → `PROJECT_STATUS.md` → `README.md` → this checklist → older docs/prompts.
 
-Last reconciliation: **2026-09-07 — America/Bogota**
+Last reconciliation: **2026-09-26 — America/Bogota**
 
 Current `main` at handoff:
 
-`d4d036bed5203d655dff8ff875f7188868845176` — PR #253.
+`45afe5fe05deb96c8c9b5b72b274e7f459f4cd09` — PR #258.
 
 ## Legend
 
@@ -22,90 +22,125 @@ Current `main` at handoff:
 
 **UNMERGED != PRODUCTION. CI PASS != PRODUCTION SMOKE PASS.**
 
-# Current Active Gate — Finance third-party operational closeout
+# Current Active Gate
 
-🚧 **ACTIVE.** Code is merged through PR #253 and AppSheet's open-debt UX is owner-verified. One bounded production smoke of the new Finance `Marcar pagado` write path remains before declaring the operational milestone CLOSED/PASS.
+There is **no approved runtime implementation gate** at this reconciliation point.
 
-Detailed handoff:
+Finance owner-money semantics, third-party payment operations/history and the new Finance tabs are CLOSED/PASS through PR #258.
 
-`docs/checkpoints/handoff-finance-third-party-operational-2026-09-07.md`
+Next action is a product/backlog review with the owner, then selection of one bounded workstream.
 
-Roadmap:
+# Finance — owner money + third-party milestone
 
-`docs/roadmap/finance-third-party-pila-2026-09-05.md`
+✅ **CLOSED / PASS.**
 
-## Finance third-party milestone checklist
+Consolidated handoff:
 
-1. [x] Add `REGISTRO.Cobro terceros` and AppSheet capture/validation.
-2. [x] Extend Finance read contract without changing parent source-of-truth ownership.
-3. [x] Reuse canonical proportional-retention math.
-4. [x] Show pre-collection third-party obligations.
-5. [x] Add physical `PAGO_TERCEROS` child ledger integration.
-6. [x] Migrate derived child calculations away from stale physical App formulas to AppSheet Virtual Columns.
-7. [x] Recompute derived values in Finance from persisted facts only.
-8. [x] Add selected-year/monthly reconciliation backend with COP/USD isolation.
-9. [x] Simplify visible reconciliation to **COP-only by third-party name** with `Deuda`, `Cobrado`, `Pagado`.
-10. [x] Preserve unassigned obligations as `Sin desglose`.
-11. [x] Convert `Obligaciones a terceros` into operational states:
-    - 🟠 `Esperando pago del cliente`
-    - 🟢 `Listo para pagar`
-12. [x] Add bounded Admin Finance `Marcar pagado` action that writes only physical `PAGO_TERCEROS!J:K` after fresh server-side validation.
-13. [x] Keep raw IDs/notes/contact data out of the browser action contract.
-14. [x] Keep `admin-stabilization-worker.js` as stable deploy entry.
-15. [x] AppSheet `Terceros` tab owner-verified to hide fully paid debt.
-16. [ ] Run one representative production `Marcar pagado` smoke if a safe obligation exists.
-17. [ ] If no safe item exists, explicitly record the smoke as deferred rather than manufacturing production data.
-18. [ ] Mark third-party operational milestone CLOSED/PASS.
+`docs/checkpoints/handoff-finance-owner-money-closeout-2026-09-26.md`
 
-Merged Finance PRs:
+Earlier write-path closeout:
 
-- #249 → `c2b2ff1eb977d0d2d0c532abc3fbf65a61c9bd5e`
-- #250 → `4dcf3fe90f50fbaf77f41227f9b8b4ce4c6db1bf`
-- #251 → `b312b4e7f47ff5526f1bace8325aa85e4a4a1b02`
-- #252 → `b02bda1406ba152884aa9b4b2976c7cd9141aba4`
-- #253 → `d4d036bed5203d655dff8ff875f7188868845176`
+`docs/checkpoints/handoff-finance-third-party-closed-2026-09-26.md`
 
-# Priority 1 — Close Finance third-party production smoke
+Owner-money/history roadmap:
 
-🚧 Run exactly one representative smoke of the `Marcar pagado` path if a safe obligation is available:
+`docs/roadmap/finance-owner-money-and-third-party-history-2026-09-26.md`
 
-- verify `Listo para pagar`;
-- mark once;
-- verify queue/card removal;
-- verify `Valor pagado tercero` + `Fecha pago tercero` in Sheets/AppSheet after sync;
-- verify AppSheet `Terceros` no longer shows the fully paid debt.
+## Completed Finance sequence
 
-# Priority 2 — 2026 PILA estimator
+1. [x] `REGISTRO.Cobro terceros` structured parent field.
+2. [x] Canonical proportional third-party allocation reused consistently.
+3. [x] `PAGO_TERCEROS` physical child ledger integrated.
+4. [x] Derived third-party values recomputed from persisted facts / AppSheet VCs rather than stale physical derived columns.
+5. [x] Reconciliation by third-party name with `Deuda`, `Cobrado`, `Pagado`.
+6. [x] Operational `Esperando pago del cliente` / `Listo para pagar` states.
+7. [x] Narrow Admin `Marcar pagado` write to physical `PAGO_TERCEROS!J:K` with server-side revalidation.
+8. [x] AppSheet `Terceros` hides fully paid debt.
+9. [x] Rounded-rate monetary bug removed from AppSheet calculation.
+10. [x] PR #255 precision regression fixed; representative production write smoke PASS.
+11. [x] Owner-money audit completed across Sheets/AppSheet/Admin.
+12. [x] `OWNER_FINANCE` derived Sheet reporting layer added without rewriting raw/historical facts.
+13. [x] Owner-facing Sheet dashboard/pivots changed to owner generated / owner cash / owner receivable semantics.
+14. [x] Full billed and bank-received facts retained separately for reconciliation/accounting/tax review.
+15. [x] PR #257 made owner money primary in Finance Admin and added registered third-party paid history.
+16. [x] PR #257 production visual smoke PASS.
+17. [x] PR #258 added `Overview` / `Third parties` Finance tabs; default clean Overview.
+18. [x] PR #258 production visual smoke PASS.
 
-⏳ Build the browser-local/year-versioned Finance planning calculator after exact current 2026 source verification.
+Closeout commits:
 
-Required boundaries:
+- #255 → `5a0f7cc263930c134ecc0733427ac1812c5ed739`
+- #256 → `e2a19fd1a4ae54e5c9c5a41a86164c17262a427b`
+- #257 → `08a6b9ab021b562a5054edf1e7f130c20ceb45f4`
+- #258 → `45afe5fe05deb96c8c9b5b72b274e7f459f4cd09`
 
-- no Sheet/AppSheet/D1 writes;
-- exact 2026 FSP thresholds/current own-account rules verified before final coding;
-- support personal-services and own-account/different-contract modes as scoped;
-- `Cobro terceros` is not automatically included/excluded from statutory PILA income;
-- unsupported legal scenarios fail clearly rather than guessing.
+## Canonical Finance management model
 
-# Priority 3 — Rental real-time availability / double-booking protection
+For a valid work row:
 
-⏳ Establish deterministic inventory truth for Rental and Assistant. This is the prerequisite for future real inventory availability claims.
+- `ownerGenerated = Valor bruto - Cobro terceros`
 
-# Priority 4 — Mobile Rental Cart total visibility / sticky summary
+For a valid paid row:
 
-⏳ Contained high-value public UX debt.
+- `factor = Valor Recibido / Valor bruto`
+- `thirdPartyPayable = Cobro terceros * factor`
+- `ownerCashReceived = Valor Recibido - thirdPartyPayable`
 
-# Priority 5 — Rental quote/PDF + Finance Document Generator foundation
+Raw/full transaction facts remain intact and available separately.
 
-⏳ Build one reusable document engine rather than parallel PDF paths.
+Management semantics do **not** automatically decide statutory tax or PILA treatment.
 
-# Priority 6 — Calendar/Projects workflow additions
+## Third-party history limitation
 
-⏳ Expand only after current operational flows remain stable.
+Current physical schema stores cumulative `Valor pagado tercero` plus one `Fecha pago tercero` per obligation. The Admin history therefore represents registered cumulative paid facts per obligation, **not** an append-only event log of every partial payment.
 
-# Priority 7 — SD.Live Patch
+# Finance cleanup / debt
 
-⏳ Larger product module: patch sheets, Stage I/O, signal path, snapshots, visual patch and device profiles.
+⏳ **BACKLOG — not currently blocking.**
+
+- Some Google Sheets dashboard helper areas use fixed client filters and may omit newly added clients.
+- Sheet monthly graph ranges are fixed to January–March and should become dynamic before relying on them as full-year views.
+- `PENDIENTES` is intentionally narrower than total owner receivable; labels must continue to make collection workflow vs all outstanding receivables distinct.
+- Data-quality REVIEW rows should preserve raw cash facts unless the underlying source is corrected explicitly.
+- Event-level partial-payment history would require an intentional physical-ledger redesign; do not infer it from the current cumulative J/K model.
+
+# Candidate next workstreams — no approved order
+
+The owner has not selected the next runtime gate yet. The following are candidates, **not a ranking**:
+
+- ⏳ Finance cleanup/debt listed above.
+- ⏳ Rental real-time availability + double-booking protection.
+- ⏳ Mobile Rental Cart total visibility / sticky summary.
+- ⏳ Rental quote/PDF + shared Finance Document Generator foundation.
+- ⏳ Calendar/Projects workflow additions.
+- ⏳ SD.Live Patch.
+- ⏳ Basic CRM beyond current Lead Core.
+- ⏳ Admin Inbox / Workspace association.
+- ⏳ Data Studio / business analytics.
+- ⏳ SEO/indexation monitoring.
+- ⏳ Mobile critical-render performance.
+- ⏳ Accessibility remediation.
+- ⏳ CMS advanced layout/DAM/editor capabilities.
+- ⏳ Canonical HTML CV/private portfolio.
+- ⏳ Security/Cloudflare periodic evaluation.
+- ⏳ PILA estimator research/planning, only if explicitly selected.
+
+# PILA estimator
+
+⏳ **BACKLOG / RESEARCH CANDIDATE ONLY.**
+
+PILA is no longer the automatic next milestone.
+
+If selected later:
+
+- research current Colombian legal/operational rules again at implementation time;
+- version rules by contribution year;
+- keep the first scope planning/estimator-only unless explicitly expanded;
+- do not automatically map `Cobro terceros`, owner cash or other management fields to statutory contribution income;
+- preserve Google Sheets/AppSheet/D1 boundaries;
+- unsupported legal scenarios must fail clearly rather than guess.
+
+The older `docs/roadmap/finance-third-party-pila-2026-09-05.md` is retained as historical planning material, not current execution order.
 
 # WhatsApp owner control
 
@@ -131,8 +166,10 @@ Old PR #191 remains superseded historical source material and must not be merged
 ✅ Admin stabilization.  
 ✅ Public visual stabilization.  
 ✅ Rental image-editor parity.  
-✅ Finance general read-only dashboard foundation.  
-🟢 Finance third-party operational implementation through PR #253; representative write smoke pending.
+✅ Finance general dashboard foundation.  
+✅ Finance third-party operational path through PR #255 + production write smoke.  
+✅ Finance owner-money/full-transaction/history through PR #257 + production visual smoke.  
+✅ Finance third-party tabs through PR #258 + production visual smoke.
 
 # Source-of-truth boundaries
 
@@ -143,8 +180,8 @@ Old PR #191 remains superseded historical source material and must not be merged
 - `PAGO_TERCEROS` = physical child obligation/payment ledger.
 - AppSheet SD.Live Track = primary mobile/offline workflow.
 - General Finance Admin analytics = read-only.
-- Approved exception: PR #253 may write only `PAGO_TERCEROS.J = Valor pagado tercero` and `K = Fecha pago tercero` for an explicitly confirmed third-party payment, after server-side re-read/revalidation.
-- No derived values are persisted by Finance.
+- Approved exception: explicit third-party payment action may write only `PAGO_TERCEROS.J = Valor pagado tercero` and `K = Fecha pago tercero` after fresh server-side validation.
+- No derived values are persisted by Finance Admin.
 - ⛔ Generic Finance write-back remains BLOCKED.
 - ⛔ D1 Finance mirror remains BLOCKED.
 - ⛔ Bidirectional Finance sync remains BLOCKED.
@@ -178,24 +215,12 @@ Old PR #191 remains superseded historical source material and must not be merged
 - Lead + consent + idempotency effect persisted atomically;
 - retry returns existing completed Lead rather than duplicate PII.
 
-# Later backlog
-
-⏳ Basic CRM beyond current Lead Core.  
-⏳ Admin Inbox / Workspace association.  
-⏳ AppSheet reminder delivery hardening.  
-⏳ Data Studio / business analytics.  
-⏳ SEO/indexation monitoring.  
-⏳ Mobile critical-render performance.  
-⏳ Accessibility remediation.  
-⏳ CMS advanced layout/DAM/editor capabilities.  
-⏳ Canonical HTML CV/private portfolio.  
-⏳ Security/Cloudflare periodic evaluation.
-
 # Non-negotiable workflow
 
 - Never write directly to `main`.
 - One short branch per coherent change.
 - Tests/CI before merge.
+- Ask owner authorization before merge.
 - Squash merge.
 - Exactly one representative production smoke for runtime changes.
 - No production smoke for docs-only.
@@ -203,4 +228,4 @@ Old PR #191 remains superseded historical source material and must not be merged
 
 # Exact continuation
 
-**Inspect current `main` at/after `d4d036bed5203d655dff8ff875f7188868845176`. Run one bounded Finance third-party `Marcar pagado` production smoke if a safe obligation exists. If it passes—or is explicitly deferred for lack of a safe item—mark the third-party operational milestone closed and begin exact-source verification/planning for the 2026 PILA estimator. Do not redesign AppSheet/Sheets without concrete regression evidence.**
+**Inspect current `main` at/after `45afe5fe05deb96c8c9b5b72b274e7f459f4cd09`. Finance owner-money and third-party operations/history/tabs are CLOSED/PASS. There is no selected next implementation gate. Review the candidate backlog with the owner, choose one bounded workstream, and only then open a runtime branch. Do not automatically start PILA.**

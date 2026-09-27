@@ -1,8 +1,10 @@
 # Finance structured third-party amounts + PILA calculator — 2026-09-05
 
-**Updated:** 2026-09-07 — America/Bogota  
-**Status:** THIRD-PARTY OPERATIONAL MODULE MERGED / APPSHEET OPEN-DEBT TAB PASS / PRODUCTION WRITE SMOKE PENDING / PILA NEXT  
-**Scope:** SD.Live Track `REGISTRO` + `PAGO_TERCEROS` + AppSheet + private Finance Admin + local PILA estimator.  
+**Updated:** 2026-09-26 — America/Bogota  
+**Status:** **THIRD-PARTY PORTION CLOSED / PILA PLANNING RETAINED AS HISTORICAL BACKLOG ONLY**  
+**Sequencing:** superseded by `PROJECT_STATUS.md`, `ROADMAP_MASTER_CHECKLIST.md` and `docs/checkpoints/handoff-finance-owner-money-closeout-2026-09-26.md`.  
+
+> This file is retained because it contains the original third-party/PILA planning context. It is **not** approval to start PILA automatically and its legal/parameter notes must be re-researched before any implementation.
 
 ## Current source-of-truth boundary
 
@@ -11,225 +13,106 @@
 - `PAGO_TERCEROS` is the physical child ledger for third-party obligations/payments.
 - AppSheet remains the primary mobile/offline workflow writer.
 - `/admin/finance/` remains read-only for general Finance data/analytics.
-- One explicit, narrow write exception is now approved: PR #253 may record a real third-party payment by writing only physical `PAGO_TERCEROS` columns `J = Valor pagado tercero` and `K = Fecha pago tercero` after server-side revalidation.
-- No derived third-party value may be written from Finance.
+- One explicit, narrow write exception is approved: an explicit third-party `Marcar pagado` action may record a real payment by writing only physical `PAGO_TERCEROS` columns `J = Valor pagado tercero` and `K = Fecha pago tercero` after server-side revalidation.
+- No derived third-party value may be written from Finance Admin.
 - Generic Finance write-back, D1 Finance mirroring and bidirectional sync remain blocked.
 
-Detailed handoff:
+## Third-party milestone — CLOSED / PASS
 
-`docs/checkpoints/handoff-finance-third-party-operational-2026-09-07.md`
+The implementation described by the original roadmap is now complete and production-verified.
 
-## Milestones completed
+Completed sequence includes:
 
-### ✅ Parent structured field
+- structured `REGISTRO.Cobro terceros`;
+- canonical proportional-retention model;
+- physical `PAGO_TERCEROS` child ledger integration;
+- AppSheet derived-field cleanup to Virtual Columns/direct-ratio monetary math;
+- selected-year/monthly backend reconciliation;
+- COP reconciliation by third-party name;
+- operational `Esperando pago del cliente` / `Listo para pagar` obligations;
+- bounded J/K `Marcar pagado` write path;
+- production write smoke PASS;
+- owner-money reporting separation from full transaction totals;
+- registered third-party paid-history view;
+- `Overview` / `Third parties` Finance tabs with production smoke PASS.
 
-`REGISTRO.Cobro terceros` is live and AppSheet exposes it as `Cobro por terceros (bruto)` with numeric validation. It represents the gross portion of `Valor bruto` billed/charged on behalf of third parties.
-
-Rule:
-
-`0 <= Cobro terceros <= Valor bruto`
-
-Blank is equivalent to zero for Finance analytics.
-
-### ✅ Canonical proportional-retention model
-
-For a paid parent row with valid values:
+Canonical management model:
 
 - `invoiceGross = Valor bruto`
 - `bankReceived = Valor Recibido`
 - `thirdPartyGross = Cobro terceros`
 - `factor = bankReceived / invoiceGross`
 - `thirdPartyPayable = thirdPartyGross * factor`
-- `ownGross = invoiceGross - thirdPartyGross`
-- `ownCashReceived = bankReceived - thirdPartyPayable`
+- `ownerGenerated = invoiceGross - thirdPartyGross`
+- `ownerCashReceived = bankReceived - thirdPartyPayable`
 
-Invariant:
+Invariant for a valid paid allocation:
 
-`ownCashReceived + thirdPartyPayable = bankReceived`
+`ownerCashReceived + thirdPartyPayable = bankReceived`
 
-This is the same management allocation used by the existing browser-local pass-through calculator. Do not fork this math into a competing model.
+Displayed percentage fields may be rounded, but money calculations use the full ratio.
 
-### ✅ Third-party child ledger
+## Current third-party history limitation
 
-Google Sheets physical tab: `PAGOS_TERCEROS`  
-AppSheet table: `PAGO_TERCEROS`
+`PAGO_TERCEROS` stores cumulative `Valor pagado tercero` and one `Fecha pago tercero` per obligation. The Admin history therefore represents a registered cumulative paid fact per obligation and does not preserve every partial-payment event as an append-only log.
 
-Finance reads `PAGO_TERCEROS!A:N`, treats only persisted facts as authoritative and ignores the seven legacy derived physical columns when recomputing current state.
+## PILA concept — backlog / research candidate only
 
-Authoritative child facts:
+The original idea was a separate browser-local/year-versioned planning calculator in `/admin/finance/` with no writes to Google Sheets, AppSheet or D1.
 
-- `ID tercero`
-- `Trabajo ID`
-- `Tercero`
-- `Bruto tercero`
-- `Valor pagado tercero`
-- `Fecha pago tercero`
-- `Notas`
+That concept remains potentially useful, but it is **not the selected next workstream**.
 
-Current AppSheet derived fields use Virtual Columns with ` calc` technical names. Do not restore App formulas into the legacy physical derived columns merely for dashboard convenience.
+If the owner explicitly selects it later, begin from fresh legal/operational research rather than treating this dated planning document as a current legal specification.
 
-### ✅ Selected-year/monthly reconciliation backend
+### Intended product boundaries if revived
 
-PR #251 added selected-year/monthly reconciliation data for:
+- planning/estimator tool, not a PILA operator;
+- no Finance source-of-truth writes;
+- contribution rules versioned by year;
+- exact legal/operational sources displayed or documented;
+- unsupported scenarios fail clearly rather than guess;
+- management fields such as `Cobro terceros`, owner generated or owner cash must not automatically be mapped to statutory contribution income.
 
-- billed gross;
-- own gross component;
-- third-party gross component;
-- bank received;
-- own cash after pass-through;
-- estimated third-party payable;
-- actual third-party payments by payment date;
-- fees/retentions;
-- COP/USD kept separate.
+### Historical calculation modes considered
 
-Legal/tax treatment is not inferred from `Cobro terceros`.
+The earlier plan contemplated at least:
 
-### ✅ Visible reconciliation simplified to owner requirement
+1. **Prestación de servicios personales**
+   - monthly gross contract income excluding IVA;
+   - legally applicable IBC methodology and minimum/maximum rules;
+   - health, pension and any additional applicable contribution components.
 
-PR #252 changed the visible reconciliation into a COP-only by-third-party table:
+2. **Cuenta propia / contrato diferente a prestación de servicios**
+   - monthly gross income excluding IVA;
+   - legally supported cost treatment;
+   - resulting net income and applicable IBC methodology;
+   - health, pension and any additional applicable contribution components.
 
-- **Tercero**
-- **Deuda a terceros** = current balance still owed
-- **Cobrado de terceros** = proportional third-party amount only after the parent work is actually paid and `Valor Recibido` is valid
-- **Pagado a terceros** = persisted actual payments
+These are planning categories only. Current rules must be verified again before coding.
 
-Unassigned third-party amount remains visible as `Sin desglose` rather than disappearing.
+### Historical parameter notes — NOT CANONICAL
 
-### ✅ Operational obligations card + bounded payment action
+Earlier research in this project mentioned values/thresholds for 2026, including SMMLV, maximum IBC, health/pension rates, FSP, ARL and optional CCF treatment, plus the need to consider Decree 0379 of 2026.
 
-PR #253 changed `Obligaciones a terceros` into an operational queue:
-
-- before collection workflow: hidden from the operational queue;
-- 🟠 `Esperando pago del cliente`: invoice/workflow complete but client not yet paid;
-- 🟢 `Listo para pagar`: parent is `Pagado`, `Valor Recibido` is valid and positive third-party debt remains;
-- fully paid obligations disappear;
-- `Sin desglose` can be shown but cannot be marked paid.
-
-Admin endpoints:
-
-- `GET /api/admin/finance/third-party/obligations`
-- `POST /api/admin/finance/third-party/mark-paid`
-
-The POST path:
-
-1. verifies Admin access;
-2. receives an opaque action reference;
-3. re-reads `REGISTRO` + `PAGO_TERCEROS`;
-4. recalculates current eligibility and balance server-side;
-5. writes only `Valor pagado tercero` + `Fecha pago tercero` when still `ready_to_pay`;
-6. re-reads and verifies the obligation is no longer pending.
-
-### ✅ AppSheet `Terceros` tab operational filter
-
-Owner-verified on 2026-09-07: the `Terceros` tab now shows only debt still owed; fully paid items disappear. No new Sheet schema was required.
-
-If this view regresses, diagnose the View source/Slice and one concrete row before modifying Virtual Column formulas.
-
-## Merged Finance PR sequence
-
-- #249 → `c2b2ff1eb977d0d2d0c532abc3fbf65a61c9bd5e`
-- #250 → `4dcf3fe90f50fbaf77f41227f9b8b4ce4c6db1bf`
-- #251 → `b312b4e7f47ff5526f1bace8325aa85e4a4a1b02`
-- #252 → `b02bda1406ba152884aa9b4b2976c7cd9141aba4`
-- #253 → `d4d036bed5203d655dff8ff875f7188868845176`
-
-## Current gate — production smoke of PR #253
-
-Before declaring third-party operations CLOSED/PASS, run exactly one representative production smoke if a safe obligation is available:
-
-1. verify one item reaches `Listo para pagar`;
-2. use `Marcar pagado` once;
-3. verify it disappears from the operational card/queue;
-4. verify `PAGO_TERCEROS.Valor pagado tercero` and `Fecha pago tercero` changed;
-5. sync AppSheet and verify the fully paid debt is absent from the `Terceros` tab.
-
-Do not create unnecessary production data solely for the smoke. If no safe obligation is available, record the smoke as explicitly deferred.
-
-# Next milestone — Colombian PILA estimator
-
-Build a separate browser-local/year-versioned calculator in `/admin/finance/`. It must not write to Google Sheets, AppSheet or D1.
-
-## Rules source/version
-
-Rules must be parameterized by contribution year and display the source version used. Initial implementation targets **2026** using current UGPP/Ministerio de Salud operational guidance.
-
-2026 baseline parameters already identified for implementation/verification:
-
-- SMMLV: COP 1,750,905;
-- maximum IBC: 25 SMMLV = COP 43,772,625;
-- health: 12.5% of IBC;
-- pension: 16% of IBC;
-- Fondo de Solidaridad Pensional: use the current 2026 operational thresholds after exact verification;
-- ARL: selectable risk class and applicable payer/obligation rules;
-- CCF: optional 0.6% or 2% when selected.
-
-Before coding the final FSP table or 2026 own-account rules, verify the exact current legal/operational source. Decree 0379 of 2026 must be considered for the post-effective-date rules already identified in research.
-
-## Required calculation modes
-
-### 1. Prestación de servicios personales
-
-- monthly gross contract income excluding IVA;
-- no cost deduction/presumption-of-costs deduction;
-- IBC base = 40% of applicable monthly gross, subject to current minimum/maximum rules.
-
-### 2. Cuenta propia / contrato diferente a prestación de servicios
-
-- monthly gross income excluding IVA;
-- deductible costs according to the selected legally supported method;
-- net income first, then minimum 40% for IBC, subject to current obligation/minimum/maximum rules.
-
-The first version may explicitly exclude unsupported special scenarios rather than guess.
-
-## PILA output
-
-Show at minimum:
-
-- income used;
-- deductible costs / cost method when applicable;
-- net income;
-- calculated IBC and any minimum/maximum adjustment;
-- health;
-- pension;
-- Fondo de Solidaridad Pensional when applicable;
-- ARL and whether it is included in the user's payable total;
-- optional CCF;
-- estimated total payable by the user.
-
-The calculator is an estimate/planning tool, not a PILA operator and not legal/tax advice.
+Those notes are intentionally **not restated here as current implementation constants**. If PILA is selected, re-verify each parameter and effective-date rule from authoritative Colombian sources before writing deterministic tests or production code.
 
 ## Interaction with third-party money
 
-Do **not** automatically include or exclude `Cobro terceros` from the statutory PILA base merely because it is tracked in Finance. The legal treatment depends on the actual arrangement.
+Do **not** automatically include or exclude `Cobro terceros` from a statutory PILA base simply because Finance tracks it as pass-through money for management purposes.
 
-Finance may offer structured own-income figures as a suggested reference, but the user must confirm the amount treated as `ingreso sujeto a cotización`.
+Finance may provide owner-management figures as context, but the legally relevant amount must be determined from the actual arrangement and then-current rules.
 
-## Guardrails
+## Guardrails retained from the original plan
 
 - Google Sheets/AppSheet remain source of truth for Finance facts.
 - No D1 Finance mirror.
-- Preserve COP/USD separation except where a feature is intentionally scoped COP-only (current by-third-party reconciliation).
+- Preserve COP/USD separation except where a feature is intentionally COP-only.
 - Do not parse `Notas` to infer amounts.
-- Do not expose `Notas`, `NUM CONTACTO` or raw internal IDs in Admin payloads merely to support analytics/actions.
-- Reuse canonical pass-through math.
-- Generic Finance write-back remains blocked; PR #253's J/K fact-write path is the only approved exception.
-- PILA parameters must be versioned by contribution year.
+- Do not expose private notes/contact data/raw IDs merely to support analytics.
+- Reuse canonical pass-through math for management reporting.
+- Generic Finance write-back remains blocked.
+- PILA parameters, if implemented, must be versioned by contribution year.
 
-## Safe implementation order
+## Current continuation
 
-1. ✅ `REGISTRO.Cobro terceros` live in Sheets/AppSheet.
-2. ✅ Finance read contract extended and tested.
-3. ✅ Parent obligation semantics/card implemented.
-4. ✅ `PAGO_TERCEROS` child ledger and VC migration completed.
-5. ✅ Selected-year/monthly reconciliation backend implemented.
-6. ✅ Visible COP reconciliation by third-party name implemented.
-7. ✅ Operational orange/green obligations queue + bounded `Marcar pagado` write action merged.
-8. ✅ AppSheet `Terceros` tab hides fully paid debt.
-9. ⏳ One representative production smoke of #253 write path, or explicitly defer if no safe obligation exists.
-10. ⏳ Verify exact 2026 PILA legal parameters/FSP/current rules.
-11. ⏳ Implement year-versioned PILA estimator + deterministic tests.
-12. ⏳ Production smoke Finance desktop/mobile for the PILA milestone.
-
-## Exact continuation
-
-**Inspect current `main`, confirm #253 deployment, then run one bounded `Marcar pagado` production smoke if a safe obligation exists. Once that passes (or is explicitly deferred), begin exact-source verification for the 2026 PILA estimator. Do not redesign AppSheet/Sheets without a concrete regression.**
+**Do not continue directly from the old PILA sequence in this file. Finance third-party/owner-money work is CLOSED/PASS through PR #258. Return to `PROJECT_STATUS.md` and `ROADMAP_MASTER_CHECKLIST.md`, review the backlog with the owner, and only revive PILA if it is explicitly selected as the next bounded workstream.**
