@@ -35,7 +35,8 @@ const bank = {
   routingNumber: "ROUTING-TEST",
   accountType: "Checking",
   accountNumber: "ACCOUNT-TEST",
-  bankAddress: "Kansas City, MO"
+  bankAddress: "Kansas City, MO",
+  beneficiaryAddress: "Beneficiary address test"
 };
 
 test("document money always renders two decimal places", () => {
@@ -90,6 +91,7 @@ test("Cuenta de cobro draft renders optional metadata, type badge, quantity and 
   assert.match(html, /La firma se aplica al finalizar/);
   assert.match(html, /co-ret@2026-1/);
   assert.doesNotMatch(html, /Hidden beneficiary/);
+  assert.doesNotMatch(html, /Beneficiary address test/);
   const labels = ["Nombre del Banco", "Routing Number", "Tipo de cuenta", "Número de cuenta", "Dirección del banco"];
   for (let i = 1; i < labels.length; i += 1) assert.ok(html.indexOf(labels[i - 1]) < html.indexOf(labels[i]));
   assert.doesNotMatch(html, /<img[^>]+alt="Firma"/);
@@ -181,7 +183,7 @@ test("Cuenta de cobro renders a line date range only when supplied", () => {
   assert.match(html, /2 de septiembre de 2026 – 4 de septiembre de 2026/);
 });
 
-test("Invoice draft renders bank details in draft and preserves original-currency FX metadata", () => {
+test("Invoice draft renders bank details and USD-base original-currency FX metadata", () => {
   const html = renderInvoice({
     issuer,
     client,
@@ -195,7 +197,7 @@ test("Invoice draft renders bank details in draft and preserves original-currenc
     servicePeriodLabel: "Sep 2026",
     lines: [
       { kind: "professional_service", description: "Associate Sound Design", quantity: 0, unit: "", unitMinor: 600000, amountMinor: 600000, serviceDate: "2026-09-20", serviceDateEnd: "2026-09-22", poNumber: "PO-LINE-1" },
-      { kind: "transport", description: "Rail to airport", quantity: 1, unit: "trip", unitMinor: 2364, amountMinor: 2364, originalCurrency: "EUR", originalAmountMinor: 2180, exchangeRate: "1.0845", exchangeRateDate: "2026-09-19" }
+      { kind: "transport", description: "Rail to airport", quantity: 1, unit: "trip", unitMinor: 2364, amountMinor: 2364, originalCurrency: "EUR", originalAmountMinor: 2180, exchangeRate: "0.92", exchangeRateDate: "2026-09-19" }
     ],
     totalMinor: 602364,
     showBankDetails: true,
@@ -211,14 +213,17 @@ test("Invoice draft renders bank details in draft and preserves original-currenc
   assert.match(html, /Date \/ period: September 20, 2026 – September 22, 2026/);
   assert.match(html, /PO \/ ref: PO-LINE-1/);
   assert.match(html, /Original expense EUR 21\.80/);
-  assert.match(html, /FX: 1 EUR = 1\.0845 USD · rate date: September 19, 2026/);
+  assert.match(html, /FX: 1 USD = 0\.92 EUR/);
+  assert.doesNotMatch(html, /rate date/i);
+  assert.doesNotMatch(html, /September 19, 2026/);
   assert.match(html, /<td class="num">—<\/td><td class="sub" style="padding-left:10px">—<\/td>/);
   assert.match(html, /USD 6,023\.64/);
   assert.match(html, /Thank you/);
   assert.doesNotMatch(html, /Payment details hidden for this draft/);
   assert.doesNotMatch(html, /Hidden beneficiary/);
-  const labels = ["Bank Name", "Routing Number", "Account Type", "Account Number", "Bank Address"];
+  const labels = ["Bank Name", "Routing Number", "Account Type", "Account Number", "Bank Address", "Beneficiary Address"];
   for (let i = 1; i < labels.length; i += 1) assert.ok(html.indexOf(labels[i - 1]) < html.indexOf(labels[i]));
+  assert.match(html, /Beneficiary Address<\/dt><dd>Beneficiary address test/);
   assert.match(html, /Signature applied on finalize/);
   assert.doesNotMatch(html, /data:image/i);
 });
@@ -232,11 +237,11 @@ test("bank censor state is explicit and identical in both document types", () =>
   assert.doesNotMatch(invoice, /ACCOUNT-TEST/);
 });
 
-test("line normalization accepts ISO original currencies and freezes FX rate/date", () => {
-  const result = calculateDocumentLines([{ description: "Rail", kind: "transport", quantity: 1, amountMinor: 2364, originalCurrency: "eur", originalAmountMinor: 2180, exchangeRate: "1.0845", exchangeRateDate: "2026-09-19" }]);
+test("line normalization accepts ISO original currencies, keeps USD-base rate and drops legacy FX date", () => {
+  const result = calculateDocumentLines([{ description: "Rail", kind: "transport", quantity: 1, amountMinor: 2364, originalCurrency: "eur", originalAmountMinor: 2180, exchangeRate: "0.92", exchangeRateDate: "2026-09-19" }]);
   assert.equal(result.lines[0].originalCurrency, "EUR");
-  assert.equal(result.lines[0].exchangeRate, "1.0845");
-  assert.equal(result.lines[0].exchangeRateDate, "2026-09-19");
+  assert.equal(result.lines[0].exchangeRate, "0.92");
+  assert.equal(Object.hasOwn(result.lines[0], "exchangeRateDate"), false);
   assert.throws(() => calculateDocumentLines([{ description: "Bad FX", amountMinor: 100, originalCurrency: "EURO" }]), /invalid_original_currency/);
   assert.throws(() => calculateDocumentLines([{ description: "Bad FX", amountMinor: 100, originalCurrency: "EUR", exchangeRate: "0" }]), /invalid_exchange_rate/);
 });
