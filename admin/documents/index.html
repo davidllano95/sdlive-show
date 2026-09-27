@@ -12,6 +12,7 @@
   <link rel="stylesheet" href="./mobile-dashboard.css" />
   <link rel="stylesheet" href="./documents/documents.css?v=20260927-2" />
   <link rel="stylesheet" href="./documents/management.css?v=20260927-1" />
+  <link rel="stylesheet" href="./documents/editor-polish.css?v=20260927-1" />
 </head>
 <body>
   <div class="backoffice">
@@ -104,7 +105,7 @@
                   <div class="field field--grow"><label for="draftIssuerAddress">Address</label><input id="draftIssuerAddress" /></div>
                   <div class="field"><label for="draftIssuerPhone">Phone</label><input id="draftIssuerPhone" /></div>
                   <div class="field"><label for="draftIssuerEmail">Email</label><input id="draftIssuerEmail" /></div>
-                  <div class="field field--grow"><label for="draftBrandLabel">Visual brand</label><input id="draftBrandLabel" placeholder="sd•live · Creative Audio" /></div>
+                  <div class="field field--grow"><label for="draftBrandLabel">Visual brand</label><input id="draftBrandLabel" placeholder="SD.Live · Creative Audio" /><small class="field-help">Blank = use the issuer profile brand. If the issuer profile is also blank, the document uses SD.Live · Creative Audio. A value here overrides this document only.</small></div>
                 </div></fieldset>
 
                 <fieldset><legend>Client</legend><div class="documents-form documents-form--client">
@@ -129,7 +130,7 @@
                   <div class="field field--grow"><label for="draftNotes">Notes</label><input id="draftNotes" /></div>
                 </div></fieldset>
 
-                <fieldset><legend>Line items</legend><div id="draftLines" class="draft-lines"></div><button class="button button--ghost" id="addDraftLine" type="button">+ Add line</button></fieldset>
+                <fieldset><legend>Line items</legend><p class="documents-help">Quantity × rate determines the line total. Date and PO / reference are optional for every line.</p><div id="draftLines" class="draft-lines"></div><button class="button button--ghost" id="addDraftLine" type="button">+ Add line</button></fieldset>
                 <div class="draft-actions"><button class="button" id="saveDraft" type="submit">Save draft</button><span class="documents-help">Autosaves after edits. No number is reserved.</span></div>
               </form>
 
@@ -159,7 +160,7 @@
                 <div class="field"><label for="issuerPhone">Phone</label><input id="issuerPhone" name="phone" autocomplete="tel" /></div>
                 <div class="field"><label for="issuerEmail">Email</label><input id="issuerEmail" name="email" type="email" autocomplete="email" /></div>
                 <div class="field field--grow"><label for="issuerAddress">Primary address</label><input id="issuerAddress" name="address" autocomplete="street-address" /></div>
-                <div class="field field--grow"><label for="issuerBrandLabel">Optional visual brand</label><input id="issuerBrandLabel" name="brandLabel" placeholder="sd•live · Creative Audio" /></div>
+                <div class="field field--grow"><label for="issuerBrandLabel">Optional visual brand</label><input id="issuerBrandLabel" name="brandLabel" placeholder="SD.Live · Creative Audio" /><small class="field-help">Blank uses the standard SD.Live · Creative Audio header. Fill this only when this issuer needs a different visible brand.</small></div>
                 <div class="documents-form__actions"><button class="button" type="submit">Save issuer</button><span id="issuerMessage" class="documents-message"></span></div>
               </form>
             </section>
@@ -192,7 +193,7 @@
   </div>
 
   <script src="./documents/documents.js?v=20260927-2"></script>
-  <script src="./documents/editor.js?v=20260927-1"></script>
+  <script src="./documents/editor.js?v=20260927-2"></script>
   <script src="./admin-stabilization.js?v=20260825-1"></script>
   <script src="./documents/management.js?v=20260927-1"></script>
 </body>
