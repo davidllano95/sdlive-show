@@ -63,13 +63,13 @@ function fakeSequenceEnv() {
       params,
       bind(...values) { return statement(sql, values); },
       async first() {
-        if (/SELECT \* FROM doc_sequences WHERE series_key = \?/.test(sql)) {
+        if (/SELECT \* FROM doc_sequences[\s\S]*WHERE series_key = \?/.test(sql)) {
           return rows.find((row) => row.series_key === params[0]) || null;
         }
         throw new Error(`Unexpected first SQL: ${sql}`);
       },
       async all() {
-        if (/FROM doc_sequences ORDER BY is_test DESC/.test(sql)) return { results: rows };
+        if (/FROM doc_sequences[\s\S]*ORDER BY is_test DESC/.test(sql)) return { results: rows };
         throw new Error(`Unexpected all SQL: ${sql}`);
       },
       async run() {
