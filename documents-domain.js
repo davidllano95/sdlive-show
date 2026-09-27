@@ -35,15 +35,16 @@ function normalizedLine(line, index) {
   const description = asText(line.description);
   if (!description) throw new Error("line_description_required");
 
-  const quantity = line.quantity == null ? 1 : Number(line.quantity);
-  if (!Number.isSafeInteger(quantity) || quantity < 1) throw new Error("line_quantity_must_be_positive_integer");
+  const quantity = line.quantity == null || line.quantity === "" ? 0 : Number(line.quantity);
+  if (!Number.isSafeInteger(quantity) || quantity < 0) throw new Error("line_quantity_must_be_non_negative_integer");
+  const multiplier = quantity > 0 ? quantity : 1;
 
   let amountMinor;
   let unitMinor = null;
   if (line.unitMinor != null) {
     unitMinor = normalizeMinorUnits(line.unitMinor, "invalid_line_unit_minor");
     if (unitMinor < 0) throw new Error("negative_line_amount_not_supported");
-    const calculated = unitMinor * quantity;
+    const calculated = unitMinor * multiplier;
     if (!Number.isSafeInteger(calculated)) throw new Error("line_amount_overflow");
     amountMinor = calculated;
   }
@@ -66,9 +67,11 @@ function normalizedLine(line, index) {
     kind,
     description,
     quantity,
+    unit: asText(line.unit) || null,
     unitMinor,
     amountMinor,
     serviceDate: asText(line.serviceDate) || null,
+    serviceDateEnd: asText(line.serviceDateEnd) || null,
     poNumber: asText(line.poNumber) || null,
     reference: asText(line.reference) || null,
     originalCurrency,
