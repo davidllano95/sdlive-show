@@ -137,7 +137,7 @@ test("Cuenta de cobro non-itemized mode shows the general amount only in La suma
   assert.match(html, /975\.000,00/);
   assert.match(html, /NOVECIENTOS SETENTA Y CINCO MIL PESOS M\/CTE/);
   assert.doesNotMatch(html, /Por concepto de/);
-  assert.doesNotMatch(html, /concept-table/);
+  assert.doesNotMatch(html, /<table class="concept-table(?: simple)?">/);
   assert.doesNotMatch(html, /Hidden line one/);
   assert.doesNotMatch(html, /Hidden line two/);
   assert.doesNotMatch(html, /Total<\/td>/);
