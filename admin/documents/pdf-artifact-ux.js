@@ -88,7 +88,6 @@
         cache: "no-store"
       });
       if (response.ok) {
-        await response.body?.cancel?.().catch?.(() => {});
         status.textContent = "PDF ready · private artifact";
         const download = document.createElement("a");
         download.className = "button";
