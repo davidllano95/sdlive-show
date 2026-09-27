@@ -118,6 +118,31 @@ test("Cuenta de cobro collapses to concepts and prices when no structured line m
   assert.doesNotMatch(html, /Orden de compra/);
 });
 
+test("Cuenta de cobro non-itemized mode shows the general amount only in La suma de", () => {
+  const html = renderCuentaDeCobro({
+    issuer,
+    client,
+    currency: "COP",
+    itemize: false,
+    generalAmountMinor: 97500000,
+    lines: [
+      { kind: "professional_service", description: "Hidden line one", quantity: 2, unit: "día", unitMinor: 10000000, amountMinor: 20000000 },
+      { kind: "equipment", description: "Hidden line two", quantity: 1, unitMinor: 5000000, amountMinor: 5000000 }
+    ],
+    totalMinor: 97500000,
+    amountInWords: "NOVECIENTOS SETENTA Y CINCO MIL PESOS M/CTE",
+    showBankDetails: false
+  }, { mode: "draft" });
+  assert.match(html, /La suma de/);
+  assert.match(html, /975\.000,00/);
+  assert.match(html, /NOVECIENTOS SETENTA Y CINCO MIL PESOS M\/CTE/);
+  assert.doesNotMatch(html, /Por concepto de/);
+  assert.doesNotMatch(html, /<table class="concept-table(?: simple)?">/);
+  assert.doesNotMatch(html, /Hidden line one/);
+  assert.doesNotMatch(html, /Hidden line two/);
+  assert.doesNotMatch(html, /Total<\/td>/);
+});
+
 test("Cuenta de cobro uses the first column for optional quantity and renders a dash at zero", () => {
   const html = renderCuentaDeCobro({
     issuer,

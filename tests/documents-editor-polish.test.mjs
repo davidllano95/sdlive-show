@@ -5,6 +5,7 @@ import { readFileSync } from "node:fs";
 const editor = readFileSync(new URL("../admin/documents/editor.js", import.meta.url), "utf8");
 const html = readFileSync(new URL("../admin/documents/index.html", import.meta.url), "utf8");
 const polish = readFileSync(new URL("../admin/documents/editor-polish.css", import.meta.url), "utf8");
+const drafts = readFileSync(new URL("../documents-drafts.js", import.meta.url), "utf8");
 
 test("line item editor exposes optional quantity, unit, rate and clearable date range", () => {
   assert.match(editor, /line-quantity/);
@@ -22,6 +23,28 @@ test("line item editor exposes optional quantity, unit, rate and clearable date 
   assert.match(editor, /dateEnd\.value = ""/);
   assert.match(editor, /const multiplier = quantity > 0 \? quantity : 1/);
   assert.match(editor, /serviceDateEnd:/);
+});
+
+test("Cuenta de cobro editor has explicit itemize and general-rate modes", () => {
+  assert.match(editor, /draftPricingMode/);
+  assert.match(editor, /draftItemize/);
+  assert.match(editor, /Itemize line items/);
+  assert.match(editor, /don't itemize; use one general rate/);
+  assert.match(editor, /draftGeneralRate/);
+  assert.match(editor, /General rate \/ total/);
+  assert.match(editor, /generalAmountMinor:/);
+  assert.match(editor, /itemize: true, generalAmountMinor: 0/);
+  assert.match(editor, /lineItemsFieldset\.hidden = isCc && !itemize/);
+  assert.match(editor, /const currentTotal = linesTotalMinor\(\)/);
+});
+
+test("non-itemized draft totals come from the general amount and preserve hidden lines", () => {
+  assert.match(drafts, /function isItemizedDraft\(draft, kindId\)/);
+  assert.match(drafts, /draft\?\.itemize !== false/);
+  assert.match(drafts, /function generalAmountMinor\(draft\)/);
+  assert.match(drafts, /return isItemizedDraft\(draft, kindId\) \? draftTotal\(draft\.lines\) : generalAmountMinor\(draft\)/);
+  assert.match(drafts, /itemize,/);
+  assert.match(drafts, /generalAmountMinor: itemize \? null : totalMinor/);
 });
 
 test("original expense fields remain invoice-only and explicitly named", () => {

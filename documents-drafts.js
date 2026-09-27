@@ -67,11 +67,25 @@ function draftTotal(lines) {
   return total;
 }
 
-function poSummary(draft) {
+function isItemizedDraft(draft, kindId) {
+  return kindId !== "cc-co-es" || draft?.itemize !== false;
+}
+
+function generalAmountMinor(draft) {
+  const amount = Number(draft?.generalAmountMinor ?? 0);
+  if (!Number.isSafeInteger(amount) || amount < 0) throw new Error("invalid_general_amount_minor");
+  return amount;
+}
+
+function documentTotal(draft, kindId) {
+  return isItemizedDraft(draft, kindId) ? draftTotal(draft.lines) : generalAmountMinor(draft);
+}
+
+function poSummary(draft, kindId) {
   const values = new Set();
   const documentPo = text(draft.purchaseOrder, 120);
   if (documentPo) values.add(documentPo);
-  if (Array.isArray(draft.lines)) {
+  if (isItemizedDraft(draft, kindId) && Array.isArray(draft.lines)) {
     for (const line of draft.lines) {
       const po = text(line?.poNumber, 120);
       if (po) values.add(po);
@@ -117,14 +131,14 @@ async function profileContext(env, issuerId, clientId) {
   return { issuer, client };
 }
 
-function registryFields(draft, client) {
+function registryFields(draft, client, kindId) {
   const clientOverride = objectOrEmpty(draft.clientOverride);
   return {
     clientName: text(clientOverride.legalName || draft.clientLegalName || client?.legalName, 240),
     clientTaxId: text(clientOverride.taxId || draft.clientTaxId || client?.taxId, 120),
     projectLabel: text(draft.projectLabel, 240),
-    poNumbers: poSummary(draft),
-    totalMinor: draftTotal(draft.lines),
+    poNumbers: poSummary(draft, kindId),
+    totalMinor: documentTotal(draft, kindId),
     issueDate: text(draft.issueDate, 20) || null,
     issueYear: issueYear(draft.issueDate)
   };
@@ -148,7 +162,7 @@ export async function createDraftDocument(env, input, { actorEmail = "", now = (
   const currency = safeCurrency(payload.currency || (kind.id === "cc-co-es" ? "COP" : "USD"));
   const { draft, json } = safeDraftJson({ ...(payload.draft || {}), kindId: kind.id, currency });
   const { client } = await profileContext(env, issuerId, clientId);
-  const fields = registryFields(draft, client);
+  const fields = registryFields(draft, client, kind.id);
   const documentId = `doc-${crypto.randomUUID()}`;
   const at = text(now(), 80);
   const row = await createDocumentDraftRow(env, {
@@ -178,7 +192,7 @@ export async function saveDraftDocument(env, documentId, input, { actorEmail = "
   const currency = safeCurrency(payload.currency || current.currency);
   const { draft, json } = safeDraftJson({ ...(payload.draft || {}), kindId: current.kindId, currency });
   const { client } = await profileContext(env, current.issuerId, clientId);
-  const fields = registryFields(draft, client);
+  const fields = registryFields(draft, client, current.kindId);
   const at = text(now(), 80);
   const row = await saveDocumentDraftRow(env, {
     documentId: current.id,
@@ -263,7 +277,8 @@ export async function buildDraftPreview(env, documentId) {
   const { issuer, client } = await profileContext(env, document.issuerId, document.clientId);
   const draft = document.draft || {};
   const lines = previewLines(draft.lines);
-  const totalMinor = draftTotal(lines);
+  const totalMinor = documentTotal(draft, document.kindId);
+  const itemize = isItemizedDraft(draft, document.kindId);
   const view = {
     kindId: document.kindId,
     currency: document.currency,
@@ -274,6 +289,8 @@ export async function buildDraftPreview(env, documentId) {
     projectLabel: text(draft.projectLabel, 240),
     purchaseOrder: text(draft.purchaseOrder, 120),
     servicePeriodLabel: servicePeriodLabel(draft.servicePeriod),
+    itemize,
+    generalAmountMinor: itemize ? null : totalMinor,
     lines,
     totalMinor,
     amountInWords: text(draft.amountWordsOverride, 500) || (document.kindId === "cc-co-es" ? amountMinorToSpanishWords(totalMinor, { currency: document.currency }) : ""),

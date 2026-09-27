@@ -59,6 +59,7 @@ function publicError(error) {
     invalid_document_id: 400,
     invalid_issuer_id: 400,
     invalid_client_id: 400,
+    invalid_general_amount_minor: 400,
     issuer_not_found: 409,
     client_not_found: 409,
     unsupported_currency: 400,

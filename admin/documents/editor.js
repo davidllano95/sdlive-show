@@ -150,6 +150,63 @@
     return label;
   }
 
+  function ensureItemizationControls() {
+    if ($("draftPricingMode")) return;
+    const lineItemsFieldset = $("draftLines")?.closest("fieldset");
+    if (!lineItemsFieldset) return;
+    lineItemsFieldset.id = "draftLineItemsFieldset";
+
+    const pricing = documentCreate("fieldset");
+    pricing.id = "draftPricingMode";
+    pricing.hidden = true;
+    const legend = documentCreate("legend");
+    legend.textContent = "Pricing";
+    const grid = documentCreate("div", "documents-form documents-form--client");
+
+    const itemizeField = documentCreate("div", "field field--grow");
+    const itemizeLabel = documentCreate("label", "check");
+    const itemize = documentCreate("input");
+    itemize.id = "draftItemize";
+    itemize.type = "checkbox";
+    itemize.checked = true;
+    itemizeLabel.append(itemize, document.createTextNode(" Itemize line items"));
+    const itemizeHelp = documentCreate("small", "field-help");
+    itemizeHelp.textContent = "Checked = show concepts. Unchecked = don't itemize; use one general rate and show the amount only in ‘La suma de’.";
+    itemizeField.append(itemizeLabel, itemizeHelp);
+
+    const generalField = documentCreate("div", "field");
+    generalField.id = "draftGeneralRateField";
+    generalField.hidden = true;
+    const generalLabel = documentCreate("label");
+    generalLabel.htmlFor = "draftGeneralRate";
+    generalLabel.textContent = "General rate / total";
+    const generalRate = documentCreate("input");
+    generalRate.id = "draftGeneralRate";
+    generalRate.type = "number";
+    generalRate.step = "0.01";
+    generalRate.min = "0";
+    generalRate.placeholder = "0.00";
+    generalField.append(generalLabel, generalRate);
+
+    grid.append(itemizeField, generalField);
+    pricing.append(legend, grid);
+    lineItemsFieldset.before(pricing);
+  }
+
+  function syncItemizationUi() {
+    const pricing = $("draftPricingMode");
+    const checkbox = $("draftItemize");
+    const generalField = $("draftGeneralRateField");
+    const lineItemsFieldset = $("draftLineItemsFieldset");
+    if (!pricing || !checkbox || !generalField || !lineItemsFieldset) return;
+    const isCc = activeDocument?.kindId === "cc-co-es";
+    pricing.hidden = !isCc;
+    if (!isCc) checkbox.checked = true;
+    const itemize = !isCc || checkbox.checked;
+    generalField.hidden = !isCc || itemize;
+    lineItemsFieldset.hidden = isCc && !itemize;
+  }
+
   function lineTemplate(line = {}, currency = "COP", kindId = activeDocument?.kindId || "cc-co-es") {
     const row = documentCreate("div", "draft-line");
     row.dataset.lineId = line.id || `line-${crypto.randomUUID()}`;
@@ -302,7 +359,13 @@
     });
   }
 
+  function linesTotalMinor() {
+    return readLines().reduce((sum, line) => sum + Number(line.amountMinor || 0), 0);
+  }
+
   function formDraft() {
+    const isCc = activeDocument.kindId === "cc-co-es";
+    const itemize = !isCc || $("draftItemize").checked;
     return {
       kindId: activeDocument.kindId,
       currency: $("draftCurrency").value,
@@ -313,6 +376,8 @@
       dueDate: $("draftDueDate").value || null,
       terms: $("draftTerms").value.trim() || null,
       amountWordsOverride: $("draftAmountWords").value.trim() || null,
+      itemize,
+      generalAmountMinor: isCc ? majorToMinor($("draftGeneralRate").value) : null,
       usesCostsDeductions: $("draftUsesCosts").checked,
       showBankDetails: $("draftShowBank").checked,
       notes: $("draftNotes").value.trim() || null,
@@ -347,7 +412,10 @@
     $("draftIssueDate").value = draft.issueDate || ""; $("draftIssueCity").value = draft.issueCity || ""; $("draftProject").value = draft.projectLabel || ""; $("draftPO").value = draft.purchaseOrder || "";
     $("draftCurrency").value = document.currency; $("draftDueDate").value = draft.dueDate || ""; $("draftTerms").value = draft.terms || ""; $("draftAmountWords").value = draft.amountWordsOverride || "";
     $("draftUsesCosts").checked = Boolean(draft.usesCostsDeductions); $("draftShowBank").checked = draft.showBankDetails == null ? Boolean(clientProfile?.showBankDetails) : Boolean(draft.showBankDetails); $("draftNotes").value = draft.notes || "";
+    $("draftItemize").checked = document.kindId === "cc-co-es" ? draft.itemize !== false : true;
+    $("draftGeneralRate").value = minorToMajor(draft.generalAmountMinor || 0);
     renderLines(draft.lines, document.currency);
+    syncItemizationUi();
     $("documentEditor").hidden = false;
   }
 
@@ -416,6 +484,8 @@
     }
   }
 
+  ensureItemizationControls();
+
   $("documentsTab").addEventListener("click", () => setTab("documents"));
   $("settingsTab").addEventListener("click", () => setTab("settings"));
   $("newDraft").addEventListener("click", () => { $("newDraftPanel").hidden = false; });
@@ -442,7 +512,7 @@
       const currency = $("newCurrency").value;
       const draft = {
         kindId, currency, issueDate: localToday(), issueCity: "Bogotá, Colombia",
-        projectLabel: "", purchaseOrder: "", usesCostsDeductions: false, showBankDetails: client?.showBankDetails ?? (kindId === "invoice-intl-en"), notes: null,
+        projectLabel: "", purchaseOrder: "", itemize: true, generalAmountMinor: 0, usesCostsDeductions: false, showBankDetails: client?.showBankDetails ?? (kindId === "invoice-intl-en"), notes: null,
         issuerOverride: issuerOverrideFromProfile(issuer), clientOverride: clientOverrideFromProfile(client),
         lines: [{ id: `line-${crypto.randomUUID()}`, kind: "professional_service", description: "", quantity: 0, unit: null, unitMinor: 0, amountMinor: 0, serviceDate: null, serviceDateEnd: null, poNumber: null }]
       };
@@ -457,6 +527,14 @@
     }
   });
 
+  $("draftItemize").addEventListener("change", () => {
+    if (activeDocument?.kindId === "cc-co-es" && !$("draftItemize").checked && majorToMinor($("draftGeneralRate").value) === 0) {
+      const currentTotal = linesTotalMinor();
+      if (currentTotal > 0) $("draftGeneralRate").value = minorToMajor(currentTotal);
+    }
+    syncItemizationUi();
+    scheduleSave();
+  });
   $("draftForm").addEventListener("submit", (event) => { event.preventDefault(); clearTimeout(saveTimer); saveDraft({ manual: true }); });
   $("draftForm").addEventListener("input", (event) => { if (!event.target.closest(".draft-line")) scheduleSave(); });
   $("addDraftLine").addEventListener("click", () => { $("draftLines").append(lineTemplate({}, $("draftCurrency").value, activeDocument?.kindId)); scheduleSave(); });
