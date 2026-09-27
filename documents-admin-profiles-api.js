@@ -55,8 +55,8 @@ async function readJson(request) {
 function publicError(error) {
   const message = String(error?.message || error || "documents_request_failed");
   const known = [
-    "application_json_required", "request_too_large", "invalid_json", "body_must_be_object",
-    "invalid_issuer_id", "issuer_required_fields_missing", "invalid_issuer_addresses", "invalid_issuer_bank",
+    "application_json_required", "multipart_form_required", "request_too_large", "invalid_json", "body_must_be_object",
+    "signature_file_required", "invalid_issuer_id", "issuer_required_fields_missing", "invalid_issuer_addresses", "invalid_issuer_bank",
     "invalid_client_id", "client_required_fields_missing", "invalid_client_currency", "invalid_po_policy",
     "invalid_payment_terms_days", "invalid_finance_aliases", "issuer_not_found", "signature_png_required",
     "invalid_signature_size", "documents_storage_unavailable", "documents_bucket_unavailable",
@@ -159,8 +159,6 @@ export async function handleDocumentsProfilesApi(request, env, { verifyAdmin } =
   } catch (error) {
     console.error("[SD.Live] Documents profiles API failed", error);
     const exposed = publicError(error);
-    if (String(error?.message || "") === "multipart_form_required") exposed.status = 415;
-    if (String(error?.message || "") === "signature_file_required") exposed.status = 400;
     return json({ ok: false, error: exposed.error }, exposed.status);
   }
 }
