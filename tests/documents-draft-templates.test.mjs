@@ -70,7 +70,7 @@ test("Cuenta de cobro draft renders optional metadata, type, quantity and ordere
 
   assert.match(html, /BORRADOR/);
   assert.match(html, /No\. —/);
-  assert.match(html, /Bogotá, Colombia · 2 de octubre de 2026/);
+  assert.match(html, /<div class="issue-city">Bogotá, Colombia<\/div><div class="issue-date">2 de octubre de 2026<\/div>/);
   assert.match(html, /Proyecto \/ servicio/);
   assert.match(html, /PO-DOC-77/);
   assert.match(html, /Pago a 15 días/);
@@ -201,7 +201,7 @@ test("Invoice draft renders issue city/date, optional line metadata and ordered 
 
   assert.match(html, /DRAFT/);
   assert.match(html, /Invoice No\.<\/dt><dd>—/);
-  assert.match(html, /Bogotá, Colombia · September 26, 2026/);
+  assert.match(html, /<div class="issue-city">Bogotá, Colombia<\/div><div class="issue-date">September 26, 2026<\/div>/);
   assert.match(html, /Professional services/);
   assert.match(html, /Expenses &amp; reimbursements/);
   assert.match(html, /Date \/ period: September 20, 2026 – September 22, 2026/);
