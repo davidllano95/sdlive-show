@@ -58,22 +58,25 @@ function fakeSignatureEnv() {
 function fakeSequenceEnv() {
   const rows = [];
   function statement(sql, params = []) {
+    const statementText = String(sql);
     return {
-      sql: String(sql),
+      sql: statementText,
       params,
-      bind(...values) { return statement(sql, values); },
+      bind(...values) { return statement(statementText, values); },
       async first() {
-        if (/SELECT \* FROM doc_sequences[\s\S]*WHERE series_key = \?/.test(sql)) {
+        if (statementText.includes("SELECT * FROM doc_sequences") && statementText.includes("WHERE series_key = ?")) {
           return rows.find((row) => row.series_key === params[0]) || null;
         }
-        throw new Error(`Unexpected first SQL: ${sql}`);
+        throw new Error(`Unexpected first SQL: ${statementText}`);
       },
       async all() {
-        if (/FROM doc_sequences[\s\S]*ORDER BY is_test DESC/.test(sql)) return { results: rows };
-        throw new Error(`Unexpected all SQL: ${sql}`);
+        if (statementText.includes("FROM doc_sequences") && statementText.includes("ORDER BY is_test DESC")) {
+          return { results: rows };
+        }
+        throw new Error(`Unexpected all SQL: ${statementText}`);
       },
       async run() {
-        if (/INSERT INTO doc_sequences/.test(sql)) {
+        if (statementText.includes("INSERT INTO doc_sequences")) {
           rows.push({
             series_key: params[0], issuer_id: params[1], doc_type: params[2], next_value: params[3],
             display_pattern: params[4], is_test: 1, bootstrapped_at: null, bootstrap_note: null,
@@ -81,7 +84,7 @@ function fakeSequenceEnv() {
           });
           return { success: true };
         }
-        throw new Error(`Unexpected run SQL: ${sql}`);
+        throw new Error(`Unexpected run SQL: ${statementText}`);
       }
     };
   }
