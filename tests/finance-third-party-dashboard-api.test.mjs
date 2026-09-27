@@ -46,6 +46,7 @@ const financeRow = row(EXPECTED_FINANCE_HEADERS, FINANCE_INDEX, {
   "Año": 2026,
   "Month Number": 5,
   "Cliente": "Client A",
+  "Proyecto / Show": "Private show",
   "Moneda": "COP",
   "Valor bruto": 1000000,
   "Valor Neto": 900000,
@@ -105,7 +106,7 @@ function fakeFetch(url) {
   throw new Error(`Unexpected fetch: ${value}`);
 }
 
-test("enhanced Finance endpoint exposes only the third-party name needed for COP reconciliation, not private row data", async () => {
+test("enhanced Finance endpoint exposes owner metrics and bounded third-party history without private row data", async () => {
   const response = await handleFinanceThirdPartyDashboardApi(
     new Request("https://sdlive.show/api/admin/finance/dashboard"),
     ENV,
@@ -133,6 +134,14 @@ test("enhanced Finance endpoint exposes only the third-party name needed for COP
   assert.equal(reconciliation.estimatedThirdPartyPayable, 180000);
   assert.equal(reconciliation.actualThirdPartyPaid, 180000);
 
+  assert.equal(body.ownerSummary.received.amountByCurrency.COP, 720000);
+  assert.equal(body.ownerSummary.received.bankAmountByCurrency.COP, 900000);
+  assert.equal(body.ownerAnalytics.byYear["2026"].received.COP.total, 720000);
+  assert.equal(body.ownerAnalytics.byYear["2026"].produced.COP.total, 800000);
+  assert.equal(body.ownerAnalytics.byYear["2026"].transactionTotals.COP.bankReceived, 900000);
+  assert.equal(body.ownerContract.rawTransactionFactsPreserved, true);
+  assert.equal(body.ownerContract.taxTreatmentInferred, false);
+
   assert.deepEqual(body.thirdPartyLedger.copByThirdParty, [
     {
       name: "Private third party name",
@@ -141,6 +150,16 @@ test("enhanced Finance endpoint exposes only the third-party name needed for COP
       paid: 180000
     }
   ]);
+
+  assert.equal(body.thirdPartyPaidHistory.count, 1);
+  assert.deepEqual(body.thirdPartyPaidHistory.items[0], {
+    name: "Private third party name",
+    date: "2026-07-01",
+    amount: 180000,
+    currency: "COP",
+    client: "Client A",
+    project: "Private show"
+  });
 
   const serialized = JSON.stringify(body);
   assert.equal(serialized.includes("private-work-id"), false);
