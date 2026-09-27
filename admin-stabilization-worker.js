@@ -245,6 +245,9 @@ export default {
         verifyAdmin: verifyAdminViaExistingApi
       });
       if (editorResponse) return editorResponse;
+    }
+
+    if (path.startsWith("/api/admin/documents/")) {
       const response = await handleDocumentsProfilesApi(request, env, {
         verifyAdmin: verifyAdminViaExistingApi
       });
