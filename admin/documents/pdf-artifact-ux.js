@@ -99,6 +99,7 @@
         const download = document.createElement("a");
         download.className = "button";
         download.href = pdfPath;
+        download.download = `${String(documentInfo.displayNumber || "document").replace(/[^A-Za-z0-9._-]+/g, "-")}.pdf`;
         download.textContent = "Download PDF";
         actions.append(download);
         if (frame && preview) {
