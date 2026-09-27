@@ -4,11 +4,17 @@ import { readFileSync } from "node:fs";
 
 const template = readFileSync(new URL("../documents-templates/invoice-intl-en.v1.js", import.meta.url), "utf8");
 
-test("international invoice total due is emphasized without a black box", () => {
-  assert.match(template, /\.totalbox\{[^}]*border-top:1px solid #15161c/);
+test("international invoice total due is emphasized without a box or top rule", () => {
+  assert.doesNotMatch(template, /\.totalbox\{[^}]*border-top:/);
   assert.doesNotMatch(template, /\.totalbox\{[^}]*background:#15161c/);
   assert.doesNotMatch(template, /\.totalbox\{[^}]*color:#fff/);
+  assert.match(template, /\.totalbox\{[^}]*margin-top:18px;[^}]*padding:0/);
   assert.match(template, /<span class="label">Total due<\/span><span class="v">/);
+});
+
+test("international invoice aligns all table headings on the same typographic baseline", () => {
+  assert.match(template, /thead th\{line-height:1;vertical-align:bottom\}/);
+  assert.match(template, /thead th\.num\{font-family:var\(--font-sans\)\}/);
 });
 
 test("international invoice fills a Letter page and uses the lower page area", () => {
