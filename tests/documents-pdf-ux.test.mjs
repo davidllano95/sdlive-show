@@ -23,13 +23,16 @@ test("PDF artifact UX does not create a self-triggering MutationObserver loop", 
   assert.match(ux, /warning\.textContent = FINALIZE_WARNING_COPY/);
 });
 
-test("finalized TEST documents use issued artifact view instead of draft preview", () => {
+test("finalized TEST documents use issued artifact view with inline private PDF preview", () => {
   const ux = read("admin/documents/pdf-artifact-ux.js");
   assert.match(ux, /Issued TEST artifact/);
   assert.match(ux, /snapshot frozen/);
   assert.match(ux, /draft editor is disabled for issued documents/i);
   assert.match(ux, /Download PDF/);
   assert.match(ux, /Retry PDF/);
+  assert.match(ux, /data-issued-pdf-frame/);
+  assert.match(ux, /Finalized PDF preview/);
+  assert.match(ux, /frame\.src = `\$\{pdfPath\}#view=FitH`/);
   assert.match(ux, /event\.stopImmediatePropagation\(\)/);
   assert.match(ux, /info\.status !== "draft"/);
 });
