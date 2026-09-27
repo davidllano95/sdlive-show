@@ -13,6 +13,7 @@ const KIND_LABELS = Object.freeze({
 
 function bankRows(details = {}) {
   const rows = [
+    ["Beneficiary Address", details.beneficiaryAddress],
     ["Bank Name", details.bankName],
     ["Routing Number", details.routingNumber],
     ["Account Type", details.accountType],
