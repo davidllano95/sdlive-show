@@ -29,6 +29,20 @@ export function formatSequenceNumber(pattern, number) {
   throw new Error("invalid_display_pattern");
 }
 
+function normalizedFxRate(value) {
+  const rate = asText(value);
+  if (!rate) return null;
+  if (!/^\d+(?:\.\d{1,12})?$/.test(rate) || Number(rate) <= 0) throw new Error("invalid_exchange_rate");
+  return rate;
+}
+
+function normalizedFxDate(value) {
+  const date = asText(value);
+  if (!date) return null;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error("invalid_exchange_rate_date");
+  return date;
+}
+
 function normalizedLine(line, index) {
   assertPlainObject(line, "invalid_line_item");
   const id = asText(line.id) || `line-${index + 1}`;
@@ -59,8 +73,8 @@ function normalizedLine(line, index) {
   const kind = asText(line.kind) || "other";
   const allowedKinds = new Set(["professional_service", "equipment", "per_diem", "transport", "reimbursable", "other"]);
   if (!allowedKinds.has(kind)) throw new Error("invalid_line_kind");
-  const originalCurrency = asText(line.originalCurrency) || null;
-  if (originalCurrency && !["COP", "USD"].includes(originalCurrency)) throw new Error("invalid_original_currency");
+  const originalCurrency = asText(line.originalCurrency).toUpperCase() || null;
+  if (originalCurrency && !/^[A-Z]{3}$/.test(originalCurrency)) throw new Error("invalid_original_currency");
 
   return {
     id,
@@ -81,7 +95,9 @@ function normalizedLine(line, index) {
           const value = normalizeMinorUnits(line.originalAmountMinor, "invalid_original_amount_minor");
           if (value < 0) throw new Error("negative_original_amount_not_supported");
           return value;
-        })()
+        })(),
+    exchangeRate: normalizedFxRate(line.exchangeRate),
+    exchangeRateDate: normalizedFxDate(line.exchangeRateDate)
   };
 }
 
@@ -310,7 +326,8 @@ export async function buildFinalSnapshot({
     },
     payment: {
       showBankDetails,
-      bankDetails: showBankDetails && selectedBankDetails ? deepSort(selectedBankDetails) : null
+      bankDetails: showBankDetails && selectedBankDetails ? deepSort(selectedBankDetails) : null,
+      censorBankDetails: !showBankDetails
     },
     supersedes: document.supersedes_id ? {
       documentId: document.supersedes_id,
