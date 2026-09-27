@@ -37,7 +37,7 @@
     const code = String(error?.message || error || "");
     if (code === "issuer_profile_in_use") return "This issuer is still used by a document or number series. Delete its drafts first; issued history cannot be removed.";
     if (code === "client_profile_in_use") return "This client is still used by a document. Delete its drafts first; issued history cannot be removed.";
-    if (code === "document_not_draft") return "Only drafts can be finalized or deleted. Finalized or void documents are permanent.";
+    if (code === "document_not_draft") return "Only drafts can be deleted. Drafts may also be finalized; finalized or void documents are permanent.";
     if (code === "document_not_found") return "This draft no longer exists.";
     if (code === "stale_draft_revision") return "The draft changed after this confirmation was prepared. Review the latest revision and confirm again.";
     if (code === "active_signature_required") return "The issuer needs an active private signature before finalizing.";
