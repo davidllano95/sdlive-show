@@ -1,28 +1,63 @@
 # Finance owner money + third-party paid history — 2026-09-26
 
+**Status:** CLOSED / PRODUCTION VERIFIED  
+**Merged through:** PR #257 (`08a6b9ab021b562a5054edf1e7f130c20ceb45f4`) for owner-money/history, plus PR #258 (`45afe5fe05deb96c8c9b5b72b274e7f459f4cd09`) for tabbed third-party UX.  
+**Consolidated handoff:** `docs/checkpoints/handoff-finance-owner-money-closeout-2026-09-26.md`
+
 ## Purpose
 
-Before the 2026 PILA estimator, reconcile Finance management analytics so owner-facing numbers represent money economically attributable to the owner while full billed/received transaction facts remain available for accounting, bank reconciliation and tax review.
+Reconcile Finance management analytics so owner-facing numbers represent money economically attributable to the owner while full billed/received transaction facts remain available for accounting, bank reconciliation and tax review.
 
-This work must also add a historical **Paid to third parties** view sourced from the physical `PAGO_TERCEROS` ledger.
+Also provide a read-only registered **Paid to third parties** view sourced from the physical `PAGO_TERCEROS` ledger.
 
-## Owner-money requirement
+This milestone is complete. PILA is **not** automatically the next gate.
 
-Keep raw/full facts intact:
+## Owner-money requirement — implemented
+
+Raw/full facts remain intact:
 
 - `Valor bruto`
 - `Valor Recibido`
+- `Cobro terceros`
 - full client/payment dates and currency facts
 
-Management metrics may derive owner-only economics, but must never overwrite or hide the underlying full transaction totals.
+Canonical management derivation:
 
-Do not infer legal/tax/PILA treatment solely from `Cobro terceros`.
+- `ownerGenerated = Valor bruto - Cobro terceros`
+- for valid paid rows: `factor = Valor Recibido / Valor bruto`
+- `thirdPartyPayable = Cobro terceros * factor`
+- `ownerCashReceived = Valor Recibido - thirdPartyPayable`
 
-## Paid to third parties history view
+Monetary calculations use the full ratio and do not use rounded display percentages as intermediates.
 
-Add a read-only historical view in `/admin/finance/` that answers:
+Management metrics derive owner-only economics without overwriting the underlying full transaction totals.
 
-> Who have we paid, how much, when, and for which work?
+Legal/tax/PILA treatment is not inferred solely from `Cobro terceros`.
+
+## Sheets / AppSheet result
+
+The owner-verified audit and update established:
+
+- `OWNER_FINANCE` is a derived reporting layer and is not an AppSheet operational table.
+- `REGISTRO` schema/historical facts remain unchanged.
+- owner-facing Sheet dashboard/pivots use owner generated, owner cash received and owner receivable where appropriate.
+- full billed/bank-received values remain separately available for reconciliation.
+- AppSheet only removed the stale `Valid If` from `PAGO_TERCEROS.Neto estimado tercero calc`.
+- the App formula remains direct full-ratio math.
+
+Production control case:
+
+- parent gross `900000`
+- bank received `893106`
+- third-party gross `450000`
+- third-party payable `446553`
+- owner cash received `446553`
+
+## Paid to third parties history view — implemented
+
+The read-only Admin history answers:
+
+> Who has a registered third-party payment, how much is currently registered as paid, when, and for which work?
 
 Canonical source: physical `PAGO_TERCEROS` facts, joined to `REGISTRO` only for parent context.
 
@@ -33,9 +68,9 @@ Include rows with an actual persisted third-party payment fact:
 - `Valor pagado tercero > 0`
 - payment date shown from `Fecha pago tercero` when present
 
-Do not use current debt status as the inclusion rule. Fully paid rows must remain visible historically even though they disappear from the operational obligations queue.
+Current debt status is not the inclusion rule. Fully paid rows remain visible historically even after they disappear from the operational obligations queue.
 
-### Minimum columns
+### Visible fields
 
 - `Tercero`
 - `Fecha pago tercero`
@@ -44,41 +79,40 @@ Do not use current debt status as the inclusion rule. Fully paid rows must remai
 - `Cliente`
 - `Proyecto / Show`
 
-Useful optional context:
-
-- `Bruto tercero`
-- canonical estimated payable for that child
-- parent `Valor bruto`
-- parent `Valor Recibido`
-- payment status / reconciliation note only when derived deterministically
-
-Do not expose private notes, phone numbers or raw internal row identities in the browser.
+Private notes, phone numbers and raw internal row identities are not exposed merely for this view.
 
 ### UX
 
-- visible as a dedicated history/table section, separate from the current obligations card;
-- filterable by year, third-party name and currency when practical;
-- default newest payment first;
-- show totals by currency for the current filter;
-- preserve COP and USD separately; never combine currencies into one numeric total;
-- no write controls in this historical view.
+- dedicated third-party history/table view;
+- filterable by year, third-party name and currency;
+- newest registered payment date first;
+- totals separated by currency;
+- no write controls in the historical table.
 
-### Semantics
+PR #258 subsequently placed third-party-specific operational content behind a dedicated `Third parties` Finance tab while `Overview` remains the default daily view.
 
-This is **cash actually paid to third parties**, based on persisted payment facts. It is not the same as:
+## Important schema limitation
 
-- third-party gross commitment;
-- current debt;
-- third-party payable/collected estimate;
-- owner revenue.
+The current physical ledger stores, per obligation:
 
-The existing operational obligations queue remains responsible for what is still owed and for the bounded `Marcar pagado` action.
+- cumulative `Valor pagado tercero`;
+- one `Fecha pago tercero` value.
 
-## Acceptance checks
+Therefore this view is a **registered cumulative payment fact per obligation**. It is **not** an append-only event-level ledger of every partial payment.
 
-1. A fully paid third-party row remains visible in historical paid view after disappearing from obligations.
-2. Name, payment date, amount, currency, client and project reconcile with Sheets/AppSheet.
-3. Multiple payments/names are not collapsed in a way that loses payment history.
-4. Totals by currency equal persisted `Valor pagado tercero` facts for the selected filter.
-5. The view is read-only and does not broaden the Finance write surface.
-6. Owner-money dashboard changes and third-party historical payments remain conceptually separate.
+The original acceptance wording about preserving every payment event is superseded by this explicit data-model limitation. Event-level partial-payment history would require a deliberate physical schema redesign later.
+
+## Acceptance checks — result
+
+1. ✅ Fully paid third-party rows remain available in the registered paid-history view after leaving active obligations.
+2. ✅ Name, registered date, amount, currency, client and project reconcile to persisted facts.
+3. ✅ Rows remain per obligation/name; no claim is made that every partial-payment event is preserved.
+4. ✅ Filter totals remain currency-separated and derive from persisted `Valor pagado tercero` facts.
+5. ✅ Historical view remains read-only and does not broaden the Finance write surface.
+6. ✅ Owner-money dashboard changes and third-party payment history remain conceptually separate.
+7. ✅ Owner production smoke passed.
+8. ✅ Third-party tab production smoke passed.
+
+## Closeout
+
+This roadmap is complete. Future Finance work should be selected from the reconciled backlog in `PROJECT_STATUS.md` / `ROADMAP_MASTER_CHECKLIST.md` rather than assuming PILA is next.
