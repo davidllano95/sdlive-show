@@ -1,0 +1,8 @@
+/* Canonical SD.Live Admin primary workspace order.
+   Keep this small and shared: page-specific workspaces should not redefine it. */
+.app-nav > a[href="/admin/"] { order: -50; }
+.app-nav > a[href="/admin/finance/"] { order: -40; }
+.app-nav > a[href="/admin/documents/"] { order: -35; }
+.app-nav > a[href="/admin/calendar/"] { order: -30; }
+.app-nav > a[href="/admin/editor/"] { order: -20; }
+.app-nav > a[href^="https://mail.google.com/"] { order: -10; }
