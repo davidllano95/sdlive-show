@@ -22,6 +22,10 @@ function plain(value, code) {
   return value;
 }
 
+function objectOrEmpty(value) {
+  return value && typeof value === "object" && !Array.isArray(value) ? value : {};
+}
+
 function id(value, code) {
   const normalized = text(value, 120);
   if (!ID_RE.test(normalized)) throw new Error(code);
@@ -114,9 +118,10 @@ async function profileContext(env, issuerId, clientId) {
 }
 
 function registryFields(draft, client) {
+  const clientOverride = objectOrEmpty(draft.clientOverride);
   return {
-    clientName: text(draft.clientLegalName || client?.legalName, 240),
-    clientTaxId: text(draft.clientTaxId || client?.taxId, 120),
+    clientName: text(clientOverride.legalName || draft.clientLegalName || client?.legalName, 240),
+    clientTaxId: text(clientOverride.taxId || draft.clientTaxId || client?.taxId, 120),
     projectLabel: text(draft.projectLabel, 240),
     poNumbers: poSummary(draft),
     totalMinor: draftTotal(draft.lines),
@@ -149,8 +154,9 @@ export async function createDraftDocument(env, input, { actorEmail = "", now = (
   const fields = registryFields(draft, client);
   const documentId = `doc-${crypto.randomUUID()}`;
   const at = text(now(), 80);
-  await db(env).batch([
-    db(env).prepare(`INSERT INTO doc_documents (
+  const store = db(env);
+  await store.batch([
+    store.prepare(`INSERT INTO doc_documents (
       id, kind_id, doc_type, issuer_id, client_id, status, origin,
       client_name, client_tax_id, project_label, po_numbers, currency,
       total_minor, issue_date, issue_year, draft_json, draft_rev,
@@ -158,7 +164,7 @@ export async function createDraftDocument(env, input, { actorEmail = "", now = (
     ) VALUES (?, ?, ?, ?, ?, 'draft', 'system', ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 'none', ?, ?)`)
       .bind(documentId, kind.id, kind.docType, issuerId, clientId, fields.clientName, fields.clientTaxId,
         fields.projectLabel, fields.poNumbers, currency, fields.totalMinor, fields.issueDate, fields.issueYear, json, at, at),
-    db(env).prepare(`INSERT INTO doc_document_events (document_id, event, actor_email, at, detail_json)
+    store.prepare(`INSERT INTO doc_document_events (document_id, event, actor_email, at, detail_json)
       VALUES (?, 'draft_created', ?, ?, ?)`)
       .bind(documentId, text(actorEmail, 240).toLowerCase(), at, JSON.stringify({ kindId: kind.id }))
   ]);
@@ -179,7 +185,8 @@ export async function updateDraftDocument(env, documentId, input, { actorEmail =
   const { client } = await profileContext(env, current.issuerId, clientId);
   const fields = registryFields(draft, client);
   const at = text(now(), 80);
-  const result = await db(env).prepare(`UPDATE doc_documents SET
+  const store = db(env);
+  const result = await store.prepare(`UPDATE doc_documents SET
       client_id = ?, client_name = ?, client_tax_id = ?, project_label = ?, po_numbers = ?,
       currency = ?, total_minor = ?, issue_date = ?, issue_year = ?, draft_json = ?,
       draft_rev = draft_rev + 1, updated_at = ?
@@ -187,7 +194,7 @@ export async function updateDraftDocument(env, documentId, input, { actorEmail =
     .bind(clientId, fields.clientName, fields.clientTaxId, fields.projectLabel, fields.poNumbers,
       currency, fields.totalMinor, fields.issueDate, fields.issueYear, json, at, current.id, expectedRev).run();
   if (Number(result?.meta?.changes ?? result?.changes ?? 0) !== 1) throw new Error("stale_draft_revision");
-  await db(env).prepare(`INSERT INTO doc_document_events (document_id, event, actor_email, at, detail_json)
+  await store.prepare(`INSERT INTO doc_document_events (document_id, event, actor_email, at, detail_json)
     VALUES (?, 'draft_saved', ?, ?, ?)`)
     .bind(current.id, text(actorEmail, 240).toLowerCase(), at, JSON.stringify({ fromRev: expectedRev, toRev: expectedRev + 1 })).run();
   return readDraftDocument(env, current.id);
@@ -223,6 +230,34 @@ function previewLines(lines) {
   })) : [];
 }
 
+function issuerForPreview(profile, overrideValue) {
+  const override = objectOrEmpty(overrideValue);
+  return {
+    ...profile,
+    legalName: text(override.legalName, 240) || profile.legalName,
+    idType: text(override.idType, 40) || profile.idType,
+    idNumber: text(override.idNumber, 120) || profile.idNumber,
+    vatLabel: text(override.vatLabel, 160) || profile.vatLabel,
+    ciiu: text(override.ciiu, 40) || profile.ciiu,
+    phone: text(override.phone, 80) || profile.phone,
+    email: text(override.email, 240) || profile.email,
+    brandLabel: text(override.brandLabel, 120) || profile.brandLabel,
+    address: text(override.address, 500) || addressText(profile)
+  };
+}
+
+function clientForPreview(profile, overrideValue, draft) {
+  const override = objectOrEmpty(overrideValue);
+  return {
+    ...(profile || {}),
+    legalName: text(override.legalName || draft.clientLegalName, 240) || profile?.legalName || "",
+    taxIdType: text(override.taxIdType || draft.clientTaxIdType, 40) || profile?.taxIdType || "",
+    taxId: text(override.taxId || draft.clientTaxId, 120) || profile?.taxId || "",
+    billingAddress: text(override.billingAddress || draft.clientBillingAddress, 500) || profile?.billingAddress || "",
+    phone: text(override.phone, 80) || profile?.phone || ""
+  };
+}
+
 export async function buildDraftPreview(env, documentId) {
   const document = await readDraftDocument(env, documentId);
   if (!document) throw new Error("document_not_found");
@@ -249,10 +284,8 @@ export async function buildDraftPreview(env, documentId) {
     showBankDetails: draft.showBankDetails == null ? Boolean(client?.showBankDetails) : Boolean(draft.showBankDetails),
     bankDetails: draft.bankDetails && typeof draft.bankDetails === "object" ? draft.bankDetails : issuer.bank,
     notes: text(draft.notes, 2000),
-    issuer: { ...issuer, address: addressText(issuer) },
-    client: client ? { ...client } : {
-      legalName: text(draft.clientLegalName, 240), taxIdType: text(draft.clientTaxIdType, 40), taxId: text(draft.clientTaxId, 120), billingAddress: text(draft.clientBillingAddress, 500)
-    }
+    issuer: issuerForPreview(issuer, draft.issuerOverride),
+    client: clientForPreview(client, draft.clientOverride, draft)
   };
   const html = document.kindId === "cc-co-es"
     ? renderCuentaDeCobro(view, { mode: "draft" })
@@ -266,6 +299,7 @@ export function documentsDraftPolicy() {
     draftsConsumeNumbers: false,
     previewReadsSignatureBytes: false,
     previewContainsUsableSignature: false,
-    updateUsesDraftRevisionCas: true
+    updateUsesDraftRevisionCas: true,
+    profileEditsWriteBackFromDocument: false
   });
 }
