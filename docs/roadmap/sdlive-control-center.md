@@ -1,7 +1,7 @@
 # 14.5 — SD.Live as Control Center
 
-**Reconciled:** 2026-08-31 — America/Bogota
-**Status:** **CURRENT BASELINE CLOSED/PASS — NO ACTIVE STABILIZATION GATE**
+**Reconciled:** 2026-09-26 — America/Bogota  
+**Status:** **SD.Live Documents v1 ACTIVE GATE**
 
 This document owns the current Control Center sequence. Historical implementation evidence remains in dated checkpoints/specs. When this document conflicts with current `main`, `PROJECT_STATUS.md` or verified production, the higher-precedence current sources win.
 
@@ -10,24 +10,27 @@ This document owns the current Control Center sequence. Historical implementatio
 SD.Live is a Control Center made of focused workspaces rather than one monolithic Admin page:
 
 - `/admin/` — lightweight Dashboard / system overview + Show Day Visual QA;
-- `/admin/finance/` — read-only Finance analytics/workflow over Google Sheets `REGISTRO`;
+- `/admin/finance/` — read-only Finance analytics/workflow over Google Sheets `REGISTRO`, with the approved narrow third-party payment fact write;
 - `/admin/calendar/` — Calendar / Operations over the same `REGISTRO`, including controlled create and Google sync;
 - `/admin/calendar/site-schedule/` — website-only Site Schedule / Show Day / Location state in D1;
-- `/admin/editor/` — Site Editor / CMS using D1 + R2.
+- `/admin/editor/` — Site Editor / CMS using D1 + R2;
+- `/admin/documents/` — **current Active Gate**, dedicated signed-document registry/generator with its own private storage boundary.
 
 All remain behind Cloudflare Access.
 
 ## Source-of-truth guardrails
 
 - Google Sheets `REGISTRO` remains operations/finance persistence + formula owner.
-- AppSheet **SD.Live Track** remains the mobile/offline workflow client.
+- AppSheet **SD.Live Track** remains the mobile/offline Finance workflow client.
 - D1 does not become a Finance mirror.
+- General Documents integration with Finance is read-only in v1.
+- Documents prefill uses contractual `Valor bruto`, not owner-management metrics.
 - D1 `site_schedule_state` owns website-only split blocks / Show Day / Location.
 - Google Calendar is a secondary projection/read-only overlay, not operational truth.
-- R2 owns managed CMS media.
 - Rental pricing, availability rules and quote math remain backend-owned.
 - Formula-owned Sheet columns are never written by generic Admin forms.
-- Generic Finance Phase 3 write-back remains blocked until a separate explicit contract is approved.
+- Generic Finance write-back remains blocked except for already-approved bounded actions.
+- Issued document snapshots/numbers are immutable and live outside the Finance source of truth.
 
 ## Closed sequence
 
@@ -67,25 +70,80 @@ Issues #126 and #124 are completed after representative desktop/mobile productio
 ### 12. Rental image-editor parity — ✅ CLOSED/PASS
 PR #157 / issue #156 fixed and production-verified image editing across standard equipment cards, synchronized PA and Production Tools.
 
-## Current roadmap selection point
+### 13. Availability / Lead / Assistant foundations — ✅ CLOSED/PASS
+Availability Core v1, Lead Core and the public Assistant rollout are operational. WhatsApp owner control code is merged but its live Meta/Cloudflare rollout remains intentionally paused.
 
-There is **no automatic next feature**. Select one module deliberately before runtime work begins.
+### 14. Finance third-party + owner-money reconciliation — ✅ CLOSED/PASS
+Structured third-party obligations/payment operations, owner-money management semantics, registered payment history and Overview/Third parties tabs are production-verified through PR #258; documentation reconciliation closed in PR #259.
 
-### Strong eligible candidates
+## Current Active Gate — SD.Live Documents v1
 
-1. **Availability-Aware Contact / AI** — weekly service hours + travel mode + expiring manual away state; human WhatsApp when reachable, AI qualification/handoff when unavailable. Detailed spec: `docs/roadmap/availability-aware-contact-widget.md`.
-2. **SD.Live Patch** — patch sheet / signal-flow / show-documentation workspace. Detailed spec: `docs/roadmap/future-sdlive-patch-2026-08-27.md`.
-3. **Controlled Calendar edit/workflow actions** — narrow safe source edits and explicit workflow actions, not a generic Sheet editor.
-4. **Finance Document Generator** — Cuenta de cobro / Cotización / invoice draft generation without creating a second finance truth.
-5. **Rental availability / double-booking / advanced quote workflow** — requires an explicit inventory/reservation source-of-truth first.
-6. **Show Day Primary/Secondary concurrency** — explicit presentation priority when multiple active Show Day blocks overlap.
-7. **CRM / AI vendor evaluation** — Attio and Dapta.ai remain candidates only; evaluate ownership, privacy, volume and cost before adoption.
+Canonical contract:
+
+`docs/roadmap/sdlive-documents-v1.md`
+
+Documents v1 creates a reusable signed-document foundation instead of a one-off PDF button.
+
+Initial document kinds:
+
+- Cuenta de cobro · Colombia · ES;
+- Invoice · International · EN.
+
+Core product properties:
+
+- legal issuer v1 = Samuel David Llano Muñoz;
+- optional/discreet `sd•live · Creative Audio` branding, removable if it confuses the legal issuer;
+- every draft field editable;
+- Preview before issue;
+- automatic signature only on final artifact;
+- immutable finalized snapshot;
+- system-controlled sequential numbering;
+- permanent registry;
+- private D1/R2 storage boundary;
+- read-only Finance prefill;
+- future Quote/Cotización reuse of the same engine.
+
+### Numbering transition
+
+Historical Cuenta de cobro numbering was client-scoped. New Documents v1 accounts intentionally switch to a **global per-issuer series** for stronger traceability:
+
+- `samuel:CC` begins at 21 after test-series validation/explicit bootstrap;
+- `samuel:INV` continues the existing global invoice series at 19.
+
+Historical numbers remain unchanged as legacy and are never re-used or renumbered.
+
+### Documents implementation order
+
+0. Docs / Active Gate.
+1. Storage foundation.
+2. Domain + atomic numbering.
+3. Issuer/client profiles + private signature + sequence setup.
+4. Draft editor + preview + v1 templates.
+5. Finalize + signed PDF + private artifact flow.
+6. Finance read-only prefill/linking.
+7. Reissue with PO + registry completion.
+8. Approved legacy import.
+
+No PR implicitly creates production storage or consumes real document numbers. Those remain explicit operational steps.
+
+## Later eligible workstreams
+
+Documents v1 is currently selected. The following remain eligible after this gate or if Documents is explicitly paused:
+
+1. Rental real-time availability / double-booking protection.
+2. Quote/Cotización kinds on the Documents foundation.
+3. Mobile Rental Cart total/sticky summary.
+4. SD.Live Patch.
+5. Controlled Calendar edit/workflow additions.
+6. CRM / Admin Inbox / Workspace association.
+7. Finance cleanup and analytics debt.
+8. PILA estimator research/planning when deliberately selected.
 
 ## Availability-Aware Contact / AI relationship
 
-Availability/AI is no longer blocked by the old stabilization sequence. It is **eligible**, but still requires deliberate promotion.
+Availability/AI is closed as a foundation and must not silently gain ownership over unrelated domains.
 
-Its architectural boundary is:
+Its architectural boundary remains:
 
 `Public site / WhatsApp → SD.Live-owned availability + validation boundary → optional AI provider → existing lead/contact handoff`
 
@@ -102,15 +160,17 @@ Owner availability remains SD.Live-owned state.
 
 Issue #83 still covers the AppSheet/reminder alignment around canonical `Fecha fin`. Notification delivery hardening may add email/WhatsApp channels later, but reminder conditions must remain sourced from the same approved finance rules.
 
+Documents v1 does not replace or alter those reminder/payment workflows.
+
 ## Next-action rule
 
-Before starting any candidate module:
+For Documents v1:
 
-1. read current `main` + `PROJECT_STATUS.md` + latest checkpoint;
-2. confirm source-of-truth and integration dependencies;
-3. promote exactly one coherent module to Active Gate;
-4. implement in a short branch/PR;
-5. green CI;
-6. one representative production smoke for runtime work.
+1. inspect current `main` + `PROJECT_STATUS.md` + `docs/roadmap/sdlive-documents-v1.md`;
+2. implement exactly one planned PR scope;
+3. tests/CI green;
+4. squash merge under the owner's standing merge authorization when scope is correct;
+5. run exactly one representative production smoke for runtime work when the plan calls for it;
+6. keep production-sensitive resource creation/bootstrap actions explicit and separate.
 
 **Stability > novelty.** Closed gates are not repeated without regression evidence.
