@@ -1,6 +1,12 @@
 import { amountMinorToSpanishWords } from "./documents-domain.js";
 import { requireDocumentKind } from "./documents-kinds.js";
 import { listClientProfiles, listIssuerProfiles } from "./documents-profiles.js";
+import {
+  createDocumentDraftRow,
+  listDocumentRegistryRows,
+  readDocument,
+  saveDocumentDraftRow
+} from "./documents-storage.js";
 import { renderCuentaDeCobro } from "./documents-templates/cc-co-es.v1.js";
 import { renderInvoice } from "./documents-templates/invoice-intl-en.v1.js";
 
@@ -9,12 +15,6 @@ const ID_RE = /^[A-Za-z0-9][A-Za-z0-9:_-]{0,119}$/;
 
 function text(value, max = 500) {
   return value == null ? "" : String(value).trim().slice(0, max);
-}
-
-function db(env) {
-  const store = env?.DOCS_DB;
-  if (!store || typeof store.prepare !== "function") throw new Error("documents_storage_unavailable");
-  return store;
 }
 
 function plain(value, code) {
@@ -103,7 +103,7 @@ function rowToDocument(row) {
     draft: parseJson(row.draft_json, {}),
     draftRev: Number(row.draft_rev || 0),
     createdAt: row.created_at,
-    updatedAt: row.updated_at,
+    savedAt: row.updated_at,
     finalizedAt: row.finalized_at
   };
 }
@@ -131,15 +131,12 @@ function registryFields(draft, client) {
 }
 
 export async function listDraftRegistry(env, { limit = 100 } = {}) {
-  const count = Math.min(Math.max(Number(limit) || 100, 1), 250);
-  const result = await db(env).prepare(`SELECT * FROM doc_documents
-    ORDER BY COALESCE(issue_date, created_at) DESC, created_at DESC
-    LIMIT ?`).bind(count).all();
-  return (result.results || []).map(rowToDocument);
+  const rows = await listDocumentRegistryRows(env, { limit });
+  return rows.map(rowToDocument);
 }
 
 export async function readDraftDocument(env, documentId) {
-  const row = await db(env).prepare("SELECT * FROM doc_documents WHERE id = ? LIMIT 1").bind(id(documentId, "invalid_document_id")).first();
+  const row = await readDocument(env, id(documentId, "invalid_document_id"));
   return rowToDocument(row);
 }
 
@@ -154,24 +151,22 @@ export async function createDraftDocument(env, input, { actorEmail = "", now = (
   const fields = registryFields(draft, client);
   const documentId = `doc-${crypto.randomUUID()}`;
   const at = text(now(), 80);
-  const store = db(env);
-  await store.batch([
-    store.prepare(`INSERT INTO doc_documents (
-      id, kind_id, doc_type, issuer_id, client_id, status, origin,
-      client_name, client_tax_id, project_label, po_numbers, currency,
-      total_minor, issue_date, issue_year, draft_json, draft_rev,
-      pdf_status, created_at, updated_at
-    ) VALUES (?, ?, ?, ?, ?, 'draft', 'system', ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 'none', ?, ?)`)
-      .bind(documentId, kind.id, kind.docType, issuerId, clientId, fields.clientName, fields.clientTaxId,
-        fields.projectLabel, fields.poNumbers, currency, fields.totalMinor, fields.issueDate, fields.issueYear, json, at, at),
-    store.prepare(`INSERT INTO doc_document_events (document_id, event, actor_email, at, detail_json)
-      VALUES (?, 'draft_created', ?, ?, ?)`)
-      .bind(documentId, text(actorEmail, 240).toLowerCase(), at, JSON.stringify({ kindId: kind.id }))
-  ]);
-  return readDraftDocument(env, documentId);
+  const row = await createDocumentDraftRow(env, {
+    documentId,
+    kindId: kind.id,
+    docType: kind.docType,
+    issuerId,
+    clientId,
+    ...fields,
+    currency,
+    draftJson: json,
+    actorEmail,
+    at
+  });
+  return rowToDocument(row);
 }
 
-export async function updateDraftDocument(env, documentId, input, { actorEmail = "", now = () => new Date().toISOString() } = {}) {
+export async function saveDraftDocument(env, documentId, input, { actorEmail = "", now = () => new Date().toISOString() } = {}) {
   const payload = plain(input, "document_payload_required");
   const current = await readDraftDocument(env, documentId);
   if (!current) throw new Error("document_not_found");
@@ -185,19 +180,17 @@ export async function updateDraftDocument(env, documentId, input, { actorEmail =
   const { client } = await profileContext(env, current.issuerId, clientId);
   const fields = registryFields(draft, client);
   const at = text(now(), 80);
-  const store = db(env);
-  const result = await store.prepare(`UPDATE doc_documents SET
-      client_id = ?, client_name = ?, client_tax_id = ?, project_label = ?, po_numbers = ?,
-      currency = ?, total_minor = ?, issue_date = ?, issue_year = ?, draft_json = ?,
-      draft_rev = draft_rev + 1, updated_at = ?
-    WHERE id = ? AND status = 'draft' AND draft_rev = ?`)
-    .bind(clientId, fields.clientName, fields.clientTaxId, fields.projectLabel, fields.poNumbers,
-      currency, fields.totalMinor, fields.issueDate, fields.issueYear, json, at, current.id, expectedRev).run();
-  if (Number(result?.meta?.changes ?? result?.changes ?? 0) !== 1) throw new Error("stale_draft_revision");
-  await store.prepare(`INSERT INTO doc_document_events (document_id, event, actor_email, at, detail_json)
-    VALUES (?, 'draft_saved', ?, ?, ?)`)
-    .bind(current.id, text(actorEmail, 240).toLowerCase(), at, JSON.stringify({ fromRev: expectedRev, toRev: expectedRev + 1 })).run();
-  return readDraftDocument(env, current.id);
+  const row = await saveDocumentDraftRow(env, {
+    documentId: current.id,
+    clientId,
+    ...fields,
+    currency,
+    draftJson: json,
+    expectedRev,
+    actorEmail,
+    at
+  });
+  return rowToDocument(row);
 }
 
 function addressText(issuer) {
@@ -299,7 +292,7 @@ export function documentsDraftPolicy() {
     draftsConsumeNumbers: false,
     previewReadsSignatureBytes: false,
     previewContainsUsableSignature: false,
-    updateUsesDraftRevisionCas: true,
+    saveUsesDraftRevisionCas: true,
     profileEditsWriteBackFromDocument: false
   });
 }
