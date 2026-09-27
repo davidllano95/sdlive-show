@@ -6,10 +6,11 @@ function read(path) {
   return readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
 }
 
-test("Documents Admin loads PDF artifact UX and no longer describes PDF as a future gate", () => {
+test("Documents Admin loads PDF artifact UX and deterministic state router", () => {
   const stabilization = read("admin/admin-stabilization.js");
   const ux = read("admin/documents/pdf-artifact-ux.js");
   assert.match(stabilization, /pdf-artifact-ux\.js/);
+  assert.match(stabilization, /state-router-fix\.js/);
   assert.match(ux, /signed PDF is generated automatically from the frozen snapshot/);
   assert.match(ux, /artifact failure never releases the number and can be retried/);
   assert.match(ux, /Real CC\/INV series remain locked/);
@@ -48,10 +49,22 @@ test("finalized TEST documents bypass draft row handlers and prioritize PDF prev
   assert.match(ux, /shell\.classList\.remove\("documents-draft-preview-first"\)/);
   assert.match(ux, /function installRegistryCapture\(\)/);
   assert.match(ux, /list\.addEventListener\("click", async \(event\) =>/);
-  assert.match(ux, /status === "draft"/);
-  assert.match(ux, /event\.stopPropagation\(\)/);
   assert.match(ux, /event\.stopImmediatePropagation\(\)/);
   assert.match(ux, /await showIssuedDocument\(info\)/);
+});
+
+test("state router clears stale PDF-ready UI for new/draft views and hides draft grid immediately for issued rows", () => {
+  const router = read("admin/documents/state-router-fix.js");
+  assert.match(router, /function resetIssuedState\(\)/);
+  assert.match(router, /panel\.replaceChildren\(\)/);
+  assert.match(router, /panel\.hidden = true/);
+  assert.match(router, /grid\.hidden = false/);
+  assert.match(router, /target\.closest\("#newDraft"\)/);
+  assert.match(router, /status === "draft"/);
+  assert.match(router, /function prepareIssuedState\(\)/);
+  assert.match(router, /grid\.hidden = true/);
+  assert.match(router, /document\.addEventListener\("click", \(event\) =>/);
+  assert.match(router, /}, true\);/);
 });
 
 test("international draft UX removes FX date and states rate as 1 USD to original currency", () => {
