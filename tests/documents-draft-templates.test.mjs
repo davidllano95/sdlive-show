@@ -75,11 +75,13 @@ test("Cuenta de cobro draft renders optional metadata, quantity and ordered Span
   assert.match(html, /PO-DOC-77/);
   assert.match(html, /Pago a 15 días/);
   assert.match(html, /Nota visible/);
+  assert.match(html, /Por concepto de/);
+  assert.match(html, /<th>Cant\.<\/th><th>Descripción<\/th>/);
+  assert.match(html, /Unidad: servicio/);
   assert.match(html, /225\.000,00/);
   assert.match(html, /450\.000,00/);
   assert.match(html, /OC-254/);
-  assert.doesNotMatch(html, /<th>Fecha<\/th>/);
-  assert.doesNotMatch(html, /Por concepto de/);
+  assert.doesNotMatch(html, /Fecha \/ periodo/);
   assert.match(html, /La firma se aplica al finalizar/);
   assert.match(html, /co-ret@2026-1/);
   assert.doesNotMatch(html, /Hidden beneficiary/);
@@ -89,19 +91,34 @@ test("Cuenta de cobro draft renders optional metadata, quantity and ordered Span
   assert.doesNotMatch(html, /data:image/i);
 });
 
-test("Cuenta de cobro only renders the line date column when at least one line has a date", () => {
+test("Cuenta de cobro uses the first column for optional quantity and renders a dash at zero", () => {
+  const html = renderCuentaDeCobro({
+    issuer,
+    client,
+    currency: "COP",
+    lines: [{ description: "Servicio", quantity: 0, unitMinor: 30000000, amountMinor: 30000000 }],
+    totalMinor: 30000000,
+    showBankDetails: false
+  }, { mode: "draft" });
+  assert.match(html, /<th>Cant\.<\/th><th>Descripción<\/th>/);
+  assert.match(html, /<td class="num qty">—<\/td>/);
+  assert.doesNotMatch(html, />01<\/td>/);
+  assert.match(html, /300\.000,00/);
+});
+
+test("Cuenta de cobro renders a line date range only when supplied", () => {
   const html = renderCuentaDeCobro({
     issuer,
     client,
     currency: "COP",
     issueCity: "Bogotá, Colombia",
     issueDate: "2026-10-02",
-    lines: [{ description: "Servicio", quantity: 1, unitMinor: 10000, amountMinor: 10000, serviceDate: "2026-09-02" }],
+    lines: [{ description: "Servicio", quantity: 1, unitMinor: 10000, amountMinor: 10000, serviceDate: "2026-09-02", serviceDateEnd: "2026-09-04" }],
     totalMinor: 10000,
     showBankDetails: false
   }, { mode: "draft" });
-  assert.match(html, /<th>Fecha<\/th>/);
-  assert.match(html, /2 de septiembre de 2026/);
+  assert.match(html, /Fecha \/ periodo/);
+  assert.match(html, /2 de septiembre de 2026 – 4 de septiembre de 2026/);
 });
 
 test("Invoice draft renders issue city/date, optional line metadata and ordered English bank rows", () => {
@@ -117,7 +134,7 @@ test("Invoice draft renders issue city/date, optional line metadata and ordered 
     purchaseOrder: "PO-77",
     servicePeriodLabel: "Sep 2026",
     lines: [
-      { kind: "professional_service", description: "Associate Sound Design", quantity: 2, unit: "day", unitMinor: 300000, amountMinor: 600000, serviceDate: "2026-09-20", poNumber: "PO-LINE-1" },
+      { kind: "professional_service", description: "Associate Sound Design", quantity: 0, unit: "", unitMinor: 600000, amountMinor: 600000, serviceDate: "2026-09-20", serviceDateEnd: "2026-09-22", poNumber: "PO-LINE-1" },
       { kind: "transport", description: "Uber - Airport to Home", quantity: 1, unit: "trip", unitMinor: 2364, amountMinor: 2364, originalCurrency: "COP", originalAmountMinor: 7734000 }
     ],
     totalMinor: 602364,
@@ -131,9 +148,10 @@ test("Invoice draft renders issue city/date, optional line metadata and ordered 
   assert.match(html, /Bogotá, Colombia · September 26, 2026/);
   assert.match(html, /Professional services/);
   assert.match(html, /Expenses &amp; reimbursements/);
-  assert.match(html, /Date: September 20, 2026/);
+  assert.match(html, /Date \/ period: September 20, 2026 – September 22, 2026/);
   assert.match(html, /PO \/ ref: PO-LINE-1/);
   assert.match(html, /Original expense COP 77\.340,00/);
+  assert.match(html, /<td class="num">—<\/td><td class="sub" style="padding-left:10px">—<\/td>/);
   assert.match(html, /USD 6,023\.64/);
   assert.match(html, /Thank you/);
   assert.doesNotMatch(html, /Hidden beneficiary/);
@@ -148,7 +166,7 @@ test("draft templates escape user-controlled HTML", () => {
     issuer: { ...issuer, legalName: '<script>alert("x")</script>' },
     client: { ...client, legalName: "<img src=x onerror=alert(1)>" },
     currency: "USD",
-    lines: [{ kind: "other", description: "<b>unsafe</b>", quantity: 1, amountMinor: 100 }],
+    lines: [{ kind: "other", description: "<b>unsafe</b>", quantity: 0, amountMinor: 100 }],
     totalMinor: 100,
     showBankDetails: false
   }, { mode: "draft" });
