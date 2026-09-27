@@ -5,6 +5,7 @@
   const $ = (id) => document.getElementById(id);
   const BRAND_NONE_TOKEN = "[[none]]";
   const BRAND_LOGO_TOKEN = "[[logo]]";
+  const ORIGINAL_CURRENCIES = ["COP", "USD", "EUR", "GBP", "AUD", "CAD", "MXN", "BRL", "CHF", "JPY", "SGD", "NZD"];
   let settings = null;
   let registry = [];
   let activeDocument = null;
@@ -182,6 +183,25 @@
     field.append(logoLabel, logoHelp);
   }
 
+  function ensureBankPrivacyControl() {
+    const checkbox = $("draftShowBank");
+    const label = checkbox?.closest("label");
+    if (!checkbox || !label) return;
+    for (const node of Array.from(label.childNodes)) {
+      if (node !== checkbox) node.remove();
+    }
+    label.append(document.createTextNode(" Censor bank details"));
+    checkbox.title = "Checked hides bank/payment information in both draft preview and final document.";
+  }
+
+  function ensureCurrencyDatalist() {
+    if ($("originalCurrencyList")) return;
+    const list = documentCreate("datalist");
+    list.id = "originalCurrencyList";
+    for (const currency of ORIGINAL_CURRENCIES) list.append(new Option(currency, currency));
+    document.body.append(list);
+  }
+
   function ensureItemizationControls() {
     if ($("draftPricingMode")) return;
     const lineItemsFieldset = $("draftLines")?.closest("fieldset");
@@ -312,11 +332,26 @@
     original.placeholder = "0.00";
     original.value = line.originalAmountMinor == null ? "" : minorToMajor(line.originalAmountMinor);
 
-    const originalCurrency = documentCreate("select", "line-original-currency");
-    originalCurrency.add(new Option("—", ""));
-    originalCurrency.add(new Option("COP", "COP"));
-    originalCurrency.add(new Option("USD", "USD"));
-    originalCurrency.value = line.originalCurrency || "";
+    const originalCurrency = documentCreate("input", "line-original-currency");
+    originalCurrency.type = "text";
+    originalCurrency.maxLength = 3;
+    originalCurrency.setAttribute("list", "originalCurrencyList");
+    originalCurrency.placeholder = "COP / EUR / GBP / …";
+    originalCurrency.value = String(line.originalCurrency || "").toUpperCase();
+    originalCurrency.addEventListener("input", () => {
+      originalCurrency.value = originalCurrency.value.replace(/[^A-Za-z]/g, "").toUpperCase().slice(0, 3);
+    });
+
+    const exchangeRate = documentCreate("input", "line-exchange-rate");
+    exchangeRate.type = "number";
+    exchangeRate.step = "any";
+    exchangeRate.min = "0";
+    exchangeRate.placeholder = "e.g. 0.00025";
+    exchangeRate.value = line.exchangeRate || "";
+
+    const exchangeRateDate = documentCreate("input", "line-exchange-rate-date");
+    exchangeRateDate.type = "date";
+    exchangeRateDate.value = line.exchangeRateDate || "";
 
     const remove = documentCreate("button", "line-remove");
     remove.type = "button";
@@ -327,7 +362,7 @@
     quantity.addEventListener("input", updateTotal);
     rate.addEventListener("input", updateTotal);
     const controls = [kind, description, quantity, unit, rate, date, dateEnd, po];
-    if (kindId === "invoice-intl-en") controls.push(original, originalCurrency);
+    if (kindId === "invoice-intl-en") controls.push(original, originalCurrency, exchangeRate, exchangeRateDate);
     for (const control of controls) {
       control.addEventListener("input", scheduleSave);
       control.addEventListener("change", scheduleSave);
@@ -348,7 +383,9 @@
     if (kindId === "invoice-intl-en") {
       fields.push(
         lineField("Original expense currency (optional)", originalCurrency),
-        lineField("Original expense amount (optional)", original)
+        lineField("Original expense amount (optional)", original),
+        lineField("FX rate · 1 original = document currency (optional)", exchangeRate),
+        lineField("FX rate date (optional)", exchangeRateDate)
       );
     }
     fields.push(remove);
@@ -372,7 +409,9 @@
       const amountMinor = unitMinor * multiplier;
       const originalCurrencyControl = row.querySelector(".line-original-currency");
       const originalAmountControl = row.querySelector(".line-original");
-      const originalCurrency = originalCurrencyControl?.value || "";
+      const exchangeRateControl = row.querySelector(".line-exchange-rate");
+      const exchangeRateDateControl = row.querySelector(".line-exchange-rate-date");
+      const originalCurrency = String(originalCurrencyControl?.value || "").trim().toUpperCase();
       return {
         id: row.dataset.lineId,
         kind: row.querySelector(".line-kind").value,
@@ -386,7 +425,9 @@
         poNumber: row.querySelector(".line-po").value.trim() || null,
         reference: null,
         originalCurrency: originalCurrency || null,
-        originalAmountMinor: originalCurrency && originalAmountControl?.value !== "" ? majorToMinor(originalAmountControl.value) : null
+        originalAmountMinor: originalCurrency && originalAmountControl?.value !== "" ? majorToMinor(originalAmountControl.value) : null,
+        exchangeRate: originalCurrency && exchangeRateControl?.value ? exchangeRateControl.value.trim() : null,
+        exchangeRateDate: originalCurrency && exchangeRateDateControl?.value ? exchangeRateDateControl.value : null
       };
     });
   }
@@ -398,6 +439,7 @@
   function formDraft() {
     const isCc = activeDocument.kindId === "cc-co-es";
     const itemize = !isCc || $("draftItemize").checked;
+    const censorBankDetails = Boolean($("draftShowBank").checked);
     return {
       kindId: activeDocument.kindId,
       currency: $("draftCurrency").value,
@@ -411,7 +453,8 @@
       itemize,
       generalAmountMinor: isCc ? majorToMinor($("draftGeneralRate").value) : null,
       usesCostsDeductions: $("draftUsesCosts").checked,
-      showBankDetails: $("draftShowBank").checked,
+      censorBankDetails,
+      showBankDetails: !censorBankDetails,
       notes: $("draftNotes").value.trim() || null,
       issuerOverride: {
         legalName: $("draftIssuerName").value.trim(), idType: $("draftIssuerIdType").value.trim(), idNumber: $("draftIssuerIdNumber").value.trim(),
@@ -446,7 +489,9 @@
     $("draftClientName").value = client.legalName || ""; $("draftClientTaxType").value = client.taxIdType || ""; $("draftClientTaxId").value = client.taxId || ""; $("draftClientAddress").value = client.billingAddress || ""; $("draftClientPhone").value = client.phone || "";
     $("draftIssueDate").value = draft.issueDate || ""; $("draftIssueCity").value = draft.issueCity || ""; $("draftProject").value = draft.projectLabel || ""; $("draftPO").value = draft.purchaseOrder || "";
     $("draftCurrency").value = document.currency; $("draftDueDate").value = draft.dueDate || ""; $("draftTerms").value = draft.terms || ""; $("draftAmountWords").value = draft.amountWordsOverride || "";
-    $("draftUsesCosts").checked = Boolean(draft.usesCostsDeductions); $("draftShowBank").checked = draft.showBankDetails == null ? Boolean(clientProfile?.showBankDetails) : Boolean(draft.showBankDetails); $("draftNotes").value = draft.notes || "";
+    $("draftUsesCosts").checked = Boolean(draft.usesCostsDeductions);
+    $("draftShowBank").checked = draft.censorBankDetails == null ? (draft.showBankDetails == null ? false : !Boolean(draft.showBankDetails)) : Boolean(draft.censorBankDetails);
+    $("draftNotes").value = draft.notes || "";
     $("draftItemize").checked = document.kindId === "cc-co-es" ? draft.itemize !== false : true;
     $("draftGeneralRate").value = minorToMajor(draft.generalAmountMinor || 0);
     renderLines(draft.lines, document.currency);
@@ -520,6 +565,8 @@
   }
 
   ensureBrandControls();
+  ensureBankPrivacyControl();
+  ensureCurrencyDatalist();
   ensureItemizationControls();
 
   $("documentsTab").addEventListener("click", () => setTab("documents"));
@@ -548,7 +595,8 @@
       const currency = $("newCurrency").value;
       const draft = {
         kindId, currency, issueDate: localToday(), issueCity: "Bogotá, Colombia",
-        projectLabel: "", purchaseOrder: "", itemize: true, generalAmountMinor: 0, usesCostsDeductions: false, showBankDetails: client?.showBankDetails ?? (kindId === "invoice-intl-en"), notes: null,
+        projectLabel: "", purchaseOrder: "", itemize: true, generalAmountMinor: 0, usesCostsDeductions: false,
+        censorBankDetails: false, showBankDetails: true, notes: null,
         issuerOverride: issuerOverrideFromProfile(issuer), clientOverride: clientOverrideFromProfile(client),
         lines: [{ id: `line-${crypto.randomUUID()}`, kind: "professional_service", description: "", quantity: 0, unit: null, unitMinor: 0, amountMinor: 0, serviceDate: null, serviceDateEnd: null, poNumber: null }]
       };
