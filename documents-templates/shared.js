@@ -48,7 +48,7 @@ export function draftBaseCss() {
 
 export function safeBrand(issuer) {
   const raw = String(issuer?.brandLabel || "").trim();
-  if (!raw) return { primary: "SD.Live", secondary: "Creative Audio" };
+  if (!raw || raw === "SD.Live") return { primary: "SD.Live", secondary: "Creative Audio" };
   const [primary, ...rest] = raw.split("·").map((part) => part.trim()).filter(Boolean);
   return {
     primary: primary || "SD.Live",
