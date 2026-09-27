@@ -3,7 +3,7 @@ import {
   createDraftDocument,
   listDraftRegistry,
   readDraftDocument,
-  updateDraftDocument
+  saveDraftDocument
 } from "./documents-drafts.js";
 
 const API_PREFIX = "/api/admin/documents";
@@ -103,7 +103,7 @@ export async function handleDocumentsEditorApi(request, env, { verifyAdmin } = {
       return json({ ok: true, document });
     }
     if (documentMatch && request.method === "PUT") {
-      const document = await updateDraftDocument(env, documentMatch[1], await readJson(request), { actorEmail: user.email });
+      const document = await saveDraftDocument(env, documentMatch[1], await readJson(request), { actorEmail: user.email });
       return json({ ok: true, document });
     }
 
