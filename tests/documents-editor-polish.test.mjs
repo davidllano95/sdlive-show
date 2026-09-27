@@ -6,13 +6,24 @@ const editor = readFileSync(new URL("../admin/documents/editor.js", import.meta.
 const html = readFileSync(new URL("../admin/documents/index.html", import.meta.url), "utf8");
 const polish = readFileSync(new URL("../admin/documents/editor-polish.css", import.meta.url), "utf8");
 
-test("line item editor exposes quantity, unit, rate and optional date", () => {
+test("line item editor exposes optional quantity, unit, rate and date range", () => {
   assert.match(editor, /line-quantity/);
+  assert.match(editor, /quantity\.min = "0"/);
+  assert.match(editor, /Qty · 0 = hidden/);
   assert.match(editor, /line-unit/);
+  assert.match(editor, /Unit \(optional\)/);
   assert.match(editor, /line-rate/);
-  assert.match(editor, /Date \(optional\)/);
-  assert.match(editor, /amountMinor = unitMinor \* quantity/);
-  assert.match(editor, /serviceDate: null/);
+  assert.match(editor, /line-date-end/);
+  assert.match(editor, /Date from \(optional\)/);
+  assert.match(editor, /Date to \(optional\)/);
+  assert.match(editor, /const multiplier = quantity > 0 \? quantity : 1/);
+  assert.match(editor, /serviceDateEnd:/);
+});
+
+test("original expense fields are invoice-only and explicitly named", () => {
+  assert.match(editor, /kindId === "invoice-intl-en"/);
+  assert.match(editor, /Original expense currency \(optional\)/);
+  assert.match(editor, /Original expense amount \(optional\)/);
 });
 
 test("line item layout is card-based and loaded after base Documents styles", () => {

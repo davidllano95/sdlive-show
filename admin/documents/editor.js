@@ -168,15 +168,16 @@
     const quantity = documentCreate("input", "line-quantity");
     quantity.type = "number";
     quantity.step = "1";
-    quantity.min = "1";
-    quantity.value = Number.isSafeInteger(Number(line.quantity)) && Number(line.quantity) > 0 ? String(Number(line.quantity)) : "1";
+    quantity.min = "0";
+    quantity.placeholder = "0";
+    quantity.value = Number.isSafeInteger(Number(line.quantity)) && Number(line.quantity) >= 0 ? String(Number(line.quantity)) : "0";
 
     const unit = documentCreate("input", "line-unit");
-    unit.placeholder = kindId === "cc-co-es" ? "servicio / unidad" : "service / unit";
-    unit.value = line.unit || (kindId === "cc-co-es" ? "servicio" : "service");
+    unit.placeholder = kindId === "cc-co-es" ? "servicio / día / unidad" : "service / day / unit";
+    unit.value = line.unit || "";
 
-    const q = Math.max(1, Number(quantity.value) || 1);
-    const derivedUnitMinor = line.unitMinor == null ? Math.round(Number(line.amountMinor || 0) / q) : Number(line.unitMinor);
+    const effectiveQuantity = Number(quantity.value) > 0 ? Number(quantity.value) : 1;
+    const derivedUnitMinor = line.unitMinor == null ? Math.round(Number(line.amountMinor || 0) / effectiveQuantity) : Number(line.unitMinor);
     const rate = documentCreate("input", "line-rate");
     rate.type = "number";
     rate.step = "0.01";
@@ -186,8 +187,9 @@
 
     const total = documentCreate("output", "line-total");
     const updateTotal = () => {
-      const qty = Math.max(1, Math.trunc(Number(quantity.value) || 1));
-      total.value = `${currency} ${minorToMajor(majorToMinor(rate.value) * qty)}`;
+      const rawQuantity = Math.max(0, Math.trunc(Number(quantity.value) || 0));
+      const multiplier = rawQuantity > 0 ? rawQuantity : 1;
+      total.value = `${currency} ${minorToMajor(majorToMinor(rate.value) * multiplier)}`;
       total.textContent = total.value;
     };
     updateTotal();
@@ -195,6 +197,10 @@
     const date = documentCreate("input", "line-date");
     date.type = "date";
     date.value = line.serviceDate || "";
+
+    const dateEnd = documentCreate("input", "line-date-end");
+    dateEnd.type = "date";
+    dateEnd.value = line.serviceDateEnd || "";
 
     const po = documentCreate("input", "line-po");
     po.placeholder = "PO / reference";
@@ -221,53 +227,66 @@
 
     quantity.addEventListener("input", updateTotal);
     rate.addEventListener("input", updateTotal);
-    for (const control of [kind, description, quantity, unit, rate, date, po, original, originalCurrency]) {
+    const controls = [kind, description, quantity, unit, rate, date, dateEnd, po];
+    if (kindId === "invoice-intl-en") controls.push(original, originalCurrency);
+    for (const control of controls) {
       control.addEventListener("input", scheduleSave);
       control.addEventListener("change", scheduleSave);
     }
 
-    row.append(
+    const fields = [
       lineField("Type", kind),
       lineField("Description", description, "line-field--description"),
-      lineField("Qty", quantity),
-      lineField("Unit", unit),
+      lineField("Qty · 0 = hidden", quantity),
+      lineField("Unit (optional)", unit),
       lineField("Rate", rate),
       lineField("Line total", total),
-      lineField("Date (optional)", date),
-      lineField("PO / reference (optional)", po),
-      lineField("Original currency (optional)", originalCurrency),
-      lineField("Original amount (optional)", original),
-      remove
-    );
+      lineField("Date from (optional)", date),
+      lineField("Date to (optional)", dateEnd),
+      lineField("PO / reference (optional)", po)
+    ];
+    if (kindId === "invoice-intl-en") {
+      fields.push(
+        lineField("Original expense currency (optional)", originalCurrency),
+        lineField("Original expense amount (optional)", original)
+      );
+    }
+    fields.push(remove);
+    row.append(...fields);
     return row;
   }
 
   function renderLines(lines, currency) {
     const node = $("draftLines");
     node.replaceChildren();
-    const source = Array.isArray(lines) && lines.length ? lines : [{ kind: "professional_service", description: "", quantity: 1, unitMinor: 0, amountMinor: 0 }];
+    const source = Array.isArray(lines) && lines.length ? lines : [{ kind: "professional_service", description: "", quantity: 0, unitMinor: 0, amountMinor: 0 }];
     for (const line of source) node.append(lineTemplate(line, currency, activeDocument?.kindId));
   }
 
   function readLines() {
     return Array.from($("draftLines").querySelectorAll(".draft-line")).map((row) => {
-      const originalCurrency = row.querySelector(".line-original-currency").value;
-      const quantity = Math.max(1, Math.trunc(Number(row.querySelector(".line-quantity").value) || 1));
+      const quantityInput = row.querySelector(".line-quantity").value.trim();
+      const quantity = quantityInput === "" ? 0 : Math.max(0, Math.trunc(Number(quantityInput) || 0));
+      const multiplier = quantity > 0 ? quantity : 1;
       const unitMinor = majorToMinor(row.querySelector(".line-rate").value);
-      const amountMinor = unitMinor * quantity;
+      const amountMinor = unitMinor * multiplier;
+      const originalCurrencyControl = row.querySelector(".line-original-currency");
+      const originalAmountControl = row.querySelector(".line-original");
+      const originalCurrency = originalCurrencyControl?.value || "";
       return {
         id: row.dataset.lineId,
         kind: row.querySelector(".line-kind").value,
         description: row.querySelector(".line-description").value.trim(),
         quantity,
-        unit: row.querySelector(".line-unit").value.trim() || (activeDocument?.kindId === "cc-co-es" ? "servicio" : "service"),
+        unit: row.querySelector(".line-unit").value.trim() || null,
         unitMinor,
         amountMinor,
         serviceDate: row.querySelector(".line-date").value || null,
+        serviceDateEnd: row.querySelector(".line-date-end").value || null,
         poNumber: row.querySelector(".line-po").value.trim() || null,
         reference: null,
         originalCurrency: originalCurrency || null,
-        originalAmountMinor: originalCurrency && row.querySelector(".line-original").value !== "" ? majorToMinor(row.querySelector(".line-original").value) : null
+        originalAmountMinor: originalCurrency && originalAmountControl?.value !== "" ? majorToMinor(originalAmountControl.value) : null
       };
     });
   }
@@ -410,12 +429,11 @@
     try {
       const kindId = $("newKind").value;
       const currency = $("newCurrency").value;
-      const defaultUnit = kindId === "cc-co-es" ? "servicio" : "service";
       const draft = {
         kindId, currency, issueDate: localToday(), issueCity: "Bogotá, Colombia",
         projectLabel: "", purchaseOrder: "", usesCostsDeductions: false, showBankDetails: client?.showBankDetails ?? (kindId === "invoice-intl-en"), notes: null,
         issuerOverride: issuerOverrideFromProfile(issuer), clientOverride: clientOverrideFromProfile(client),
-        lines: [{ id: `line-${crypto.randomUUID()}`, kind: "professional_service", description: "", quantity: 1, unit: defaultUnit, unitMinor: 0, amountMinor: 0, serviceDate: null, poNumber: null }]
+        lines: [{ id: `line-${crypto.randomUUID()}`, kind: "professional_service", description: "", quantity: 0, unit: null, unitMinor: 0, amountMinor: 0, serviceDate: null, serviceDateEnd: null, poNumber: null }]
       };
       const result = await api("/drafts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ kindId, issuerId: issuer.id, clientId: client?.id || null, currency, draft }) });
       $("newDraftPanel").hidden = true;
