@@ -46,9 +46,9 @@
     return Math.round(number * 100);
   }
 
-  function minorToMajor(value, currency) {
+  function minorToMajor(value) {
     const number = Number(value || 0) / 100;
-    return currency === "COP" ? String(Math.round(number)) : number.toFixed(2);
+    return Number.isFinite(number) ? number.toFixed(2) : "0.00";
   }
 
   function selectedProfile(list, id) {
@@ -70,7 +70,7 @@
       phone: profile?.phone || "",
       email: profile?.email || "",
       address: primaryAddress(profile),
-      brandLabel: profile?.brandLabel || "sd•live · Creative Audio"
+      brandLabel: profile?.brandLabel || ""
     };
   }
 
@@ -84,16 +84,25 @@
     };
   }
 
+  function preferredIssuerForKind(kindId) {
+    const preferred = kindId === "cc-co-es" ? "samuel-cop" : "samuel-usd";
+    return (settings?.issuers || []).find((item) => item.id === preferred && item.active !== false)
+      || (settings?.issuers || []).find((item) => item.active !== false)
+      || null;
+  }
+
   function populateCreateSelectors() {
     const issuerSelect = $("newIssuer");
     const clientSelect = $("newDocumentClient");
     issuerSelect.replaceChildren();
     clientSelect.replaceChildren(new Option("Document-only client", ""));
-    for (const issuer of settings?.issuers || []) issuerSelect.add(new Option(issuer.legalName, issuer.id));
+    for (const issuer of (settings?.issuers || []).filter((item) => item.active !== false)) {
+      issuerSelect.add(new Option(`${issuer.legalName} · ${issuer.id}`, issuer.id));
+    }
     for (const client of settings?.clients || []) clientSelect.add(new Option(client.displayName || client.legalName, client.id));
-    const samuel = (settings?.issuers || []).find((item) => item.id === "samuel");
-    if (samuel) issuerSelect.value = samuel.id;
-    $("newDraft").disabled = !(settings?.issuers || []).length;
+    const preferred = preferredIssuerForKind($("newKind")?.value || "cc-co-es");
+    if (preferred) issuerSelect.value = preferred.id;
+    $("newDraft").disabled = issuerSelect.options.length === 0;
   }
 
   function renderRegistry() {
@@ -119,7 +128,7 @@
       const status = documentCreate("em");
       status.textContent = document.status.toUpperCase();
       const amount = documentCreate("span");
-      amount.textContent = `${document.currency} ${minorToMajor(document.totalMinor, document.currency)}`;
+      amount.textContent = `${document.currency} ${minorToMajor(document.totalMinor)}`;
       meta.append(status, amount);
       button.append(main, meta);
       button.addEventListener("click", () => openDocument(document.id));
@@ -133,7 +142,15 @@
     return node;
   }
 
-  function lineTemplate(line = {}, currency = "COP") {
+  function lineField(labelText, control, extraClass = "") {
+    const label = documentCreate("label", `line-field${extraClass ? ` ${extraClass}` : ""}`);
+    const caption = documentCreate("span", "line-field__label");
+    caption.textContent = labelText;
+    label.append(caption, control);
+    return label;
+  }
+
+  function lineTemplate(line = {}, currency = "COP", kindId = activeDocument?.kindId || "cc-co-es") {
     const row = documentCreate("div", "draft-line");
     row.dataset.lineId = line.id || `line-${crypto.randomUUID()}`;
     const kinds = [
@@ -143,36 +160,109 @@
     const kind = documentCreate("select", "line-kind");
     for (const [value, label] of kinds) kind.add(new Option(label, value));
     kind.value = line.kind || "professional_service";
-    const description = documentCreate("input", "line-description"); description.placeholder = "Description"; description.value = line.description || "";
-    const amount = documentCreate("input", "line-amount"); amount.type = "number"; amount.step = currency === "COP" ? "1" : "0.01"; amount.min = "0"; amount.placeholder = "Amount"; amount.value = minorToMajor(line.amountMinor || 0, currency);
-    const date = documentCreate("input", "line-date"); date.type = "date"; date.value = line.serviceDate || "";
-    const po = documentCreate("input", "line-po"); po.placeholder = "PO / ref"; po.value = line.poNumber || line.reference || "";
-    const original = documentCreate("input", "line-original"); original.placeholder = "Original amount (optional)"; original.value = line.originalAmountMinor == null ? "" : minorToMajor(line.originalAmountMinor, line.originalCurrency || "COP");
-    const originalCurrency = documentCreate("select", "line-original-currency"); originalCurrency.add(new Option("—", "")); originalCurrency.add(new Option("COP", "COP")); originalCurrency.add(new Option("USD", "USD")); originalCurrency.value = line.originalCurrency || "";
-    const remove = documentCreate("button", "line-remove"); remove.type = "button"; remove.textContent = "×"; remove.title = "Remove line";
+
+    const description = documentCreate("input", "line-description");
+    description.placeholder = "Description";
+    description.value = line.description || "";
+
+    const quantity = documentCreate("input", "line-quantity");
+    quantity.type = "number";
+    quantity.step = "1";
+    quantity.min = "1";
+    quantity.value = Number.isSafeInteger(Number(line.quantity)) && Number(line.quantity) > 0 ? String(Number(line.quantity)) : "1";
+
+    const unit = documentCreate("input", "line-unit");
+    unit.placeholder = kindId === "cc-co-es" ? "servicio / unidad" : "service / unit";
+    unit.value = line.unit || (kindId === "cc-co-es" ? "servicio" : "service");
+
+    const q = Math.max(1, Number(quantity.value) || 1);
+    const derivedUnitMinor = line.unitMinor == null ? Math.round(Number(line.amountMinor || 0) / q) : Number(line.unitMinor);
+    const rate = documentCreate("input", "line-rate");
+    rate.type = "number";
+    rate.step = "0.01";
+    rate.min = "0";
+    rate.placeholder = "0.00";
+    rate.value = minorToMajor(derivedUnitMinor);
+
+    const total = documentCreate("output", "line-total");
+    const updateTotal = () => {
+      const qty = Math.max(1, Math.trunc(Number(quantity.value) || 1));
+      total.value = `${currency} ${minorToMajor(majorToMinor(rate.value) * qty)}`;
+      total.textContent = total.value;
+    };
+    updateTotal();
+
+    const date = documentCreate("input", "line-date");
+    date.type = "date";
+    date.value = line.serviceDate || "";
+
+    const po = documentCreate("input", "line-po");
+    po.placeholder = "PO / reference";
+    po.value = line.poNumber || line.reference || "";
+
+    const original = documentCreate("input", "line-original");
+    original.type = "number";
+    original.step = "0.01";
+    original.min = "0";
+    original.placeholder = "0.00";
+    original.value = line.originalAmountMinor == null ? "" : minorToMajor(line.originalAmountMinor);
+
+    const originalCurrency = documentCreate("select", "line-original-currency");
+    originalCurrency.add(new Option("—", ""));
+    originalCurrency.add(new Option("COP", "COP"));
+    originalCurrency.add(new Option("USD", "USD"));
+    originalCurrency.value = line.originalCurrency || "";
+
+    const remove = documentCreate("button", "line-remove");
+    remove.type = "button";
+    remove.textContent = "Remove";
+    remove.title = "Remove line";
     remove.addEventListener("click", () => { row.remove(); scheduleSave(); });
-    for (const control of [kind, description, amount, date, po, original, originalCurrency]) control.addEventListener("input", scheduleSave);
-    row.append(kind, description, amount, date, po, originalCurrency, original, remove);
+
+    quantity.addEventListener("input", updateTotal);
+    rate.addEventListener("input", updateTotal);
+    for (const control of [kind, description, quantity, unit, rate, date, po, original, originalCurrency]) {
+      control.addEventListener("input", scheduleSave);
+      control.addEventListener("change", scheduleSave);
+    }
+
+    row.append(
+      lineField("Type", kind),
+      lineField("Description", description, "line-field--description"),
+      lineField("Qty", quantity),
+      lineField("Unit", unit),
+      lineField("Rate", rate),
+      lineField("Line total", total),
+      lineField("Date (optional)", date),
+      lineField("PO / reference (optional)", po),
+      lineField("Original currency (optional)", originalCurrency),
+      lineField("Original amount (optional)", original),
+      remove
+    );
     return row;
   }
 
   function renderLines(lines, currency) {
     const node = $("draftLines");
     node.replaceChildren();
-    const source = Array.isArray(lines) && lines.length ? lines : [{ kind: "professional_service", description: "", amountMinor: 0 }];
-    for (const line of source) node.append(lineTemplate(line, currency));
+    const source = Array.isArray(lines) && lines.length ? lines : [{ kind: "professional_service", description: "", quantity: 1, unitMinor: 0, amountMinor: 0 }];
+    for (const line of source) node.append(lineTemplate(line, currency, activeDocument?.kindId));
   }
 
   function readLines() {
     return Array.from($("draftLines").querySelectorAll(".draft-line")).map((row) => {
       const originalCurrency = row.querySelector(".line-original-currency").value;
+      const quantity = Math.max(1, Math.trunc(Number(row.querySelector(".line-quantity").value) || 1));
+      const unitMinor = majorToMinor(row.querySelector(".line-rate").value);
+      const amountMinor = unitMinor * quantity;
       return {
         id: row.dataset.lineId,
         kind: row.querySelector(".line-kind").value,
         description: row.querySelector(".line-description").value.trim(),
-        quantity: 1,
-        unit: "unit",
-        amountMinor: majorToMinor(row.querySelector(".line-amount").value),
+        quantity,
+        unit: row.querySelector(".line-unit").value.trim() || (activeDocument?.kindId === "cc-co-es" ? "servicio" : "service"),
+        unitMinor,
+        amountMinor,
         serviceDate: row.querySelector(".line-date").value || null,
         poNumber: row.querySelector(".line-po").value.trim() || null,
         reference: null,
@@ -300,7 +390,12 @@
   $("settingsTab").addEventListener("click", () => setTab("settings"));
   $("newDraft").addEventListener("click", () => { $("newDraftPanel").hidden = false; });
   $("cancelNewDraft").addEventListener("click", () => { $("newDraftPanel").hidden = true; });
-  $("newKind").addEventListener("change", () => { $("newCurrency").value = $("newKind").value === "cc-co-es" ? "COP" : "USD"; });
+  $("newKind").addEventListener("change", () => {
+    const kindId = $("newKind").value;
+    $("newCurrency").value = kindId === "cc-co-es" ? "COP" : "USD";
+    const preferred = preferredIssuerForKind(kindId);
+    if (preferred && Array.from($("newIssuer").options).some((option) => option.value === preferred.id)) $("newIssuer").value = preferred.id;
+  });
   $("newDocumentClient").addEventListener("change", () => {
     const client = selectedProfile(settings?.clients, $("newDocumentClient").value);
     if (client?.defaultCurrency) $("newCurrency").value = client.defaultCurrency;
@@ -315,11 +410,12 @@
     try {
       const kindId = $("newKind").value;
       const currency = $("newCurrency").value;
+      const defaultUnit = kindId === "cc-co-es" ? "servicio" : "service";
       const draft = {
-        kindId, currency, issueDate: localToday(), issueCity: kindId === "cc-co-es" ? "Bogotá, Colombia" : "Bogotá, Colombia",
+        kindId, currency, issueDate: localToday(), issueCity: "Bogotá, Colombia",
         projectLabel: "", purchaseOrder: "", usesCostsDeductions: false, showBankDetails: client?.showBankDetails ?? (kindId === "invoice-intl-en"), notes: null,
         issuerOverride: issuerOverrideFromProfile(issuer), clientOverride: clientOverrideFromProfile(client),
-        lines: [{ id: `line-${crypto.randomUUID()}`, kind: "professional_service", description: "", quantity: 1, amountMinor: 0, serviceDate: localToday(), poNumber: null }]
+        lines: [{ id: `line-${crypto.randomUUID()}`, kind: "professional_service", description: "", quantity: 1, unit: defaultUnit, unitMinor: 0, amountMinor: 0, serviceDate: null, poNumber: null }]
       };
       const result = await api("/drafts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ kindId, issuerId: issuer.id, clientId: client?.id || null, currency, draft }) });
       $("newDraftPanel").hidden = true;
@@ -334,7 +430,7 @@
 
   $("draftForm").addEventListener("submit", (event) => { event.preventDefault(); clearTimeout(saveTimer); saveDraft({ manual: true }); });
   $("draftForm").addEventListener("input", (event) => { if (!event.target.closest(".draft-line")) scheduleSave(); });
-  $("addDraftLine").addEventListener("click", () => { $("draftLines").append(lineTemplate({}, $("draftCurrency").value)); scheduleSave(); });
+  $("addDraftLine").addEventListener("click", () => { $("draftLines").append(lineTemplate({}, $("draftCurrency").value, activeDocument?.kindId)); scheduleSave(); });
   $("closeEditor").addEventListener("click", () => { clearTimeout(saveTimer); activeDocument = null; $("documentEditor").hidden = true; });
 
   setTab("documents");
