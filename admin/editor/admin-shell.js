@@ -36,6 +36,22 @@
     nav.insertBefore(finance, editorLink);
   }
 
+  function ensureDocumentsNav() {
+    const nav = shell.querySelector(".app-nav");
+    const editorLink = nav?.querySelector('a[href="./"]');
+    if (!nav || !editorLink || nav.querySelector('a[href="../documents/"]')) return;
+
+    const documents = document.createElement("a");
+    documents.className = "app-nav__item";
+    documents.href = "../documents/";
+    documents.innerHTML = `
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h10l4 4v14H5V3Zm2 2v14h10V8h-3V5H7Zm2 6h6v1.5H9V11Zm0 3h6v1.5H9V14Z"/></svg>
+      <span>Documents</span>
+      <small>Docs</small>
+    `;
+    nav.insertBefore(documents, editorLink);
+  }
+
   function ensureCalendarNav() {
     const nav = shell.querySelector(".app-nav");
     const editorLink = nav?.querySelector('a[href="./"]');
@@ -53,6 +69,7 @@
   }
 
   ensureFinanceNav();
+  ensureDocumentsNav();
   ensureCalendarNav();
 
   const collapsed = safeStorageGet("sdlive-admin-dashboard-collapsed") === "true";
@@ -84,6 +101,7 @@
     document.head.appendChild(link);
   }
 
+  loadEditorStylesheet("../navigation.css?v=20260927-1", "sdlive-admin-navigation");
   loadEditorStylesheet("./editor-ux.css?v=20260820-1", "sdlive-editor-ux");
 
   document.addEventListener(
