@@ -199,6 +199,14 @@ function normalizeSources(sources = []) {
   });
 }
 
+function finalizedPricing(kind, draft, calculated) {
+  const itemize = kind.id !== "cc-co-es" || draft.itemize !== false;
+  if (itemize) return { itemize: true, generalAmountMinor: null, totalMinor: calculated.totalMinor };
+  const generalAmountMinor = normalizeMinorUnits(draft.generalAmountMinor ?? 0, "invalid_general_amount_minor");
+  if (generalAmountMinor < 0) throw new Error("invalid_general_amount_minor");
+  return { itemize: false, generalAmountMinor, totalMinor: generalAmountMinor };
+}
+
 export function validateDraftForFinalize({ document, draft, issuer, client, signatureAsset, numberContext }) {
   assertPlainObject(document, "document_required");
   assertPlainObject(draft, "draft_required");
@@ -210,6 +218,7 @@ export function validateDraftForFinalize({ document, draft, issuer, client, sign
   if (!asText(draft.issueDate)) throw new Error("issue_date_required");
   if (!asText(draft.issueCity)) throw new Error("issue_city_required");
   const calculated = calculateDocumentLines(draft.lines);
+  const pricing = finalizedPricing(kind, draft, calculated);
   if (!issuer || !asText(issuer.id) || !asText(issuer.legalName)) throw new Error("issuer_required");
   if (asText(issuer.id) !== asText(document.issuer_id)) throw new Error("issuer_mismatch");
   if (!client || !asText(client.legalName)) throw new Error("client_required");
@@ -226,7 +235,7 @@ export function validateDraftForFinalize({ document, draft, issuer, client, sign
   if (!numberContext || !asText(numberContext.seriesKey) || !Number.isSafeInteger(numberContext.number)) {
     throw new Error("number_context_required");
   }
-  return { kind, ...calculated };
+  return { kind, lines: calculated.lines, totalMinor: pricing.totalMinor, pricing };
 }
 
 export async function buildFinalSnapshot({
@@ -239,7 +248,7 @@ export async function buildFinalSnapshot({
   finalizedAt,
   sources = []
 }) {
-  const { kind, lines, totalMinor } = validateDraftForFinalize({ document, draft, issuer, client, signatureAsset, numberContext });
+  const { kind, lines, totalMinor, pricing } = validateDraftForFinalize({ document, draft, issuer, client, signatureAsset, numberContext });
   const sourceReferences = normalizeSources(sources);
   const amountWords = kind.docType === "cc"
     ? (asText(draft.amountWordsOverride) || amountMinorToSpanishWords(totalMinor, { currency: document.currency }))
@@ -284,6 +293,10 @@ export async function buildFinalSnapshot({
     },
     purchaseOrder: asText(draft.purchaseOrder) || null,
     currency: document.currency,
+    pricing: {
+      itemize: pricing.itemize,
+      generalAmountMinor: pricing.generalAmountMinor
+    },
     lines,
     totals: {
       totalMinor,
