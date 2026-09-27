@@ -10,7 +10,7 @@
   <link rel="icon" href="../assets/icons/favicon.ico" />
   <link rel="stylesheet" href="./dashboard.css" />
   <link rel="stylesheet" href="./mobile-dashboard.css" />
-  <link rel="stylesheet" href="./documents/documents.css?v=20260927-1" />
+  <link rel="stylesheet" href="./documents/documents.css?v=20260927-2" />
 </head>
 <body>
   <div class="backoffice">
@@ -49,78 +49,143 @@
         <div class="welcome">
           <div>
             <span class="eyebrow">Document engine</span>
-            <h2>Profiles, signature & numbering</h2>
-            <p>Configure reusable defaults here. Issued documents will freeze their own snapshot; changing a profile later will never rewrite history.</p>
+            <h2>Draft → Preview → Finalize</h2>
+            <p>Build the document here. Drafts have no official number and the handwritten signature is never exposed in preview.</p>
           </div>
           <div class="system-pill" id="documentsStatus"><i></i><span>Checking Documents…</span></div>
         </div>
 
-        <div class="documents-notice">
-          <strong>Safe stage:</strong> real series are locked. This workspace cannot create <code>samuel:CC</code> or <code>samuel:INV</code> yet.
+        <div class="documents-tabs" role="tablist" aria-label="Documents workspace">
+          <button class="documents-tab is-active" id="documentsTab" type="button">Documents</button>
+          <button class="documents-tab" id="settingsTab" type="button">Settings</button>
         </div>
 
-        <div class="documents-grid">
-          <section class="documents-card documents-card--wide">
-            <div class="documents-card__head"><div><span class="eyebrow">Issuer</span><h3>Legal issuer profile</h3></div><span class="documents-chip" id="issuerCount">0 profiles</span></div>
-            <form id="issuerForm" class="documents-form">
-              <div class="field"><label for="issuerId">Profile ID</label><input id="issuerId" name="id" value="samuel" required /></div>
-              <div class="field field--grow"><label for="issuerLegalName">Legal name</label><input id="issuerLegalName" name="legalName" autocomplete="name" required /></div>
-              <div class="field"><label for="issuerIdType">ID type</label><input id="issuerIdType" name="idType" placeholder="CC" required /></div>
-              <div class="field"><label for="issuerIdNumber">ID number</label><input id="issuerIdNumber" name="idNumber" autocomplete="off" required /></div>
-              <div class="field field--grow"><label for="issuerVatLabel">Tax / VAT label</label><input id="issuerVatLabel" name="vatLabel" placeholder="No responsable de IVA" required /></div>
-              <div class="field"><label for="issuerCiiu">CIIU</label><input id="issuerCiiu" name="ciiu" /></div>
-              <div class="field"><label for="issuerPhone">Phone</label><input id="issuerPhone" name="phone" autocomplete="tel" /></div>
-              <div class="field"><label for="issuerEmail">Email</label><input id="issuerEmail" name="email" type="email" autocomplete="email" /></div>
-              <div class="field field--grow"><label for="issuerAddress">Primary address</label><input id="issuerAddress" name="address" autocomplete="street-address" /></div>
-              <div class="field field--grow"><label for="issuerBrandLabel">Optional visual brand</label><input id="issuerBrandLabel" name="brandLabel" placeholder="sd•live · Creative Audio" /></div>
-              <div class="documents-form__actions"><button class="button" type="submit">Save issuer</button><span id="issuerMessage" class="documents-message"></span></div>
-            </form>
-          </section>
+        <section id="documentsWorkspace">
+          <div class="documents-notice">
+            <strong>Draft-safe stage:</strong> Preview never consumes a number and never includes the private signature. Finalize is intentionally unavailable until PR 5.
+          </div>
 
-          <section class="documents-card">
-            <div class="documents-card__head"><div><span class="eyebrow">Signature</span><h3>Private signature asset</h3></div><span class="documents-chip" id="signatureState">Not loaded</span></div>
-            <p class="documents-help">PNG only, maximum 2 MB. The original remains in the private Documents bucket and is never given a public URL.</p>
-            <form id="signatureForm" class="signature-form">
-              <label class="upload-zone" for="signatureFile"><strong>Choose cleaned PNG</strong><span>Transparent background recommended</span></label>
-              <input id="signatureFile" name="file" type="file" accept="image/png" required />
-              <button class="button" type="submit">Upload & activate</button>
-              <span id="signatureMessage" class="documents-message"></span>
-            </form>
-          </section>
+          <div class="documents-registry-layout">
+            <section class="documents-card registry-card">
+              <div class="documents-card__head">
+                <div><span class="eyebrow">Registry</span><h3>Documents</h3></div>
+                <button class="button" id="newDraft" type="button">New draft</button>
+              </div>
+              <div id="registryList" class="registry-list" aria-live="polite"></div>
+            </section>
 
-          <section class="documents-card">
-            <div class="documents-card__head"><div><span class="eyebrow">Sequences</span><h3>Numbering safety</h3></div><span class="documents-chip is-safe">Real locked</span></div>
-            <div id="sequenceList" class="sequence-list"></div>
-            <button class="button button--ghost" id="ensureTestSequences" type="button">Verify test series</button>
-            <p class="documents-help">Real CC 21 and INV 0019 are shown for planning only. Bootstrap remains disabled until signed-PDF testing passes.</p>
-          </section>
-
-          <section class="documents-card documents-card--wide">
-            <div class="documents-card__head"><div><span class="eyebrow">Clients</span><h3>Billing profiles</h3></div><span class="documents-chip" id="clientCount">0 clients</span></div>
-            <div class="client-layout">
-              <form id="clientForm" class="documents-form documents-form--client">
-                <input id="clientId" name="id" type="hidden" />
-                <div class="field"><label for="clientDisplayName">Display name</label><input id="clientDisplayName" name="displayName" required /></div>
-                <div class="field"><label for="clientLegalName">Legal name</label><input id="clientLegalName" name="legalName" required /></div>
-                <div class="field"><label for="clientTaxIdType">Tax ID type</label><input id="clientTaxIdType" name="taxIdType" placeholder="NIT / EIN" /></div>
-                <div class="field"><label for="clientTaxId">Tax ID</label><input id="clientTaxId" name="taxId" /></div>
-                <div class="field"><label for="clientCurrency">Default currency</label><select id="clientCurrency" name="defaultCurrency"><option value="">—</option><option>COP</option><option>USD</option></select></div>
-                <div class="field"><label for="clientPoPolicy">PO policy</label><select id="clientPoPolicy" name="poPolicy"><option value="none">None</option><option value="document">Per document</option><option value="line">Per line</option><option value="required">Required</option></select></div>
-                <div class="field"><label for="clientTerms">Payment terms (days)</label><input id="clientTerms" name="paymentTermsDays" type="number" min="0" max="3650" /></div>
-                <div class="field"><label for="clientCountry">Country</label><input id="clientCountry" name="country" /></div>
-                <div class="field field--grow"><label for="clientBillingAddress">Billing address</label><input id="clientBillingAddress" name="billingAddress" /></div>
-                <div class="field"><label class="check"><input id="clientShowBank" name="showBankDetails" type="checkbox" /> Show bank details by default</label></div>
-                <div class="documents-form__actions"><button class="button" type="submit">Save client</button><button class="button button--ghost" id="newClient" type="button">New</button><span id="clientMessage" class="documents-message"></span></div>
+            <section class="documents-card new-draft-card" id="newDraftPanel" hidden>
+              <div class="documents-card__head"><div><span class="eyebrow">Create</span><h3>New draft</h3></div><button class="button button--ghost" id="cancelNewDraft" type="button">Cancel</button></div>
+              <form id="newDraftForm" class="documents-form documents-form--client">
+                <div class="field"><label for="newKind">Template</label><select id="newKind" required><option value="cc-co-es">Cuenta de cobro · CO · ES</option><option value="invoice-intl-en">Invoice · International · EN</option></select></div>
+                <div class="field"><label for="newIssuer">Issuer profile</label><select id="newIssuer" required></select></div>
+                <div class="field"><label for="newDocumentClient">Client profile</label><select id="newDocumentClient"><option value="">Document-only client</option></select></div>
+                <div class="field"><label for="newCurrency">Currency</label><select id="newCurrency"><option>COP</option><option>USD</option></select></div>
+                <div class="documents-form__actions"><button class="button" type="submit">Create draft</button><span id="newDraftMessage" class="documents-message"></span></div>
               </form>
-              <div id="clientList" class="client-list" aria-live="polite"></div>
+            </section>
+          </div>
+
+          <section class="document-editor-shell" id="documentEditor" hidden>
+            <div class="editor-toolbar">
+              <div><span class="eyebrow" id="editorKindLabel">Draft</span><h3 id="editorTitle">Untitled draft</h3></div>
+              <div class="editor-toolbar__actions"><span class="documents-chip" id="draftRevChip">rev —</span><span class="documents-message" id="draftSaveState"></span><button class="button button--ghost" id="closeEditor" type="button">Close</button></div>
+            </div>
+            <div class="document-editor-grid">
+              <form id="draftForm" class="draft-editor" autocomplete="off">
+                <input id="draftId" type="hidden" />
+                <input id="draftRev" type="hidden" />
+
+                <fieldset><legend>Issuer</legend><div class="documents-form documents-form--client">
+                  <div class="field field--grow"><label for="draftIssuerName">Legal name</label><input id="draftIssuerName" /></div>
+                  <div class="field"><label for="draftIssuerIdType">ID type</label><input id="draftIssuerIdType" /></div>
+                  <div class="field"><label for="draftIssuerIdNumber">ID number</label><input id="draftIssuerIdNumber" /></div>
+                  <div class="field field--grow"><label for="draftIssuerAddress">Address</label><input id="draftIssuerAddress" /></div>
+                  <div class="field"><label for="draftIssuerPhone">Phone</label><input id="draftIssuerPhone" /></div>
+                  <div class="field"><label for="draftIssuerEmail">Email</label><input id="draftIssuerEmail" /></div>
+                  <div class="field field--grow"><label for="draftBrandLabel">Visual brand</label><input id="draftBrandLabel" placeholder="sd•live · Creative Audio" /></div>
+                </div></fieldset>
+
+                <fieldset><legend>Client</legend><div class="documents-form documents-form--client">
+                  <div class="field field--grow"><label for="draftClientName">Legal name</label><input id="draftClientName" /></div>
+                  <div class="field"><label for="draftClientTaxType">Tax ID type</label><input id="draftClientTaxType" /></div>
+                  <div class="field"><label for="draftClientTaxId">Tax ID</label><input id="draftClientTaxId" /></div>
+                  <div class="field field--grow"><label for="draftClientAddress">Billing address</label><input id="draftClientAddress" /></div>
+                  <div class="field"><label for="draftClientPhone">Phone</label><input id="draftClientPhone" /></div>
+                </div></fieldset>
+
+                <fieldset><legend>Document</legend><div class="documents-form documents-form--client">
+                  <div class="field"><label for="draftIssueDate">Issue date</label><input id="draftIssueDate" type="date" /></div>
+                  <div class="field"><label for="draftIssueCity">Issue city</label><input id="draftIssueCity" /></div>
+                  <div class="field field--grow"><label for="draftProject">Project / engagement</label><input id="draftProject" /></div>
+                  <div class="field"><label for="draftPO">Document PO / reference</label><input id="draftPO" /></div>
+                  <div class="field"><label for="draftCurrency">Currency</label><select id="draftCurrency"><option>COP</option><option>USD</option></select></div>
+                  <div class="field"><label for="draftDueDate">Due date</label><input id="draftDueDate" type="date" /></div>
+                  <div class="field"><label for="draftTerms">Terms</label><input id="draftTerms" placeholder="Due on receipt / Net 15" /></div>
+                  <div class="field field--grow"><label for="draftAmountWords">Amount in words override</label><input id="draftAmountWords" placeholder="Leave blank for automatic" /></div>
+                  <div class="field"><label class="check"><input id="draftUsesCosts" type="checkbox" /> Uses costs / deductions</label></div>
+                  <div class="field"><label class="check"><input id="draftShowBank" type="checkbox" /> Show bank details</label></div>
+                  <div class="field field--grow"><label for="draftNotes">Notes</label><input id="draftNotes" /></div>
+                </div></fieldset>
+
+                <fieldset><legend>Line items</legend><div id="draftLines" class="draft-lines"></div><button class="button button--ghost" id="addDraftLine" type="button">+ Add line</button></fieldset>
+                <div class="draft-actions"><button class="button" id="saveDraft" type="submit">Save draft</button><span class="documents-help">Autosaves after edits. No number is reserved.</span></div>
+              </form>
+
+              <div class="preview-panel"><div class="preview-panel__head"><div><span class="eyebrow">Live preview</span><strong id="previewTemplate">Draft</strong></div><span class="documents-chip">No signature · No number</span></div><iframe id="draftPreview" title="Document draft preview" sandbox="" referrerpolicy="no-referrer"></iframe></div>
             </div>
           </section>
-        </div>
+        </section>
+
+        <section id="settingsWorkspace" hidden>
+          <div class="documents-notice"><strong>Numbering safety:</strong> real series remain locked. This workspace cannot create <code>samuel:CC</code> or <code>samuel:INV</code> yet.</div>
+          <div class="documents-grid">
+            <section class="documents-card documents-card--wide">
+              <div class="documents-card__head"><div><span class="eyebrow">Issuer</span><h3>Legal issuer profile</h3></div><span class="documents-chip" id="issuerCount">0 profiles</span></div>
+              <form id="issuerForm" class="documents-form">
+                <div class="field"><label for="issuerId">Profile ID</label><input id="issuerId" name="id" value="samuel" required /></div>
+                <div class="field field--grow"><label for="issuerLegalName">Legal name</label><input id="issuerLegalName" name="legalName" autocomplete="name" required /></div>
+                <div class="field"><label for="issuerIdType">ID type</label><input id="issuerIdType" name="idType" placeholder="CC" required /></div>
+                <div class="field"><label for="issuerIdNumber">ID number</label><input id="issuerIdNumber" name="idNumber" autocomplete="off" required /></div>
+                <div class="field field--grow"><label for="issuerVatLabel">Tax / VAT label</label><input id="issuerVatLabel" name="vatLabel" placeholder="No responsable de IVA" required /></div>
+                <div class="field"><label for="issuerCiiu">CIIU</label><input id="issuerCiiu" name="ciiu" /></div>
+                <div class="field"><label for="issuerPhone">Phone</label><input id="issuerPhone" name="phone" autocomplete="tel" /></div>
+                <div class="field"><label for="issuerEmail">Email</label><input id="issuerEmail" name="email" type="email" autocomplete="email" /></div>
+                <div class="field field--grow"><label for="issuerAddress">Primary address</label><input id="issuerAddress" name="address" autocomplete="street-address" /></div>
+                <div class="field field--grow"><label for="issuerBrandLabel">Optional visual brand</label><input id="issuerBrandLabel" name="brandLabel" placeholder="sd•live · Creative Audio" /></div>
+                <div class="documents-form__actions"><button class="button" type="submit">Save issuer</button><span id="issuerMessage" class="documents-message"></span></div>
+              </form>
+            </section>
+
+            <section class="documents-card">
+              <div class="documents-card__head"><div><span class="eyebrow">Signature</span><h3>Private signature asset</h3></div><span class="documents-chip" id="signatureState">Not loaded</span></div>
+              <p class="documents-help">PNG only, maximum 2 MB. The original remains in the private Documents bucket and is never given a public URL.</p>
+              <form id="signatureForm" class="signature-form"><label class="upload-zone" for="signatureFile"><strong>Choose cleaned PNG</strong><span>Transparent background recommended</span></label><input id="signatureFile" name="file" type="file" accept="image/png" required /><button class="button" type="submit">Upload & activate</button><span id="signatureMessage" class="documents-message"></span></form>
+            </section>
+
+            <section class="documents-card">
+              <div class="documents-card__head"><div><span class="eyebrow">Sequences</span><h3>Numbering safety</h3></div><span class="documents-chip is-safe">Real locked</span></div>
+              <div id="sequenceList" class="sequence-list"></div><button class="button button--ghost" id="ensureTestSequences" type="button">Verify test series</button><p class="documents-help">Real CC 21 and INV 0019 are shown for planning only. Bootstrap remains disabled until signed-PDF testing passes.</p>
+            </section>
+
+            <section class="documents-card documents-card--wide">
+              <div class="documents-card__head"><div><span class="eyebrow">Clients</span><h3>Billing profiles</h3></div><span class="documents-chip" id="clientCount">0 clients</span></div>
+              <div class="client-layout">
+                <form id="clientForm" class="documents-form documents-form--client">
+                  <input id="clientId" name="id" type="hidden" />
+                  <div class="field"><label for="clientDisplayName">Display name</label><input id="clientDisplayName" name="displayName" required /></div><div class="field"><label for="clientLegalName">Legal name</label><input id="clientLegalName" name="legalName" required /></div><div class="field"><label for="clientTaxIdType">Tax ID type</label><input id="clientTaxIdType" name="taxIdType" placeholder="NIT / EIN" /></div><div class="field"><label for="clientTaxId">Tax ID</label><input id="clientTaxId" name="taxId" /></div><div class="field"><label for="clientCurrency">Default currency</label><select id="clientCurrency" name="defaultCurrency"><option value="">—</option><option>COP</option><option>USD</option></select></div><div class="field"><label for="clientPoPolicy">PO policy</label><select id="clientPoPolicy" name="poPolicy"><option value="none">None</option><option value="document">Per document</option><option value="line">Per line</option><option value="required">Required</option></select></div><div class="field"><label for="clientTerms">Payment terms (days)</label><input id="clientTerms" name="paymentTermsDays" type="number" min="0" max="3650" /></div><div class="field"><label for="clientCountry">Country</label><input id="clientCountry" name="country" /></div><div class="field field--grow"><label for="clientBillingAddress">Billing address</label><input id="clientBillingAddress" name="billingAddress" /></div><div class="field"><label class="check"><input id="clientShowBank" name="showBankDetails" type="checkbox" /> Show bank details by default</label></div><div class="documents-form__actions"><button class="button" type="submit">Save client</button><button class="button button--ghost" id="newClient" type="button">New</button><span id="clientMessage" class="documents-message"></span></div>
+                </form>
+                <div id="clientList" class="client-list" aria-live="polite"></div>
+              </div>
+            </section>
+          </div>
+        </section>
       </section>
     </main>
   </div>
 
-  <script src="./documents/documents.js?v=20260927-1"></script>
+  <script src="./documents/documents.js?v=20260927-2"></script>
+  <script src="./documents/editor.js?v=20260927-1"></script>
   <script src="./admin-stabilization.js?v=20260825-1"></script>
 </body>
 </html>
