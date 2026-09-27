@@ -104,7 +104,14 @@ async function signatureUpload(request, env) {
   const form = await request.formData();
   const issuerId = String(form.get("issuerId") || "").trim();
   const file = form.get("file");
-  if (!(file instanceof File)) throw Object.assign(new Error("signature_file_required"), { status: 400 });
+  if (
+    !file ||
+    typeof file !== "object" ||
+    typeof file.arrayBuffer !== "function" ||
+    typeof file.size !== "number"
+  ) {
+    throw Object.assign(new Error("signature_file_required"), { status: 400 });
+  }
   if (file.type !== "image/png") throw Object.assign(new Error("signature_png_required"), { status: 415 });
   if (file.size < 16 || file.size > 2 * 1024 * 1024) throw Object.assign(new Error("invalid_signature_size"), { status: 413 });
   const signature = await uploadPrivateSignature(env, {
