@@ -295,7 +295,7 @@ export async function downloadFinalPdf(env, { documentId } = {}, overrides = {})
   return new Response(bytes, {
     headers: {
       "Content-Type": PDF_CONTENT_TYPE,
-      "Content-Disposition": `attachment; filename="${safeFilename(row)}"`,
+      "Content-Disposition": `inline; filename="${safeFilename(row)}"`,
       "Cache-Control": "private, no-store, max-age=0",
       "X-Content-Type-Options": "nosniff"
     }
