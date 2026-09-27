@@ -1,15 +1,15 @@
 # SD.Live — estado maestro, roadmap y handoff
 
-> **Fuente de verdad operativa del proyecto.** Resume estado verificable, gate activo, invariantes y punto exacto de continuación. El detalle histórico/futuro vive en `ROADMAP_MASTER_CHECKLIST.md`, checkpoints y specs bajo `docs/`.
+> **Fuente de verdad operativa del proyecto.** Resume estado verificable, invariantes y punto exacto de continuación. El detalle histórico/futuro vive en `ROADMAP_MASTER_CHECKLIST.md`, checkpoints y specs bajo `docs/`.
 
 | Campo | Valor |
 |---|---|
 | Última reconciliación | **2026-09-26 — America/Bogota** |
-| GitHub `main` | **`5a0f7cc263930c134ecc0733427ac1812c5ed739` · PR #255** |
+| GitHub `main` | **`45afe5fe05deb96c8c9b5b72b274e7f459f4cd09` · PR #258** |
 | Producción | `https://sdlive.show` |
 | Estado macro | **Finance/Calendar/Site Schedule/Show Day/Admin/Rental/Availability/Lead Core/Assistant operational** |
-| Active Gate | **Finance ownership semantics: owner money vs third-party pass-through money** |
-| Next Gate | **2026 PILA estimator in Finance** |
+| Active Gate | **Ningún gate de implementación seleccionado; revisar backlog y escoger siguiente workstream** |
+| PILA | **Backlog / research candidate; NO es el siguiente gate por defecto** |
 | WhatsApp owner control | **PR #246 merged; Meta/Cloudflare rollout intentionally paused** |
 | Bloqueado | **Generic Finance write-back / D1 Finance mirror / bidirectional sync** |
 
@@ -27,9 +27,9 @@
 
 ## Workflow obligatorio
 
-Runtime: `inspect current main → short branch → implement → tests/CI → PR → CI green → squash merge → exactly one representative production smoke`.
+Runtime: `inspect current main → short branch → implement → tests/CI → PR → CI green → ask owner authorization → squash merge → exactly one representative production smoke`.
 
-Docs-only: `branch → docs → CI → PR → squash merge`. No production smoke para docs-only.
+Docs-only: `branch → docs → CI → PR → CI green → ask owner authorization → squash merge`. No production smoke para docs-only.
 
 QA manual con owner: **una sola acción por vez**.
 
@@ -45,8 +45,8 @@ QA manual con owner: **una sola acción por vez**.
 - General Finance Admin remains read-only.
 - **Only approved Finance write exception:** third-party `Marcar pagado` may record a real payment by writing only `PAGO_TERCEROS.J = Valor pagado tercero` and `K = Fecha pago tercero`, after server-side re-read/revalidation.
 - Generic Finance write-back remains blocked.
-- Raw/full transaction facts (`Valor bruto`, `Valor Recibido`) must remain available even when management analytics derive owner-only economics.
-- Do not infer legal/tax treatment solely from `Cobro terceros`.
+- Raw/full transaction facts (`Valor bruto`, `Valor Recibido`) remain available even when management analytics derive owner-only economics.
+- Owner-management semantics do not automatically determine legal/tax/PILA treatment.
 - Rental pricing/quote logic = backend authoritative.
 - Availability = D1 Availability Core, no AI-owned truth.
 - Leads = one Lead Core D1 source of truth.
@@ -57,17 +57,21 @@ QA manual con owner: **una sola acción por vez**.
 - Assistant session remains stateless/sealed; no full-transcript persistence.
 - Privacy consent remains explicit and product-owned.
 
-# Finance third-party payments — CLOSED / PASS
+# Finance owner-money + third-party operations — CLOSED / PASS
 
-Latest closeout:
+Latest consolidated closeout:
+
+`docs/checkpoints/handoff-finance-owner-money-closeout-2026-09-26.md`
+
+Third-party write-path closeout:
 
 `docs/checkpoints/handoff-finance-third-party-closed-2026-09-26.md`
 
-Historical handoff:
+Owner-money/history roadmap:
 
-`docs/checkpoints/handoff-finance-third-party-operational-2026-09-07.md`
+`docs/roadmap/finance-owner-money-and-third-party-history-2026-09-26.md`
 
-Roadmap:
+Historical third-party/PILA roadmap:
 
 `docs/roadmap/finance-third-party-pila-2026-09-05.md`
 
@@ -78,99 +82,102 @@ Roadmap:
 - ✅ PR #251 — physical `PAGO_TERCEROS` ledger integration + selected-year/monthly reconciliation backend.
 - ✅ PR #252 — visible COP reconciliation by third-party name: `Deuda`, `Cobrado`, `Pagado`.
 - ✅ PR #253 — operational obligations queue + bounded Admin Finance `Marcar pagado` action.
-- ✅ AppSheet `Terceros` tab owner-verified to hide fully paid debt and show only outstanding obligations.
+- ✅ AppSheet `Terceros` owner-verified to hide fully paid debt and show outstanding obligations.
 - ✅ AppSheet proportional calculation corrected so monetary values no longer depend on rounded `Tasa retención calc`.
-- ✅ PR #255 — normalized third-party payable/payment precision and added production regression coverage.
+- ✅ PR #255 — normalized third-party payable/payment precision and production regression coverage.
 - ✅ Representative production `Marcar pagado` smoke — PASS on 2026-09-26.
+- ✅ PR #256 — third-party smoke documented and owner-money audit gate opened.
+- ✅ Sheets/AppSheet audit — raw/full facts preserved; owner reporting layer implemented without rewriting historical facts.
+- ✅ PR #257 — owner-attributable management metrics + full transaction facts + registered third-party payment history.
+- ✅ Production visual smoke of #257 — PASS.
+- ✅ PR #258 — `Overview` / `Third parties` Finance tabs; Overview default, third-party operational UI on demand.
+- ✅ Production visual smoke of #258 — PASS.
 
-Merged commits:
+Merged closeout commits:
 
-- #249 `c2b2ff1eb977d0d2d0c532abc3fbf65a61c9bd5e`
-- #250 `4dcf3fe90f50fbaf77f41227f9b8b4ce4c6db1bf`
-- #251 `b312b4e7f47ff5526f1bace8325aa85e4a4a1b02`
-- #252 `b02bda1406ba152884aa9b4b2976c7cd9141aba4`
-- #253 `d4d036bed5203d655dff8ff875f7188868845176`
 - #255 `5a0f7cc263930c134ecc0733427ac1812c5ed739`
+- #256 `e2a19fd1a4ae54e5c9c5a41a86164c17262a427b`
+- #257 `08a6b9ab021b562a5054edf1e7f130c20ceb45f4`
+- #258 `45afe5fe05deb96c8c9b5b72b274e7f459f4cd09`
 
-## Canonical third-party semantics
+## Canonical management semantics
+
+For a valid parent:
+
+- `invoiceGross = Valor bruto`
+- `thirdPartyGross = Cobro terceros`
+- `ownerGenerated = invoiceGross - thirdPartyGross`
 
 For a valid paid parent:
 
-- `invoiceGross = Valor bruto`
 - `bankReceived = Valor Recibido`
 - `factor = bankReceived / invoiceGross`
-- `thirdPartyPayable = Cobro terceros * factor`
-- `ownCashReceived = bankReceived - thirdPartyPayable`
+- `thirdPartyPayable = thirdPartyGross * factor`
+- `ownerCashReceived = bankReceived - thirdPartyPayable`
 
 Child payable uses the same full factor:
 
 - `childPayable = Bruto tercero * factor`
 - `childDebt = childPayable - Valor pagado tercero`
 
-Displayed percentage fields may be rounded for presentation, but monetary calculations must use the full ratio.
+Displayed percentage fields may be rounded for presentation, but monetary calculations use the full ratio.
 
-### Reconciliation section
+## Raw/full facts vs management view
 
-**COP only**, grouped by third-party name:
+Persisted/raw transaction facts remain intact for reconciliation, accounting and later tax/legal review:
 
-- `Tercero`
-- `Deuda a terceros` = current balance still owed
-- `Cobrado de terceros` = proportional third-party amount after the parent is actually paid with valid `Valor Recibido`
-- `Pagado a terceros` = persisted actual third-party payments
+- `Valor bruto`
+- `Valor Recibido`
+- `Cobro terceros`
+- dates/currency/work context
 
-Unassigned amount remains visible as `Sin desglose`.
+Owner-facing performance views use owner-attributable economics instead of silently treating third-party pass-through as owner revenue.
 
-### Operational card
+Finance Admin also keeps **Full transaction facts** visible separately.
 
-- not in collection workflow → hidden;
-- 🟠 `Esperando pago del cliente` → workflow complete, client not paid;
-- 🟢 `Listo para pagar` → parent `Pagado`, valid `Valor Recibido`, positive third-party balance;
-- fully paid → disappears;
-- `Sin desglose` cannot be marked paid.
+## Third-party operational UX
 
-Endpoints:
+Finance Admin defaults to `Overview`.
 
-- `GET /api/admin/finance/third-party/obligations`
-- `POST /api/admin/finance/third-party/mark-paid`
+`Third parties` opens on demand and contains the third-party-specific operational material:
 
-The POST re-reads both tables, recalculates eligibility/balance server-side, writes only physical `PAGO_TERCEROS!J:K`, re-reads, then verifies the obligation is no longer pending.
+- reconciliation by name;
+- obligations workflow;
+- registered paid history.
 
-# Current Active Gate — Finance ownership semantics
+The registered payment history is based on physical `PAGO_TERCEROS` payment facts. Current schema stores cumulative `Valor pagado tercero` plus one `Fecha pago tercero` per obligation, so this is **not** an append-only event log of every partial payment.
 
-The third-party write flow is closed. Before PILA, verify that management analytics distinguish **money that actually belongs to the owner** from **full transaction/bank totals that include third-party pass-through money**.
+## Sheets/AppSheet reporting state
 
-Desired model:
+- `OWNER_FINANCE` is a derived reporting layer, not an AppSheet operational table.
+- `REGISTRO` historical facts/schema were preserved during owner-money reporting changes.
+- owner-facing Sheet dashboard/pivots use owner generated / owner cash / owner receivable as appropriate.
+- full transaction totals remain available in a reconciliation block.
+- AppSheet owner-money work only removed the stale `Valid If` from `Neto estimado tercero calc`; the direct full-ratio App formula remains.
 
-- `Valor bruto` and full `Valor Recibido` remain persisted as raw/full transaction facts;
-- full billed/received totals remain available for bank reconciliation, accounting/tax review and statutory reporting where applicable;
-- owner-facing management metrics (`generated`, `received`, monthly average, charts, revenue concentration and similar business-performance views) should represent money economically attributable to the owner after the canonical proportional third-party payable is removed;
-- do not erase or overwrite full transaction facts to achieve owner-only analytics;
-- do not automatically decide statutory tax/PILA treatment from `Cobro terceros`.
+# Known non-blocking Finance debt
 
-Current code requires audit because several core Finance views still use full `Valor Neto` / `Valor Recibido`, while the third-party subsystem separately computes `ownCashReceived`.
+These are backlog items, not active regressions:
 
-A dedicated read-only **Paid to third parties** history view is also required. It must remain separate from the current obligations queue and show persisted payments even after fully paid obligations disappear. Minimum fields: third-party name, payment date, amount paid, currency, client and project/show. Canonical detail and acceptance criteria live in `docs/roadmap/finance-owner-money-and-third-party-history-2026-09-26.md`.
+1. Some Sheet dashboard helper sections use fixed client filters and can omit newly added clients.
+2. Sheet monthly chart ranges are fixed to January–March and should become dynamic before treating them as full-year visualization.
+3. `PENDIENTES` represents a narrower collection workflow subset than total owner receivable; labels/semantics must keep that distinction clear.
+4. Data-quality REVIEW can legitimately preserve raw cash facts rather than silently correcting them; at the 2026-09-26 audit, row `154d9a77` had received cash above gross with no third-party allocation.
+5. Third-party payment history is cumulative-per-obligation, not event-level partial-payment history.
 
-## Exact next action
+# PILA — backlog / research candidate only
 
-1. audit Google Sheets + AppSheet formulas and persisted/virtual fields for `Valor bruto`, `Valor Neto`, `Valor Recibido`, `Cobro terceros` and third-party-derived values;
-2. compare those semantics with Finance Admin `generated`, `received`, Top Clients, receivables, averages/charts and tax-reserve bases;
-3. define one canonical owner-money metric while preserving full/raw transaction totals separately;
-4. add the read-only paid-to-third-parties historical view from `PAGO_TERCEROS` persisted payment facts;
-5. implement deterministic tests and a bounded Finance Admin change only after the audit confirms the exact mismatch;
-6. after this ownership gate passes, start the 2026 PILA estimator.
+A Colombian PILA estimator is **not the selected next gate**.
 
-# Next Gate — 2026 PILA estimator
+If explicitly selected later:
 
-Browser-local/year-versioned planning calculator in `/admin/finance/`.
+- research and verify the then-current legal/operational rules before coding;
+- version parameters by contribution year;
+- keep it planning/estimator-only unless a future scope explicitly changes that;
+- do not infer statutory contribution treatment solely from management fields such as `Cobro terceros` or owner cash;
+- preserve Finance source-of-truth boundaries.
 
-Hard boundaries:
-
-- no Sheet/AppSheet/D1 writes;
-- exact current 2026 rules/FSP thresholds must be verified before coding final parameters;
-- support personal-services and own-account/different-contract modes as specified in the Finance roadmap;
-- do not automatically include or exclude `Cobro terceros` from statutory PILA income;
-- clearly label estimator/planning status and unsupported scenarios.
+Older PILA-specific notes are historical planning material, not approval to start implementation automatically.
 
 # WhatsApp owner control — merged, rollout paused
 
@@ -192,18 +199,24 @@ The old PR #191 remains superseded historical source material and must not be me
 - Admin stabilization.
 - Public visual stabilization.
 - Rental image-editor parity.
-- Finance general read-only dashboard foundation.
-- Finance third-party schema/ledger/reconciliation/payment operations through PR #255 with production smoke PASS.
+- Finance general dashboard foundation.
+- Finance third-party schema/ledger/reconciliation/payment operations through PR #255 with production write smoke PASS.
+- Finance owner-money semantics + full transaction reconciliation + paid-third-party history through PR #257 with smoke PASS.
+- Finance third-party tab UX through PR #258 with smoke PASS.
 
-# Priority after PILA
+# Candidate next workstreams — owner selection required
 
-1. Rental real-time availability + double-booking protection.
-2. Mobile Rental Cart total/sticky summary.
-3. Rental quote/PDF automation + shared Finance Document Generator foundation.
-4. Calendar/Projects workflow additions.
-5. SD.Live Patch.
-6. CRM/Admin Inbox/analytics/SEO/performance/accessibility/CMS advanced backlog.
+No ordering is approved yet.
+
+- Finance cleanup/debt listed above.
+- Rental real-time availability + double-booking protection.
+- Mobile Rental Cart total/sticky summary.
+- Rental quote/PDF automation + shared Finance Document Generator foundation.
+- Calendar/Projects workflow additions.
+- SD.Live Patch.
+- CRM/Admin Inbox/analytics/SEO/performance/accessibility/CMS advanced backlog.
+- PILA estimator research/planning, only if explicitly selected.
 
 # Exact continuation point
 
-**Inspect current `main` at/after `5a0f7cc263930c134ecc0733427ac1812c5ed739`. Finance third-party payment operations are CLOSED/PASS. Audit owner-money vs pass-through-money semantics across Sheets/AppSheet/Admin, preserving full/raw transaction totals, and add a read-only historical view of actual third-party payments by name/date/work. Only after that audit is reconciled should the 2026 PILA estimator begin.**
+**Inspect current `main` at/after `45afe5fe05deb96c8c9b5b72b274e7f459f4cd09`. Finance owner-money and third-party operations/UX are CLOSED/PASS. There is no approved next implementation gate. Review the reconciled backlog with the owner, select one bounded workstream, then create a short-lived runtime branch. Do not automatically start PILA.**
