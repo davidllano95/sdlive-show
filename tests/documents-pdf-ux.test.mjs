@@ -31,7 +31,7 @@ test("draft documents prioritize live preview before the editor", () => {
   assert.match(ux, /shell\.classList\.add\("documents-draft-preview-first"\)/);
 });
 
-test("finalized TEST documents prioritize PDF ready state and inline private PDF preview", () => {
+test("finalized TEST documents bypass draft row handlers and prioritize PDF preview", () => {
   const ux = read("admin/documents/pdf-artifact-ux.js");
   const artifacts = read("documents-pdf-artifacts.js");
   assert.match(ux, /Issued TEST artifact/);
@@ -46,8 +46,12 @@ test("finalized TEST documents prioritize PDF ready state and inline private PDF
   assert.match(artifacts, /"Content-Disposition": `inline; filename=/);
   assert.match(ux, /<div class="documents-issued-status" data-issued-status>Checking signed PDF…<\/div>[\s\S]*data-issued-preview[\s\S]*<h4>/);
   assert.match(ux, /shell\.classList\.remove\("documents-draft-preview-first"\)/);
+  assert.match(ux, /function installRegistryCapture\(\)/);
+  assert.match(ux, /list\.addEventListener\("click", async \(event\) =>/);
+  assert.match(ux, /status === "draft"/);
+  assert.match(ux, /event\.stopPropagation\(\)/);
   assert.match(ux, /event\.stopImmediatePropagation\(\)/);
-  assert.match(ux, /info\.status !== "draft"/);
+  assert.match(ux, /await showIssuedDocument\(info\)/);
 });
 
 test("international draft UX removes FX date and states rate as 1 USD to original currency", () => {
