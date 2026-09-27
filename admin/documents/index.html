@@ -11,6 +11,7 @@
   <link rel="stylesheet" href="./dashboard.css" />
   <link rel="stylesheet" href="./mobile-dashboard.css" />
   <link rel="stylesheet" href="./documents/documents.css?v=20260927-2" />
+  <link rel="stylesheet" href="./documents/management.css?v=20260927-1" />
 </head>
 <body>
   <div class="backoffice">
@@ -89,7 +90,7 @@
           <section class="document-editor-shell" id="documentEditor" hidden>
             <div class="editor-toolbar">
               <div><span class="eyebrow" id="editorKindLabel">Draft</span><h3 id="editorTitle">Untitled draft</h3></div>
-              <div class="editor-toolbar__actions"><span class="documents-chip" id="draftRevChip">rev —</span><span class="documents-message" id="draftSaveState"></span><button class="button button--ghost" id="closeEditor" type="button">Close</button></div>
+              <div class="editor-toolbar__actions"><span class="documents-chip" id="draftRevChip">rev —</span><span class="documents-message" id="draftSaveState"></span><button class="button button--danger" id="deleteDraft" type="button">Delete draft</button><button class="button button--ghost" id="closeEditor" type="button">Close</button></div>
             </div>
             <div class="document-editor-grid">
               <form id="draftForm" class="draft-editor" autocomplete="off">
@@ -142,6 +143,12 @@
           <div class="documents-grid">
             <section class="documents-card documents-card--wide">
               <div class="documents-card__head"><div><span class="eyebrow">Issuer</span><h3>Legal issuer profile</h3></div><span class="documents-chip" id="issuerCount">0 profiles</span></div>
+              <div class="profile-manager" aria-label="Issuer profiles">
+                <label for="issuerProfilePicker">Existing profile</label>
+                <select id="issuerProfilePicker"><option value="">New issuer…</option></select>
+                <button class="button button--ghost" id="newIssuerProfile" type="button">New issuer</button>
+                <button class="button button--danger" id="deleteIssuerProfile" type="button">Delete issuer</button>
+              </div>
               <form id="issuerForm" class="documents-form">
                 <div class="field"><label for="issuerId">Profile ID</label><input id="issuerId" name="id" value="samuel" required /></div>
                 <div class="field field--grow"><label for="issuerLegalName">Legal name</label><input id="issuerLegalName" name="legalName" autocomplete="name" required /></div>
@@ -173,7 +180,7 @@
               <div class="client-layout">
                 <form id="clientForm" class="documents-form documents-form--client">
                   <input id="clientId" name="id" type="hidden" />
-                  <div class="field"><label for="clientDisplayName">Display name</label><input id="clientDisplayName" name="displayName" required /></div><div class="field"><label for="clientLegalName">Legal name</label><input id="clientLegalName" name="legalName" required /></div><div class="field"><label for="clientTaxIdType">Tax ID type</label><input id="clientTaxIdType" name="taxIdType" placeholder="NIT / EIN" /></div><div class="field"><label for="clientTaxId">Tax ID</label><input id="clientTaxId" name="taxId" /></div><div class="field"><label for="clientCurrency">Default currency</label><select id="clientCurrency" name="defaultCurrency"><option value="">—</option><option>COP</option><option>USD</option></select></div><div class="field"><label for="clientPoPolicy">PO policy</label><select id="clientPoPolicy" name="poPolicy"><option value="none">None</option><option value="document">Per document</option><option value="line">Per line</option><option value="required">Required</option></select></div><div class="field"><label for="clientTerms">Payment terms (days)</label><input id="clientTerms" name="paymentTermsDays" type="number" min="0" max="3650" /></div><div class="field"><label for="clientCountry">Country</label><input id="clientCountry" name="country" /></div><div class="field field--grow"><label for="clientBillingAddress">Billing address</label><input id="clientBillingAddress" name="billingAddress" /></div><div class="field"><label class="check"><input id="clientShowBank" name="showBankDetails" type="checkbox" /> Show bank details by default</label></div><div class="documents-form__actions"><button class="button" type="submit">Save client</button><button class="button button--ghost" id="newClient" type="button">New</button><span id="clientMessage" class="documents-message"></span></div>
+                  <div class="field"><label for="clientDisplayName">Display name</label><input id="clientDisplayName" name="displayName" required /></div><div class="field"><label for="clientLegalName">Legal name</label><input id="clientLegalName" name="legalName" required /></div><div class="field"><label for="clientTaxIdType">Tax ID type</label><input id="clientTaxIdType" name="taxIdType" placeholder="NIT / EIN" /></div><div class="field"><label for="clientTaxId">Tax ID</label><input id="clientTaxId" name="taxId" /></div><div class="field"><label for="clientCurrency">Default currency</label><select id="clientCurrency" name="defaultCurrency"><option value="">—</option><option>COP</option><option>USD</option></select></div><div class="field"><label for="clientPoPolicy">PO policy</label><select id="clientPoPolicy" name="poPolicy"><option value="none">None</option><option value="document">Per document</option><option value="line">Per line</option><option value="required">Required</option></select></div><div class="field"><label for="clientTerms">Payment terms (days)</label><input id="clientTerms" name="paymentTermsDays" type="number" min="0" max="3650" /></div><div class="field"><label for="clientCountry">Country</label><input id="clientCountry" name="country" /></div><div class="field field--grow"><label for="clientBillingAddress">Billing address</label><input id="clientBillingAddress" name="billingAddress" /></div><div class="field"><label class="check"><input id="clientShowBank" name="showBankDetails" type="checkbox" /> Show bank details by default</label></div><div class="documents-form__actions"><button class="button" type="submit">Save client</button><button class="button button--ghost" id="newClient" type="button">New</button><button class="button button--danger" id="deleteClientProfile" type="button">Delete</button><span id="clientMessage" class="documents-message"></span></div>
                 </form>
                 <div id="clientList" class="client-list" aria-live="polite"></div>
               </div>
@@ -187,5 +194,6 @@
   <script src="./documents/documents.js?v=20260927-2"></script>
   <script src="./documents/editor.js?v=20260927-1"></script>
   <script src="./admin-stabilization.js?v=20260825-1"></script>
+  <script src="./documents/management.js?v=20260927-1"></script>
 </body>
 </html>

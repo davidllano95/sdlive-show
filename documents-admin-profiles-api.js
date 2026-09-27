@@ -10,6 +10,10 @@ import {
   upsertIssuerProfile,
   uploadPrivateSignature
 } from "./documents-profiles.js";
+import {
+  deleteClientProfileStorage,
+  deleteIssuerProfileStorage
+} from "./documents-storage-profile-delete.js";
 import { inspectDocumentsStoragePreflight } from "./documents-storage-preparation.js";
 
 const API_PREFIX = "/api/admin/documents";
@@ -58,11 +62,16 @@ function publicError(error) {
     "application_json_required", "multipart_form_required", "request_too_large", "invalid_json", "body_must_be_object",
     "signature_file_required", "invalid_issuer_id", "issuer_required_fields_missing", "invalid_issuer_addresses", "invalid_issuer_bank",
     "invalid_client_id", "client_required_fields_missing", "invalid_client_currency", "invalid_po_policy",
-    "invalid_payment_terms_days", "invalid_finance_aliases", "issuer_not_found", "signature_png_required",
-    "invalid_signature_size", "documents_storage_unavailable", "documents_bucket_unavailable",
-    "explicit_test_sequence_confirmation_required"
+    "invalid_payment_terms_days", "invalid_finance_aliases", "issuer_not_found", "client_not_found", "signature_png_required",
+    "invalid_signature_size", "documents_storage_unavailable", "documents_storage_batch_required", "documents_bucket_unavailable",
+    "issuer_profile_in_use", "client_profile_in_use", "explicit_test_sequence_confirmation_required"
   ];
   if (message.startsWith("unexpected_test_sequence_state:")) return { status: 409, error: message };
+  if (message === "issuer_profile_in_use" || message === "client_profile_in_use") return { status: 409, error: message };
+  if (message === "issuer_not_found" || message === "client_not_found") return { status: 404, error: message };
+  if (message === "documents_storage_unavailable" || message === "documents_storage_batch_required" || message === "documents_bucket_unavailable") {
+    return { status: 503, error: message };
+  }
   return { status: Number(error?.status) || (known.includes(message) ? 400 : 500), error: known.includes(message) ? message : "documents_request_failed" };
 }
 
@@ -140,6 +149,10 @@ export async function handleDocumentsProfilesApi(request, env, { verifyAdmin } =
       const profile = await upsertIssuerProfile(env, await readJson(request), { id: decodeURIComponent(issuerMatch[1]) });
       return json({ ok: true, profile });
     }
+    if (issuerMatch && request.method === "DELETE") {
+      const result = await deleteIssuerProfileStorage(env, decodeURIComponent(issuerMatch[1]));
+      return json({ ok: true, ...result });
+    }
 
     if (path === `${API_PREFIX}/clients` && request.method === "POST") {
       const profile = await upsertClientProfile(env, await readJson(request));
@@ -150,6 +163,10 @@ export async function handleDocumentsProfilesApi(request, env, { verifyAdmin } =
     if (clientMatch && request.method === "PUT") {
       const profile = await upsertClientProfile(env, await readJson(request), { id: decodeURIComponent(clientMatch[1]) });
       return json({ ok: true, profile });
+    }
+    if (clientMatch && request.method === "DELETE") {
+      const result = await deleteClientProfileStorage(env, decodeURIComponent(clientMatch[1]));
+      return json({ ok: true, ...result });
     }
 
     if (path === `${API_PREFIX}/signatures/upload` && request.method === "POST") {
@@ -177,6 +194,9 @@ export function documentsProfilesApiPolicy() {
     settingsReturnsSignaturePublicUrl: false,
     testEnsureConfirmation: TEST_SEQUENCE_CONFIRMATION,
     realSequenceBootstrapExposed: false,
-    signatureMaxRequestBytes: MAX_SIGNATURE_REQUEST_BYTES
+    signatureMaxRequestBytes: MAX_SIGNATURE_REQUEST_BYTES,
+    profileDeleteRequiresUnused: true,
+    issuerDeleteRemovesPrivateSignatureAssets: true,
+    profileDeleteNeverDeletesDocuments: true
   });
 }
