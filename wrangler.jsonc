@@ -46,6 +46,11 @@
       "binding": "CMS_DB",
       "database_name": "sdlive-cms-production",
       "database_id": "102616c5-bbe7-417a-9a7a-c0a062f91134"
+    },
+    {
+      "binding": "DOCS_DB",
+      "database_name": "sdlive-documents-production",
+      "database_id": "9c7834fb-be73-4d1a-8bda-0f62ab1e0aaa"
     }
   ],
 
@@ -53,6 +58,10 @@
     {
       "binding": "MEDIA_BUCKET",
       "bucket_name": "sdlive-media-production"
+    },
+    {
+      "binding": "DOCS_BUCKET",
+      "bucket_name": "sdlive-documents-private"
     }
   ],
 
