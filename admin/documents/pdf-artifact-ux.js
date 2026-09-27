@@ -181,6 +181,34 @@
     await checkPdf(documentInfo, panel);
   }
 
+  function installRegistryCapture() {
+    const list = document.getElementById("registryList");
+    if (!list || list.dataset.issuedCaptureReady === "true") return;
+    list.dataset.issuedCaptureReady = "true";
+    list.addEventListener("click", async (event) => {
+      const row = event.target.closest(".registry-row");
+      if (!row || !list.contains(row)) return;
+      const status = String(row.querySelector(".registry-row__meta em")?.textContent || "").trim().toLowerCase();
+      if (!status || status === "draft") {
+        restoreDraftView();
+        return;
+      }
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+      const rows = Array.from(list.querySelectorAll(".registry-row"));
+      const index = rows.indexOf(row);
+      if (index < 0) return;
+      try {
+        const documents = await readRegistry();
+        const info = documents[index];
+        if (info && info.status !== "draft") await showIssuedDocument(info);
+      } catch (error) {
+        console.error("[SD.Live] Failed to open issued document", error);
+      }
+    }, true);
+  }
+
   function cleanFxUi() {
     for (const control of document.querySelectorAll(".line-exchange-rate-date")) {
       control.closest(".line-field")?.remove();
@@ -204,15 +232,6 @@
       if (!info) return;
       row.dataset.artifactUxReady = "true";
       if (info.status !== "draft") row.dataset.issuedDocument = "true";
-      row.addEventListener("click", (event) => {
-        if (info.status === "draft") {
-          restoreDraftView();
-          return;
-        }
-        event.preventDefault();
-        event.stopImmediatePropagation();
-        showIssuedDocument(info);
-      }, true);
     });
   }
 
@@ -235,6 +254,7 @@
       }
     }
 
+    installRegistryCapture();
     cleanFxUi();
     decorateRegistry();
   }
