@@ -6,11 +6,10 @@ export function escapeHtml(value) {
 
 export function formatMoney(minor, currency, locale = "en-US") {
   const value = Number(minor) / 100;
-  const digits = currency === "COP" ? 0 : 2;
   if (!Number.isFinite(value)) return "—";
   return new Intl.NumberFormat(locale, {
-    minimumFractionDigits: digits,
-    maximumFractionDigits: digits
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
   }).format(value);
 }
 
@@ -48,10 +47,11 @@ export function draftBaseCss() {
 }
 
 export function safeBrand(issuer) {
-  const brand = String(issuer?.brandLabel || "sd•live · Creative Audio").trim();
-  const [primary, ...rest] = brand.split("·").map((part) => part.trim()).filter(Boolean);
+  const raw = String(issuer?.brandLabel || "").trim();
+  if (!raw) return { primary: "SD.Live", secondary: "Creative Audio" };
+  const [primary, ...rest] = raw.split("·").map((part) => part.trim()).filter(Boolean);
   return {
-    primary: primary || "sd•live",
-    secondary: rest.join(" · ") || "Creative Audio"
+    primary: primary || "SD.Live",
+    secondary: rest.join(" · ")
   };
 }
