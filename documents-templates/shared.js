@@ -48,16 +48,22 @@ export function draftBaseCss() {
   `;
 }
 
+function withLogoFlag(brand, showLogo) {
+  Object.defineProperty(brand, "showLogo", { value: showLogo, enumerable: false });
+  return brand;
+}
+
 export function safeBrand(issuer) {
   const original = String(issuer?.brandLabel || "").trim();
+  const showLogo = original.includes("[[logo]]");
   const raw = original.replaceAll("[[logo]]", "").trim();
-  if (raw === "[[none]]") return { primary: "", secondary: "" };
-  if (!raw) return { primary: "SD.Live", secondary: "Creative Audio" };
+  if (raw === "[[none]]") return withLogoFlag({ primary: "", secondary: "" }, showLogo);
+  if (!raw) return withLogoFlag({ primary: "SD.Live", secondary: "Creative Audio" }, showLogo);
 
   const [first, ...rest] = raw.split("·").map((part) => part.trim()).filter(Boolean);
   const standardBrand = first === "SD.Live" || first === "SD•Live";
-  return {
+  return withLogoFlag({
     primary: standardBrand ? "SD•Live" : (first || ""),
     secondary: standardBrand && !rest.length ? "Creative Audio" : rest.join(" · ")
-  };
+  }, showLogo);
 }
