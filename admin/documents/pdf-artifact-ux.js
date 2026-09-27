@@ -4,10 +4,12 @@
   if (window.SDLiveDocumentsPdfArtifactUx) return;
   window.SDLiveDocumentsPdfArtifactUx = true;
 
+  const FINALIZE_WARNING_COPY = "This consumes a TEST number and freezes the snapshot. Real CC/INV series remain locked. The signed PDF is generated automatically from the frozen snapshot; artifact failure never releases the number and can be retried.";
+
   function patchFinalizeCopy() {
     const warning = document.querySelector(".documents-finalize-warning");
-    if (warning) {
-      warning.textContent = "This consumes a TEST number and freezes the snapshot. Real CC/INV series remain locked. The signed PDF is generated automatically from the frozen snapshot; artifact failure never releases the number and can be retried.";
+    if (warning && warning.textContent !== FINALIZE_WARNING_COPY) {
+      warning.textContent = FINALIZE_WARNING_COPY;
     }
 
     const saveState = document.getElementById("draftSaveState");
