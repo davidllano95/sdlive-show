@@ -1,4 +1,4 @@
-import { canonicalJson, sha256Hex } from "./documents-domain.js";
+import { canonicalJson } from "./documents-domain.js";
 
 const PROFILE_ID = /^[A-Za-z0-9][A-Za-z0-9:_-]{0,79}$/;
 export const TEST_SEQUENCE_CONFIRMATION = "ENSURE_TEST_DOCUMENT_SEQUENCES";
@@ -54,6 +54,11 @@ function jsonObject(value, code) {
 function parseJson(value, fallback) {
   if (value == null || value === "") return fallback;
   try { return JSON.parse(value); } catch { return fallback; }
+}
+
+async function sha256BytesHex(bytes) {
+  const digest = await crypto.subtle.digest("SHA-256", bytes);
+  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
 export function normalizeIssuerProfile(input, { id } = {}) {
@@ -276,7 +281,7 @@ export async function uploadPrivateSignature(env, {
 
   const id = `sig-${crypto.randomUUID()}`;
   const key = `signatures/${issuer}/${id}.png`;
-  const hash = await sha256Hex(new Uint8Array(data));
+  const hash = await sha256BytesHex(data);
   const at = clean(now(), 80);
   const privateBucket = bucket(env);
   await privateBucket.put(key, data, {
