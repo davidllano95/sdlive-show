@@ -22,6 +22,13 @@ function bankRows(details = {}) {
   return rows.map(([label, value]) => `<dt>${e(label)}</dt><dd>${e(value)}</dd>`).join("");
 }
 
+function lineDateLabel(line) {
+  const start = String(line?.serviceDate || "").trim();
+  const end = String(line?.serviceDateEnd || "").trim();
+  if (start && end && start !== end) return `${formatDateLabel(start, "en-US")} – ${formatDateLabel(end, "en-US")}`;
+  return start ? formatDateLabel(start, "en-US") : (end ? formatDateLabel(end, "en-US") : "");
+}
+
 export function renderInvoice(snapshot, { mode = "draft", signatureDataUri = null } = {}) {
   const draft = mode === "draft";
   const issuer = snapshot.issuer || {};
@@ -40,17 +47,19 @@ export function renderInvoice(snapshot, { mode = "draft", signatureDataUri = nul
     const subtotal = lines.reduce((sum, line) => sum + Number(line.amountMinor || 0), 0);
     body += `<tr class="group"><td colspan="5">${e(group.title)}</td></tr>`;
     body += lines.map((line) => {
-      const quantity = Number(line.quantity) > 0 ? Number(line.quantity) : 1;
-      const unitMinor = line.unitMinor == null ? Math.round(Number(line.amountMinor || 0) / quantity) : Number(line.unitMinor);
+      const quantity = Number.isSafeInteger(Number(line.quantity)) && Number(line.quantity) >= 0 ? Number(line.quantity) : 0;
+      const effectiveQuantity = quantity > 0 ? quantity : 1;
+      const unitMinor = line.unitMinor == null ? Math.round(Number(line.amountMinor || 0) / effectiveQuantity) : Number(line.unitMinor);
       const original = line.originalCurrency && line.originalAmountMinor != null
         ? `Original expense ${e(line.originalCurrency)} ${formatMoney(line.originalAmountMinor, line.originalCurrency, line.originalCurrency === "COP" ? "es-CO" : "en-US")}`
         : "";
+      const dateLabel = lineDateLabel(line);
       const details = [
-        line.serviceDate ? `Date: ${formatDateLabel(line.serviceDate, "en-US")}` : "",
+        dateLabel ? `Date / period: ${dateLabel}` : "",
         line.poNumber ? `PO / ref: ${line.poNumber}` : "",
         line.reference ? line.reference : ""
       ].filter(Boolean).map((value) => `<div class="sub">${e(value)}</div>`).join("");
-      return `<tr><td><span class="kind">${e(KIND_LABELS[line.kind] || "Other")}</span>${e(line.description)}${details}${original ? `<div class="orig mono">${original}</div>` : ""}</td><td class="num">${e(quantity)}</td><td class="sub" style="padding-left:10px">${e(line.unit || "unit")}</td><td class="num">${fmt(unitMinor)}</td><td class="num">${fmt(line.amountMinor)}</td></tr>`;
+      return `<tr><td><span class="kind">${e(KIND_LABELS[line.kind] || "Other")}</span>${e(line.description)}${details}${original ? `<div class="orig mono">${original}</div>` : ""}</td><td class="num">${quantity > 0 ? e(quantity) : "—"}</td><td class="sub" style="padding-left:10px">${e(line.unit || "—")}</td><td class="num">${fmt(unitMinor)}</td><td class="num">${fmt(line.amountMinor)}</td></tr>`;
     }).join("");
     body += `<tr class="subtotal"><td colspan="4">Subtotal · ${e(group.title.toLowerCase())}</td><td class="num">${fmt(subtotal)}</td></tr>`;
   }
