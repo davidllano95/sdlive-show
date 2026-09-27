@@ -16,6 +16,7 @@ import { handleAssistantLeadsMigrationApi } from "./assistant-admin-leads-migrat
 import { handleAssistantStoragePreparationApi } from "./assistant-admin-storage-preparation.js";
 import { handleAssistantRuntimeReadinessApi } from "./assistant-admin-readiness.js";
 import { handleDocumentsStorageApi } from "./documents-admin-storage-preparation.js";
+import { handleDocumentsEditorApi } from "./documents-admin-editor-api.js";
 import { handleDocumentsProfilesApi } from "./documents-admin-profiles-api.js";
 import { handleFinanceThirdPartyDashboardApi } from "./finance-third-party-dashboard-api.js";
 import { handleFinanceThirdPartyOperationsApi } from "./finance-third-party-operations-api.js";
@@ -246,6 +247,13 @@ export default {
         verifyAdmin: verifyAdminViaExistingApi
       });
       if (response) return response;
+    }
+
+    if (path.startsWith("/api/admin/documents/")) {
+      const editorResponse = await handleDocumentsEditorApi(request, env, {
+        verifyAdmin: verifyAdminViaExistingApi
+      });
+      if (editorResponse) return editorResponse;
     }
 
     if (path.startsWith("/api/admin/documents/")) {

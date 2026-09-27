@@ -38,6 +38,82 @@ export async function readDocument(env, documentId) {
   return db.prepare("SELECT * FROM doc_documents WHERE id = ? LIMIT 1").bind(text(documentId)).first();
 }
 
+export async function listDocumentRegistryRows(env, { limit = 100 } = {}) {
+  const db = dbFromEnv(env);
+  const count = Math.min(Math.max(Number(limit) || 100, 1), 250);
+  const result = await db.prepare(`SELECT * FROM doc_documents
+    ORDER BY COALESCE(issue_date, created_at) DESC, created_at DESC
+    LIMIT ?`).bind(count).all();
+  return result.results || [];
+}
+
+export async function createDocumentDraftRow(env, {
+  documentId,
+  kindId,
+  docType,
+  issuerId,
+  clientId = null,
+  clientName = "",
+  clientTaxId = "",
+  projectLabel = "",
+  poNumbers = "",
+  currency,
+  totalMinor = 0,
+  issueDate = null,
+  issueYear = null,
+  draftJson,
+  actorEmail = "",
+  at
+} = {}) {
+  const db = dbFromEnv(env);
+  if (typeof db.batch !== "function") throw new Error("documents_storage_batch_required");
+  await db.batch([
+    db.prepare(`INSERT INTO doc_documents (
+      id, kind_id, doc_type, issuer_id, client_id, status, origin,
+      client_name, client_tax_id, project_label, po_numbers, currency,
+      total_minor, issue_date, issue_year, draft_json, draft_rev,
+      pdf_status, created_at, updated_at
+    ) VALUES (?, ?, ?, ?, ?, 'draft', 'system', ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 'none', ?, ?)`)
+      .bind(documentId, kindId, docType, issuerId, clientId, clientName, clientTaxId,
+        projectLabel, poNumbers, currency, totalMinor, issueDate, issueYear, draftJson, at, at),
+    db.prepare(`INSERT INTO doc_document_events (document_id, event, actor_email, at, detail_json)
+      VALUES (?, 'draft_created', ?, ?, ?)`)
+      .bind(documentId, text(actorEmail).toLowerCase(), at, canonicalJson({ kindId }))
+  ]);
+  return readDocument(env, documentId);
+}
+
+export async function saveDocumentDraftRow(env, {
+  documentId,
+  clientId = null,
+  clientName = "",
+  clientTaxId = "",
+  projectLabel = "",
+  poNumbers = "",
+  currency,
+  totalMinor = 0,
+  issueDate = null,
+  issueYear = null,
+  draftJson,
+  expectedRev,
+  actorEmail = "",
+  at
+} = {}) {
+  const db = dbFromEnv(env);
+  const result = await db.prepare(`UPDATE doc_documents SET
+      client_id = ?, client_name = ?, client_tax_id = ?, project_label = ?, po_numbers = ?,
+      currency = ?, total_minor = ?, issue_date = ?, issue_year = ?, draft_json = ?,
+      draft_rev = draft_rev + 1, updated_at = ?
+    WHERE id = ? AND status = 'draft' AND draft_rev = ?`)
+    .bind(clientId, clientName, clientTaxId, projectLabel, poNumbers,
+      currency, totalMinor, issueDate, issueYear, draftJson, at, documentId, expectedRev).run();
+  if (Number(result?.meta?.changes ?? result?.changes ?? 0) !== 1) throw new Error("stale_draft_revision");
+  await db.prepare(`INSERT INTO doc_document_events (document_id, event, actor_email, at, detail_json)
+    VALUES (?, 'draft_saved', ?, ?, ?)`)
+    .bind(documentId, text(actorEmail).toLowerCase(), at, canonicalJson({ fromRev: expectedRev, toRev: expectedRev + 1 })).run();
+  return readDocument(env, documentId);
+}
+
 export async function readDocumentByFinalizeKey(env, finalizeKey) {
   const db = dbFromEnv(env);
   return db.prepare("SELECT * FROM doc_documents WHERE finalize_key = ? LIMIT 1").bind(requireFinalizeKey(finalizeKey)).first();
