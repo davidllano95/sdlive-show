@@ -1,186 +1,162 @@
-# Future Finance Document Generator
+# Future Finance Document Generator — historical precursor
 
-Status: **Future roadmap / not active**
+**Status:** **PROMOTED / SUPERSEDED BY SD.Live Documents v1**  
+**Originally recorded:** 2026-08-25 — America/Bogota  
+**Promoted:** 2026-09-26 — America/Bogota
 
-Date recorded: **2026-08-25 — America/Bogota**
+This file preserves the original roadmap direction that led to the active SD.Live Documents workstream. It is no longer the implementation contract.
 
-This document preserves a future SD.Live Finance capability without promoting it into the current Active Gate.
+Current canonical contract:
 
-## Goal
+`docs/roadmap/sdlive-documents-v1.md`
 
-Add an Admin-side document generator capable of creating, storing and exporting professional SD.Live commercial/financial documents from existing operational data where possible.
+Current project status:
 
-Initial document types:
+`PROJECT_STATUS.md`
 
-- **Cuenta de cobro**
-- **Cotización**
-- **Factura**
+## What from this note remains valid
 
-The module should feel like part of the existing Finance workspace rather than a second standalone finance system.
+The original direction was to add an Admin-side document generator capable of creating, storing and exporting professional commercial/financial documents from existing operational data while **not** creating a second Finance source of truth.
 
-## Product direction
+That direction is now implemented as the broader **SD.Live Documents** module rather than as a Finance-only PDF utility.
 
-### 1. Reuse existing data first
+Core principles preserved in the active contract:
 
-Where the source data already exists, prefill documents instead of asking the user to type the same information again.
+- reuse existing data first;
+- Finance/REGISTRO remains source-owned by Sheets/AppSheet;
+- document drafts may prefill from Finance but do not write back in v1;
+- issuer/client/line-item data is editable per draft;
+- server-side validation remains authoritative;
+- preview before finalization;
+- stable document IDs and history;
+- immutable/reproducible finalized snapshots;
+- PDF storage/versioning designed before operational use;
+- email/send remains a separate auditable future action;
+- Rental-derived quotations must reuse authoritative backend pricing rather than duplicate it.
 
-Potential sources:
+## Scope evolution
 
-- SD.Live Track / `REGISTRO`
-- Finance read model
-- Rental quote/request data
-- future CRM/client records
-- future project/event records
+The original note grouped three concepts:
 
-Reusable fields may include:
+- Cuenta de cobro;
+- Cotización;
+- Factura.
 
-- client / company
-- project / show
-- work dates
-- services / line items
-- quantities
-- currency
-- gross/net values
-- taxes / fees / withholdings where applicable
-- notes
-- billing/contact data
+The approved v1 scope is narrower and more precise:
 
-Do **not** create a second source of truth for event/payment state merely to generate documents.
+1. **Cuenta de cobro · Colombia · ES**
+2. **Invoice · International · EN**
 
-### 2. Cuenta de cobro
+The previous separate service-vs-expense invoice idea is replaced by one flexible Invoice template capable of mixing services, per diem, transport and reimbursable expenses in a single line-item model.
 
-Future workflow should support:
+Future, not v1:
 
-- select an existing event/work item or start manually;
-- prefill client, project, date and amount;
-- reusable SD.Live issuer/profile data;
-- payment/bank instructions;
-- concept/description;
-- optional line-item breakdown;
-- taxes/withholdings display where appropriate;
-- document number/reference if desired;
-- PDF preview;
-- PDF export/download;
-- optional email/send workflow;
-- attach/reference the generated document from the related Finance record without changing formula-owned Sheet fields unexpectedly.
+- Cotización · CO · ES;
+- Quote · INTL · EN;
+- email/send actions;
+- accepted-quote lifecycle;
+- second issuer;
+- receipt appendices.
 
-### 3. Cotización
+These future kinds/actions reuse the same Documents registry, numbering, snapshot, profile, renderer and private artifact foundations.
 
-Future workflow should support:
+## Cuenta de cobro direction carried forward
+
+The active Documents contract supports:
+
+- one or more work items in one account;
+- editable client/project/date/amount/concept;
+- per-line purchase-order/OC references;
+- issuer profile;
+- optional bank/payment details;
+- versioned Colombian retention/legal text;
+- system-controlled numbering;
+- automatic signature;
+- preview;
+- permanent registry;
+- reissue with a new number + supersedes relation.
+
+Historical client-scoped numbering remains untouched. New Documents v1 Cuenta de cobro records intentionally use a global per-issuer sequence for traceability.
+
+## Invoice direction carried forward
+
+The active Invoice v1 is an international English document with:
+
+- flexible service/reimbursement line items;
+- issuer/client/engagement details;
+- optional due date/terms/PO;
+- bank/payment information;
+- original-currency reimbursement metadata where useful;
+- automatic signature;
+- global sequential numbering continuing the existing invoice series.
+
+## Cotización / Quote direction retained for later
+
+Future quote creation may support:
 
 - manual quote creation;
 - quote from Rental request/cart;
 - quote from client/project data;
-- reusable service/equipment line items;
+- services/equipment line items;
 - quantities, rates, days and discounts;
 - COP/USD support;
 - subtotal/tax/total presentation;
 - validity date;
-- terms and conditions;
-- notes/exclusions;
+- terms/conditions and exclusions;
 - branded PDF;
-- version/revision history;
-- Draft / Sent / Accepted / Rejected / Expired lifecycle if later approved;
+- revisions;
+- later Draft/Sent/Accepted/Rejected/Expired lifecycle if explicitly approved;
 - duplicate/revise quote;
-- convert an accepted quote into a downstream billing document without retyping all line items.
+- downstream document creation without retyping lines.
 
-This broadens the existing Rental-roadmap item for an automatic PDF quotation into a reusable Finance capability rather than a Rental-only PDF generator.
+Rental remains authoritative for Rental pricing/availability rules.
 
-### 4. Factura
+## Colombian electronic invoice warning remains unchanged
 
-The UI may eventually prepare invoice data and presentation, but **a locally generated PDF must never be represented as a legally valid Colombian electronic invoice merely because it looks like one**.
+A locally generated PDF must **never** be represented as a legally valid Colombian electronic invoice merely because it looks like one.
 
-Before activating real invoicing, evaluate:
+Before activating real Colombian electronic invoicing, separately evaluate and verify at implementation time:
 
-- DIAN electronic invoicing requirements applicable to SD.Live/the issuer;
+- DIAN electronic-invoicing requirements applicable to the issuer;
 - numbering/resolution requirements;
 - taxes and issuer responsibilities;
-- whether integration with an authorized electronic-invoicing provider/API is required;
-- CUFE/QR/XML or other mandatory artifacts when applicable;
-- cancellation/credit-note/debit-note workflows if required;
+- authorized provider/API requirements where applicable;
+- CUFE/QR/XML and other mandatory artifacts;
+- cancellation/credit-note/debit-note workflows;
 - immutable audit/version history.
 
-Until compliant electronic invoicing is designed and verified, the module may only provide an explicitly non-fiscal **invoice draft / pro-forma style document** where legally appropriate.
+The current `invoice-intl-en` document is an international commercial invoice template and does not claim to be a Colombian DIAN electronic invoice.
 
-### 5. Shared document engine
+## Shared engine direction — now adopted
 
-Prefer one underlying document model/rendering engine with type-specific templates instead of three unrelated implementations.
+The original recommendation to prefer one shared document model/rendering engine over unrelated generators is now an explicit architectural decision.
 
-Shared capabilities should include:
+The active Documents v1 contract includes:
 
-- SD.Live branding/template system;
-- issuer profile;
-- client profile;
-- line items;
-- currency formatting;
-- dates and document IDs;
-- calculations with server-side validation;
-- PDF rendering;
-- preview before finalization;
-- save Draft;
-- revision/version history;
-- duplicate document;
-- status/history timeline;
-- secure Admin-only access;
-- responsive desktop/mobile creation experience.
+- optional sd•live visual branding while Samuel remains the legal issuer;
+- Issuer Profile;
+- Client Profile;
+- private signature asset;
+- flexible line items;
+- currency/date/document formatting;
+- atomic numbering;
+- preview;
+- Draft/Finalized/Void lifecycle;
+- supersedes relation;
+- permanent registry/events;
+- private PDF storage;
+- responsive Admin creation experience.
 
-## Suggested future information model
+## Source-of-truth constraints — still mandatory
 
-A future document record could conceptually contain:
+- Google Sheets / SD.Live Track retain Finance ownership.
+- Documents does not write formula-owned or operational Finance fields in v1.
+- No D1 Finance mirror.
+- Billed documents prefill contractual `Valor bruto`, not owner-management calculations.
+- Server-side Rental totals remain authoritative for future Rental quotes.
+- Finalized document snapshots remain historically reproducible when source/profile/template defaults later change.
+- Email delivery, if added later, is a separate explicit action.
 
-- document ID
-- document type
-- document number/reference
-- status
-- created/updated timestamps
-- issuer snapshot
-- client snapshot
-- linked source record IDs
-- project/show reference
-- currency
-- line-item snapshots
-- subtotal
-- taxes/fees/withholdings
-- total
-- validity/due date where applicable
-- terms/notes
-- generated artifact reference
-- revision/version
+## Exact continuation
 
-The exact schema must be designed only when the feature is promoted. Do not infer it from this roadmap note.
-
-## Important architecture constraints
-
-- Keep Google Sheets / SD.Live Track ownership rules intact until a deliberate migration/write model is approved.
-- Do not write into formula-owned columns from the document generator.
-- Server-side totals must remain authoritative for Rental-derived quotations.
-- A document snapshot should remain historically reproducible even if client/rate data changes later.
-- Generated documents need stable IDs/versioning before they are used operationally.
-- Email delivery should be a separate auditable action, not an accidental side effect of previewing/generating a PDF.
-- The feature remains **future backlog** and must not interrupt the current visual/Admin stabilization gate.
-
-## Potential later enhancements
-
-- saved client billing profiles;
-- reusable service/rate catalog;
-- recurring templates;
-- digital acceptance of quotations;
-- expiration reminders;
-- quote → account-for-payment/invoice conversion;
-- payment-status association;
-- Drive archival;
-- email templates and attachment delivery;
-- automatic document naming and folder structure;
-- client-facing secure document link;
-- CRM association once the CRM source-of-truth is approved;
-- analytics such as quote acceptance rate and quoted vs invoiced revenue.
-
-## Promotion criteria
-
-Do not promote this feature until:
-
-1. the current Admin/Finance stabilization work is closed;
-2. Finance source-of-truth/write ownership is explicit;
-3. the initial document type and MVP workflow are selected;
-4. legal/tax scope for `Factura` is clarified before implementing anything presented as a fiscal invoice;
-5. PDF storage/versioning and client-data handling are designed.
+**Do not implement from this historical note. Use `docs/roadmap/sdlive-documents-v1.md` and current `PROJECT_STATUS.md`. The old Future Finance Document Generator roadmap has been promoted into the active SD.Live Documents v1 workstream.**
