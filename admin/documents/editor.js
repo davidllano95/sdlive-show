@@ -202,6 +202,16 @@
     dateEnd.type = "date";
     dateEnd.value = line.serviceDateEnd || "";
 
+    const clearDates = documentCreate("button", "line-clear-dates");
+    clearDates.type = "button";
+    clearDates.textContent = kindId === "cc-co-es" ? "Sin fecha" : "No date";
+    clearDates.title = kindId === "cc-co-es" ? "Dejar esta línea sin fecha" : "Clear both line dates";
+    clearDates.addEventListener("click", () => {
+      date.value = "";
+      dateEnd.value = "";
+      scheduleSave();
+    });
+
     const po = documentCreate("input", "line-po");
     po.placeholder = "PO / reference";
     po.value = line.poNumber || line.reference || "";
@@ -243,6 +253,7 @@
       lineField("Line total", total),
       lineField("Date from (optional)", date),
       lineField("Date to (optional)", dateEnd),
+      clearDates,
       lineField("PO / reference (optional)", po)
     ];
     if (kindId === "invoice-intl-en") {
