@@ -23,7 +23,15 @@ test("PDF artifact UX does not create a self-triggering MutationObserver loop", 
   assert.match(ux, /warning\.textContent = FINALIZE_WARNING_COPY/);
 });
 
-test("finalized TEST documents use issued artifact view with inline private PDF preview", () => {
+test("draft documents prioritize live preview before the editor", () => {
+  const ux = read("admin/documents/pdf-artifact-ux.js");
+  assert.match(ux, /documents-draft-preview-first/);
+  assert.match(ux, /\.documents-draft-preview-first \.preview-panel\{order:1/);
+  assert.match(ux, /\.documents-draft-preview-first \.draft-editor\{order:2/);
+  assert.match(ux, /shell\.classList\.add\("documents-draft-preview-first"\)/);
+});
+
+test("finalized TEST documents prioritize PDF ready state and inline private PDF preview", () => {
   const ux = read("admin/documents/pdf-artifact-ux.js");
   const artifacts = read("documents-pdf-artifacts.js");
   assert.match(ux, /Issued TEST artifact/);
@@ -36,6 +44,8 @@ test("finalized TEST documents use issued artifact view with inline private PDF 
   assert.match(ux, /frame\.src = `\$\{pdfPath\}#view=FitH`/);
   assert.match(ux, /download\.download =/);
   assert.match(artifacts, /"Content-Disposition": `inline; filename=/);
+  assert.match(ux, /<div class="documents-issued-status" data-issued-status>Checking signed PDF…<\/div>[\s\S]*data-issued-preview[\s\S]*<h4>/);
+  assert.match(ux, /shell\.classList\.remove\("documents-draft-preview-first"\)/);
   assert.match(ux, /event\.stopImmediatePropagation\(\)/);
   assert.match(ux, /info\.status !== "draft"/);
 });

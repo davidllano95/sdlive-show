@@ -11,8 +11,10 @@ test("international invoice total due is emphasized without a black box", () => 
   assert.match(template, /<span class="label">Total due<\/span><span class="v">/);
 });
 
-test("international invoice fills a Letter page and keeps footer at the bottom", () => {
+test("international invoice fills a Letter page and uses the lower page area", () => {
   assert.match(template, /\.page\{display:flex;flex-direction:column\}/);
+  assert.match(template, /\.bottom\{[^}]*margin-top:auto;[^}]*padding-top:30px/);
+  assert.match(template, /\.footer\{margin-top:14px\}/);
   assert.match(template, /@media print\{html,body\{width:8\.5in;height:11in;min-height:11in;background:#fff!important;padding:0!important\}/);
   assert.match(template, /\.page\{width:8\.5in!important;height:11in!important;min-height:11in!important/);
 });
