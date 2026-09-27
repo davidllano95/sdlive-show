@@ -93,6 +93,31 @@ test("Cuenta de cobro draft renders optional metadata, type, quantity and ordere
   assert.doesNotMatch(html, /data:image/i);
 });
 
+test("Cuenta de cobro collapses to concepts and prices when no structured line metadata is used", () => {
+  const html = renderCuentaDeCobro({
+    issuer,
+    client,
+    currency: "COP",
+    lines: [
+      { kind: "professional_service", description: "Diseño de sonido", quantity: 0, unit: null, unitMinor: 30000000, amountMinor: 30000000 },
+      { kind: "professional_service", description: "Programación QLab", quantity: 0, unit: null, unitMinor: 15000000, amountMinor: 15000000 }
+    ],
+    totalMinor: 45000000,
+    showBankDetails: false
+  }, { mode: "draft" });
+  assert.match(html, /<table class="concept-table simple">/);
+  assert.match(html, /Diseño de sonido/);
+  assert.match(html, /Programación QLab/);
+  assert.match(html, /300\.000,00/);
+  assert.match(html, /150\.000,00/);
+  assert.doesNotMatch(html, /<th>Cant\.<\/th>/);
+  assert.doesNotMatch(html, /Valor unitario/);
+  assert.doesNotMatch(html, /Tipo: Servicio/);
+  assert.doesNotMatch(html, /Unidad:/);
+  assert.doesNotMatch(html, /Fecha \/ período/);
+  assert.doesNotMatch(html, /Orden de compra/);
+});
+
 test("Cuenta de cobro uses the first column for optional quantity and renders a dash at zero", () => {
   const html = renderCuentaDeCobro({
     issuer,
