@@ -36,13 +36,6 @@ function normalizedFxRate(value) {
   return rate;
 }
 
-function normalizedFxDate(value) {
-  const date = asText(value);
-  if (!date) return null;
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error("invalid_exchange_rate_date");
-  return date;
-}
-
 function normalizedLine(line, index) {
   assertPlainObject(line, "invalid_line_item");
   const id = asText(line.id) || `line-${index + 1}`;
@@ -96,8 +89,7 @@ function normalizedLine(line, index) {
           if (value < 0) throw new Error("negative_original_amount_not_supported");
           return value;
         })(),
-    exchangeRate: normalizedFxRate(line.exchangeRate),
-    exchangeRateDate: normalizedFxDate(line.exchangeRateDate)
+    exchangeRate: normalizedFxRate(line.exchangeRate)
   };
 }
 
