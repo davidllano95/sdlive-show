@@ -47,6 +47,8 @@
       .documents-issued-number{font:750 1.05rem/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;color:#c9b8ff}.documents-issued-meta{margin-top:6px;color:#f1edf9}
       .documents-issued-status{display:inline-flex;align-items:center;gap:8px;margin-top:16px;padding:8px 11px;border-radius:999px;background:rgba(255,255,255,.06);font-size:.88rem}
       .documents-issued-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}.documents-issued-actions a{text-decoration:none}
+      .documents-issued-preview{margin-top:20px;border:1px solid rgba(255,255,255,.12);border-radius:14px;overflow:hidden;background:#fff;min-height:720px}
+      .documents-issued-preview[hidden]{display:none!important}.documents-issued-preview iframe{display:block;width:100%;height:min(82vh,940px);min-height:720px;border:0;background:#fff}
       .registry-row[data-issued-document="true"] em{color:#c9b8ff}
     `;
     document.head.append(style);
@@ -80,10 +82,15 @@
   async function checkPdf(documentInfo, panel) {
     const status = panel.querySelector("[data-issued-status]");
     const actions = panel.querySelector("[data-issued-actions]");
+    const preview = panel.querySelector("[data-issued-preview]");
+    const frame = panel.querySelector("[data-issued-pdf-frame]");
     status.textContent = "Checking signed PDF…";
     actions.replaceChildren();
+    if (preview) preview.hidden = true;
+    if (frame) frame.removeAttribute("src");
     try {
-      const response = await fetch(`${API}/${encodeURIComponent(documentInfo.id)}/pdf`, {
+      const pdfPath = `${API}/${encodeURIComponent(documentInfo.id)}/pdf`;
+      const response = await fetch(pdfPath, {
         credentials: "include",
         cache: "no-store"
       });
@@ -91,9 +98,13 @@
         status.textContent = "PDF ready · private artifact";
         const download = document.createElement("a");
         download.className = "button";
-        download.href = `${API}/${encodeURIComponent(documentInfo.id)}/pdf`;
+        download.href = pdfPath;
         download.textContent = "Download PDF";
         actions.append(download);
+        if (frame && preview) {
+          frame.src = `${pdfPath}#view=FitH`;
+          preview.hidden = false;
+        }
         return;
       }
       const data = await response.json().catch(() => null);
@@ -156,7 +167,8 @@
       <div class="documents-issued-meta">${String(documentInfo.clientName || "No client").replace(/[<>&]/g, "")} · ${formatMoney(documentInfo.totalMinor, documentInfo.currency)}</div>
       <p>This TEST number and snapshot are already frozen. The draft editor is disabled for issued documents.</p>
       <div class="documents-issued-status" data-issued-status>Checking signed PDF…</div>
-      <div class="documents-issued-actions" data-issued-actions></div>`;
+      <div class="documents-issued-actions" data-issued-actions></div>
+      <div class="documents-issued-preview" data-issued-preview hidden><iframe data-issued-pdf-frame title="Finalized PDF preview"></iframe></div>`;
     shell.scrollIntoView({ behavior: "smooth", block: "start" });
     await checkPdf(documentInfo, panel);
   }
