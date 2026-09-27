@@ -24,15 +24,20 @@ test("sequence display formatting never parses display text back into numbers", 
   assert.throws(() => formatSequenceNumber("Invoice", 19), /invalid_display_pattern/);
 });
 
-test("line totals use integer minor units and reject inconsistent math", () => {
+test("line totals use integer minor units and optional zero quantity means one rate with hidden quantity", () => {
   const result = calculateDocumentLines([
-    { description: "Service", unitMinor: 600000, quantity: 1 },
+    { description: "Service", unitMinor: 600000, quantity: 0, unit: "service", serviceDate: "2026-09-20", serviceDateEnd: "2026-09-22" },
     { description: "Per diem", unitMinor: 5000, quantity: 4 },
     { description: "Taxi", amountMinor: 2364 }
   ]);
   assert.equal(result.totalMinor, 622364);
+  assert.equal(result.lines[0].quantity, 0);
+  assert.equal(result.lines[0].amountMinor, 600000);
+  assert.equal(result.lines[0].unit, "service");
+  assert.equal(result.lines[0].serviceDateEnd, "2026-09-22");
   assert.equal(result.lines[1].amountMinor, 20000);
   assert.throws(() => calculateDocumentLines([{ description: "Bad", unitMinor: 100, quantity: 2, amountMinor: 201 }]), /line_amount_mismatch/);
+  assert.throws(() => calculateDocumentLines([{ description: "Bad qty", unitMinor: 100, quantity: -1 }]), /line_quantity_must_be_non_negative_integer/);
 });
 
 test("Spanish amount words match common COP billing amounts", () => {
@@ -63,7 +68,7 @@ test("final snapshot freezes number, issuer, client, lines, signature and source
     currency: "COP",
     issueCity: "Bogotá",
     issueDate: "2026-09-27",
-    lines: [{ id: "l1", description: "Ingeniero de Sonido", amountMinor: 45000000, poNumber: "PO-42" }],
+    lines: [{ id: "l1", description: "Ingeniero de Sonido", quantity: 0, unit: null, amountMinor: 45000000, poNumber: "PO-42" }],
     usesCostsDeductions: false,
     showBankDetails: false
   };
@@ -81,6 +86,7 @@ test("final snapshot freezes number, issuer, client, lines, signature and source
   assert.equal(result.snapshot.number.value, 21);
   assert.equal(result.snapshot.totals.totalMinor, 45000000);
   assert.equal(result.snapshot.totals.amountInWords, "CUATROCIENTOS CINCUENTA MIL PESOS M/CTE");
+  assert.equal(result.snapshot.lines[0].quantity, 0);
   assert.equal(result.snapshot.lines[0].poNumber, "PO-42");
   assert.equal(result.snapshot.sources[0].sourceRef, "row-1");
   assert.match(result.snapshotSha256, /^[0-9a-f]{64}$/);
