@@ -5,6 +5,10 @@ import {
   readDraftDocument,
   saveDraftDocument
 } from "./documents-drafts.js";
+import {
+  buildTestFinalizePreview,
+  finalizeThroughTestSeries
+} from "./documents-finalize-gate.js";
 import { deleteDocumentDraftRow } from "./documents-storage-delete.js";
 
 const API_PREFIX = "/api/admin/documents";
@@ -46,6 +50,14 @@ async function readJson(request) {
   }
 }
 
+function requireFinalizeBody(body) {
+  const keys = Object.keys(body).sort();
+  if (keys.length !== 2 || keys[0] !== "draftRev" || keys[1] !== "finalizeKey") {
+    throw Object.assign(new Error("invalid_finalize_body"), { status: 400 });
+  }
+  return body;
+}
+
 function publicError(error) {
   const code = String(error?.message || error || "documents_request_failed");
   const statusByCode = {
@@ -60,25 +72,55 @@ function publicError(error) {
     invalid_issuer_id: 400,
     invalid_client_id: 400,
     invalid_general_amount_minor: 400,
+    invalid_finalize_body: 400,
+    invalid_finalize_key: 400,
+    invalid_draft_revision: 400,
     issuer_not_found: 409,
     client_not_found: 409,
     unsupported_currency: 400,
+    unsupported_document_type: 400,
     unknown_document_kind: 400,
-    invalid_draft_revision: 400,
     stale_draft_revision: 409,
     document_not_found: 404,
     document_not_draft: 409,
     document_total_overflow: 400,
+    document_sequence_not_found: 409,
+    invalid_sequence_state: 409,
+    sequence_issuer_mismatch: 409,
+    sequence_document_type_mismatch: 409,
+    test_series_issuer_mismatch: 409,
+    real_document_series_disabled: 409,
+    finalize_key_already_used: 409,
+    document_finalize_conflict: 409,
+    finalize_commit_not_observed: 409,
+    issue_date_required: 422,
+    issue_city_required: 422,
+    issuer_required: 422,
+    issuer_mismatch: 422,
+    issuer_id_number_required: 422,
+    client_required: 422,
+    client_tax_id_required: 422,
+    uses_costs_deductions_required: 422,
+    active_signature_required: 422,
+    at_least_one_line_required: 422,
+    line_description_required: 422,
+    line_quantity_must_be_non_negative_integer: 422,
+    line_amount_required: 422,
+    line_amount_mismatch: 422,
+    draft_currency_mismatch: 422,
+    document_kind_type_mismatch: 422,
     documents_storage_unavailable: 503,
     documents_storage_batch_required: 503
   };
   return { status: Number(error?.status) || statusByCode[code] || 500, error: statusByCode[code] ? code : "documents_request_failed" };
 }
 
-export async function handleDocumentsEditorApi(request, env, { verifyAdmin } = {}) {
+export async function handleDocumentsEditorApi(request, env, { verifyAdmin, finalizeGate = {} } = {}) {
   const path = pathOf(request);
   if (!path.startsWith(`${API_PREFIX}/`)) return null;
-  const isEditorRoute = path === `${API_PREFIX}/registry` || path === `${API_PREFIX}/drafts` || /^\/api\/admin\/documents\/doc-[A-Za-z0-9-]+(?:\/preview)?$/.test(path);
+  const isEditorRoute = path === `${API_PREFIX}/registry`
+    || path === `${API_PREFIX}/drafts`
+    || /^\/api\/admin\/documents\/doc-[A-Za-z0-9-]+(?:\/(?:preview|finalize-preview|finalize))?$/.test(path);
   if (!isEditorRoute) return null;
 
   const user = await actor(request, env, verifyAdmin);
@@ -91,6 +133,27 @@ export async function handleDocumentsEditorApi(request, env, { verifyAdmin } = {
     if (path === `${API_PREFIX}/drafts` && request.method === "POST") {
       const document = await createDraftDocument(env, await readJson(request), { actorEmail: user.email });
       return json({ ok: true, document }, 201);
+    }
+
+    const finalizePreviewMatch = path.match(/^\/api\/admin\/documents\/(doc-[A-Za-z0-9-]+)\/finalize-preview$/);
+    if (finalizePreviewMatch && request.method === "GET") {
+      const draftRev = new URL(request.url).searchParams.get("draftRev");
+      return json(await buildTestFinalizePreview(env, {
+        documentId: finalizePreviewMatch[1],
+        draftRev
+      }, finalizeGate));
+    }
+
+    const finalizeMatch = path.match(/^\/api\/admin\/documents\/(doc-[A-Za-z0-9-]+)\/finalize$/);
+    if (finalizeMatch && request.method === "POST") {
+      const body = requireFinalizeBody(await readJson(request));
+      const result = await finalizeThroughTestSeries(env, {
+        documentId: finalizeMatch[1],
+        draftRev: body.draftRev,
+        finalizeKey: body.finalizeKey,
+        actorEmail: user.email
+      }, finalizeGate);
+      return json({ ...result, testOnly: true, pdfEnabled: false });
     }
 
     const previewMatch = path.match(/^\/api\/admin\/documents\/(doc-[A-Za-z0-9-]+)\/preview$/);
@@ -132,6 +195,11 @@ export function documentsEditorApiPolicy() {
     previewReturnsSignatureBytes: false,
     maxBodyBytes: MAX_BODY_BYTES,
     optimisticConcurrency: "draftRev",
+    finalizeRequiresExactDraftRev: true,
+    finalizeRequiresUuidKey: true,
+    finalizeTestSeriesOnly: true,
+    realSeriesFinalizeEnabled: false,
+    finalizeRendersPdf: false,
     draftDeleteOnly: true,
     issuedDeleteBlockedBySchemaTrigger: true
   });
