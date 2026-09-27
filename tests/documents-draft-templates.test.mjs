@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import { renderCuentaDeCobro } from "../documents-templates/cc-co-es.v1.js";
 import { renderInvoice } from "../documents-templates/invoice-intl-en.v1.js";
 import { formatMoney, safeBrand } from "../documents-templates/shared.js";
+import { calculateDocumentLines } from "../documents-domain.js";
 import { documentsDraftPolicy } from "../documents-drafts.js";
 import { documentsEditorApiPolicy, handleDocumentsEditorApi } from "../documents-admin-editor-api.js";
 
@@ -47,7 +48,7 @@ test("blank visual brand falls back to the canonical SD.Live brand", () => {
   assert.deepEqual(safeBrand({ brandLabel: "Custom Brand" }), { primary: "Custom Brand", secondary: "" });
 });
 
-test("Cuenta de cobro draft renders optional metadata, type, quantity and ordered Spanish bank rows", () => {
+test("Cuenta de cobro draft renders optional metadata, type badge, quantity and ordered Spanish bank rows", () => {
   const html = renderCuentaDeCobro({
     issuer,
     client,
@@ -79,7 +80,9 @@ test("Cuenta de cobro draft renders optional metadata, type, quantity and ordere
   assert.match(html, /\.concept-title\{text-align:center;font-size:10\.6pt;font-weight:800/);
   assert.match(html, /<table class="concept-table"><colgroup>/);
   assert.match(html, /<th>Cant\.<\/th><th>Descripción<\/th>/);
-  assert.match(html, /Tipo: Servicio · Unidad: servicio/);
+  assert.match(html, /<span class="kind">Servicio<\/span>Ingeniero de Sonido/);
+  assert.match(html, /Unidad: servicio/);
+  assert.doesNotMatch(html, /Tipo: Servicio/);
   assert.match(html, /225\.000,00/);
   assert.match(html, /450\.000,00/);
   assert.match(html, /OC-254/);
@@ -112,7 +115,7 @@ test("Cuenta de cobro collapses to concepts and prices when no structured line m
   assert.match(html, /150\.000,00/);
   assert.doesNotMatch(html, /<th>Cant\.<\/th>/);
   assert.doesNotMatch(html, /Valor unitario/);
-  assert.doesNotMatch(html, /Tipo: Servicio/);
+  assert.doesNotMatch(html, /<span class="kind">Servicio<\/span>/);
   assert.doesNotMatch(html, /Unidad:/);
   assert.doesNotMatch(html, /Fecha \/ período/);
   assert.doesNotMatch(html, /Orden de compra/);
@@ -145,7 +148,7 @@ test("Cuenta de cobro non-itemized mode keeps centered concepts and one general 
   assert.doesNotMatch(html, /Total<\/td>/);
 });
 
-test("Cuenta de cobro uses the first column for optional quantity and renders a dash at zero", () => {
+test("Cuenta de cobro uses the first column for optional quantity and matches international type-badge behavior", () => {
   const html = renderCuentaDeCobro({
     issuer,
     client,
@@ -156,7 +159,8 @@ test("Cuenta de cobro uses the first column for optional quantity and renders a 
   }, { mode: "draft" });
   assert.match(html, /<th>Cant\.<\/th><th>Descripción<\/th>/);
   assert.match(html, /<td class="qty">—<\/td>/);
-  assert.match(html, /Tipo: Equipo/);
+  assert.match(html, /<span class="kind">Equipo<\/span>Servicio/);
+  assert.doesNotMatch(html, /Tipo: Equipo/);
   assert.doesNotMatch(html, />01<\/td>/);
   assert.match(html, /300\.000,00/);
   assert.doesNotMatch(html, /Fecha \/ período/);
@@ -177,7 +181,7 @@ test("Cuenta de cobro renders a line date range only when supplied", () => {
   assert.match(html, /2 de septiembre de 2026 – 4 de septiembre de 2026/);
 });
 
-test("Invoice draft renders issue city/date, optional line metadata and ordered English bank rows", () => {
+test("Invoice draft renders bank details in draft and preserves original-currency FX metadata", () => {
   const html = renderInvoice({
     issuer,
     client,
@@ -191,7 +195,7 @@ test("Invoice draft renders issue city/date, optional line metadata and ordered 
     servicePeriodLabel: "Sep 2026",
     lines: [
       { kind: "professional_service", description: "Associate Sound Design", quantity: 0, unit: "", unitMinor: 600000, amountMinor: 600000, serviceDate: "2026-09-20", serviceDateEnd: "2026-09-22", poNumber: "PO-LINE-1" },
-      { kind: "transport", description: "Uber - Airport to Home", quantity: 1, unit: "trip", unitMinor: 2364, amountMinor: 2364, originalCurrency: "COP", originalAmountMinor: 7734000 }
+      { kind: "transport", description: "Rail to airport", quantity: 1, unit: "trip", unitMinor: 2364, amountMinor: 2364, originalCurrency: "EUR", originalAmountMinor: 2180, exchangeRate: "1.0845", exchangeRateDate: "2026-09-19" }
     ],
     totalMinor: 602364,
     showBankDetails: true,
@@ -206,15 +210,35 @@ test("Invoice draft renders issue city/date, optional line metadata and ordered 
   assert.match(html, /Expenses &amp; reimbursements/);
   assert.match(html, /Date \/ period: September 20, 2026 – September 22, 2026/);
   assert.match(html, /PO \/ ref: PO-LINE-1/);
-  assert.match(html, /Original expense COP 77\.340,00/);
+  assert.match(html, /Original expense EUR 21\.80/);
+  assert.match(html, /FX: 1 EUR = 1\.0845 USD · rate date: September 19, 2026/);
   assert.match(html, /<td class="num">—<\/td><td class="sub" style="padding-left:10px">—<\/td>/);
   assert.match(html, /USD 6,023\.64/);
   assert.match(html, /Thank you/);
+  assert.doesNotMatch(html, /Payment details hidden for this draft/);
   assert.doesNotMatch(html, /Hidden beneficiary/);
   const labels = ["Bank Name", "Routing Number", "Account Type", "Account Number", "Bank Address"];
   for (let i = 1; i < labels.length; i += 1) assert.ok(html.indexOf(labels[i - 1]) < html.indexOf(labels[i]));
   assert.match(html, /Signature applied on finalize/);
   assert.doesNotMatch(html, /data:image/i);
+});
+
+test("bank censor state is explicit and identical in both document types", () => {
+  const cc = renderCuentaDeCobro({ issuer, client, currency: "COP", lines: [{ kind: "equipment", description: "Test", quantity: 1, amountMinor: 100 }], totalMinor: 100, showBankDetails: false, bankDetails: bank }, { mode: "draft" });
+  const invoice = renderInvoice({ issuer, client, currency: "USD", lines: [{ kind: "equipment", description: "Test", quantity: 1, amountMinor: 100 }], totalMinor: 100, showBankDetails: false, bankDetails: bank }, { mode: "draft" });
+  assert.match(cc, /Información bancaria censurada para este documento/);
+  assert.match(invoice, /Payment details censored for this document/);
+  assert.doesNotMatch(cc, /ACCOUNT-TEST/);
+  assert.doesNotMatch(invoice, /ACCOUNT-TEST/);
+});
+
+test("line normalization accepts ISO original currencies and freezes FX rate/date", () => {
+  const result = calculateDocumentLines([{ description: "Rail", kind: "transport", quantity: 1, amountMinor: 2364, originalCurrency: "eur", originalAmountMinor: 2180, exchangeRate: "1.0845", exchangeRateDate: "2026-09-19" }]);
+  assert.equal(result.lines[0].originalCurrency, "EUR");
+  assert.equal(result.lines[0].exchangeRate, "1.0845");
+  assert.equal(result.lines[0].exchangeRateDate, "2026-09-19");
+  assert.throws(() => calculateDocumentLines([{ description: "Bad FX", amountMinor: 100, originalCurrency: "EURO" }]), /invalid_original_currency/);
+  assert.throws(() => calculateDocumentLines([{ description: "Bad FX", amountMinor: 100, originalCurrency: "EUR", exchangeRate: "0" }]), /invalid_exchange_rate/);
 });
 
 test("draft templates escape user-controlled HTML", () => {
