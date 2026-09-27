@@ -76,12 +76,12 @@
     const nodes = [
       heading,
       field("issuerBankBeneficiary", "Beneficiary"),
-      field("issuerBeneficiaryAddress", "Beneficiary address (optional)"),
       field("issuerBankName", "Bank name"),
       field("issuerRoutingNumber", "Routing / bank code"),
       field("issuerAccountType", "Account type"),
       field("issuerAccountNumber", "Account number", { type: "password" }),
       field("issuerBankAddress", "Bank address"),
+      field("issuerBeneficiaryAddress", "Beneficiary address (optional)"),
       activeWrap
     ];
     for (const node of nodes) form.insertBefore(node, actions);
@@ -110,6 +110,20 @@
     const currencyField = $("clientCurrency")?.closest(".field");
     if (currencyField) currencyField.after(kindWrap);
     else form.append(kindWrap);
+  }
+
+  function normalizeFxControls(root = document) {
+    for (const rate of root.querySelectorAll?.(".line-exchange-rate") || []) {
+      rate.placeholder = "e.g. 0.92";
+      const fieldNode = rate.closest(".line-field");
+      const label = fieldNode?.querySelector(".line-field__label");
+      if (label) label.textContent = "FX rate · 1 USD = original currency (optional)";
+    }
+    for (const date of root.querySelectorAll?.(".line-exchange-rate-date") || []) {
+      date.value = "";
+      const fieldNode = date.closest(".line-field");
+      if (fieldNode) fieldNode.hidden = true;
+    }
   }
 
   function currentIssuer() {
@@ -208,7 +222,7 @@
   function enforceActiveIssuerChoices() {
     const select = $("newIssuer");
     if (!select || !settings) return;
-    const activeIds = new Set((settings.issuers || []).filter((issuer) => issuer.active !== false).map((issuer) => issuer.id));
+    const activeIds = new Set((settings?.issuers || []).filter((issuer) => issuer.active !== false).map((issuer) => issuer.id));
     for (const option of Array.from(select.options)) {
       if (!activeIds.has(option.value)) option.remove();
     }
@@ -285,6 +299,16 @@
       const observer = new MutationObserver(enforceActiveIssuerChoices);
       observer.observe(issuerSelect, { childList: true });
     }
+
+    const fxObserver = new MutationObserver((records) => {
+      for (const record of records) {
+        for (const node of record.addedNodes) {
+          if (node.nodeType === Node.ELEMENT_NODE) normalizeFxControls(node);
+        }
+      }
+    });
+    fxObserver.observe(document.body, { childList: true, subtree: true });
+    normalizeFxControls(document);
   }
 
   async function boot() {
