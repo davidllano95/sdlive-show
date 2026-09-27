@@ -47,7 +47,7 @@ test("blank visual brand falls back to the canonical SD.Live brand", () => {
   assert.deepEqual(safeBrand({ brandLabel: "Custom Brand" }), { primary: "Custom Brand", secondary: "" });
 });
 
-test("Cuenta de cobro draft renders optional metadata, quantity and ordered Spanish bank rows", () => {
+test("Cuenta de cobro draft renders optional metadata, type, quantity and ordered Spanish bank rows", () => {
   const html = renderCuentaDeCobro({
     issuer,
     client,
@@ -58,7 +58,7 @@ test("Cuenta de cobro draft renders optional metadata, quantity and ordered Span
     terms: "Pago a 15 días",
     projectLabel: "Allegra",
     purchaseOrder: "PO-DOC-77",
-    lines: [{ description: "Ingeniero de Sonido", quantity: 2, unit: "servicio", unitMinor: 22500000, amountMinor: 45000000, poNumber: "OC-254" }],
+    lines: [{ kind: "professional_service", description: "Ingeniero de Sonido", quantity: 2, unit: "servicio", unitMinor: 22500000, amountMinor: 45000000, poNumber: "OC-254" }],
     totalMinor: 45000000,
     amountInWords: "CUATROCIENTOS CINCUENTA MIL PESOS M/CTE",
     usesCostsDeductions: false,
@@ -75,13 +75,15 @@ test("Cuenta de cobro draft renders optional metadata, quantity and ordered Span
   assert.match(html, /PO-DOC-77/);
   assert.match(html, /Pago a 15 días/);
   assert.match(html, /Nota visible/);
-  assert.match(html, /Por concepto de/);
+  assert.match(html, /<div class="concept-title">Por concepto de<\/div>/);
+  assert.match(html, /\.concept-title\{text-align:center;font-size:10\.6pt;font-weight:800/);
+  assert.match(html, /<table class="concept-table"><colgroup>/);
   assert.match(html, /<th>Cant\.<\/th><th>Descripción<\/th>/);
-  assert.match(html, /Unidad: servicio/);
+  assert.match(html, /Tipo: Servicio · Unidad: servicio/);
   assert.match(html, /225\.000,00/);
   assert.match(html, /450\.000,00/);
   assert.match(html, /OC-254/);
-  assert.doesNotMatch(html, /Fecha \/ periodo/);
+  assert.doesNotMatch(html, /Fecha \/ período/);
   assert.match(html, /La firma se aplica al finalizar/);
   assert.match(html, /co-ret@2026-1/);
   assert.doesNotMatch(html, /Hidden beneficiary/);
@@ -96,14 +98,16 @@ test("Cuenta de cobro uses the first column for optional quantity and renders a 
     issuer,
     client,
     currency: "COP",
-    lines: [{ description: "Servicio", quantity: 0, unitMinor: 30000000, amountMinor: 30000000 }],
+    lines: [{ kind: "equipment", description: "Servicio", quantity: 0, unitMinor: 30000000, amountMinor: 30000000 }],
     totalMinor: 30000000,
     showBankDetails: false
   }, { mode: "draft" });
   assert.match(html, /<th>Cant\.<\/th><th>Descripción<\/th>/);
-  assert.match(html, /<td class="num qty">—<\/td>/);
+  assert.match(html, /<td class="qty">—<\/td>/);
+  assert.match(html, /Tipo: Equipo/);
   assert.doesNotMatch(html, />01<\/td>/);
   assert.match(html, /300\.000,00/);
+  assert.doesNotMatch(html, /Fecha \/ período/);
 });
 
 test("Cuenta de cobro renders a line date range only when supplied", () => {
@@ -113,11 +117,11 @@ test("Cuenta de cobro renders a line date range only when supplied", () => {
     currency: "COP",
     issueCity: "Bogotá, Colombia",
     issueDate: "2026-10-02",
-    lines: [{ description: "Servicio", quantity: 1, unitMinor: 10000, amountMinor: 10000, serviceDate: "2026-09-02", serviceDateEnd: "2026-09-04" }],
+    lines: [{ kind: "professional_service", description: "Servicio", quantity: 1, unitMinor: 10000, amountMinor: 10000, serviceDate: "2026-09-02", serviceDateEnd: "2026-09-04" }],
     totalMinor: 10000,
     showBankDetails: false
   }, { mode: "draft" });
-  assert.match(html, /Fecha \/ periodo/);
+  assert.match(html, /Fecha \/ período/);
   assert.match(html, /2 de septiembre de 2026 – 4 de septiembre de 2026/);
 });
 
