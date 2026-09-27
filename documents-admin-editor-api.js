@@ -5,6 +5,7 @@ import {
   readDraftDocument,
   saveDraftDocument
 } from "./documents-drafts.js";
+import { deleteDocumentDraftRow } from "./documents-storage-delete.js";
 
 const API_PREFIX = "/api/admin/documents";
 const MAX_BODY_BYTES = 72 * 1024;
@@ -67,7 +68,8 @@ function publicError(error) {
     document_not_found: 404,
     document_not_draft: 409,
     document_total_overflow: 400,
-    documents_storage_unavailable: 503
+    documents_storage_unavailable: 503,
+    documents_storage_batch_required: 503
   };
   return { status: Number(error?.status) || statusByCode[code] || 500, error: statusByCode[code] ? code : "documents_request_failed" };
 }
@@ -106,6 +108,13 @@ export async function handleDocumentsEditorApi(request, env, { verifyAdmin } = {
       const document = await saveDraftDocument(env, documentMatch[1], await readJson(request), { actorEmail: user.email });
       return json({ ok: true, document });
     }
+    if (documentMatch && request.method === "DELETE") {
+      const result = await deleteDocumentDraftRow(env, {
+        documentId: documentMatch[1],
+        actorEmail: user.email
+      });
+      return json({ ok: true, ...result });
+    }
 
     return json({ ok: false, error: "Method not allowed" }, 405);
   } catch (error) {
@@ -121,6 +130,8 @@ export function documentsEditorApiPolicy() {
     draftsConsumeNumbers: false,
     previewReturnsSignatureBytes: false,
     maxBodyBytes: MAX_BODY_BYTES,
-    optimisticConcurrency: "draftRev"
+    optimisticConcurrency: "draftRev",
+    draftDeleteOnly: true,
+    issuedDeleteBlockedBySchemaTrigger: true
   });
 }
