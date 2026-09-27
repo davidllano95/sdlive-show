@@ -16,6 +16,13 @@ test("Documents Admin loads PDF artifact UX and no longer describes PDF as a fut
   assert.match(ux, /Finalized · signed PDF generation requested/);
 });
 
+test("PDF artifact UX does not create a self-triggering MutationObserver loop", () => {
+  const ux = read("admin/documents/pdf-artifact-ux.js");
+  assert.match(ux, /const FINALIZE_WARNING_COPY =/);
+  assert.match(ux, /warning\.textContent !== FINALIZE_WARNING_COPY/);
+  assert.match(ux, /warning\.textContent = FINALIZE_WARNING_COPY/);
+});
+
 test("PDF pipeline uses Cloudflare Browser Run Quick Action with raw final HTML", () => {
   const source = read("documents-pdf-artifacts.js");
   assert.match(source, /quickAction\("pdf",\s*\{/);
