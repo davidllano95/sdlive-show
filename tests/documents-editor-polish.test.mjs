@@ -38,6 +38,14 @@ test("Cuenta de cobro editor has explicit itemize and general-rate modes", () =>
   assert.match(editor, /const currentTotal = linesTotalMinor\(\)/);
 });
 
+test("non-itemized mode reuses line descriptions as editable concept lines", () => {
+  assert.match(polish, /#draftPricingMode:has\(#draftItemize:not\(:checked\)\)\+#draftLineItemsFieldset\[hidden\]\{display:block!important\}/);
+  assert.match(polish, /Concept lines/);
+  assert.match(polish, /\.line-field:not\(\.line-field--description\)/);
+  assert.match(polish, /content:"Concept"/);
+  assert.match(polish, /content:"\+ Add concept"/);
+});
+
 test("non-itemized draft totals come from the general amount and preserve hidden lines", () => {
   assert.match(drafts, /function isItemizedDraft\(draft, kindId\)/);
   assert.match(drafts, /draft\?\.itemize !== false/);
