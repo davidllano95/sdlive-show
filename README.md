@@ -6,7 +6,7 @@ Production website and private Control Center for **SD.Live — Creative Audio**
 - Public media: `https://media.sdlive.show`
 - Operational timezone: **America/Bogota** unless explicitly labelled otherwise.
 
-The public site is vanilla HTML/CSS/JS served through Cloudflare Workers + Static Assets. Workers own dynamic APIs, CMS publishing, forms and edge rendering. D1 stores structured CMS/application state, R2 stores editor-managed media, Google Sheets remains Finance persistence, AppSheet **SD.Live Track** remains the mobile/offline Finance workflow client, and Cloudflare Access protects Admin.
+The public site is vanilla HTML/CSS/JS served through Cloudflare Workers + Static Assets. Workers own dynamic APIs, CMS publishing, forms and edge rendering. D1 stores structured application state, R2 stores managed artifacts/media, Google Sheets remains Finance persistence, AppSheet **SD.Live Track** remains the mobile/offline Finance workflow client, and Cloudflare Access protects Admin.
 
 ## Source precedence
 
@@ -24,9 +24,9 @@ When docs disagree, use:
 
 ## Current state — 2026-09-26
 
-GitHub `main` at this handoff:
+Base before the Documents Active Gate docs:
 
-`45afe5fe05deb96c8c9b5b72b274e7f459f4cd09` — PR #258.
+`f5e0054a84cebf238542cbde08793d995f9059c4` — PR #259.
 
 ### Finance
 
@@ -41,7 +41,7 @@ Current behavior:
 - owner-facing management analytics use owner-attributable economics rather than counting third-party pass-through as owner revenue.
 - full billed and bank-received facts remain separately available for reconciliation/accounting/tax review.
 - Finance Admin defaults to `Overview`.
-- `Third parties` opens the third-party reconciliation, obligations and registered paid-history views only when needed.
+- `Third parties` opens reconciliation, obligations and registered paid-history views when needed.
 - representative production smokes for owner-money and the Finance tabs passed.
 
 Canonical management math:
@@ -50,8 +50,6 @@ Canonical management math:
 - `factor = Valor Recibido / Valor bruto`
 - `thirdPartyPayable = Cobro terceros * factor`
 - `ownerCashReceived = Valor Recibido - thirdPartyPayable`
-
-Displayed percentages may be rounded, but monetary calculations use the full ratio.
 
 ### Finance source-of-truth boundary
 
@@ -62,31 +60,47 @@ Displayed percentages may be rounded, but monetary calculations use the full rat
 - No bidirectional Finance sync.
 - Assistant remains isolated from Finance.
 
-### Third-party payment history limitation
+## Current Active Gate — SD.Live Documents v1
 
-The current physical schema stores cumulative `Valor pagado tercero` plus one `Fecha pago tercero` per obligation. The Admin history is therefore a registered cumulative paid fact per obligation, not an event-level log of every partial payment.
+Canonical implementation contract:
 
-### Finance docs
+`docs/roadmap/sdlive-documents-v1.md`
 
-Consolidated closeout:
+The active workstream is a reusable private Admin document registry/generator, not a one-off PDF button.
 
-`docs/checkpoints/handoff-finance-owner-money-closeout-2026-09-26.md`
+Initial v1 kinds:
 
-Owner-money/history roadmap:
+- **Cuenta de cobro · Colombia · ES**
+- **Invoice · International · EN**
 
-`docs/roadmap/finance-owner-money-and-third-party-history-2026-09-26.md`
+Key decisions:
 
-Historical third-party/PILA planning:
+- legal issuer v1 = Samuel David Llano Muñoz;
+- optional/discreet `sd•live · Creative Audio` visual branding, removable if it is confusing;
+- all draft fields editable before finalization;
+- final PDF always signed automatically;
+- drafts consume no number;
+- finalized snapshot/number are immutable;
+- Cuenta de cobro switches from historical client-scoped numbering to a new global per-issuer series, intended first real number `21`;
+- Invoice continues its existing global series, intended first real number `0019`;
+- reissue with PO gets a new number + supersedes relation;
+- dedicated private `DOCS_DB` + `DOCS_BUCKET`; no use of public `MEDIA_BUCKET`;
+- Documents reads Finance for prefill only and never writes to Sheets in v1;
+- future Cotización/Quote kinds reuse the same foundation.
 
-`docs/roadmap/finance-third-party-pila-2026-09-05.md`
+Implementation sequence:
 
-## Current Active Gate
+0. docs / Active Gate;
+1. storage foundation;
+2. domain + atomic numbering;
+3. issuer/client profiles + private signature + sequences;
+4. draft editor + preview + templates;
+5. finalize + signed PDF;
+6. Finance read-only prefill/linking;
+7. reissue/PO/registry completion;
+8. approved legacy import.
 
-**None selected.**
-
-The next step is to review the reconciled backlog and choose one bounded workstream before opening another runtime branch.
-
-PILA is a backlog/research candidate only; it is **not** the automatic next milestone.
+Real D1/R2 creation/preparation, real sequence bootstrap and smokes that consume real numbers are explicit production steps, not automatic merge side effects.
 
 ## Known non-blocking Finance debt
 
@@ -94,6 +108,10 @@ PILA is a backlog/research candidate only; it is **not** the automatic next mile
 - Sheet monthly graph ranges are fixed to January–March.
 - `PENDIENTES` is narrower than total owner receivable and must remain clearly labelled as collection-workflow scope rather than all outstanding money.
 - Event-level partial third-party payment history would require an intentional ledger redesign.
+
+## PILA
+
+PILA is a backlog/research candidate only. It is **not** the automatic next milestone while Documents v1 is active.
 
 ## WhatsApp owner control
 
@@ -115,44 +133,46 @@ PR #246 was merged as `4fc02a565317c802c07fed78e6d25bd231eeb70b`, but Meta/Cloud
 - Finance third-party payment operations through PR #255 + production write smoke.
 - Finance owner-money/full-transaction/history through PR #257 + production visual smoke.
 - Finance `Overview` / `Third parties` tabs through PR #258 + production visual smoke.
+- Finance roadmap reconciliation through PR #259.
 
-## Candidate future workstreams
+## Later candidate workstreams
 
-No ordering is approved yet:
+Documents v1 is selected now. Later candidates include:
 
-- Finance cleanup/debt.
-- Rental real-time availability + double-booking protection.
-- Mobile Rental Cart total/sticky summary.
-- Rental quote/PDF automation + shared document-generation foundation.
-- Calendar/Projects workflow additions.
-- SD.Live Patch.
-- CRM/Admin Inbox/analytics/SEO/performance/accessibility/CMS advanced backlog.
-- PILA estimator research/planning, only if explicitly selected.
+- Rental real-time availability + double-booking protection;
+- Quote/Cotización kinds on the Documents foundation;
+- Mobile Rental Cart total/sticky summary;
+- Calendar/Projects workflow additions;
+- SD.Live Patch;
+- CRM/Admin Inbox/analytics/SEO/performance/accessibility/CMS advanced backlog;
+- Finance cleanup/debt;
+- PILA estimator research/planning when deliberately selected.
 
 ## Change workflow
 
 Runtime:
 
-`inspect current main → short branch → implement/update → tests/CI → PR → CI green → ask owner authorization → squash merge → exactly one representative production smoke`.
+`inspect current main → short branch → implement/update → tests/CI → PR → CI green → squash merge → exactly one representative production smoke`.
 
 Docs-only:
 
-`branch → docs → tests/CI → PR → CI green → ask owner authorization → squash merge`.
+`branch → docs → tests/CI → PR → CI green → squash merge`.
 
-No production smoke for docs-only PRs. Manual QA with the owner: **one action at a time**.
+The owner has granted standing authorization to squash-merge in-scope, reviewed, green-CI PRs without a separate per-PR confirmation. This does not authorize silent production resource creation, real sequence bootstrap or other production-sensitive actions.
+
+No production smoke for docs-only PRs. Manual QA with the owner remains one action at a time.
 
 ## Exact continuation
 
-**Inspect current `main` at/after `45afe5fe05deb96c8c9b5b72b274e7f459f4cd09`. Finance owner-money and third-party operations/history/tabs are CLOSED/PASS. Review `PROJECT_STATUS.md` and `ROADMAP_MASTER_CHECKLIST.md`, choose one bounded next workstream with the owner, and only then open a runtime branch. Do not automatically start PILA.**
+**Complete Documents PR 0 (docs/Active Gate), merge after green CI, inspect resulting `main`, then begin PR 1 storage foundation. Before real `DOCS_DB`/`DOCS_BUCKET` bindings are committed or production storage is prepared, obtain the actual Cloudflare resource IDs.**
 
 ## Relevant docs
 
 - `PROJECT_STATUS.md` — master current state and exact continuation.
+- `docs/roadmap/sdlive-documents-v1.md` — active Documents implementation contract.
+- `docs/roadmap/future-finance-document-generator-2026-08-25.md` — historical precursor, superseded by Documents v1.
 - `docs/checkpoints/handoff-finance-owner-money-closeout-2026-09-26.md` — current Finance closeout.
-- `docs/checkpoints/handoff-finance-third-party-closed-2026-09-26.md` — third-party write-path closeout.
-- `docs/roadmap/finance-owner-money-and-third-party-history-2026-09-26.md` — owner-money/history milestone spec and closeout.
-- `docs/roadmap/finance-third-party-pila-2026-09-05.md` — historical Finance/PILA planning; not current execution order.
-- `docs/checkpoints/sdlive-track-source-of-truth-2026-08-22.md` — historical source-of-truth baseline; superseded only where newer handoffs explicitly authorize the narrow J/K fact write.
-- `docs/checkpoints/handoff-assistant-rollout-closeout-2026-09-03.md` — final Assistant rollout closeout.
-- `docs/checkpoints/handoff-availability-v1-closeout-2026-09-01.md` — Availability closeout.
-- `ROADMAP_MASTER_CHECKLIST.md` — reconciled work order and backlog.
+- `docs/roadmap/finance-owner-money-and-third-party-history-2026-09-26.md` — owner-money/history milestone spec/closeout.
+- `docs/roadmap/finance-third-party-pila-2026-09-05.md` — historical Finance/PILA planning.
+- `docs/checkpoints/sdlive-track-source-of-truth-2026-08-22.md` — historical source-of-truth baseline.
+- `ROADMAP_MASTER_CHECKLIST.md` — reconciled backlog/work order.
