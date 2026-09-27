@@ -29,7 +29,7 @@ test("Cuenta de cobro editor has explicit itemize and general-rate modes", () =>
   assert.match(editor, /draftPricingMode/);
   assert.match(editor, /draftItemize/);
   assert.match(editor, /Itemize line items/);
-  assert.match(editor, /don't itemize; use one general rate/);
+  assert.match(editor, /keep concept lines but use one general rate \/ total/);
   assert.match(editor, /draftGeneralRate/);
   assert.match(editor, /General rate \/ total/);
   assert.match(editor, /generalAmountMinor:/);
@@ -72,9 +72,9 @@ test("line item layout is card-based, responsive and styles the no-date control"
 });
 
 test("visual brand behavior is explicit in the editor", () => {
-  assert.match(html, /Blank = use the issuer profile brand/);
-  assert.match(html, /SD\.Live · Creative Audio/);
-  assert.match(html, /overrides this document only/);
+  assert.match(editor, /Blank hides the visual brand/);
+  assert.match(editor, /SD•Live · Creative Audio/);
+  assert.match(editor, /Show SD•Live logo/);
 });
 
 test("new draft defaults target canonical COP and USD issuer ids when present", () => {
