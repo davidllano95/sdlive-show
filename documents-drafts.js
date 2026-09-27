@@ -37,8 +37,20 @@ function parseJson(value, fallback = {}) {
   try { return JSON.parse(value); } catch { throw new Error("invalid_persisted_document_json"); }
 }
 
+function sanitizeDraft(value) {
+  const draft = { ...plain(value, "draft_payload_required") };
+  if (Array.isArray(draft.lines)) {
+    draft.lines = draft.lines.map((line) => {
+      if (!line || typeof line !== "object" || Array.isArray(line)) return line;
+      const { exchangeRateDate: _legacyExchangeRateDate, ...rest } = line;
+      return rest;
+    });
+  }
+  return draft;
+}
+
 function safeDraftJson(value) {
-  const draft = plain(value, "draft_payload_required");
+  const draft = sanitizeDraft(value);
   const json = JSON.stringify(draft);
   if (new TextEncoder().encode(json).byteLength > MAX_DRAFT_JSON_BYTES) throw new Error("draft_too_large");
   return { draft, json };
@@ -238,8 +250,7 @@ function previewLines(lines) {
       reference: text(line?.reference, 240),
       originalCurrency: text(line?.originalCurrency, 10).toUpperCase(),
       originalAmountMinor: Number.isSafeInteger(Number(line?.originalAmountMinor)) ? Math.max(0, Number(line.originalAmountMinor)) : null,
-      exchangeRate: text(line?.exchangeRate, 40),
-      exchangeRateDate: text(line?.exchangeRateDate, 20)
+      exchangeRate: text(line?.exchangeRate, 40)
     };
   }) : [];
 }
