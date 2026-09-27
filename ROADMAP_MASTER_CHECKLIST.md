@@ -6,9 +6,9 @@
 
 Last reconciliation: **2026-09-26 — America/Bogota**
 
-Current `main` at handoff:
+Base before Documents promotion:
 
-`45afe5fe05deb96c8c9b5b72b274e7f459f4cd09` — PR #258.
+`f5e0054a84cebf238542cbde08793d995f9059c4` — PR #259.
 
 ## Legend
 
@@ -22,13 +22,65 @@ Current `main` at handoff:
 
 **UNMERGED != PRODUCTION. CI PASS != PRODUCTION SMOKE PASS.**
 
-# Current Active Gate
+# Current Active Gate — SD.Live Documents v1
 
-There is **no approved runtime implementation gate** at this reconciliation point.
+🚧 **ACTIVE.**
 
-Finance owner-money semantics, third-party payment operations/history and the new Finance tabs are CLOSED/PASS through PR #258.
+Canonical contract:
 
-Next action is a product/backlog review with the owner, then selection of one bounded workstream.
+`docs/roadmap/sdlive-documents-v1.md`
+
+Historical precursor:
+
+`docs/roadmap/future-finance-document-generator-2026-08-25.md`
+
+## Product scope
+
+v1 builds one shared signed-document foundation with two initial kinds:
+
+1. Cuenta de cobro · Colombia · ES (`cc-co-es`)
+2. Invoice · International · EN (`invoice-intl-en`)
+
+Future Quote/Cotización kinds reuse the same engine but are not part of v1.
+
+### Approved v1 semantics
+
+- issuer = Samuel David Llano Muñoz;
+- optional/discreet `sd•live · Creative Audio` visual branding, removable without schema changes;
+- every draft field editable;
+- draft preview consumes no number and does not expose signature bytes;
+- final PDF always signed automatically;
+- finalized snapshot + number immutable;
+- Documents reads Finance only; zero Google Sheets writes;
+- billed amount prefill = contractual `Valor bruto`, not owner-management metrics;
+- dedicated private `DOCS_DB` + `DOCS_BUCKET`;
+- public `MEDIA_BUCKET`/CMS stores are not reused;
+- reissue with PO receives a new number + supersedes relation;
+- issued/void numbers are never reused;
+- historical imports preserve original numbering and never consume new-series numbers.
+
+### Numbering transition
+
+Historical Cuenta de cobro numbering was per client. New Documents records intentionally move to one global series per issuer:
+
+- `samuel:CC` intended first real number = **21**;
+- `samuel:INV` intended first real number = **19**, continuing the existing invoice series.
+
+Historical numbers remain untouched as legacy.
+
+### PR order
+
+0. [ ] Docs / Active Gate.
+1. [ ] Storage foundation: dedicated D1/R2, explicit preparation/preflight, schema/triggers, fail-closed bindings.
+2. [ ] Domain + atomic numbering/snapshot semantics.
+3. [ ] Issuer/Client profiles + private signature + test sequences/bootstrap.
+4. [ ] Draft editor + registry shell + preview + v1 templates.
+5. [ ] Finalize + signed PDF/private artifacts/download/void/retry/events.
+6. [ ] Finance read-only prefill/linking.
+7. [ ] Reissue with PO + registry completion.
+8. [ ] Approved legacy import after the new system is stable.
+
+No PR implicitly creates production storage, bootstraps real series or consumes a real document number. Those are explicit operational steps.
 
 # Finance — owner money + third-party milestone
 
@@ -66,6 +118,7 @@ Owner-money/history roadmap:
 16. [x] PR #257 production visual smoke PASS.
 17. [x] PR #258 added `Overview` / `Third parties` Finance tabs; default clean Overview.
 18. [x] PR #258 production visual smoke PASS.
+19. [x] PR #259 reconciled Finance closeout/roadmap and returned PILA to optional backlog.
 
 Closeout commits:
 
@@ -73,6 +126,7 @@ Closeout commits:
 - #256 → `e2a19fd1a4ae54e5c9c5a41a86164c17262a427b`
 - #257 → `08a6b9ab021b562a5054edf1e7f130c20ceb45f4`
 - #258 → `45afe5fe05deb96c8c9b5b72b274e7f459f4cd09`
+- #259 → `f5e0054a84cebf238542cbde08793d995f9059c4`
 
 ## Canonical Finance management model
 
@@ -92,7 +146,7 @@ Management semantics do **not** automatically decide statutory tax or PILA treat
 
 ## Third-party history limitation
 
-Current physical schema stores cumulative `Valor pagado tercero` plus one `Fecha pago tercero` per obligation. The Admin history therefore represents registered cumulative paid facts per obligation, **not** an append-only event log of every partial payment.
+Current physical schema stores cumulative `Valor pagado tercero` plus one `Fecha pago tercero` per obligation. Admin history therefore represents registered cumulative paid facts per obligation, **not** an append-only event log of every partial payment.
 
 # Finance cleanup / debt
 
@@ -100,18 +154,32 @@ Current physical schema stores cumulative `Valor pagado tercero` plus one `Fecha
 
 - Some Google Sheets dashboard helper areas use fixed client filters and may omit newly added clients.
 - Sheet monthly graph ranges are fixed to January–March and should become dynamic before relying on them as full-year views.
-- `PENDIENTES` is intentionally narrower than total owner receivable; labels must continue to make collection workflow vs all outstanding receivables distinct.
-- Data-quality REVIEW rows should preserve raw cash facts unless the underlying source is corrected explicitly.
-- Event-level partial-payment history would require an intentional physical-ledger redesign; do not infer it from the current cumulative J/K model.
+- `PENDIENTES` is intentionally narrower than total owner receivable; labels must continue to distinguish collection workflow from all receivables.
+- Data-quality REVIEW rows should preserve raw cash facts unless underlying source data is explicitly corrected.
+- Event-level partial-payment history would require an intentional physical-ledger redesign.
 
-# Candidate next workstreams — no approved order
+# PILA estimator
 
-The owner has not selected the next runtime gate yet. The following are candidates, **not a ranking**:
+⏳ **BACKLOG / RESEARCH CANDIDATE ONLY.**
 
-- ⏳ Finance cleanup/debt listed above.
+PILA is not the active milestone.
+
+If selected later:
+
+- research current Colombian legal/operational rules again at implementation time;
+- version rules by contribution year;
+- keep the first scope planning/estimator-only unless explicitly expanded;
+- do not automatically map `Cobro terceros`, owner cash or other management fields to statutory contribution income;
+- preserve Google Sheets/AppSheet/D1 boundaries;
+- unsupported legal scenarios fail clearly rather than guess.
+
+# Later backlog after Documents
+
+Documents v1 owns the active slot. These remain future candidates and do not displace it automatically:
+
 - ⏳ Rental real-time availability + double-booking protection.
+- ⏳ Quote/Cotización kinds on the shared Documents foundation.
 - ⏳ Mobile Rental Cart total visibility / sticky summary.
-- ⏳ Rental quote/PDF + shared Finance Document Generator foundation.
 - ⏳ Calendar/Projects workflow additions.
 - ⏳ SD.Live Patch.
 - ⏳ Basic CRM beyond current Lead Core.
@@ -123,32 +191,14 @@ The owner has not selected the next runtime gate yet. The following are candidat
 - ⏳ CMS advanced layout/DAM/editor capabilities.
 - ⏳ Canonical HTML CV/private portfolio.
 - ⏳ Security/Cloudflare periodic evaluation.
-- ⏳ PILA estimator research/planning, only if explicitly selected.
-
-# PILA estimator
-
-⏳ **BACKLOG / RESEARCH CANDIDATE ONLY.**
-
-PILA is no longer the automatic next milestone.
-
-If selected later:
-
-- research current Colombian legal/operational rules again at implementation time;
-- version rules by contribution year;
-- keep the first scope planning/estimator-only unless explicitly expanded;
-- do not automatically map `Cobro terceros`, owner cash or other management fields to statutory contribution income;
-- preserve Google Sheets/AppSheet/D1 boundaries;
-- unsupported legal scenarios must fail clearly rather than guess.
-
-The older `docs/roadmap/finance-third-party-pila-2026-09-05.md` is retained as historical planning material, not current execution order.
+- ⏳ Finance cleanup/debt listed above.
+- ⏳ PILA estimator research/planning when explicitly selected.
 
 # WhatsApp owner control
 
 🟢 **CODE MERGED / ROLLOUT PAUSED.**
 
-PR #246 merged as:
-
-`4fc02a565317c802c07fed78e6d25bd231eeb70b`.
+PR #246 merged as `4fc02a565317c802c07fed78e6d25bd231eeb70b`.
 
 The bounded verified-owner WhatsApp Availability architecture is in `main`, but Meta/Cloudflare onboarding, activation and production owner-number smoke are intentionally not active. Do not restart rollout unless explicitly requested.
 
@@ -169,7 +219,8 @@ Old PR #191 remains superseded historical source material and must not be merged
 ✅ Finance general dashboard foundation.  
 ✅ Finance third-party operational path through PR #255 + production write smoke.  
 ✅ Finance owner-money/full-transaction/history through PR #257 + production visual smoke.  
-✅ Finance third-party tabs through PR #258 + production visual smoke.
+✅ Finance third-party tabs through PR #258 + production visual smoke.  
+✅ Finance roadmap reconciliation through PR #259.
 
 # Source-of-truth boundaries
 
@@ -187,10 +238,21 @@ Old PR #191 remains superseded historical source material and must not be merged
 - ⛔ Bidirectional Finance sync remains BLOCKED.
 - Assistant has no Finance read/write path.
 
+## Documents
+
+- Documents is not a Finance persistence layer.
+- `DOCS_DB` stores document/profile/sequence/snapshot/audit state only.
+- `DOCS_BUCKET` stores private signature/PDF/legacy artifacts only.
+- issued document numbers/snapshots are immutable.
+- draft edits never mutate Finance facts automatically.
+- Documents prefill from REGISTRO is read-only.
+- final document amount uses the billed/contractual document data, with Finance `Valor bruto` only as a default when sourced from REGISTRO.
+- public `MEDIA_BUCKET` is prohibited for signature and issued PDFs.
+
 ## Rental
 
 - backend pricing/quote logic is authoritative;
-- Assistant cannot become a second Rental catalog/pricing engine;
+- Documents/Assistant cannot create a second Rental pricing engine;
 - unknown/ambiguous item resolution fails closed;
 - catalog quantity limits fail closed;
 - inventory availability remains unknown unless a deterministic backend says otherwise;
@@ -220,12 +282,12 @@ Old PR #191 remains superseded historical source material and must not be merged
 - Never write directly to `main`.
 - One short branch per coherent change.
 - Tests/CI before merge.
-- Ask owner authorization before merge.
-- Squash merge.
-- Exactly one representative production smoke for runtime changes.
+- Squash merge after scope review + green CI under the owner's standing merge authorization.
+- Exactly one representative production smoke for runtime changes when applicable.
 - No production smoke for docs-only.
+- Production storage creation/preparation, real sequence bootstrap and real-number-consuming smokes remain explicit actions, never implicit merge side effects.
 - One manual QA action at a time.
 
 # Exact continuation
 
-**Inspect current `main` at/after `45afe5fe05deb96c8c9b5b72b274e7f459f4cd09`. Finance owner-money and third-party operations/history/tabs are CLOSED/PASS. There is no selected next implementation gate. Review the candidate backlog with the owner, choose one bounded workstream, and only then open a runtime branch. Do not automatically start PILA.**
+**Complete Documents PR 0 and merge it after green CI. Then inspect current `main` and begin PR 1 storage foundation. Before committing real `DOCS_DB` / `DOCS_BUCKET` bindings or preparing storage, obtain the actual Cloudflare resource IDs. Do not bootstrap `samuel:CC` or `samuel:INV` until the test-series finalize smoke has passed.**
