@@ -76,6 +76,7 @@
     const nodes = [
       heading,
       field("issuerBankBeneficiary", "Beneficiary"),
+      field("issuerBeneficiaryAddress", "Beneficiary address (optional)"),
       field("issuerBankName", "Bank name"),
       field("issuerRoutingNumber", "Routing / bank code"),
       field("issuerAccountType", "Account type"),
@@ -125,6 +126,7 @@
     const profile = currentIssuer();
     const bank = profile?.bank || {};
     if ($("issuerBankBeneficiary")) $("issuerBankBeneficiary").value = bank.beneficiary || "";
+    if ($("issuerBeneficiaryAddress")) $("issuerBeneficiaryAddress").value = bank.beneficiaryAddress || "";
     if ($("issuerBankName")) $("issuerBankName").value = bank.bankName || "";
     if ($("issuerRoutingNumber")) $("issuerRoutingNumber").value = bank.routingNumber || "";
     if ($("issuerAccountType")) $("issuerAccountType").value = bank.accountType || "";
@@ -159,6 +161,7 @@
       addresses: primaryAddressPayload(current, address),
       bank: {
         beneficiary: $("issuerBankBeneficiary").value.trim(),
+        beneficiaryAddress: $("issuerBeneficiaryAddress").value.trim(),
         bankName: $("issuerBankName").value.trim(),
         routingNumber: $("issuerRoutingNumber").value.trim(),
         accountType: $("issuerAccountType").value.trim(),
