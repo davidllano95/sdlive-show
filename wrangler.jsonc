@@ -18,6 +18,8 @@
       "/admin/",
       "/admin/finance",
       "/admin/finance/*",
+      "/admin/documents",
+      "/admin/documents/*",
       "/",
       "/en",
       "/en/*",
