@@ -13,12 +13,12 @@ const KIND_LABELS = Object.freeze({
 
 function bankRows(details = {}) {
   const rows = [
-    ["Beneficiary Address", details.beneficiaryAddress],
     ["Bank Name", details.bankName],
     ["Routing Number", details.routingNumber],
     ["Account Type", details.accountType],
     ["Account Number", details.accountNumber],
-    ["Bank Address", details.bankAddress]
+    ["Bank Address", details.bankAddress],
+    ["Beneficiary Address", details.beneficiaryAddress]
   ].filter(([, value]) => value != null && String(value).trim());
   return rows.map(([label, value]) => `<dt>${e(label)}</dt><dd>${e(value)}</dd>`).join("");
 }
@@ -38,16 +38,13 @@ function brandBlock(issuer) {
   return `<div class="brand-block">${brand.showLogo ? `<img class="brand-logo" src="/assets/logos/sd-live-header-normal-symbol.png" alt="">` : ""}${brand.primary ? `<div class="brand">${e(brand.primary)}</div>` : ""}${brand.secondary ? `<div class="brand-sub">${e(brand.secondary)}</div>` : ""}${brand.primary || brand.secondary ? `<div class="brand-rule"></div>` : ""}</div>`;
 }
 
-function originalExpenseMeta(line, documentCurrency) {
+function originalExpenseMeta(line) {
   const currency = String(line?.originalCurrency || "").trim().toUpperCase();
   if (!currency || line?.originalAmountMinor == null) return "";
   const locale = currency === "COP" ? "es-CO" : "en-US";
   const original = `Original expense ${e(currency)} ${formatMoney(line.originalAmountMinor, currency, locale)}`;
   const rate = String(line?.exchangeRate || "").trim();
-  const rateDate = String(line?.exchangeRateDate || "").trim();
-  const fx = rate
-    ? `FX: 1 ${e(currency)} = ${e(rate)} ${e(documentCurrency)}${rateDate ? ` · rate date: ${e(formatDateLabel(rateDate, "en-US"))}` : ""}`
-    : (rateDate ? `FX rate date: ${e(formatDateLabel(rateDate, "en-US"))}` : "");
+  const fx = rate ? `FX: 1 USD = ${e(rate)} ${e(currency)}` : "";
   return `<div class="orig mono">${original}${fx ? `<br>${fx}` : ""}</div>`;
 }
 
@@ -71,7 +68,7 @@ export function renderInvoice(snapshot, { mode = "draft", signatureDataUri = nul
       const quantity = Number.isSafeInteger(Number(line.quantity)) && Number(line.quantity) >= 0 ? Number(line.quantity) : 0;
       const effectiveQuantity = quantity > 0 ? quantity : 1;
       const unitMinor = line.unitMinor == null ? Math.round(Number(line.amountMinor || 0) / effectiveQuantity) : Number(line.unitMinor);
-      const original = originalExpenseMeta(line, currency);
+      const original = originalExpenseMeta(line);
       const dateLabel = lineDateLabel(line);
       const details = [
         dateLabel ? `Date / period: ${dateLabel}` : "",
