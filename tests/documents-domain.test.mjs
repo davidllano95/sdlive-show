@@ -86,8 +86,49 @@ test("final snapshot freezes number, issuer, client, lines, signature and source
   assert.equal(result.snapshot.number.value, 21);
   assert.equal(result.snapshot.totals.totalMinor, 45000000);
   assert.equal(result.snapshot.totals.amountInWords, "CUATROCIENTOS CINCUENTA MIL PESOS M/CTE");
+  assert.equal(result.snapshot.pricing.itemize, true);
+  assert.equal(result.snapshot.pricing.generalAmountMinor, null);
   assert.equal(result.snapshot.lines[0].quantity, 0);
   assert.equal(result.snapshot.lines[0].poNumber, "PO-42");
   assert.equal(result.snapshot.sources[0].sourceRef, "row-1");
   assert.match(result.snapshotSha256, /^[0-9a-f]{64}$/);
+});
+
+test("non-itemized CC freezes the general total while preserving concept lines", async () => {
+  const result = await buildFinalSnapshot({
+    document: {
+      id: "doc-simple",
+      kind_id: "cc-co-es",
+      doc_type: "cc",
+      issuer_id: "samuel",
+      status: "draft",
+      currency: "COP",
+      project_label: "Show",
+      supersedes_id: null
+    },
+    draft: {
+      currency: "COP",
+      issueCity: "Bogotá",
+      issueDate: "2026-09-27",
+      itemize: false,
+      generalAmountMinor: 97500000,
+      lines: [
+        { id: "l1", description: "Diseño de sonido", quantity: 0, amountMinor: 0 },
+        { id: "l2", description: "Programación QLab", quantity: 0, amountMinor: 0 }
+      ],
+      usesCostsDeductions: false,
+      showBankDetails: false
+    },
+    issuer: { id: "samuel", legalName: "Samuel David Llano Muñoz", idType: "CC", idNumber: "x" },
+    client: { id: "client-1", legalName: "Livent X S.A.S.", taxId: "x" },
+    signatureAsset: { id: "sig-1", sha256: "abc", contentType: "image/png" },
+    numberContext: { seriesKey: "test:CC", number: 4, displayNumber: "TEST-CC 4" },
+    finalizedAt: "2026-09-27T05:00:00Z"
+  });
+  assert.equal(result.totalMinor, 97500000);
+  assert.equal(result.snapshot.totals.totalMinor, 97500000);
+  assert.equal(result.snapshot.pricing.itemize, false);
+  assert.equal(result.snapshot.pricing.generalAmountMinor, 97500000);
+  assert.equal(result.snapshot.lines.length, 2);
+  assert.equal(result.snapshot.lines[0].description, "Diseño de sonido");
 });
