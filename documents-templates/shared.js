@@ -50,16 +50,14 @@ export function draftBaseCss() {
 
 export function safeBrand(issuer) {
   const original = String(issuer?.brandLabel || "").trim();
-  const showLogo = original.includes("[[logo]]");
   const raw = original.replaceAll("[[logo]]", "").trim();
-  if (raw === "[[none]]") return { primary: "", secondary: "", showLogo };
-  if (!raw) return { primary: "SD.Live", secondary: "Creative Audio", showLogo };
+  if (raw === "[[none]]") return { primary: "", secondary: "" };
+  if (!raw) return { primary: "SD.Live", secondary: "Creative Audio" };
 
   const [first, ...rest] = raw.split("·").map((part) => part.trim()).filter(Boolean);
   const standardBrand = first === "SD.Live" || first === "SD•Live";
   return {
     primary: standardBrand ? "SD•Live" : (first || ""),
-    secondary: standardBrand && !rest.length ? "Creative Audio" : rest.join(" · "),
-    showLogo
+    secondary: standardBrand && !rest.length ? "Creative Audio" : rest.join(" · ")
   };
 }
