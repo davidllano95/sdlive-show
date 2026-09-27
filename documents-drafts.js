@@ -236,8 +236,10 @@ function previewLines(lines) {
       serviceDateEnd: text(line?.serviceDateEnd, 20),
       poNumber: text(line?.poNumber, 120),
       reference: text(line?.reference, 240),
-      originalCurrency: text(line?.originalCurrency, 10),
-      originalAmountMinor: Number.isSafeInteger(Number(line?.originalAmountMinor)) ? Math.max(0, Number(line.originalAmountMinor)) : null
+      originalCurrency: text(line?.originalCurrency, 10).toUpperCase(),
+      originalAmountMinor: Number.isSafeInteger(Number(line?.originalAmountMinor)) ? Math.max(0, Number(line.originalAmountMinor)) : null,
+      exchangeRate: text(line?.exchangeRate, 40),
+      exchangeRateDate: text(line?.exchangeRateDate, 20)
     };
   }) : [];
 }
@@ -279,6 +281,9 @@ export async function buildDraftPreview(env, documentId) {
   const lines = previewLines(draft.lines);
   const totalMinor = documentTotal(draft, document.kindId);
   const itemize = isItemizedDraft(draft, document.kindId);
+  const showBankDetails = draft.censorBankDetails == null
+    ? (draft.showBankDetails == null ? true : Boolean(draft.showBankDetails))
+    : !Boolean(draft.censorBankDetails);
   const view = {
     kindId: document.kindId,
     currency: document.currency,
@@ -296,7 +301,8 @@ export async function buildDraftPreview(env, documentId) {
     amountInWords: text(draft.amountWordsOverride, 500) || (document.kindId === "cc-co-es" ? amountMinorToSpanishWords(totalMinor, { currency: document.currency }) : ""),
     usesCostsDeductions: Boolean(draft.usesCostsDeductions),
     legalBlockVersion: text(draft.legalBlockVersion, 80) || "co-ret@2026-1",
-    showBankDetails: draft.showBankDetails == null ? Boolean(client?.showBankDetails) : Boolean(draft.showBankDetails),
+    showBankDetails,
+    censorBankDetails: !showBankDetails,
     bankDetails: draft.bankDetails && typeof draft.bankDetails === "object" ? draft.bankDetails : issuer.bank,
     notes: text(draft.notes, 2000),
     issuer: issuerForPreview(issuer, draft.issuerOverride),
