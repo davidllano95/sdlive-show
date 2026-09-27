@@ -9,6 +9,7 @@ import {
   buildTestFinalizePreview,
   finalizeThroughTestSeries
 } from "./documents-finalize-gate.js";
+import { downloadFinalPdf, generateFinalPdf } from "./documents-pdf-artifacts.js";
 import { deleteDocumentDraftRow } from "./documents-storage-delete.js";
 
 const API_PREFIX = "/api/admin/documents";
@@ -80,9 +81,13 @@ function publicError(error) {
     unsupported_currency: 400,
     unsupported_document_type: 400,
     unknown_document_kind: 400,
+    unsupported_final_template: 409,
     stale_draft_revision: 409,
     document_not_found: 404,
     document_not_draft: 409,
+    document_not_finalized: 409,
+    document_snapshot_missing: 409,
+    snapshot_hash_mismatch: 409,
     document_total_overflow: 400,
     document_sequence_not_found: 409,
     invalid_sequence_state: 409,
@@ -93,6 +98,15 @@ function publicError(error) {
     finalize_key_already_used: 409,
     document_finalize_conflict: 409,
     finalize_commit_not_observed: 409,
+    pdf_not_pending: 409,
+    pdf_not_ready: 409,
+    pdf_object_missing: 409,
+    pdf_hash_mismatch: 409,
+    signature_snapshot_mismatch: 409,
+    signature_object_missing: 409,
+    signature_hash_mismatch: 409,
+    unsupported_signature_content_type: 409,
+    signature_bytes_required: 409,
     issue_date_required: 422,
     issue_city_required: 422,
     issuer_required: 422,
@@ -111,21 +125,26 @@ function publicError(error) {
     invalid_original_amount_minor: 422,
     negative_original_amount_not_supported: 422,
     invalid_exchange_rate: 422,
-    invalid_exchange_rate_date: 422,
     draft_currency_mismatch: 422,
     document_kind_type_mismatch: 422,
     documents_storage_unavailable: 503,
-    documents_storage_batch_required: 503
+    documents_storage_batch_required: 503,
+    documents_bucket_unavailable: 503,
+    documents_browser_unavailable: 503,
+    documents_assets_unavailable: 503,
+    documents_logo_asset_missing: 502,
+    browser_pdf_failed: 502,
+    invalid_pdf_response: 502
   };
   return { status: Number(error?.status) || statusByCode[code] || 500, error: statusByCode[code] ? code : "documents_request_failed" };
 }
 
-export async function handleDocumentsEditorApi(request, env, { verifyAdmin, finalizeGate = {} } = {}) {
+export async function handleDocumentsEditorApi(request, env, { verifyAdmin, finalizeGate = {}, artifactGate = {} } = {}) {
   const path = pathOf(request);
   if (!path.startsWith(`${API_PREFIX}/`)) return null;
   const isEditorRoute = path === `${API_PREFIX}/registry`
     || path === `${API_PREFIX}/drafts`
-    || /^\/api\/admin\/documents\/doc-[A-Za-z0-9-]+(?:\/(?:preview|finalize-preview|finalize))?$/.test(path);
+    || /^\/api\/admin\/documents\/doc-[A-Za-z0-9-]+(?:\/(?:preview|finalize-preview|finalize|pdf))?$/.test(path);
   if (!isEditorRoute) return null;
 
   const user = await actor(request, env, verifyAdmin);
@@ -158,7 +177,22 @@ export async function handleDocumentsEditorApi(request, env, { verifyAdmin, fina
         finalizeKey: body.finalizeKey,
         actorEmail: user.email
       }, finalizeGate);
-      return json({ ...result, testOnly: true, pdfEnabled: false });
+      let pdf;
+      try {
+        pdf = await generateFinalPdf(env, { documentId: finalizeMatch[1], actorEmail: user.email }, artifactGate);
+      } catch (error) {
+        const exposed = publicError(error);
+        pdf = { ok: false, pdfStatus: "failed", error: exposed.error, retryPath: `${API_PREFIX}/${finalizeMatch[1]}/pdf`, testOnly: true };
+      }
+      return json({ ...result, testOnly: true, pdfEnabled: true, pdf });
+    }
+
+    const pdfMatch = path.match(/^\/api\/admin\/documents\/(doc-[A-Za-z0-9-]+)\/pdf$/);
+    if (pdfMatch && request.method === "POST") {
+      return json(await generateFinalPdf(env, { documentId: pdfMatch[1], actorEmail: user.email }, artifactGate));
+    }
+    if (pdfMatch && request.method === "GET") {
+      return downloadFinalPdf(env, { documentId: pdfMatch[1] }, artifactGate);
     }
 
     const previewMatch = path.match(/^\/api\/admin\/documents\/(doc-[A-Za-z0-9-]+)\/preview$/);
@@ -204,7 +238,10 @@ export function documentsEditorApiPolicy() {
     finalizeRequiresUuidKey: true,
     finalizeTestSeriesOnly: true,
     realSeriesFinalizeEnabled: false,
-    finalizeRendersPdf: false,
+    finalizeRendersPdf: true,
+    pdfRetryEndpoint: true,
+    pdfDownloadAuthenticated: true,
+    pdfTestSeriesOnly: true,
     draftDeleteOnly: true,
     issuedDeleteBlockedBySchemaTrigger: true
   });

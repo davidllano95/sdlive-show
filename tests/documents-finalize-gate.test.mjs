@@ -91,7 +91,7 @@ test("finalize preview exposes only a prospective TEST number and safe summary",
   assert.equal(JSON.stringify(body).includes("abc123"), false);
 });
 
-test("finalize POST accepts exactly draftRev + UUID finalizeKey and keeps PDF disabled", async () => {
+test("finalize POST accepts exactly draftRev + UUID finalizeKey and treats PDF as a separate failure domain", async () => {
   const response = await handleDocumentsEditorApi(
     new Request("https://sdlive.show/api/admin/documents/doc-test-1/finalize", {
       method: "POST",
@@ -107,7 +107,11 @@ test("finalize POST accepts exactly draftRev + UUID finalizeKey and keeps PDF di
   assert.equal(body.finalized, true);
   assert.equal(body.displayNumber, "TEST-CC 7");
   assert.equal(body.pdfStatus, "pending");
-  assert.equal(body.pdfEnabled, false);
+  assert.equal(body.pdfEnabled, true);
+  assert.equal(body.pdf.ok, false);
+  assert.equal(body.pdf.pdfStatus, "failed");
+  assert.equal(body.pdf.error, "documents_storage_unavailable");
+  assert.equal(body.pdf.retryPath, "/api/admin/documents/doc-test-1/pdf");
   assert.equal(body.testOnly, true);
 });
 
@@ -215,7 +219,7 @@ test("real or mismatched sequences are fail-closed", async () => {
   assert.deepEqual(await mismatchResponse.json(), { ok: false, error: "test_series_issuer_mismatch" });
 });
 
-test("policies keep this gate test-only and without PDF/real bootstrap", () => {
+test("policies keep numbering test-only while enabling the signed PDF artifact gate", () => {
   const gate = documentsFinalizeGatePolicy();
   const api = documentsEditorApiPolicy();
   assert.equal(gate.testSeriesOnly, true);
@@ -226,7 +230,10 @@ test("policies keep this gate test-only and without PDF/real bootstrap", () => {
   assert.equal(gate.returnsSignatureBytes, false);
   assert.equal(api.finalizeTestSeriesOnly, true);
   assert.equal(api.realSeriesFinalizeEnabled, false);
-  assert.equal(api.finalizeRendersPdf, false);
+  assert.equal(api.finalizeRendersPdf, true);
+  assert.equal(api.pdfRetryEndpoint, true);
+  assert.equal(api.pdfDownloadAuthenticated, true);
+  assert.equal(api.pdfTestSeriesOnly, true);
 });
 
 test("confirmation UX creates the key when dialog opens, disables double click and retries with the same key", async () => {
@@ -236,5 +243,4 @@ test("confirmation UX creates the key when dialog opens, disables double click a
   assert.match(source, /button\.disabled = true/);
   assert.match(source, /Retry with same key/);
   assert.match(source, /Real CC\/INV series remain locked/);
-  assert.match(source, /PDF rendering is intentionally not enabled until the next gate/);
 });

@@ -6,6 +6,7 @@
   const EDITOR_EXTENSION_VERSION = "20260831-4";
   const NAVIGATION_VERSION = "20260927-1";
   const DOCUMENTS_HARDENING_VERSION = "20260927-1";
+  const DOCUMENTS_PDF_VERSION = "20260927-1";
   const shell = document.querySelector(".backoffice");
   const sidebar = document.querySelector(".app-sidebar");
   const nav = sidebar?.querySelector(".app-nav") || null;
@@ -236,6 +237,7 @@
     if (path.startsWith("/admin/documents")) {
       loadStyle(`/admin/documents/settings-hardening.css?v=${DOCUMENTS_HARDENING_VERSION}`, "sdlive-documents-settings-hardening");
       loadScript(`/admin/documents/settings-hardening.js?v=${DOCUMENTS_HARDENING_VERSION}`, "sdlive-documents-settings-hardening");
+      loadScript(`/admin/documents/pdf-artifact-ux.js?v=${DOCUMENTS_PDF_VERSION}`, "sdlive-documents-pdf-artifact-ux");
     }
   }
 
