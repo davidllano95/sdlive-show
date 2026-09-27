@@ -13,7 +13,7 @@ test("Documents Admin loads PDF artifact UX and no longer describes PDF as a fut
   assert.match(ux, /signed PDF is generated automatically from the frozen snapshot/);
   assert.match(ux, /artifact failure never releases the number and can be retried/);
   assert.match(ux, /Real CC\/INV series remain locked/);
-  assert.match(ux, /Finalized · signed PDF generation requested/);
+  assert.match(ux, /Finalized · signed PDF requested/);
 });
 
 test("PDF artifact UX does not create a self-triggering MutationObserver loop", () => {
@@ -21,6 +21,25 @@ test("PDF artifact UX does not create a self-triggering MutationObserver loop", 
   assert.match(ux, /const FINALIZE_WARNING_COPY =/);
   assert.match(ux, /warning\.textContent !== FINALIZE_WARNING_COPY/);
   assert.match(ux, /warning\.textContent = FINALIZE_WARNING_COPY/);
+});
+
+test("finalized TEST documents use issued artifact view instead of draft preview", () => {
+  const ux = read("admin/documents/pdf-artifact-ux.js");
+  assert.match(ux, /Issued TEST artifact/);
+  assert.match(ux, /snapshot frozen/);
+  assert.match(ux, /draft editor is disabled for issued documents/i);
+  assert.match(ux, /Download PDF/);
+  assert.match(ux, /Retry PDF/);
+  assert.match(ux, /event\.stopImmediatePropagation\(\)/);
+  assert.match(ux, /info\.status !== "draft"/);
+});
+
+test("international draft UX removes FX date and states rate as 1 USD to original currency", () => {
+  const ux = read("admin/documents/pdf-artifact-ux.js");
+  assert.match(ux, /\.line-exchange-rate-date/);
+  assert.match(ux, /closest\("\.line-field"\)\?\.remove\(\)/);
+  assert.match(ux, /FX rate · 1 USD = original currency \(optional\)/);
+  assert.match(ux, /e\.g\. 0\.92/);
 });
 
 test("PDF pipeline uses Cloudflare Browser Run Quick Action with raw final HTML", () => {
