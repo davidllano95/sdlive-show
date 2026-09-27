@@ -43,13 +43,17 @@
     style.id = "documentsIssuedArtifactStyles";
     style.textContent = `
       .documents-issued-panel{padding:26px;border:1px solid rgba(130,112,220,.24);border-radius:18px;background:rgba(118,91,220,.08);margin-top:18px}
-      .documents-issued-panel[hidden]{display:none!important}.documents-issued-panel h4{font-size:1.35rem;margin:6px 0 8px}.documents-issued-panel p{color:#c9c4d8;line-height:1.5}
+      .documents-issued-panel[hidden]{display:none!important}.documents-issued-panel h4{font-size:1.35rem;margin:18px 0 8px}.documents-issued-panel p{color:#c9c4d8;line-height:1.5}
       .documents-issued-number{font:750 1.05rem/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;color:#c9b8ff}.documents-issued-meta{margin-top:6px;color:#f1edf9}
-      .documents-issued-status{display:inline-flex;align-items:center;gap:8px;margin-top:16px;padding:8px 11px;border-radius:999px;background:rgba(255,255,255,.06);font-size:.88rem}
-      .documents-issued-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}.documents-issued-actions a{text-decoration:none}
-      .documents-issued-preview{margin-top:20px;border:1px solid rgba(255,255,255,.12);border-radius:14px;overflow:hidden;background:#fff;min-height:720px}
+      .documents-issued-status{display:inline-flex;align-items:center;gap:8px;margin-top:10px;padding:8px 11px;border-radius:999px;background:rgba(255,255,255,.06);font-size:.88rem}
+      .documents-issued-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}.documents-issued-actions a{text-decoration:none}
+      .documents-issued-preview{margin-top:16px;border:1px solid rgba(255,255,255,.12);border-radius:14px;overflow:hidden;background:#fff;min-height:720px}
       .documents-issued-preview[hidden]{display:none!important}.documents-issued-preview iframe{display:block;width:100%;height:min(82vh,940px);min-height:720px;border:0;background:#fff}
       .registry-row[data-issued-document="true"] em{color:#c9b8ff}
+      .document-editor-shell.documents-draft-preview-first .document-editor-grid{grid-template-columns:minmax(520px,1.12fr) minmax(420px,.88fr)}
+      .document-editor-shell.documents-draft-preview-first .preview-panel{order:1;border-left:0;border-right:1px solid var(--border)}
+      .document-editor-shell.documents-draft-preview-first .draft-editor{order:2}
+      @media(max-width:1200px){.document-editor-shell.documents-draft-preview-first .document-editor-grid{grid-template-columns:1fr}.document-editor-shell.documents-draft-preview-first .preview-panel{border-right:0;border-top:0;border-bottom:1px solid var(--border)}}
     `;
     document.head.append(style);
   }
@@ -69,10 +73,12 @@
   }
 
   function restoreDraftView() {
-    const grid = document.querySelector("#documentEditor .document-editor-grid");
+    const shell = document.getElementById("documentEditor");
+    const grid = shell?.querySelector(".document-editor-grid");
     const panel = document.getElementById("issuedDocumentPanel");
     const deleteButton = document.getElementById("deleteDraft");
     const finalizeButton = document.getElementById("finalizeDraft");
+    if (shell) shell.classList.add("documents-draft-preview-first");
     if (grid) grid.hidden = false;
     if (panel) panel.hidden = true;
     if (deleteButton) deleteButton.hidden = false;
@@ -146,6 +152,7 @@
     const grid = shell?.querySelector(".document-editor-grid");
     const panel = ensureIssuedPanel();
     if (!shell || !panel) return;
+    shell.classList.remove("documents-draft-preview-first");
     if (grid) grid.hidden = true;
     shell.hidden = false;
     panel.hidden = false;
@@ -163,13 +170,13 @@
     if (saveState) saveState.textContent = "Issued · immutable";
     panel.innerHTML = `
       <span class="eyebrow">Issued TEST artifact</span>
+      <div class="documents-issued-status" data-issued-status>Checking signed PDF…</div>
+      <div class="documents-issued-actions" data-issued-actions></div>
+      <div class="documents-issued-preview" data-issued-preview hidden><iframe data-issued-pdf-frame title="Finalized PDF preview"></iframe></div>
       <h4>${String(documentInfo.displayNumber || documentInfo.id).replace(/[<>&]/g, "")}</h4>
       <div class="documents-issued-number">${String(documentInfo.seriesKey || "TEST series").replace(/[<>&]/g, "")}</div>
       <div class="documents-issued-meta">${String(documentInfo.clientName || "No client").replace(/[<>&]/g, "")} · ${formatMoney(documentInfo.totalMinor, documentInfo.currency)}</div>
-      <p>This TEST number and snapshot are already frozen. The draft editor is disabled for issued documents.</p>
-      <div class="documents-issued-status" data-issued-status>Checking signed PDF…</div>
-      <div class="documents-issued-actions" data-issued-actions></div>
-      <div class="documents-issued-preview" data-issued-preview hidden><iframe data-issued-pdf-frame title="Finalized PDF preview"></iframe></div>`;
+      <p>This TEST number and snapshot are already frozen. The draft editor is disabled for issued documents.</p>`;
     shell.scrollIntoView({ behavior: "smooth", block: "start" });
     await checkPdf(documentInfo, panel);
   }
