@@ -153,7 +153,7 @@ export async function handleDocumentsProfilesApi(request, env, { verifyAdmin } =
     }
 
     if (path === `${API_PREFIX}/signatures/upload` && request.method === "POST") {
-      return signatureUpload(request, env);
+      return await signatureUpload(request, env);
     }
 
     if (path === `${API_PREFIX}/sequences/test-ensure` && request.method === "POST") {
