@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex,nofollow,noarchive" />
+  <meta name="color-scheme" content="dark" />
+  <base href="/admin/" />
+  <title>Documents · SD.Live Admin</title>
+  <link rel="icon" href="../assets/icons/favicon.ico" />
+  <link rel="stylesheet" href="./dashboard.css" />
+  <link rel="stylesheet" href="./mobile-dashboard.css" />
+  <link rel="stylesheet" href="./documents/documents.css?v=20260927-1" />
+</head>
+<body>
+  <div class="backoffice">
+    <aside class="app-sidebar" id="appSidebar">
+      <div class="brand">
+        <img class="brand-full" src="../assets/logos/sd-live-header-normal.png" alt="SD.Live" />
+        <img class="brand-symbol" src="../assets/logos/sd-live-header-normal-symbol.png" alt="" aria-hidden="true" />
+        <span>Admin</span>
+      </div>
+      <nav class="app-nav" aria-label="Back office">
+        <a class="app-nav__item" href="/admin/"><span>Dashboard</span></a>
+        <a class="app-nav__item" href="/admin/finance/"><span>Finance</span><small>SD.Live Track</small></a>
+        <a class="app-nav__item is-active" href="/admin/documents/"><span>Documents</span><small>v1</small></a>
+        <a class="app-nav__item" href="/admin/editor/"><span>Site Editor</span></a>
+      </nav>
+      <div class="sidebar-bottom">
+        <span class="secure"><i></i> Cloudflare Access</span>
+        <button id="collapseSidebar" type="button">Collapse</button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <span class="eyebrow"><span class="inline-wordmark" aria-label="SD.Live"><span>SD</span><i aria-hidden="true">.</i><span>Live</span></span> Back Office</span>
+          <h1>Documents</h1>
+        </div>
+        <div class="top-actions">
+          <span class="identity" id="identity">Checking access…</span>
+          <a class="button button--ghost" href="/admin/">Dashboard</a>
+          <button class="button" id="refreshDocuments" type="button">Refresh</button>
+        </div>
+      </header>
+
+      <section class="content documents-content">
+        <div class="welcome">
+          <div>
+            <span class="eyebrow">Document engine</span>
+            <h2>Profiles, signature & numbering</h2>
+            <p>Configure reusable defaults here. Issued documents will freeze their own snapshot; changing a profile later will never rewrite history.</p>
+          </div>
+          <div class="system-pill" id="documentsStatus"><i></i><span>Checking Documents…</span></div>
+        </div>
+
+        <div class="documents-notice">
+          <strong>Safe stage:</strong> real series are locked. This workspace cannot create <code>samuel:CC</code> or <code>samuel:INV</code> yet.
+        </div>
+
+        <div class="documents-grid">
+          <section class="documents-card documents-card--wide">
+            <div class="documents-card__head"><div><span class="eyebrow">Issuer</span><h3>Legal issuer profile</h3></div><span class="documents-chip" id="issuerCount">0 profiles</span></div>
+            <form id="issuerForm" class="documents-form">
+              <div class="field"><label for="issuerId">Profile ID</label><input id="issuerId" name="id" value="samuel" required /></div>
+              <div class="field field--grow"><label for="issuerLegalName">Legal name</label><input id="issuerLegalName" name="legalName" autocomplete="name" required /></div>
+              <div class="field"><label for="issuerIdType">ID type</label><input id="issuerIdType" name="idType" placeholder="CC" required /></div>
+              <div class="field"><label for="issuerIdNumber">ID number</label><input id="issuerIdNumber" name="idNumber" autocomplete="off" required /></div>
+              <div class="field field--grow"><label for="issuerVatLabel">Tax / VAT label</label><input id="issuerVatLabel" name="vatLabel" placeholder="No responsable de IVA" required /></div>
+              <div class="field"><label for="issuerCiiu">CIIU</label><input id="issuerCiiu" name="ciiu" /></div>
+              <div class="field"><label for="issuerPhone">Phone</label><input id="issuerPhone" name="phone" autocomplete="tel" /></div>
+              <div class="field"><label for="issuerEmail">Email</label><input id="issuerEmail" name="email" type="email" autocomplete="email" /></div>
+              <div class="field field--grow"><label for="issuerAddress">Primary address</label><input id="issuerAddress" name="address" autocomplete="street-address" /></div>
+              <div class="field field--grow"><label for="issuerBrandLabel">Optional visual brand</label><input id="issuerBrandLabel" name="brandLabel" placeholder="sd•live · Creative Audio" /></div>
+              <div class="documents-form__actions"><button class="button" type="submit">Save issuer</button><span id="issuerMessage" class="documents-message"></span></div>
+            </form>
+          </section>
+
+          <section class="documents-card">
+            <div class="documents-card__head"><div><span class="eyebrow">Signature</span><h3>Private signature asset</h3></div><span class="documents-chip" id="signatureState">Not loaded</span></div>
+            <p class="documents-help">PNG only, maximum 2 MB. The original remains in the private Documents bucket and is never given a public URL.</p>
+            <form id="signatureForm" class="signature-form">
+              <label class="upload-zone" for="signatureFile"><strong>Choose cleaned PNG</strong><span>Transparent background recommended</span></label>
+              <input id="signatureFile" name="file" type="file" accept="image/png" required />
+              <button class="button" type="submit">Upload & activate</button>
+              <span id="signatureMessage" class="documents-message"></span>
+            </form>
+          </section>
+
+          <section class="documents-card">
+            <div class="documents-card__head"><div><span class="eyebrow">Sequences</span><h3>Numbering safety</h3></div><span class="documents-chip is-safe">Real locked</span></div>
+            <div id="sequenceList" class="sequence-list"></div>
+            <button class="button button--ghost" id="ensureTestSequences" type="button">Verify test series</button>
+            <p class="documents-help">Real CC 21 and INV 0019 are shown for planning only. Bootstrap remains disabled until signed-PDF testing passes.</p>
+          </section>
+
+          <section class="documents-card documents-card--wide">
+            <div class="documents-card__head"><div><span class="eyebrow">Clients</span><h3>Billing profiles</h3></div><span class="documents-chip" id="clientCount">0 clients</span></div>
+            <div class="client-layout">
+              <form id="clientForm" class="documents-form documents-form--client">
+                <input id="clientId" name="id" type="hidden" />
+                <div class="field"><label for="clientDisplayName">Display name</label><input id="clientDisplayName" name="displayName" required /></div>
+                <div class="field"><label for="clientLegalName">Legal name</label><input id="clientLegalName" name="legalName" required /></div>
+                <div class="field"><label for="clientTaxIdType">Tax ID type</label><input id="clientTaxIdType" name="taxIdType" placeholder="NIT / EIN" /></div>
+                <div class="field"><label for="clientTaxId">Tax ID</label><input id="clientTaxId" name="taxId" /></div>
+                <div class="field"><label for="clientCurrency">Default currency</label><select id="clientCurrency" name="defaultCurrency"><option value="">—</option><option>COP</option><option>USD</option></select></div>
+                <div class="field"><label for="clientPoPolicy">PO policy</label><select id="clientPoPolicy" name="poPolicy"><option value="none">None</option><option value="document">Per document</option><option value="line">Per line</option><option value="required">Required</option></select></div>
+                <div class="field"><label for="clientTerms">Payment terms (days)</label><input id="clientTerms" name="paymentTermsDays" type="number" min="0" max="3650" /></div>
+                <div class="field"><label for="clientCountry">Country</label><input id="clientCountry" name="country" /></div>
+                <div class="field field--grow"><label for="clientBillingAddress">Billing address</label><input id="clientBillingAddress" name="billingAddress" /></div>
+                <div class="field"><label class="check"><input id="clientShowBank" name="showBankDetails" type="checkbox" /> Show bank details by default</label></div>
+                <div class="documents-form__actions"><button class="button" type="submit">Save client</button><button class="button button--ghost" id="newClient" type="button">New</button><span id="clientMessage" class="documents-message"></span></div>
+              </form>
+              <div id="clientList" class="client-list" aria-live="polite"></div>
+            </div>
+          </section>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="./documents/documents.js?v=20260927-1"></script>
+  <script src="./admin-stabilization.js?v=20260825-1"></script>
+</body>
+</html>

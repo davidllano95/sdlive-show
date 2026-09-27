@@ -1,0 +1,182 @@
+import { SAMUEL_SEQUENCE_BOOTSTRAP, listDocumentKinds } from "./documents-kinds.js";
+import {
+  TEST_SEQUENCE_CONFIRMATION,
+  ensureTestDocumentSequences,
+  listClientProfiles,
+  listDocumentSequences,
+  listIssuerProfiles,
+  listSignatureAssets,
+  upsertClientProfile,
+  upsertIssuerProfile,
+  uploadPrivateSignature
+} from "./documents-profiles.js";
+import { inspectDocumentsStoragePreflight } from "./documents-storage-preparation.js";
+
+const API_PREFIX = "/api/admin/documents";
+const MAX_JSON_BYTES = 64 * 1024;
+const MAX_SIGNATURE_REQUEST_BYTES = 2 * 1024 * 1024 + 128 * 1024;
+
+function json(data, status = 200, headers = {}) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: {
+      "Content-Type": "application/json; charset=utf-8",
+      "Cache-Control": "no-store",
+      ...headers
+    }
+  });
+}
+
+function pathOf(request) {
+  try {
+    const path = new URL(request.url).pathname;
+    return path.length > 1 ? path.replace(/\/+$/, "") : path;
+  } catch { return ""; }
+}
+
+async function actor(request, env, verifyAdmin) {
+  if (typeof verifyAdmin !== "function") return null;
+  return verifyAdmin(request, env).catch(() => null);
+}
+
+async function readJson(request) {
+  const type = String(request.headers.get("content-type") || "").toLowerCase();
+  if (!type.includes("application/json")) throw Object.assign(new Error("application_json_required"), { status: 415 });
+  const declared = Number(request.headers.get("content-length"));
+  if (Number.isFinite(declared) && declared > MAX_JSON_BYTES) throw Object.assign(new Error("request_too_large"), { status: 413 });
+  const text = await request.text();
+  if (text.length > MAX_JSON_BYTES) throw Object.assign(new Error("request_too_large"), { status: 413 });
+  let value;
+  try { value = JSON.parse(text || "{}"); } catch { throw Object.assign(new Error("invalid_json"), { status: 400 }); }
+  if (!value || typeof value !== "object" || Array.isArray(value)) throw Object.assign(new Error("body_must_be_object"), { status: 400 });
+  return value;
+}
+
+function publicError(error) {
+  const message = String(error?.message || error || "documents_request_failed");
+  const known = [
+    "application_json_required", "multipart_form_required", "request_too_large", "invalid_json", "body_must_be_object",
+    "signature_file_required", "invalid_issuer_id", "issuer_required_fields_missing", "invalid_issuer_addresses", "invalid_issuer_bank",
+    "invalid_client_id", "client_required_fields_missing", "invalid_client_currency", "invalid_po_policy",
+    "invalid_payment_terms_days", "invalid_finance_aliases", "issuer_not_found", "signature_png_required",
+    "invalid_signature_size", "documents_storage_unavailable", "documents_bucket_unavailable",
+    "explicit_test_sequence_confirmation_required"
+  ];
+  if (message.startsWith("unexpected_test_sequence_state:")) return { status: 409, error: message };
+  return { status: Number(error?.status) || (known.includes(message) ? 400 : 500), error: known.includes(message) ? message : "documents_request_failed" };
+}
+
+async function settings(env) {
+  const [storage, issuers, clients, signatures, sequences] = await Promise.all([
+    inspectDocumentsStoragePreflight(env),
+    listIssuerProfiles(env),
+    listClientProfiles(env),
+    listSignatureAssets(env),
+    listDocumentSequences(env)
+  ]);
+  return {
+    ok: true,
+    storage,
+    kinds: listDocumentKinds(),
+    issuers,
+    clients,
+    signatures,
+    sequences,
+    intendedRealSequences: Object.values(SAMUEL_SEQUENCE_BOOTSTRAP).map((item) => ({
+      seriesKey: item.seriesKey,
+      issuerId: item.issuerId,
+      docType: item.docType,
+      intendedNextValue: item.nextValue,
+      displayPattern: item.displayPattern,
+      locked: true,
+      note: "Real series bootstrap is intentionally disabled until the signed-PDF test gate passes."
+    }))
+  };
+}
+
+async function signatureUpload(request, env) {
+  const declared = Number(request.headers.get("content-length"));
+  if (Number.isFinite(declared) && declared > MAX_SIGNATURE_REQUEST_BYTES) {
+    throw Object.assign(new Error("request_too_large"), { status: 413 });
+  }
+  const type = String(request.headers.get("content-type") || "").toLowerCase();
+  if (!type.includes("multipart/form-data")) throw Object.assign(new Error("multipart_form_required"), { status: 415 });
+  const form = await request.formData();
+  const issuerId = String(form.get("issuerId") || "").trim();
+  const file = form.get("file");
+  if (
+    !file ||
+    typeof file !== "object" ||
+    typeof file.arrayBuffer !== "function" ||
+    typeof file.size !== "number"
+  ) {
+    throw Object.assign(new Error("signature_file_required"), { status: 400 });
+  }
+  if (file.type !== "image/png") throw Object.assign(new Error("signature_png_required"), { status: 415 });
+  if (file.size < 16 || file.size > 2 * 1024 * 1024) throw Object.assign(new Error("invalid_signature_size"), { status: 413 });
+  const signature = await uploadPrivateSignature(env, {
+    issuerId,
+    bytes: await file.arrayBuffer(),
+    contentType: file.type
+  });
+  return json({ ok: true, signature }, 201);
+}
+
+export async function handleDocumentsProfilesApi(request, env, { verifyAdmin } = {}) {
+  const path = pathOf(request);
+  if (!path.startsWith(`${API_PREFIX}/`)) return null;
+  if (path.endsWith("/storage-preflight") || path.endsWith("/storage-prepare")) return null;
+
+  const user = await actor(request, env, verifyAdmin);
+  if (!user?.email) return json({ ok: false, error: "Unauthorized" }, 401);
+
+  try {
+    if (path === `${API_PREFIX}/settings` && request.method === "GET") {
+      return json({ ...(await settings(env)), actor: String(user.email).toLowerCase() });
+    }
+
+    const issuerMatch = path.match(/^\/api\/admin\/documents\/issuers\/([^/]+)$/);
+    if (issuerMatch && request.method === "PUT") {
+      const profile = await upsertIssuerProfile(env, await readJson(request), { id: decodeURIComponent(issuerMatch[1]) });
+      return json({ ok: true, profile });
+    }
+
+    if (path === `${API_PREFIX}/clients` && request.method === "POST") {
+      const profile = await upsertClientProfile(env, await readJson(request));
+      return json({ ok: true, profile }, 201);
+    }
+
+    const clientMatch = path.match(/^\/api\/admin\/documents\/clients\/([^/]+)$/);
+    if (clientMatch && request.method === "PUT") {
+      const profile = await upsertClientProfile(env, await readJson(request), { id: decodeURIComponent(clientMatch[1]) });
+      return json({ ok: true, profile });
+    }
+
+    if (path === `${API_PREFIX}/signatures/upload` && request.method === "POST") {
+      return await signatureUpload(request, env);
+    }
+
+    if (path === `${API_PREFIX}/sequences/test-ensure` && request.method === "POST") {
+      const body = await readJson(request);
+      const result = await ensureTestDocumentSequences(env, { confirmation: body.confirmation });
+      return json(result);
+    }
+
+    return json({ ok: false, error: "Documents API route not found" }, 404);
+  } catch (error) {
+    console.error("[SD.Live] Documents profiles API failed", error);
+    const exposed = publicError(error);
+    return json({ ok: false, error: exposed.error }, exposed.status);
+  }
+}
+
+export function documentsProfilesApiPolicy() {
+  return Object.freeze({
+    adminOnly: true,
+    settingsReturnsSignatureBytes: false,
+    settingsReturnsSignaturePublicUrl: false,
+    testEnsureConfirmation: TEST_SEQUENCE_CONFIRMATION,
+    realSequenceBootstrapExposed: false,
+    signatureMaxRequestBytes: MAX_SIGNATURE_REQUEST_BYTES
+  });
+}
