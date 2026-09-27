@@ -3,6 +3,8 @@
 
   const API = "/api/admin/documents";
   const $ = (id) => document.getElementById(id);
+  const BRAND_NONE_TOKEN = "[[none]]";
+  const BRAND_LOGO_TOKEN = "[[logo]]";
   let settings = null;
   let registry = [];
   let activeDocument = null;
@@ -51,6 +53,19 @@
     return Number.isFinite(number) ? number.toFixed(2) : "0.00";
   }
 
+  function decodeBrandLabel(value) {
+    const raw = String(value || "").trim();
+    const showLogo = raw.includes(BRAND_LOGO_TOKEN);
+    const label = raw.replaceAll(BRAND_LOGO_TOKEN, "").trim();
+    return { label: label === BRAND_NONE_TOKEN ? "" : label, showLogo };
+  }
+
+  function encodeBrandLabel(label, showLogo) {
+    const text = String(label || "").trim();
+    const base = text || BRAND_NONE_TOKEN;
+    return `${base}${showLogo ? ` ${BRAND_LOGO_TOKEN}` : ""}`;
+  }
+
   function selectedProfile(list, id) {
     return (list || []).find((item) => item.id === id) || null;
   }
@@ -70,7 +85,7 @@
       phone: profile?.phone || "",
       email: profile?.email || "",
       address: primaryAddress(profile),
-      brandLabel: profile?.brandLabel || ""
+      brandLabel: profile?.brandLabel || BRAND_NONE_TOKEN
     };
   }
 
@@ -150,6 +165,23 @@
     return label;
   }
 
+  function ensureBrandControls() {
+    const input = $("draftBrandLabel");
+    const field = input?.closest(".field");
+    if (!input || !field || $("draftBrandLogo")) return;
+    input.placeholder = "SD•Live · Creative Audio";
+    const help = field.querySelector(".field-help");
+    if (help) help.textContent = "Blank hides the visual brand on this document. Use SD•Live · Creative Audio for the standard wordmark.";
+    const logoLabel = documentCreate("label", "check brand-logo-toggle");
+    const checkbox = documentCreate("input");
+    checkbox.id = "draftBrandLogo";
+    checkbox.type = "checkbox";
+    logoLabel.append(checkbox, document.createTextNode(" Show SD•Live logo"));
+    const logoHelp = documentCreate("small", "field-help");
+    logoHelp.textContent = "Uses the existing SD•Live logo asset; no public upload or extra storage is created.";
+    field.append(logoLabel, logoHelp);
+  }
+
   function ensureItemizationControls() {
     if ($("draftPricingMode")) return;
     const lineItemsFieldset = $("draftLines")?.closest("fieldset");
@@ -171,7 +203,7 @@
     itemize.checked = true;
     itemizeLabel.append(itemize, document.createTextNode(" Itemize line items"));
     const itemizeHelp = documentCreate("small", "field-help");
-    itemizeHelp.textContent = "Checked = show concepts. Unchecked = don't itemize; use one general rate and show the amount only in ‘La suma de’.";
+    itemizeHelp.textContent = "Checked = itemize amounts. Unchecked = keep concept lines but use one general rate / total.";
     itemizeField.append(itemizeLabel, itemizeHelp);
 
     const generalField = documentCreate("div", "field");
@@ -383,7 +415,8 @@
       notes: $("draftNotes").value.trim() || null,
       issuerOverride: {
         legalName: $("draftIssuerName").value.trim(), idType: $("draftIssuerIdType").value.trim(), idNumber: $("draftIssuerIdNumber").value.trim(),
-        address: $("draftIssuerAddress").value.trim(), phone: $("draftIssuerPhone").value.trim(), email: $("draftIssuerEmail").value.trim(), brandLabel: $("draftBrandLabel").value.trim()
+        address: $("draftIssuerAddress").value.trim(), phone: $("draftIssuerPhone").value.trim(), email: $("draftIssuerEmail").value.trim(),
+        brandLabel: encodeBrandLabel($("draftBrandLabel").value, $("draftBrandLogo")?.checked)
       },
       clientOverride: {
         legalName: $("draftClientName").value.trim(), taxIdType: $("draftClientTaxType").value.trim(), taxId: $("draftClientTaxId").value.trim(),
@@ -400,6 +433,7 @@
     const clientProfile = selectedProfile(settings?.clients, document.clientId);
     const issuer = { ...issuerOverrideFromProfile(issuerProfile), ...(draft.issuerOverride || {}) };
     const client = { ...clientOverrideFromProfile(clientProfile), ...(draft.clientOverride || {}) };
+    const brand = decodeBrandLabel(issuer.brandLabel);
     $("draftId").value = document.id;
     $("draftRev").value = document.draftRev;
     $("draftRevChip").textContent = `rev ${document.draftRev}`;
@@ -407,7 +441,8 @@
     $("editorTitle").textContent = document.clientName || client.legalName || "Untitled draft";
     $("previewTemplate").textContent = document.kindId === "cc-co-es" ? "cc-co-es@1" : "invoice-intl-en@1";
     $("draftIssuerName").value = issuer.legalName || ""; $("draftIssuerIdType").value = issuer.idType || ""; $("draftIssuerIdNumber").value = issuer.idNumber || "";
-    $("draftIssuerAddress").value = issuer.address || ""; $("draftIssuerPhone").value = issuer.phone || ""; $("draftIssuerEmail").value = issuer.email || ""; $("draftBrandLabel").value = issuer.brandLabel || "";
+    $("draftIssuerAddress").value = issuer.address || ""; $("draftIssuerPhone").value = issuer.phone || ""; $("draftIssuerEmail").value = issuer.email || ""; $("draftBrandLabel").value = brand.label;
+    if ($("draftBrandLogo")) $("draftBrandLogo").checked = brand.showLogo;
     $("draftClientName").value = client.legalName || ""; $("draftClientTaxType").value = client.taxIdType || ""; $("draftClientTaxId").value = client.taxId || ""; $("draftClientAddress").value = client.billingAddress || ""; $("draftClientPhone").value = client.phone || "";
     $("draftIssueDate").value = draft.issueDate || ""; $("draftIssueCity").value = draft.issueCity || ""; $("draftProject").value = draft.projectLabel || ""; $("draftPO").value = draft.purchaseOrder || "";
     $("draftCurrency").value = document.currency; $("draftDueDate").value = draft.dueDate || ""; $("draftTerms").value = draft.terms || ""; $("draftAmountWords").value = draft.amountWordsOverride || "";
@@ -484,6 +519,7 @@
     }
   }
 
+  ensureBrandControls();
   ensureItemizationControls();
 
   $("documentsTab").addEventListener("click", () => setTab("documents"));
@@ -535,6 +571,7 @@
     syncItemizationUi();
     scheduleSave();
   });
+  $("draftBrandLogo")?.addEventListener("change", scheduleSave);
   $("draftForm").addEventListener("submit", (event) => { event.preventDefault(); clearTimeout(saveTimer); saveDraft({ manual: true }); });
   $("draftForm").addEventListener("input", (event) => { if (!event.target.closest(".draft-line")) scheduleSave(); });
   $("addDraftLine").addEventListener("click", () => { $("draftLines").append(lineTemplate({}, $("draftCurrency").value, activeDocument?.kindId)); scheduleSave(); });
