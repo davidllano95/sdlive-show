@@ -207,20 +207,25 @@ function servicePeriodLabel(value) {
 }
 
 function previewLines(lines) {
-  return Array.isArray(lines) ? lines.map((line, index) => ({
-    id: text(line?.id, 120) || `line-${index + 1}`,
-    kind: text(line?.kind, 40) || "other",
-    description: text(line?.description, 500) || "Untitled line",
-    quantity: Number.isSafeInteger(Number(line?.quantity)) && Number(line.quantity) > 0 ? Number(line.quantity) : 1,
-    unit: text(line?.unit, 40) || "unit",
-    unitMinor: Number.isSafeInteger(Number(line?.unitMinor)) ? Number(line.unitMinor) : null,
-    amountMinor: Number.isSafeInteger(Number(line?.amountMinor)) ? Math.max(0, Number(line.amountMinor)) : 0,
-    serviceDate: text(line?.serviceDate, 20),
-    poNumber: text(line?.poNumber, 120),
-    reference: text(line?.reference, 240),
-    originalCurrency: text(line?.originalCurrency, 10),
-    originalAmountMinor: Number.isSafeInteger(Number(line?.originalAmountMinor)) ? Math.max(0, Number(line.originalAmountMinor)) : null
-  })) : [];
+  return Array.isArray(lines) ? lines.map((line, index) => {
+    const rawQuantity = Number(line?.quantity);
+    const quantity = Number.isSafeInteger(rawQuantity) && rawQuantity >= 0 ? rawQuantity : 0;
+    return {
+      id: text(line?.id, 120) || `line-${index + 1}`,
+      kind: text(line?.kind, 40) || "other",
+      description: text(line?.description, 500) || "Untitled line",
+      quantity,
+      unit: text(line?.unit, 40),
+      unitMinor: Number.isSafeInteger(Number(line?.unitMinor)) ? Number(line.unitMinor) : null,
+      amountMinor: Number.isSafeInteger(Number(line?.amountMinor)) ? Math.max(0, Number(line.amountMinor)) : 0,
+      serviceDate: text(line?.serviceDate, 20),
+      serviceDateEnd: text(line?.serviceDateEnd, 20),
+      poNumber: text(line?.poNumber, 120),
+      reference: text(line?.reference, 240),
+      originalCurrency: text(line?.originalCurrency, 10),
+      originalAmountMinor: Number.isSafeInteger(Number(line?.originalAmountMinor)) ? Math.max(0, Number(line.originalAmountMinor)) : null
+    };
+  }) : [];
 }
 
 function issuerForPreview(profile, overrideValue) {
