@@ -168,10 +168,10 @@ async function renderPdfWithBrowser(env, html, pageSize) {
   return bytes;
 }
 
-function artifactKey(row) {
+function artifactKey(row, pdfSha256) {
   const issuer = text(row.issuer_id).replace(/[^A-Za-z0-9_-]/g, "-");
   const type = text(row.doc_type).replace(/[^A-Za-z0-9_-]/g, "-");
-  return `final/${issuer}/${type}/${row.id}/${row.snapshot_sha256}.pdf`;
+  return `final/${issuer}/${type}/${row.id}/${row.snapshot_sha256}/${pdfSha256}.pdf`;
 }
 
 async function markPdfReady(env, row, { key, sha256, actorEmail, at }) {
@@ -179,24 +179,35 @@ async function markPdfReady(env, row, { key, sha256, actorEmail, at }) {
   await store.batch([
     store.prepare(`UPDATE doc_documents
       SET pdf_status = 'ready', pdf_r2_key = ?, pdf_sha256 = ?, updated_at = ?
-      WHERE id = ? AND snapshot_sha256 = ? AND status IN ('finalized', 'void')`)
+      WHERE id = ? AND snapshot_sha256 = ? AND status IN ('finalized', 'void')
+        AND pdf_status IN ('pending', 'failed')`)
       .bind(key, sha256, at, row.id, row.snapshot_sha256),
     store.prepare(`INSERT INTO doc_document_events (document_id, event, actor_email, at, detail_json)
-      VALUES (?, 'pdf_ready', ?, ?, ?)`)
-      .bind(row.id, text(actorEmail).toLowerCase(), at, canonicalJson({ pdfSha256: sha256 }))
+      SELECT ?, 'pdf_ready', ?, ?, ?
+      WHERE EXISTS (
+        SELECT 1 FROM doc_documents
+        WHERE id = ? AND snapshot_sha256 = ? AND pdf_status = 'ready' AND pdf_sha256 = ?
+      )`)
+      .bind(row.id, text(actorEmail).toLowerCase(), at, canonicalJson({ pdfSha256: sha256 }), row.id, row.snapshot_sha256, sha256)
   ]);
 }
 
 async function markPdfFailed(env, row, { actorEmail, at, reason }) {
   const store = db(env);
+  const detail = canonicalJson({ reason: text(reason).slice(0, 120) });
   await store.batch([
     store.prepare(`UPDATE doc_documents
       SET pdf_status = 'failed', updated_at = ?
-      WHERE id = ? AND snapshot_sha256 = ? AND status IN ('finalized', 'void') AND pdf_status <> 'ready'`)
+      WHERE id = ? AND snapshot_sha256 = ? AND status IN ('finalized', 'void')
+        AND pdf_status IN ('pending', 'failed')`)
       .bind(at, row.id, row.snapshot_sha256),
     store.prepare(`INSERT INTO doc_document_events (document_id, event, actor_email, at, detail_json)
-      VALUES (?, 'pdf_failed', ?, ?, ?)`)
-      .bind(row.id, text(actorEmail).toLowerCase(), at, canonicalJson({ reason: text(reason).slice(0, 120) }))
+      SELECT ?, 'pdf_failed', ?, ?, ?
+      WHERE EXISTS (
+        SELECT 1 FROM doc_documents
+        WHERE id = ? AND snapshot_sha256 = ? AND pdf_status = 'failed'
+      )`)
+      .bind(row.id, text(actorEmail).toLowerCase(), at, detail, row.id, row.snapshot_sha256)
   ]).catch(() => {});
 }
 
@@ -239,7 +250,7 @@ export async function generateFinalPdf(env, {
       ? await overrides.renderPdfFn(env, html, snapshot.kind?.pageSize)
       : await renderPdfWithBrowser(env, html, snapshot.kind?.pageSize);
     const pdfSha256 = await sha256HexBytes(pdfBytes);
-    const key = artifactKey(row);
+    const key = artifactKey(row, pdfSha256);
     if (overrides.putPdfFn) {
       await overrides.putPdfFn(env, key, pdfBytes, { documentId: row.id, snapshotSha256: row.snapshot_sha256, pdfSha256 });
     } else {
