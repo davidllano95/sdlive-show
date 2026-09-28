@@ -256,13 +256,14 @@ test("canonical real sequence is enabled while environment and issuer mismatches
   assert.deepEqual(await mismatchResponse.json(), { ok: false, error: "test_series_issuer_mismatch" });
 });
 
-test("policies enable canonical real numbering while keeping corrections TEST-only for this gate", () => {
+test("policies enable canonical real numbering and correction chains", () => {
   const gate = documentsFinalizeGatePolicy();
   const api = documentsEditorApiPolicy();
   assert.equal(gate.testSeriesOnly, false);
   assert.equal(gate.testSeriesEnabled, true);
   assert.equal(gate.realSeriesEnabled, true);
-  assert.equal(gate.realCorrectionRevisionsEnabled, false);
+  assert.equal(gate.realCorrectionRevisionsEnabled, true);
+  assert.equal(gate.correctionConsumesBaseNumber, false);
   assert.equal(gate.requiresExactDraftRev, true);
   assert.equal(gate.rendersPdf, false);
   assert.equal(gate.bootstrapsRealSequences, false);
@@ -270,8 +271,10 @@ test("policies enable canonical real numbering while keeping corrections TEST-on
   assert.equal(api.finalizeTestSeriesOnly, false);
   assert.equal(api.testSeriesFinalizeEnabled, true);
   assert.equal(api.realSeriesFinalizeEnabled, true);
-  assert.equal(api.correctionTestSeriesOnly, true);
-  assert.equal(api.correctionRealSeriesEnabled, false);
+  assert.equal(api.correctionTestSeriesOnly, false);
+  assert.equal(api.correctionTestSeriesEnabled, true);
+  assert.equal(api.correctionRealSeriesEnabled, true);
+  assert.equal(api.correctionConsumesBaseSequence, false);
   assert.equal(api.finalizeRendersPdf, true);
   assert.equal(api.pdfRetryEndpoint, true);
   assert.equal(api.pdfDownloadAuthenticated, true);
