@@ -29,7 +29,7 @@ function draftRow(overrides = {}) {
   };
 }
 
-function gateOverrides({ row = draftRow(), sequence = null, finalized = null } = {}) {
+function gateOverrides({ row = draftRow(), sequence = null, finalized = null, peek = null } = {}) {
   const seq = sequence || {
     series_key: "test:CC",
     issuer_id: "test",
@@ -38,31 +38,46 @@ function gateOverrides({ row = draftRow(), sequence = null, finalized = null } =
     display_pattern: "TEST-CC {n}",
     is_test: 1
   };
+  const expectedSeriesKey = seq.series_key;
+  const expectedNumber = Number(seq.next_value);
+  const expectedDisplay = seq.display_pattern === "{n}" ? String(expectedNumber)
+    : seq.display_pattern === "{n:04}" ? String(expectedNumber).padStart(4, "0")
+      : `TEST-CC ${expectedNumber}`;
   return {
     readDocument: async () => row,
     readDocumentSequence: async () => seq,
-    peekDocumentNumber: async () => ({ seriesKey: "test:CC", number: 7, displayNumber: "TEST-CC 7", isTest: true }),
+    peekDocumentNumber: async () => peek || ({
+      seriesKey: expectedSeriesKey,
+      number: expectedNumber,
+      displayNumber: expectedDisplay,
+      isTest: Number(seq.is_test) === 1
+    }),
     resolveContext: async () => ({
-      issuer: { id: "test", legalName: "Test Issuer", idNumber: "123" },
+      issuer: { id: row.issuer_id, legalName: "Test Issuer", idNumber: "123" },
       client: { id: "client-1", legalName: "Test Client S.A.S.", taxId: "900123" },
       signatureAsset: { id: "sig-test", sha256: "abc123" },
       sources: []
     }),
-    validateDraftForFinalize: () => ({ totalMinor: 375500000, lines: [], kind: { id: "cc-co-es" } }),
+    validateDraftForFinalize: () => ({ totalMinor: 375500000, lines: [], kind: { id: row.kind_id } }),
     finalizeDocument: async (_env, options) => {
+      const numberContext = {
+        seriesKey: expectedSeriesKey,
+        number: expectedNumber,
+        displayNumber: expectedDisplay
+      };
       await options.resolveContext({
         document: row,
         draft: JSON.parse(row.draft_json),
         sequence: seq,
-        numberContext: { seriesKey: "test:CC", number: 7, displayNumber: "TEST-CC 7" }
+        numberContext
       });
       return finalized || {
         ok: true,
         finalized: true,
         idempotent: false,
-        document: { ...row, status: "finalized", number: 7, display_number: "TEST-CC 7" },
-        number: 7,
-        displayNumber: "TEST-CC 7",
+        document: { ...row, status: "finalized", number: expectedNumber, display_number: expectedDisplay },
+        number: expectedNumber,
+        displayNumber: expectedDisplay,
         snapshotSha256: "deadbeef",
         pdfStatus: "pending"
       };
@@ -82,6 +97,7 @@ test("finalize preview exposes only a prospective TEST number and safe summary",
   const body = await response.json();
   assert.equal(body.ok, true);
   assert.equal(body.testOnly, true);
+  assert.equal(body.production, false);
   assert.equal(body.seriesKey, "test:CC");
   assert.equal(body.displayNumber, "TEST-CC 7");
   assert.equal(body.draftRev, 3);
@@ -185,8 +201,29 @@ test("finalize re-checks draftRev inside the core resolver to close the confirma
   assert.deepEqual(await response.json(), { ok: false, error: "stale_draft_revision" });
 });
 
-test("real or mismatched sequences are fail-closed", async () => {
-  const realSequence = gateOverrides({ sequence: {
+test("canonical real sequence is enabled while environment and issuer mismatches fail closed", async () => {
+  const realRow = draftRow({ issuer_id: "samuel-cop" });
+  const realSequence = {
+    series_key: "samuel:CC",
+    issuer_id: "samuel-cop",
+    doc_type: "cc",
+    next_value: 21,
+    display_pattern: "{n}",
+    is_test: 0
+  };
+  const realResponse = await handleDocumentsEditorApi(
+    new Request("https://sdlive.show/api/admin/documents/doc-test-1/finalize-preview?draftRev=3"),
+    {},
+    { verifyAdmin, finalizeGate: gateOverrides({ row: realRow, sequence: realSequence }) }
+  );
+  assert.equal(realResponse.status, 200);
+  const realBody = await realResponse.json();
+  assert.equal(realBody.testOnly, false);
+  assert.equal(realBody.production, true);
+  assert.equal(realBody.seriesKey, "samuel:CC");
+  assert.equal(realBody.displayNumber, "21");
+
+  const wrongEnvironment = gateOverrides({ sequence: {
     series_key: "test:CC",
     issuer_id: "test",
     doc_type: "cc",
@@ -194,13 +231,13 @@ test("real or mismatched sequences are fail-closed", async () => {
     display_pattern: "TEST-CC {n}",
     is_test: 0
   } });
-  const realResponse = await handleDocumentsEditorApi(
+  const wrongEnvironmentResponse = await handleDocumentsEditorApi(
     new Request("https://sdlive.show/api/admin/documents/doc-test-1/finalize-preview?draftRev=3"),
     {},
-    { verifyAdmin, finalizeGate: realSequence }
+    { verifyAdmin, finalizeGate: wrongEnvironment }
   );
-  assert.equal(realResponse.status, 409);
-  assert.deepEqual(await realResponse.json(), { ok: false, error: "real_document_series_disabled" });
+  assert.equal(wrongEnvironmentResponse.status, 409);
+  assert.deepEqual(await wrongEnvironmentResponse.json(), { ok: false, error: "sequence_environment_mismatch" });
 
   const mismatch = gateOverrides({ sequence: {
     series_key: "test:CC",
@@ -219,28 +256,40 @@ test("real or mismatched sequences are fail-closed", async () => {
   assert.deepEqual(await mismatchResponse.json(), { ok: false, error: "test_series_issuer_mismatch" });
 });
 
-test("policies keep numbering test-only while enabling the signed PDF artifact gate", () => {
+test("policies enable canonical real numbering while keeping corrections TEST-only for this gate", () => {
   const gate = documentsFinalizeGatePolicy();
   const api = documentsEditorApiPolicy();
-  assert.equal(gate.testSeriesOnly, true);
-  assert.equal(gate.realSeriesEnabled, false);
+  assert.equal(gate.testSeriesOnly, false);
+  assert.equal(gate.testSeriesEnabled, true);
+  assert.equal(gate.realSeriesEnabled, true);
+  assert.equal(gate.realCorrectionRevisionsEnabled, false);
   assert.equal(gate.requiresExactDraftRev, true);
   assert.equal(gate.rendersPdf, false);
   assert.equal(gate.bootstrapsRealSequences, false);
   assert.equal(gate.returnsSignatureBytes, false);
-  assert.equal(api.finalizeTestSeriesOnly, true);
-  assert.equal(api.realSeriesFinalizeEnabled, false);
+  assert.equal(api.finalizeTestSeriesOnly, false);
+  assert.equal(api.testSeriesFinalizeEnabled, true);
+  assert.equal(api.realSeriesFinalizeEnabled, true);
+  assert.equal(api.correctionTestSeriesOnly, true);
+  assert.equal(api.correctionRealSeriesEnabled, false);
   assert.equal(api.finalizeRendersPdf, true);
   assert.equal(api.pdfRetryEndpoint, true);
   assert.equal(api.pdfDownloadAuthenticated, true);
-  assert.equal(api.pdfTestSeriesOnly, true);
+  assert.equal(api.pdfTestSeriesOnly, false);
+  assert.equal(api.pdfRealSeriesEnabled, true);
 });
 
-test("confirmation UX creates the key when dialog opens, disables double click and retries with the same key", async () => {
-  const source = await readFile(new URL("../admin/documents/management.js", import.meta.url), "utf8");
-  assert.match(source, /finalizeKey = crypto\.randomUUID\(\)/);
-  assert.match(source, /body: JSON\.stringify\(\{ draftRev: finalizePreview\.draftRev, finalizeKey \}\)/);
-  assert.match(source, /button\.disabled = true/);
-  assert.match(source, /Retry with same key/);
-  assert.match(source, /Real CC\/INV series remain locked/);
+test("confirmation UX distinguishes REAL from TEST and keeps same finalize key on retry", async () => {
+  const management = await readFile(new URL("../admin/documents/management.js", import.meta.url), "utf8");
+  const productionUx = await readFile(new URL("../admin/documents/production-active-ux.js", import.meta.url), "utf8");
+  const index = await readFile(new URL("../admin/documents/index.html", import.meta.url), "utf8");
+  assert.match(management, /finalizeKey = crypto\.randomUUID\(\)/);
+  assert.match(management, /body: JSON\.stringify\(\{ draftRev: finalizePreview\.draftRev, finalizeKey \}\)/);
+  assert.match(management, /button\.disabled = true/);
+  assert.match(management, /Retry with same key/);
+  assert.match(productionUx, /REAL document issue/);
+  assert.match(productionUx, /Issue REAL document/);
+  assert.match(productionUx, /TEST document issue/);
+  assert.match(productionUx, /never reused/);
+  assert.match(index, /production-active-ux\.js/);
 });

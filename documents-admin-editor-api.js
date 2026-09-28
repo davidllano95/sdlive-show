@@ -6,8 +6,8 @@ import {
   saveDraftDocument
 } from "./documents-drafts.js";
 import {
-  buildTestFinalizePreview,
-  finalizeThroughTestSeries
+  buildFinalizePreview,
+  finalizeThroughSeries
 } from "./documents-finalize-gate.js";
 import { downloadFinalPdf, generateFinalPdf } from "./documents-pdf-artifacts.js";
 import { deleteDocumentDraftRow } from "./documents-storage-delete.js";
@@ -112,6 +112,9 @@ function publicError(error) {
     invalid_sequence_state: 409,
     sequence_issuer_mismatch: 409,
     sequence_document_type_mismatch: 409,
+    sequence_environment_mismatch: 409,
+    sequence_display_pattern_mismatch: 409,
+    production_series_issuer_not_supported: 409,
     test_series_issuer_mismatch: 409,
     real_document_series_disabled: 409,
     finalize_key_already_used: 409,
@@ -194,7 +197,7 @@ export async function handleDocumentsEditorApi(request, env, { verifyAdmin, fina
     const finalizePreviewMatch = path.match(/^\/api\/admin\/documents\/(doc-[A-Za-z0-9-]+)\/finalize-preview$/);
     if (finalizePreviewMatch && request.method === "GET") {
       const draftRev = new URL(request.url).searchParams.get("draftRev");
-      return json(await buildTestFinalizePreview(env, {
+      return json(await buildFinalizePreview(env, {
         documentId: finalizePreviewMatch[1],
         draftRev
       }, finalizeGate));
@@ -203,7 +206,7 @@ export async function handleDocumentsEditorApi(request, env, { verifyAdmin, fina
     const finalizeMatch = path.match(/^\/api\/admin\/documents\/(doc-[A-Za-z0-9-]+)\/finalize$/);
     if (finalizeMatch && request.method === "POST") {
       const body = requireFinalizeBody(await readJson(request));
-      const result = await finalizeThroughTestSeries(env, {
+      const result = await finalizeThroughSeries(env, {
         documentId: finalizeMatch[1],
         draftRev: body.draftRev,
         finalizeKey: body.finalizeKey,
@@ -214,9 +217,15 @@ export async function handleDocumentsEditorApi(request, env, { verifyAdmin, fina
         pdf = await generateFinalPdf(env, { documentId: finalizeMatch[1], actorEmail: user.email }, artifactGate);
       } catch (error) {
         const exposed = publicError(error);
-        pdf = { ok: false, pdfStatus: "failed", error: exposed.error, retryPath: `${API_PREFIX}/${finalizeMatch[1]}/pdf`, testOnly: true };
+        pdf = {
+          ok: false,
+          pdfStatus: "failed",
+          error: exposed.error,
+          retryPath: `${API_PREFIX}/${finalizeMatch[1]}/pdf`,
+          testOnly: result.testOnly === true
+        };
       }
-      return json({ ...result, testOnly: true, pdfEnabled: true, pdf });
+      return json({ ...result, pdfEnabled: true, pdf });
     }
 
     const pdfMatch = path.match(/^\/api\/admin\/documents\/(doc-[A-Za-z0-9-]+)\/pdf$/);
@@ -268,15 +277,18 @@ export function documentsEditorApiPolicy() {
     optimisticConcurrency: "draftRev",
     finalizeRequiresExactDraftRev: true,
     finalizeRequiresUuidKey: true,
-    finalizeTestSeriesOnly: true,
-    realSeriesFinalizeEnabled: false,
+    finalizeTestSeriesOnly: false,
+    testSeriesFinalizeEnabled: true,
+    realSeriesFinalizeEnabled: true,
     correctionRevisionsEnabled: true,
     correctionTestSeriesOnly: true,
+    correctionRealSeriesEnabled: false,
     correctionConsumesBaseSequence: false,
     finalizeRendersPdf: true,
     pdfRetryEndpoint: true,
     pdfDownloadAuthenticated: true,
-    pdfTestSeriesOnly: true,
+    pdfTestSeriesOnly: false,
+    pdfRealSeriesEnabled: true,
     draftDeleteOnly: true,
     issuedDeleteBlockedBySchemaTrigger: true
   });

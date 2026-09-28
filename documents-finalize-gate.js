@@ -1,4 +1,5 @@
 import { validateDraftForFinalize } from "./documents-domain.js";
+import { SAMUEL_SEQUENCE_BOOTSTRAP } from "./documents-kinds.js";
 import {
   listClientProfiles,
   listIssuerProfiles,
@@ -56,6 +57,35 @@ function testSeriesKey(docType) {
   const key = TEST_SERIES_BY_TYPE[text(docType, 20)];
   if (!key) throw new Error("unsupported_document_type");
   return key;
+}
+
+function productionSeriesConfig(document) {
+  const match = Object.values(SAMUEL_SEQUENCE_BOOTSTRAP).find((config) => (
+    config.docType === text(document?.doc_type, 20)
+    && config.issuerId === text(document?.issuer_id, 120)
+  ));
+  if (!match) throw new Error("production_series_issuer_not_supported");
+  return match;
+}
+
+function intendedSeries(document) {
+  if (text(document?.issuer_id, 120) === "test") {
+    return {
+      seriesKey: testSeriesKey(document?.doc_type),
+      issuerId: "test",
+      docType: text(document?.doc_type, 20),
+      isTest: true,
+      displayPattern: null
+    };
+  }
+  const config = productionSeriesConfig(document);
+  return {
+    seriesKey: config.seriesKey,
+    issuerId: config.issuerId,
+    docType: config.docType,
+    isTest: false,
+    displayPattern: config.displayPattern
+  };
 }
 
 function issuerAddress(profile) {
@@ -145,40 +175,49 @@ async function requireDraft(env, documentId, draftRev, ops) {
   return { document, draft: parseJson(document.draft_json, {}), expectedRev };
 }
 
-async function standardDraftAndTestSeries(env, documentId, draftRev, ops) {
-  const current = await requireDraft(env, documentId, draftRev, ops);
-  const seriesKey = testSeriesKey(current.document.doc_type);
-  const sequence = await ops.readDocumentSequence(env, seriesKey);
+function validateSequenceIdentity(document, intended, sequence) {
   if (!sequence) throw new Error("document_sequence_not_found");
-  if (Number(sequence.is_test) !== 1) throw new Error("real_document_series_disabled");
-  if (String(sequence.issuer_id) !== String(current.document.issuer_id)) throw new Error("test_series_issuer_mismatch");
-  if (String(sequence.doc_type) !== String(current.document.doc_type)) throw new Error("sequence_document_type_mismatch");
-  return { ...current, seriesKey, sequence };
+  if (String(sequence.series_key) !== String(intended.seriesKey)) throw new Error("sequence_environment_mismatch");
+  if (Number(sequence.is_test) !== (intended.isTest ? 1 : 0)) throw new Error("sequence_environment_mismatch");
+  if (String(sequence.issuer_id) !== String(document.issuer_id)) {
+    if (intended.isTest) throw new Error("test_series_issuer_mismatch");
+    throw new Error("sequence_issuer_mismatch");
+  }
+  if (String(sequence.doc_type) !== String(document.doc_type)) throw new Error("sequence_document_type_mismatch");
+  if (!intended.isTest && String(sequence.display_pattern) !== String(intended.displayPattern)) {
+    throw new Error("sequence_display_pattern_mismatch");
+  }
 }
 
-export async function buildTestFinalizePreview(env, { documentId, draftRev } = {}, overrides = {}) {
+async function standardDraftAndSeries(env, documentId, draftRev, ops) {
+  const current = await requireDraft(env, documentId, draftRev, ops);
+  const intended = intendedSeries(current.document);
+  const sequence = await ops.readDocumentSequence(env, intended.seriesKey);
+  validateSequenceIdentity(current.document, intended, sequence);
+  return { ...current, intended, seriesKey: intended.seriesKey, sequence };
+}
+
+export async function buildFinalizePreview(env, { documentId, draftRev } = {}, overrides = {}) {
   const ops = operations(overrides);
   const current = await requireDraft(env, documentId, draftRev, ops);
 
   if (current.document.supersedes_id) {
-    return ops.buildTestRevisionFinalizePreview(env, {
+    const preview = await ops.buildTestRevisionFinalizePreview(env, {
       document: current.document,
       draft: current.draft,
       draftRev: current.expectedRev,
       resolveContext: ops.resolveContext,
       validateDraftForFinalize: ops.validateDraftForFinalize
     });
+    return { ...preview, testOnly: true, production: false };
   }
 
-  const seriesKey = testSeriesKey(current.document.doc_type);
-  const sequence = await ops.readDocumentSequence(env, seriesKey);
-  if (!sequence) throw new Error("document_sequence_not_found");
-  if (Number(sequence.is_test) !== 1) throw new Error("real_document_series_disabled");
-  if (String(sequence.issuer_id) !== String(current.document.issuer_id)) throw new Error("test_series_issuer_mismatch");
-  if (String(sequence.doc_type) !== String(current.document.doc_type)) throw new Error("sequence_document_type_mismatch");
+  const intended = intendedSeries(current.document);
+  const sequence = await ops.readDocumentSequence(env, intended.seriesKey);
+  validateSequenceIdentity(current.document, intended, sequence);
 
-  const numberContext = await ops.peekDocumentNumber(env, seriesKey);
-  if (!numberContext.isTest) throw new Error("real_document_series_disabled");
+  const numberContext = await ops.peekDocumentNumber(env, intended.seriesKey);
+  if (Boolean(numberContext.isTest) !== intended.isTest) throw new Error("sequence_environment_mismatch");
   const context = await ops.resolveContext(env, current.document, current.draft);
   const calculated = ops.validateDraftForFinalize({
     document: current.document,
@@ -193,7 +232,7 @@ export async function buildTestFinalizePreview(env, { documentId, draftRev } = {
     revision: false,
     documentId: current.document.id,
     draftRev: current.expectedRev,
-    seriesKey,
+    seriesKey: intended.seriesKey,
     number: numberContext.number,
     displayNumber: numberContext.displayNumber,
     kindId: current.document.kind_id,
@@ -202,11 +241,18 @@ export async function buildTestFinalizePreview(env, { documentId, draftRev } = {
     currency: current.document.currency,
     totalMinor: calculated.totalMinor,
     signatureApplied: Boolean(context.signatureAsset?.id && context.signatureAsset?.sha256),
-    testOnly: true
+    testOnly: intended.isTest,
+    production: !intended.isTest
   };
 }
 
-export async function finalizeThroughTestSeries(env, {
+export async function buildTestFinalizePreview(env, options = {}, overrides = {}) {
+  const preview = await buildFinalizePreview(env, options, overrides);
+  if (!preview.testOnly) throw new Error("real_document_series_disabled");
+  return preview;
+}
+
+export async function finalizeThroughSeries(env, {
   documentId,
   draftRev,
   finalizeKey,
@@ -219,7 +265,7 @@ export async function finalizeThroughTestSeries(env, {
   if (!document) throw new Error("document_not_found");
 
   if (document.supersedes_id) {
-    return ops.finalizeTestRevision(env, {
+    const result = await ops.finalizeTestRevision(env, {
       documentId: document.id,
       draftRev: expectedRev,
       finalizeKey: key,
@@ -227,18 +273,18 @@ export async function finalizeThroughTestSeries(env, {
       resolveContext: ops.resolveContext,
       validateDraftForFinalize: ops.validateDraftForFinalize
     });
+    return { ...result, testOnly: true, production: false };
   }
 
-  const first = await standardDraftAndTestSeries(env, documentId, expectedRev, ops);
-  return ops.finalizeDocument(env, {
+  const first = await standardDraftAndSeries(env, documentId, expectedRev, ops);
+  const result = await ops.finalizeDocument(env, {
     documentId: first.document.id,
     seriesKey: first.seriesKey,
     finalizeKey: key,
     actorEmail,
     resolveContext: async ({ document: freshDocument, draft, sequence, numberContext }) => {
       if (Number(freshDocument.draft_rev) !== expectedRev) throw new Error("stale_draft_revision");
-      if (Number(sequence.is_test) !== 1) throw new Error("real_document_series_disabled");
-      if (String(sequence.series_key) !== first.seriesKey) throw new Error("real_document_series_disabled");
+      validateSequenceIdentity(freshDocument, first.intended, sequence);
       const context = await ops.resolveContext(env, freshDocument, draft);
       ops.validateDraftForFinalize({
         document: freshDocument,
@@ -251,16 +297,27 @@ export async function finalizeThroughTestSeries(env, {
       return context;
     }
   });
+  return { ...result, testOnly: first.intended.isTest, production: !first.intended.isTest };
+}
+
+export async function finalizeThroughTestSeries(env, options = {}, overrides = {}) {
+  const result = await finalizeThroughSeries(env, options, overrides);
+  if (!result.testOnly) throw new Error("real_document_series_disabled");
+  return result;
 }
 
 export function documentsFinalizeGatePolicy() {
   return Object.freeze({
-    testSeriesOnly: true,
-    realSeriesEnabled: false,
+    testSeriesOnly: false,
+    testSeriesEnabled: true,
+    realSeriesEnabled: true,
+    realSeriesRequireCanonicalIssuer: true,
+    realSeriesRequireExistingBootstrappedSequence: true,
     requiresExactDraftRev: true,
     requiresClientGeneratedFinalizeKey: true,
     finalizeKeyFormat: "uuid",
     correctionRevisionsEnabled: true,
+    realCorrectionRevisionsEnabled: false,
     correctionConsumesBaseNumber: false,
     firstCorrectionSuffix: "B",
     rendersPdf: false,

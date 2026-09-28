@@ -1,10 +1,12 @@
 import { canonicalJson } from "./documents-domain.js";
+import { SAMUEL_SEQUENCE_BOOTSTRAP } from "./documents-kinds.js";
 import { readDocument, readDocumentSequence } from "./documents-storage.js";
 import { renderCuentaDeCobro } from "./documents-templates/cc-co-es.v1.js";
 import { renderInvoice } from "./documents-templates/invoice-intl-en.v1.js";
 
 const PDF_CONTENT_TYPE = "application/pdf";
 const LOGO_PATH = "/assets/logos/sd-live-header-normal-symbol.png";
+const TEST_SERIES_BY_TYPE = Object.freeze({ cc: "test:CC", invoice: "test:INV" });
 
 function text(value) {
   return value == null ? "" : String(value).trim();
@@ -114,15 +116,33 @@ export function renderFinalDocumentHtml(snapshot, signatureDataUri) {
   throw new Error("unsupported_final_template");
 }
 
-async function requireTestFinalizedDocument(env, documentId, { readDocumentFn = readDocument, readSequenceFn = readDocumentSequence } = {}) {
+function productionConfigForRow(row) {
+  return Object.values(SAMUEL_SEQUENCE_BOOTSTRAP).find((config) => (
+    config.seriesKey === row.series_key
+    && config.issuerId === row.issuer_id
+    && config.docType === row.doc_type
+  )) || null;
+}
+
+async function requireFinalizedDocument(env, documentId, { readDocumentFn = readDocument, readSequenceFn = readDocumentSequence } = {}) {
   const row = await readDocumentFn(env, text(documentId));
   if (!row) throw new Error("document_not_found");
   if (!["finalized", "void"].includes(row.status)) throw new Error("document_not_finalized");
   if (!row.series_key) throw new Error("document_sequence_not_found");
   const sequence = await readSequenceFn(env, row.series_key);
   if (!sequence) throw new Error("document_sequence_not_found");
-  if (Number(sequence.is_test) !== 1) throw new Error("real_document_series_disabled");
-  return row;
+  if (String(sequence.issuer_id) !== String(row.issuer_id)) throw new Error("sequence_issuer_mismatch");
+  if (String(sequence.doc_type) !== String(row.doc_type)) throw new Error("sequence_document_type_mismatch");
+
+  const isTest = Number(sequence.is_test) === 1;
+  if (isTest) {
+    const expected = TEST_SERIES_BY_TYPE[row.doc_type];
+    if (!expected || row.issuer_id !== "test" || row.series_key !== expected) throw new Error("sequence_environment_mismatch");
+  } else {
+    const config = productionConfigForRow(row);
+    if (!config || String(sequence.display_pattern) !== String(config.displayPattern)) throw new Error("sequence_environment_mismatch");
+  }
+  return { row, testOnly: isTest };
 }
 
 async function readSignaturePrivate(env, snapshot) {
@@ -221,7 +241,8 @@ export async function generateFinalPdf(env, {
   actorEmail,
   now = () => new Date().toISOString()
 } = {}, overrides = {}) {
-  const row = await requireTestFinalizedDocument(env, documentId, overrides);
+  const required = await requireFinalizedDocument(env, documentId, overrides);
+  const row = required.row;
   if (row.pdf_status === "ready" && row.pdf_sha256 && row.pdf_r2_key) {
     return {
       ok: true,
@@ -230,7 +251,7 @@ export async function generateFinalPdf(env, {
       pdfSha256: row.pdf_sha256,
       downloadPath: `/api/admin/documents/${row.id}/pdf`,
       idempotent: true,
-      testOnly: true
+      testOnly: required.testOnly
     };
   }
   if (!["pending", "failed"].includes(row.pdf_status)) throw new Error("pdf_not_pending");
@@ -268,7 +289,7 @@ export async function generateFinalPdf(env, {
       pdfSha256,
       downloadPath: `/api/admin/documents/${row.id}/pdf`,
       idempotent: false,
-      testOnly: true
+      testOnly: required.testOnly
     };
   } catch (error) {
     if (overrides.markFailedFn) await overrides.markFailedFn(env, row, { actorEmail, at, reason: error?.message || "pdf_generation_failed" });
@@ -294,7 +315,8 @@ function safeFilename(row) {
 }
 
 export async function downloadFinalPdf(env, { documentId } = {}, overrides = {}) {
-  const row = await requireTestFinalizedDocument(env, documentId, overrides);
+  const required = await requireFinalizedDocument(env, documentId, overrides);
+  const row = required.row;
   if (row.pdf_status !== "ready" || !row.pdf_r2_key || !row.pdf_sha256) throw new Error("pdf_not_ready");
   const object = overrides.getPdfFn
     ? await overrides.getPdfFn(env, row.pdf_r2_key)
@@ -316,8 +338,10 @@ export function documentsPdfArtifactPolicy() {
   return Object.freeze({
     browserBinding: "BROWSER",
     browserMode: "quickAction:pdf",
-    testSeriesOnly: true,
-    realSeriesEnabled: false,
+    testSeriesOnly: false,
+    testSeriesEnabled: true,
+    realSeriesEnabled: true,
+    realSeriesRequireCanonicalIdentity: true,
     sourceOfTruth: "immutable_snapshot",
     signatureSource: "private_DOCS_BUCKET",
     pdfBucket: "private_DOCS_BUCKET",
