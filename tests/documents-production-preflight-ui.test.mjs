@@ -19,6 +19,8 @@ test("Documents Admin exposes authenticated read-only production preflight", () 
 
   assert.match(ux, /Run production preflight/);
   assert.match(ux, /performs no writes/);
+  assert.match(ux, /Documents storage/);
+  assert.match(ux, /DOCS_DB \+ DOCS_BUCKET available/);
   assert.match(ux, /It cannot bootstrap or issue a real number/);
   assert.match(ux, /credentials:\s*"include"/);
   assert.match(stabilization, /production-preflight-ux\.js/);
