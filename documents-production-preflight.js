@@ -37,7 +37,7 @@ async function readSignature(env, signatureId) {
     FROM doc_signature_assets WHERE id = ? LIMIT 1`).bind(signatureId).first();
 }
 
-async function readIssuedState(env, config) {
+async function readIssuedState(env, config, targetNumber = config.nextValue) {
   const row = await dbFromEnv(env).prepare(`SELECT
       MAX(CASE WHEN series_key = ? AND number IS NOT NULL THEN number END) AS max_series_number,
       MAX(CASE WHEN issuer_id = ? AND doc_type = ? AND number IS NOT NULL THEN number END) AS max_issuer_type_number,
@@ -48,7 +48,7 @@ async function readIssuedState(env, config) {
       config.docType,
       config.issuerId,
       config.docType,
-      config.nextValue
+      targetNumber
     ).first();
   return {
     maxSeriesNumber: row?.max_series_number == null ? 0 : Number(row.max_series_number),
@@ -120,9 +120,11 @@ async function inspectSeries(env, config, overrides = {}) {
   const sequence = overrides.readSequenceFn
     ? await overrides.readSequenceFn(env, config.seriesKey)
     : await readDocumentSequence(env, config.seriesKey);
+  const existingNext = sequence ? Number(sequence.next_value) : null;
+  const targetNext = sequence ? existingNext : Number(config.nextValue);
   const issued = overrides.readIssuedStateFn
-    ? await overrides.readIssuedStateFn(env, config)
-    : await readIssuedState(env, config);
+    ? await overrides.readIssuedStateFn(env, config, targetNext)
+    : await readIssuedState(env, config, targetNext);
 
   const intendedDisplay = formatSequenceNumber(config.displayPattern, config.nextValue);
   const identityMatches = !sequence || (
@@ -131,13 +133,16 @@ async function inspectSeries(env, config, overrides = {}) {
     String(sequence.display_pattern) === String(config.displayPattern) &&
     Number(sequence.is_test) === 0
   );
-  const nextMatches = !sequence || Number(sequence.next_value) === Number(config.nextValue);
+  const nextSafe = !sequence || (
+    Number.isSafeInteger(existingNext) &&
+    existingNext >= Number(config.nextValue)
+  );
   const collisionFree = Number(issued.requestedNumberRows || 0) === 0;
-  const maxSafe = Math.max(Number(issued.maxSeriesNumber || 0), Number(issued.maxIssuerTypeNumber || 0)) < Number(config.nextValue);
+  const maxSafe = Math.max(Number(issued.maxSeriesNumber || 0), Number(issued.maxIssuerTypeNumber || 0)) < Number(targetNext);
 
   let blocker = null;
   if (!identityMatches) blocker = "existing_sequence_identity_mismatch";
-  else if (!nextMatches) blocker = "existing_sequence_next_value_mismatch";
+  else if (!nextSafe) blocker = "existing_sequence_next_value_below_bootstrap";
   else if (!collisionFree) blocker = "requested_number_collision";
   else if (!maxSafe) blocker = "planned_next_not_above_issued_numbers";
 
@@ -150,7 +155,8 @@ async function inspectSeries(env, config, overrides = {}) {
     intendedDisplay,
     displayPattern: config.displayPattern,
     sequenceState: sequence ? "existing" : "absent",
-    existingNextValue: sequence ? Number(sequence.next_value) : null,
+    existingNextValue: sequence ? existingNext : null,
+    currentDisplay: sequence && nextSafe ? formatSequenceNumber(config.displayPattern, existingNext) : null,
     maxSeriesNumber: Number(issued.maxSeriesNumber || 0),
     maxIssuerTypeNumber: Number(issued.maxIssuerTypeNumber || 0),
     requestedNumberRows: Number(issued.requestedNumberRows || 0),
