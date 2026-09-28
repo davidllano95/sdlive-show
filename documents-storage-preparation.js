@@ -6,8 +6,8 @@ import {
 
 const PREFLIGHT_R2_KEY = "__sdlive_documents_storage_preflight__";
 const TEST_SERIES = Object.freeze({
-  "test:CC": Object.freeze({ issuerId: "test", docType: "cc", nextValue: 1, pattern: "TEST-CC {n}" }),
-  "test:INV": Object.freeze({ issuerId: "test", docType: "invoice", nextValue: 1, pattern: "TEST-INV {n:04}" })
+  "test:CC": Object.freeze({ issuerId: "test", docType: "cc", pattern: "TEST-CC {n}" }),
+  "test:INV": Object.freeze({ issuerId: "test", docType: "invoice", pattern: "TEST-INV {n:04}" })
 });
 
 function normalizeSql(value) {
@@ -118,10 +118,12 @@ function validateTestSequences(rows) {
       missing.push(key);
       continue;
     }
+    const nextValue = Number(row.next_value);
     if (
       String(row.issuer_id || "") !== expected.issuerId ||
       String(row.doc_type || "") !== expected.docType ||
-      Number(row.next_value) !== expected.nextValue ||
+      !Number.isSafeInteger(nextValue) ||
+      nextValue < 1 ||
       String(row.display_pattern || "") !== expected.pattern ||
       Number(row.is_test) !== 1
     ) {

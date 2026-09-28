@@ -16,7 +16,14 @@ async function sha256Hex(bytes) {
 
 function readyOverrides(bytes, hash) {
   return {
-    storagePreflightFn: async () => ({ ready: true }),
+    storagePreflightFn: async () => ({
+      ready: true,
+      available: true,
+      schema: { exact: true },
+      testSequences: { ready: true },
+      foreignKeyViolations: 0,
+      blockers: []
+    }),
     readIssuerFn: async (_env, issuerId) => ({ id: issuerId, active: 1, active_signature_id: `sig-${issuerId}` }),
     readSignatureFn: async (_env, signatureId) => ({
       id: signatureId,
@@ -42,6 +49,10 @@ test("production preflight is read-only and passes clean planned real state", as
   assert.equal(result.readOnly, true);
   assert.equal(result.ready, true);
   assert.equal(result.bootstrapEnabled, false);
+  assert.equal(result.storage.ready, true);
+  assert.equal(result.storage.schemaExact, true);
+  assert.equal(result.storage.testSequencesReady, true);
+  assert.deepEqual(result.storage.blockers, []);
   assert.equal(result.signatures.length, 2);
   assert.deepEqual(result.signatures.map((item) => item.issuerId), ["samuel-cop", "samuel-usd"]);
   assert.equal(result.signatures.every((item) => item.hashVerified), true);
@@ -58,6 +69,25 @@ test("production preflight is read-only and passes clean planned real state", as
   assert.equal(inv.intendedNextValue, 19);
   assert.equal(inv.intendedDisplay, "0019");
   assert.equal(inv.displayPattern, "{n:04}");
+});
+
+test("production preflight exposes storage blocker details without writes", async () => {
+  const bytes = new TextEncoder().encode("real-private-signature");
+  const hash = await sha256Hex(bytes);
+  const overrides = readyOverrides(bytes, hash);
+  overrides.storagePreflightFn = async () => ({
+    ready: false,
+    available: true,
+    schema: { exact: true },
+    testSequences: { ready: false },
+    foreignKeyViolations: 0,
+    blockers: [{ area: "doc_sequences", reason: "test_sequences_not_canonical" }]
+  });
+  const result = await inspectDocumentsProductionPreflight({}, overrides);
+  assert.equal(result.ready, false);
+  assert.equal(result.storage.ready, false);
+  assert.equal(result.storage.testSequencesReady, false);
+  assert.deepEqual(result.storage.blockers, [{ area: "doc_sequences", reason: "test_sequences_not_canonical" }]);
 });
 
 test("production preflight blocks number collisions", async () => {
