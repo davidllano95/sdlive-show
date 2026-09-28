@@ -11,6 +11,10 @@ import {
 } from "./documents-finalize-gate.js";
 import { downloadFinalPdf, generateFinalPdf } from "./documents-pdf-artifacts.js";
 import { deleteDocumentDraftRow } from "./documents-storage-delete.js";
+import {
+  createTestCorrectionDraft,
+  readTestCorrectionInfo
+} from "./documents-corrections.js";
 
 const API_PREFIX = "/api/admin/documents";
 const MAX_BODY_BYTES = 72 * 1024;
@@ -76,6 +80,10 @@ function publicError(error) {
     invalid_finalize_body: 400,
     invalid_finalize_key: 400,
     invalid_draft_revision: 400,
+    invalid_revision_index: 409,
+    invalid_revision_base: 409,
+    invalid_revision_display: 409,
+    invalid_revision_sequence_state: 409,
     issuer_not_found: 409,
     client_not_found: 409,
     unsupported_currency: 400,
@@ -88,6 +96,17 @@ function publicError(error) {
     document_not_finalized: 409,
     document_snapshot_missing: 409,
     snapshot_hash_mismatch: 409,
+    correction_source_not_issued: 409,
+    document_already_superseded: 409,
+    revision_draft_required: 409,
+    revision_source_required: 409,
+    revision_source_not_found: 409,
+    revision_root_not_found: 409,
+    revision_root_not_numbered: 409,
+    revision_chain_too_deep: 409,
+    revision_series_mismatch: 409,
+    revision_sequence_conflict: 409,
+    supersede_commit_not_observed: 409,
     document_total_overflow: 400,
     document_sequence_not_found: 409,
     invalid_sequence_state: 409,
@@ -144,7 +163,7 @@ export async function handleDocumentsEditorApi(request, env, { verifyAdmin, fina
   if (!path.startsWith(`${API_PREFIX}/`)) return null;
   const isEditorRoute = path === `${API_PREFIX}/registry`
     || path === `${API_PREFIX}/drafts`
-    || /^\/api\/admin\/documents\/doc-[A-Za-z0-9-]+(?:\/(?:preview|finalize-preview|finalize|pdf))?$/.test(path);
+    || /^\/api\/admin\/documents\/doc-[A-Za-z0-9-]+(?:\/(?:preview|finalize-preview|finalize|pdf|correction-info|corrections))?$/.test(path);
   if (!isEditorRoute) return null;
 
   const user = await actor(request, env, verifyAdmin);
@@ -157,6 +176,19 @@ export async function handleDocumentsEditorApi(request, env, { verifyAdmin, fina
     if (path === `${API_PREFIX}/drafts` && request.method === "POST") {
       const document = await createDraftDocument(env, await readJson(request), { actorEmail: user.email });
       return json({ ok: true, document }, 201);
+    }
+
+    const correctionInfoMatch = path.match(/^\/api\/admin\/documents\/(doc-[A-Za-z0-9-]+)\/correction-info$/);
+    if (correctionInfoMatch && request.method === "GET") {
+      return json(await readTestCorrectionInfo(env, correctionInfoMatch[1]));
+    }
+
+    const correctionMatch = path.match(/^\/api\/admin\/documents\/(doc-[A-Za-z0-9-]+)\/corrections$/);
+    if (correctionMatch && request.method === "POST") {
+      return json(await createTestCorrectionDraft(env, {
+        sourceDocumentId: correctionMatch[1],
+        actorEmail: user.email
+      }), 201);
     }
 
     const finalizePreviewMatch = path.match(/^\/api\/admin\/documents\/(doc-[A-Za-z0-9-]+)\/finalize-preview$/);
@@ -238,6 +270,9 @@ export function documentsEditorApiPolicy() {
     finalizeRequiresUuidKey: true,
     finalizeTestSeriesOnly: true,
     realSeriesFinalizeEnabled: false,
+    correctionRevisionsEnabled: true,
+    correctionTestSeriesOnly: true,
+    correctionConsumesBaseSequence: false,
     finalizeRendersPdf: true,
     pdfRetryEndpoint: true,
     pdfDownloadAuthenticated: true,

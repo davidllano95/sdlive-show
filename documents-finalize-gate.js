@@ -10,6 +10,10 @@ import {
   readDocument,
   readDocumentSequence
 } from "./documents-storage.js";
+import {
+  buildTestRevisionFinalizePreview,
+  finalizeTestRevision
+} from "./documents-revisions.js";
 
 const TEST_SERIES_BY_TYPE = Object.freeze({
   cc: "test:CC",
@@ -126,32 +130,54 @@ function operations(overrides = {}) {
     finalizeDocument,
     resolveContext: defaultContext,
     validateDraftForFinalize,
+    buildTestRevisionFinalizePreview,
+    finalizeTestRevision,
     ...overrides
   };
 }
 
-async function draftAndTestSeries(env, documentId, draftRev, ops) {
+async function requireDraft(env, documentId, draftRev, ops) {
   const document = await ops.readDocument(env, text(documentId, 160));
   if (!document) throw new Error("document_not_found");
   if (document.status !== "draft") throw new Error("document_not_draft");
   const expectedRev = requiredDraftRev(draftRev);
   if (Number(document.draft_rev) !== expectedRev) throw new Error("stale_draft_revision");
+  return { document, draft: parseJson(document.draft_json, {}), expectedRev };
+}
 
-  const seriesKey = testSeriesKey(document.doc_type);
+async function standardDraftAndTestSeries(env, documentId, draftRev, ops) {
+  const current = await requireDraft(env, documentId, draftRev, ops);
+  const seriesKey = testSeriesKey(current.document.doc_type);
   const sequence = await ops.readDocumentSequence(env, seriesKey);
   if (!sequence) throw new Error("document_sequence_not_found");
   if (Number(sequence.is_test) !== 1) throw new Error("real_document_series_disabled");
-  if (String(sequence.issuer_id) !== String(document.issuer_id)) throw new Error("test_series_issuer_mismatch");
-  if (String(sequence.doc_type) !== String(document.doc_type)) throw new Error("sequence_document_type_mismatch");
-
-  const draft = parseJson(document.draft_json, {});
-  return { document, draft, expectedRev, seriesKey, sequence };
+  if (String(sequence.issuer_id) !== String(current.document.issuer_id)) throw new Error("test_series_issuer_mismatch");
+  if (String(sequence.doc_type) !== String(current.document.doc_type)) throw new Error("sequence_document_type_mismatch");
+  return { ...current, seriesKey, sequence };
 }
 
 export async function buildTestFinalizePreview(env, { documentId, draftRev } = {}, overrides = {}) {
   const ops = operations(overrides);
-  const current = await draftAndTestSeries(env, documentId, draftRev, ops);
-  const numberContext = await ops.peekDocumentNumber(env, current.seriesKey);
+  const current = await requireDraft(env, documentId, draftRev, ops);
+
+  if (current.document.supersedes_id) {
+    return ops.buildTestRevisionFinalizePreview(env, {
+      document: current.document,
+      draft: current.draft,
+      draftRev: current.expectedRev,
+      resolveContext: ops.resolveContext,
+      validateDraftForFinalize: ops.validateDraftForFinalize
+    });
+  }
+
+  const seriesKey = testSeriesKey(current.document.doc_type);
+  const sequence = await ops.readDocumentSequence(env, seriesKey);
+  if (!sequence) throw new Error("document_sequence_not_found");
+  if (Number(sequence.is_test) !== 1) throw new Error("real_document_series_disabled");
+  if (String(sequence.issuer_id) !== String(current.document.issuer_id)) throw new Error("test_series_issuer_mismatch");
+  if (String(sequence.doc_type) !== String(current.document.doc_type)) throw new Error("sequence_document_type_mismatch");
+
+  const numberContext = await ops.peekDocumentNumber(env, seriesKey);
   if (!numberContext.isTest) throw new Error("real_document_series_disabled");
   const context = await ops.resolveContext(env, current.document, current.draft);
   const calculated = ops.validateDraftForFinalize({
@@ -164,9 +190,10 @@ export async function buildTestFinalizePreview(env, { documentId, draftRev } = {
   });
   return {
     ok: true,
+    revision: false,
     documentId: current.document.id,
     draftRev: current.expectedRev,
-    seriesKey: current.seriesKey,
+    seriesKey,
     number: numberContext.number,
     displayNumber: numberContext.displayNumber,
     kindId: current.document.kind_id,
@@ -188,20 +215,33 @@ export async function finalizeThroughTestSeries(env, {
   const ops = operations(overrides);
   const expectedRev = requiredDraftRev(draftRev);
   const key = requiredFinalizeKey(finalizeKey);
-  const first = await draftAndTestSeries(env, documentId, expectedRev, ops);
+  const document = await ops.readDocument(env, text(documentId, 160));
+  if (!document) throw new Error("document_not_found");
 
+  if (document.supersedes_id) {
+    return ops.finalizeTestRevision(env, {
+      documentId: document.id,
+      draftRev: expectedRev,
+      finalizeKey: key,
+      actorEmail,
+      resolveContext: ops.resolveContext,
+      validateDraftForFinalize: ops.validateDraftForFinalize
+    });
+  }
+
+  const first = await standardDraftAndTestSeries(env, documentId, expectedRev, ops);
   return ops.finalizeDocument(env, {
     documentId: first.document.id,
     seriesKey: first.seriesKey,
     finalizeKey: key,
     actorEmail,
-    resolveContext: async ({ document, draft, sequence, numberContext }) => {
-      if (Number(document.draft_rev) !== expectedRev) throw new Error("stale_draft_revision");
+    resolveContext: async ({ document: freshDocument, draft, sequence, numberContext }) => {
+      if (Number(freshDocument.draft_rev) !== expectedRev) throw new Error("stale_draft_revision");
       if (Number(sequence.is_test) !== 1) throw new Error("real_document_series_disabled");
       if (String(sequence.series_key) !== first.seriesKey) throw new Error("real_document_series_disabled");
-      const context = await ops.resolveContext(env, document, draft);
+      const context = await ops.resolveContext(env, freshDocument, draft);
       ops.validateDraftForFinalize({
-        document,
+        document: freshDocument,
         draft,
         issuer: context.issuer,
         client: context.client,
@@ -220,6 +260,9 @@ export function documentsFinalizeGatePolicy() {
     requiresExactDraftRev: true,
     requiresClientGeneratedFinalizeKey: true,
     finalizeKeyFormat: "uuid",
+    correctionRevisionsEnabled: true,
+    correctionConsumesBaseNumber: false,
+    firstCorrectionSuffix: "B",
     rendersPdf: false,
     bootstrapsRealSequences: false,
     returnsSignatureBytes: false
