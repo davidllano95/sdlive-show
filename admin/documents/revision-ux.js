@@ -118,7 +118,7 @@
     const index = rows.indexOf(row);
     if (index < 0) return;
     try {
-      const documents = await readRegistry();
+      const documents = await readRegistry({ fresh: true });
       activeIssuedId = documents[index]?.id || null;
       queueMicrotask(installCorrectionAction);
     } catch (error) {
