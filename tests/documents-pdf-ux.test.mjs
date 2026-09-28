@@ -53,8 +53,11 @@ test("finalized TEST documents bypass draft row handlers and prioritize PDF prev
   assert.match(ux, /await showIssuedDocument\(info\)/);
 });
 
-test("state router clears stale PDF-ready UI for new/draft views and hides draft grid immediately for issued rows", () => {
+test("state router clears stale PDF-ready UI and CSS cannot override hidden draft grid", () => {
   const router = read("admin/documents/state-router-fix.js");
+  assert.match(router, /function installHiddenGuard\(\)/);
+  assert.match(router, /\.document-editor-grid\[hidden\]\{display:none!important\}/);
+  assert.match(router, /installHiddenGuard\(\)/);
   assert.match(router, /function resetIssuedState\(\)/);
   assert.match(router, /panel\.replaceChildren\(\)/);
   assert.match(router, /panel\.hidden = true/);
