@@ -24,9 +24,17 @@
       .documents-test-cleanup__summary strong{color:var(--text)}
       .documents-test-cleanup__note{margin:10px 0 0;color:#bdb6cb;font-size:.82rem;line-height:1.45}
       .documents-test-cleanup__purge{border-color:rgba(255,107,74,.35)!important;background:rgba(255,107,74,.12)!important;color:#ffb5a4!important}
+      .documents-test-cleanup__purge[hidden]{display:none!important}
       @media(max-width:820px){.documents-test-cleanup__actions{display:grid;grid-template-columns:1fr}.documents-test-cleanup__actions .button{min-height:46px!important}.documents-test-cleanup__head{align-items:center}}
     `;
     document.head.appendChild(style);
+  }
+
+  function setPurgeVisibility(button, visible) {
+    if (!button) return;
+    button.hidden = !visible;
+    button.style.display = visible ? "" : "none";
+    button.disabled = !visible;
   }
 
   function countLine(counts = {}) {
@@ -58,8 +66,7 @@
 
   async function runPreflight(scanButton, purgeButton, state, summary, note) {
     scanButton.disabled = true;
-    purgeButton.hidden = true;
-    purgeButton.disabled = true;
+    setPurgeVisibility(purgeButton, false);
     state.textContent = "SCANNING";
     state.className = "documents-test-cleanup__state";
     note.textContent = "Read-only scan. No TEST or production data is being changed.";
@@ -72,8 +79,7 @@
       state.textContent = data.ready ? "READY" : "BLOCKED";
       state.className = `documents-test-cleanup__state ${data.ready ? "is-ready" : "is-blocked"}`;
       const hasAnything = Number(data.counts?.documents || 0) > 0 || Number(data.counts?.revisionSequences || 0) > 0 || (data.testSequences || []).some((item) => Number(item.nextValue) !== 1);
-      purgeButton.hidden = !(data.ready && hasAnything);
-      purgeButton.disabled = !(data.ready && hasAnything);
+      setPurgeVisibility(purgeButton, Boolean(data.ready && hasAnything));
       note.textContent = hasAnything
         ? (data.note || "Dry-run complete.")
         : "TEST workspace is already clean. Root TEST counters are at their clean baseline.";
@@ -83,6 +89,7 @@
       state.className = "documents-test-cleanup__state is-blocked";
       summary.textContent = "";
       note.textContent = `TEST cleanup scan failed: ${String(error?.message || error)}`;
+      setPurgeVisibility(purgeButton, false);
     } finally {
       scanButton.disabled = false;
     }
@@ -122,7 +129,7 @@
       summary.innerHTML = `<strong>TEST workspace purged</strong><div>${countLine(data.counts || {})}</div>`;
       note.textContent = "TEST documents and private TEST artifacts are gone; TEST counters are reset to 1. Reloading registry…";
       lastPreflight = null;
-      purgeButton.hidden = true;
+      setPurgeVisibility(purgeButton, false);
       setTimeout(() => window.location.reload(), 650);
     } catch (error) {
       state.textContent = "ERROR";
@@ -167,8 +174,7 @@
     purgeButton.type = "button";
     purgeButton.className = "button documents-test-cleanup__purge";
     purgeButton.textContent = "Purge verified TEST data";
-    purgeButton.hidden = true;
-    purgeButton.disabled = true;
+    setPurgeVisibility(purgeButton, false);
     actions.append(scanButton, purgeButton);
 
     const summary = document.createElement("div");
