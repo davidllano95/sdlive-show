@@ -57,6 +57,7 @@
     const panel = issuedPanel();
     const deleteButton = document.getElementById("deleteDraft");
     const finalizeButton = document.getElementById("finalizeDraft");
+    const mobileMode = document.getElementById("documentsMobileEditorMode");
 
     if (panel) {
       panel.querySelector("iframe")?.removeAttribute("src");
@@ -67,13 +68,17 @@
     if (grid) grid.hidden = false;
     if (deleteButton) deleteButton.hidden = false;
     if (finalizeButton) finalizeButton.hidden = false;
+    if (mobileMode && window.matchMedia("(max-width: 820px)").matches) mobileMode.hidden = false;
   }
 
   function prepareIssuedState() {
     const shell = editorShell();
     const grid = shell?.querySelector(".document-editor-grid");
+    const mobileMode = document.getElementById("documentsMobileEditorMode");
     if (shell) shell.classList.remove("documents-draft-preview-first");
     if (grid) grid.hidden = true;
+    if (mobileMode) mobileMode.hidden = true;
+    document.body.classList.remove("documents-preview-fullscreen");
   }
 
   installHiddenGuard();
