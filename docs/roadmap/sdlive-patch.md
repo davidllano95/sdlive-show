@@ -1258,3 +1258,223 @@ Then continue through remaining Output/console internal routing, stable IDs/orde
 After the model is sufficiently stable, validate it against 1–2 real Patch/rider fixtures. Only after those fixtures fail to expose a structural gap should Product Spec -> Technical Roadmap -> Schema begin.
 
 **Do not create D1 tables, migrations, runtime routes, Visual Patch or production resources from this document alone.**
+
+## 31. Continuation decisions — Sources, Feeds, Console Inputs and Festival Mode
+
+This section records later decisions from the same discovery session and supersedes earlier provisional/open wording where they conflict. It still does **not** authorize schema/runtime implementation.
+
+### 31.1 Feed lifecycle and identity
+
+Every Source has at least one conceptual Feed. In the simple one-feed case, that Feed should normally remain implicit/collapsed in the UX rather than appearing as a meaningless `Feed Main` row.
+
+Feed identity represents the operational capture/branch, not the exact microphone, DI or hardware model. Replacing capture hardware does not by itself create a new Feed.
+
+Examples:
+
+```text
+Bass
+  -> DI Feed
+     J48 -> JDI
+```
+
+The Feed remains the same while the capture device changes.
+
+Feeds are atomic/mono signal paths. Stereo/linking/multichannel behavior is represented later through grouping or console representation rather than by turning one Feed into a stereo container.
+
+A Feed may have an optional qualifier/label when useful, such as `DI` or `Amp Mic`. The Source owns the canonical signal name; views may compose `Bass · DI` without storing a duplicate full signal name in the Feed. A sole implicit Feed needs no visible label.
+
+### 31.2 Capture representation
+
+Mic/DI/capture representation is intentionally flexible.
+
+A simple capture may remain lightweight and carry technical facts such as:
+
+- model/type;
+- 48V where relevant;
+- optional technical note.
+
+Do not force ordinary capture entries to become full Devices or to carry logistics such as stands, clips or individual cable assets.
+
+However, any capture element may be explicitly modeled as a Device when its Ports, routing, modes, branching or other technical behavior matters. This is not determined rigidly by product category: a mic may be lightweight or Device-like; a DI will often be Device-like but is not forced by a hard taxonomy rule.
+
+A capture/device may expose multiple operational outputs or modes. Those may create multiple Feeds from the same Source without creating extra Sources automatically.
+
+Example:
+
+```text
+Lead Vocal [Source]
+  -> Performance Feed
+  -> Production Talk Feed
+```
+
+This covers microphones/transmitters with alternate/talk routing or similar behavior.
+
+### 31.3 Console input slots and channel format
+
+A Logical Console Channel may expose one or more profile/instance-defined input slots, for example:
+
+- Main / Alt;
+- A / B;
+- other platform-specific variants.
+
+Patch should preserve assignments for all supported slots and, where the console exposes the concept, which slot/input is currently selected/active. Slot naming and behavior are console-specific rather than universal.
+
+A Console Channel may support mono, stereo or other verified input formats. A stereo channel input slot can expose independent legs such as L/R, each receiving an atomic Feed.
+
+Example:
+
+```text
+Ch 25 — STEREO
+Main
+  L -> Playback L Feed
+  R -> Playback R Feed
+Alt
+  L -> Backup Playback L Feed
+  R -> Backup Playback R Feed
+```
+
+Each input leg may receive at most one simultaneously active Feed. A Feed may still feed multiple channels/legs when the console/routing architecture permits it.
+
+### 31.4 Canonical signal naming
+
+The Source owns the canonical signal name. Do not create an independent editable Console Channel name that can silently diverge from the Source.
+
+Renaming the Source updates the displayed signal name everywhere that references it: FOH, MON, Stage I/O, Patch Sheet and other projections.
+
+Feed qualifiers remain available to distinguish multiple operational branches, e.g. `Bass · DI` and `Bass · Amp Mic`.
+
+Future console adapters may translate/truncate the canonical name to platform limits, but that adapter-specific representation must not become a second canonical name in the Patch core.
+
+### 31.5 Cross-Patch/Rider correspondence
+
+Sources belonging to different Patches/Riders may be related as corresponding/equivalent without merging identities or modifying either Patch.
+
+Example:
+
+```text
+House: Kick
+  <-> Artist A: BD
+  <-> Artist B: Kick In
+```
+
+Source correspondence and Feed correspondence are independent. Corresponding Sources do not imply one-to-one Feed correspondence.
+
+Example:
+
+```text
+HOUSE Bass
+  DI       <-> ARTIST Bass / DI
+  Amp Mic  <-> [missing]
+```
+
+Correspondence states distinguish at least conceptual `Suggested` from `Confirmed`. Only confirmed correspondence counts as a real relation. Suggestions may be accepted or rejected without modifying Source identity.
+
+Confirmed historical correspondences may improve future suggestions, but they must never auto-confirm a new relationship in a different Patch/Rider.
+
+### 31.6 Single Show Mode vs Festival Mode
+
+SD.Live Patch should support two product modes over the same technical core:
+
+- `Single Show Mode` — ordinary one-show Patch workflow;
+- `Festival Mode` — House-centered multi-rider correlation/changeover workflow.
+
+These modes must not create separate incompatible data models.
+
+Festival Mode is always anchored to a `House Patch`. Artist Patches/Riders remain independent Patches and correlate against that House Patch rather than being merged into it.
+
+Several Sources from mutually exclusive Artist Patches may be assigned as alternatives to the same House Console Channel.
+
+Valid:
+
+```text
+House Ch 1
+  Artist A Patch -> Kick
+  Artist B Patch -> BD
+  Artist C Patch -> Kick In
+```
+
+This is not a conflict because only one Artist Patch is active at a time.
+
+Within one simultaneously-active Patch, two different Feeds trying to occupy the same ordinary Console Channel input leg remain a conflict unless a later explicit alternation mechanism is defined.
+
+Each Artist alternative may preserve its own complete physical routing before reaching the shared House Console Channel/handoff. Festival comparison/changeover should therefore be able to reveal not only Source-name differences but physical repatch differences.
+
+Festival UX may project current/next/changeover views from this same data rather than storing separate duplicated routing state.
+
+### 31.7 Guest consoles in Festival Mode
+
+Artist Patches may include their own Console Instances. Bringing a guest console does not remove the Artist Patch from Festival Mode.
+
+Console use is assigned by technical function/destination rather than a single boolean such as `brings own console`.
+
+Examples:
+
+```text
+Artist A
+  FOH -> Guest Console
+  MON -> House Console
+```
+
+or:
+
+```text
+Artist B
+  FOH -> House Console
+  MON -> Guest Console
+```
+
+or guest consoles for multiple roles where required.
+
+The House Patch defines the interconnection/handoff points and capabilities offered to guest consoles, such as splitter outputs, Dante/MADI/network endpoints or system return inputs.
+
+Each Artist Patch maps its guest console against those House-provided handoffs.
+
+Example:
+
+```text
+HOUSE
+  Guest input handoff: Splitter B 1-48
+  Guest PA return: Main L / Main R / Subs
+
+ARTIST B
+  Splitter B 1-48 -> Guest Console Inputs
+  Guest Main L -> House Guest Return L
+  Guest Main R -> House Guest Return R
+  Guest Subs   -> House Guest Return Subs
+```
+
+The House Patch therefore owns what connection opportunities exist; the Artist Patch owns how that artist's equipment uses them.
+
+### 31.8 Additional decision log entries
+
+57. Every Source has at least one conceptual Feed; the single Feed is normally implicit in simple UX.
+58. Feed identity is the operational capture/branch; changing capture hardware does not automatically create a new Feed.
+59. Feeds are atomic/mono; stereo/multichannel behavior belongs to later grouping/console representation.
+60. Capture elements may remain lightweight or be explicitly modeled as Devices when their technical behavior matters; product category alone does not force the choice.
+61. Lightweight capture can carry model/type, 48V where relevant and an optional technical note; logistics/accessory tracking is not core Patch capture state.
+62. Multi-output/multi-mode capture may produce multiple Feeds from one Source, including alternate/talk paths, without automatically creating additional Sources.
+63. Console Channels may expose multiple profile-defined input slots such as Main/Alt or A/B; Patch may record both assignments and which is active when supported.
+64. Console input slots may be mono/stereo/etc. according to verified console capability; stereo slots expose independent atomic input legs.
+65. Each Console Channel input leg accepts at most one simultaneously-active Feed; one Feed may feed multiple channels/legs where supported.
+66. Source owns the canonical signal name; Console Channel does not own an independent divergent signal name; Source rename propagates through projections.
+67. Feed may have a short qualifier/label; views may compose Source + Feed qualifier without duplicating the Source name.
+68. Sources in different Patches/Riders may have confirmed correspondence without merging identity.
+69. Feed correspondence is independent from Source correspondence.
+70. Suggested correspondence is not Confirmed correspondence; only confirmed relations count as real mappings.
+71. Confirmed prior relationships may inform future suggestions but never auto-confirm new rider mappings.
+72. Single Show Mode and Festival Mode use the same technical core; Festival Mode adds House-centered correlation/changeover semantics.
+73. Festival Mode is always anchored to a House Patch; Artist Patches remain independent.
+74. Mutually exclusive Artist-Patch Sources may be alternative assignments to one House Console Channel; simultaneous same-Patch conflicts remain conflicts.
+75. Each Artist alternative can preserve distinct physical routing to the common House assignment/handoff.
+76. Artist guest-console use is defined by function/destination (FOH, MON, Broadcast, etc.), not by one `brings own console` flag.
+77. The House Patch defines available guest-console handoff points/capabilities; each Artist Patch maps its console(s) to those House-provided handoffs.
+
+## 32. Current continuation
+
+Continue discovery from the now-more-specific **Sources -> Feeds -> Console Channels / Festival Mode** contract. The next decisions should further close console input/routing semantics and only then move to remaining Output/console-internal routing, stable IDs/order, event links/files and UX contracts.
+
+Earlier open-question wording for Feed lifecycle, basic capture representation and house-vs-artist comparison is partially superseded by section 31; remaining unresolved details should be narrowed rather than reopened wholesale.
+
+After the model is sufficiently stable, validate it against 1–2 real Patch/rider fixtures. Only after those fixtures fail to expose a structural gap should Product Spec -> Technical Roadmap -> Schema begin.
+
+**Do not create D1 tables, migrations, runtime routes, Visual Patch or production resources from this document alone.**
