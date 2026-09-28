@@ -1,205 +1,267 @@
 # SD.Live Documents v1 — Maintenance, architecture and handoff guide
 
-**Status:** CANONICAL MAINTENANCE GUIDE  
-**Baseline approved:** 2026-09-27 / 2026-09-28 — through PR #295  
+**Status:** CANONICAL MAINTENANCE GUIDE · **V1 PRODUCTION READY**  
+**Production-ready checkpoint:** 2026-09-28  
 **Approved template baselines:** `cc-co-es@1` and `invoice-intl-en@1`  
 **Scope:** SD.Live Admin Documents (`/admin/documents/`)  
+**Production checkpoint:** `docs/checkpoints/handoff-documents-v1-production-ready-2026-09-28.md`
 
-> This document exists so future work on Documents can resume without reconstructing the architecture from chat history. Read this before changing document rendering, numbering, finalization, revisions, signatures, PDFs, registry behavior or production series.
+> This document exists so future work on Documents can resume without reconstructing the architecture from chat history. Read this before changing rendering, numbering, finalization, revisions, signatures, PDFs, registry behavior, production series, TEST cleanup or mobile Documents UX.
 >
-> **Precedence:** current GitHub `main` + verified production behavior > this guide > older roadmap/checkpoint text. If code and this document disagree, inspect the code first and update this guide in the same change.
+> **Precedence:** current GitHub `main` + verified production behavior > production-ready checkpoint > this guide > older roadmap/checkpoint text. If code and this document disagree, inspect the code first and reconcile the docs in the same change.
 
 ---
 
-## 1. What “v1 approved” means
+## 1. What “Documents v1 production ready” means
 
-The following visual templates are now the accepted SD.Live Documents v1 baseline:
+The following are production-enabled and considered complete for the v1 milestone:
+
+- dedicated `DOCS_DB` + private `DOCS_BUCKET`;
+- issuer/client profiles;
+- private signatures;
+- Draft/Preview workflow;
+- real and TEST Finalize routing;
+- atomic numbering + immutable snapshots;
+- signed private PDF generation;
+- inline PDF viewer + explicit download;
+- filename contract containing document number + client;
+- TEST and real correction/revision flows;
+- real-series health check;
+- TEST workspace cleanup;
+- iPhone/iPad operational UX;
+- approved Cuenta de Cobro and Invoice v1 renderers.
+
+At the production-ready checkpoint the real series were:
+
+| series | issuer | pattern | current next at checkpoint |
+|---|---|---|---:|
+| `samuel:CC` | `samuel-cop` | `{n}` | `21` |
+| `samuel:INV` | `samuel-usd` | `{n:04}` | `19` → display `0019` |
+
+Those values are live sequence state and will advance after real issuance. Do not hardcode them as permanent values in future logic.
+
+The TEST workspace was re-scanned clean:
+
+- zero TEST documents/artifacts/events/revision counters;
+- `test:CC` next `1`;
+- `test:INV` next `1`.
+
+---
+
+## 2. Template versioning rule — critical
+
+The accepted v1 renderers are:
 
 | kind | template version | status |
 |---|---|---|
-| Cuenta de Cobro · Colombia · Español | `cc-co-es@1` | **V1 APPROVED** |
-| Invoice · International · English | `invoice-intl-en@1` | **V1 APPROVED** |
+| Cuenta de Cobro · Colombia · Español | `cc-co-es@1` | **V1 FROZEN** |
+| Invoice · International · English | `invoice-intl-en@1` | **V1 FROZEN** |
 
-Both are Letter (`8.5 × 11 in`) documents and share the same SD.Live document family: typography, spacing rhythm, violet accents, lower-page payment/signature geometry and footer placement. They are intentionally **siblings, not clones**.
+`@1` is a historical artifact contract.
 
-### Versioning rule from this checkpoint forward
-
-`@1` is a frozen artifact contract.
-
-Do **not** casually change the visual or semantic output of `cc-co-es@1` or `invoice-intl-en@1` after this checkpoint. Finalized snapshots store the template version, and PDF retry/regeneration resolves that exact version. Mutating an old renderer can therefore cause a frozen historical snapshot to produce a visually different PDF later.
+Do **not** casually change the visual or semantic output of these renderers. Finalized snapshots persist the template version, and PDF retry/regeneration resolves the exact stored version.
 
 For a future output-affecting change:
 
 1. preserve the existing `.v1.js` renderer;
-2. create a new renderer/version (`@2`, with a corresponding file such as `cc-co-es.v2.js`);
-3. update the kind/version selection only for newly finalized documents;
-4. keep the PDF renderer able to resolve historical `@1` snapshots;
-5. add regression tests proving both old and new versions render;
-6. never rewrite already-finalized snapshots to the new template version.
+2. create a new renderer/version (`@2`, etc.);
+3. update kind/version selection only for newly finalized documents;
+4. preserve historical `@1` resolution in PDF rendering;
+5. add regression tests for old + new renderer versions;
+6. never rewrite finalized snapshots to the new version.
 
-A code-only fix that provably does not alter historical artifact output may stay within the same version, but this should be the exception and should be called out explicitly in the PR.
+A code-only fix that provably does not alter historical artifact output may stay on the same version, but the PR must explicitly say why.
 
 ---
 
-## 2. Product boundary
+## 3. Product boundary
 
-SD.Live Documents is a private Admin document generator/registry. It is **not**:
+SD.Live Documents is a private Admin document generator/registry.
+
+It is **not**:
 
 - DIAN electronic invoicing;
 - a replacement for Finance persistence;
 - a parallel Accounts Receivable ledger;
 - a Google Sheets/AppSheet write-back surface.
 
-Initial document kinds:
+Initial kinds:
 
 - `cc-co-es` → Cuenta de Cobro, Colombia, Spanish;
-- `invoice-intl-en` → commercial international Invoice, English.
+- `invoice-intl-en` → international commercial Invoice, English.
 
 Canonical lifecycle:
 
-`Draft → Preview → Finalize → immutable snapshot + number → signed PDF → registry`
+`Draft → Preview → Finalize → immutable snapshot + number → signed private PDF → registry`
 
-Corrections extend that lifecycle without mutating issued documents:
+Correction lifecycle:
 
 `Issued A (implicit) → correction draft → Issued -B → correction draft → Issued -C ...`
 
 ---
 
-## 3. Infrastructure and security boundaries
+## 4. Infrastructure and security boundaries
 
 ### Runtime resources
 
 - `DOCS_DB` — dedicated Documents D1 database.
-- `DOCS_BUCKET` — private R2 bucket for signatures and final PDFs.
-- `BROWSER` — Cloudflare Browser Rendering binding used for PDF generation.
-- `ASSETS` — used when an SD.Live logo asset must be inlined into final HTML before PDF rendering.
-- Cloudflare Access / Admin auth — security boundary for `/admin/documents/` and `/api/admin/documents/*`.
+- `DOCS_BUCKET` — private R2 bucket for signatures/final PDFs.
+- `BROWSER` — Cloudflare Browser Rendering for PDF generation.
+- `ASSETS` — static asset access where logo inlining is required.
+- Cloudflare Access/Admin auth — boundary for `/admin/documents/` and `/api/admin/documents/*`.
 
-### Hard security invariants
+### Hard invariants
 
-- Signature bytes never go to the public media bucket.
-- Final PDFs never go to the public media bucket.
-- No public R2 key or public signature URL is exposed.
-- Draft preview never receives usable signature bytes.
+- Signature bytes never go to public media storage.
+- Final PDFs never go to public media storage.
+- No public R2 key/public signature URL is exposed.
+- Draft preview never receives usable final signature bytes.
 - Missing required Documents bindings fail closed.
 - Finalized snapshots are immutable.
-- Issued numbers are never released/reused because of Void or PDF failure.
-- Public traffic must never run D1 schema migrations.
+- Issued numbers are never released because of Void/PDF failure.
+- Public traffic must never run D1 schema preparation/migration.
 - Documents v1 performs no Finance writes.
+- Real destructive maintenance actions require explicit authenticated confirmation.
 
 ---
 
-## 4. Core file map
+## 5. Core file map
 
-### Domain / storage / kinds
+### Domain / kinds / storage
 
 - `documents-kinds.js`
   - kind registry;
-  - template version;
-  - Letter page size;
-  - default real series keys;
-  - planned Samuel bootstrap values.
+  - template versions;
+  - real series defaults;
+  - display patterns.
 - `documents-domain.js`
   - money/line normalization;
-  - Spanish amount in words;
+  - Spanish amount-in-words;
   - snapshot construction;
-  - canonical JSON and snapshot schema `sdlive.document.snapshot/1`;
+  - canonical JSON/SHA-256;
   - finalization validation.
 - `documents-storage.js`
-  - document persistence;
-  - draft/finalized state;
+  - draft/finalized persistence;
   - atomic sequence CAS;
   - immutable snapshot storage;
   - `finalizeKey` idempotency;
-  - events and supersedes relationships.
+  - events/supersedes relationships.
 
-### Finalize / corrections / revisions
+### Finalize / revisions
 
 - `documents-finalize-gate.js`
-  - current TEST-series finalize gate;
-  - exact `draftRev` requirement;
   - prospective-number preview;
+  - exact `draftRev`;
   - UUID `finalizeKey` validation;
-  - correction-aware finalization routing.
+  - real/TEST series routing;
+  - correction-aware finalization.
 - `documents-corrections.js`
   - creates correction drafts from issued documents;
-  - only the latest unsuperseded issued document may be corrected;
-  - one open correction draft per source;
-  - TEST-only at the current checkpoint.
+  - latest-unsuperseded-only rule;
+  - one open correction draft per source.
 - `documents-revisions.js`
-  - revision sequence/counter;
-  - suffix generation (`-B`, `-C`, ...);
-  - revision snapshot number context;
-  - atomic revision finalization;
-  - revision counter is independent from base document numbering.
+  - revision counters;
+  - suffix allocation (`-B`, `-C`, ...);
+  - base-number preservation;
+  - atomic revision finalization.
+
+### Profiles / production checks / cleanup
+
+- `documents-profiles.js`
+  - issuer/client profile normalization;
+  - TEST sequence ensure;
+  - signature metadata.
+- `documents-admin-profiles-api.js`
+  - authenticated Settings/profile/signature endpoints;
+  - production preflight/bootstrap routes;
+  - TEST cleanup routes.
+- `documents-production-preflight.js`
+  - read-only production health.
+- `documents-production-bootstrap.js`
+  - explicit real sequence bootstrap primitive.
+- `documents-test-data-purge.js`
+  - dry-run/fingerprint TEST cleanup;
+  - real-data exclusion;
+  - TEST root reset.
 
 ### Templates / PDFs
 
 - `documents-templates/shared.js`
   - shared document CSS/helpers.
 - `documents-templates/cc-co-es.v1.js`
-  - **approved Cuenta de Cobro v1 renderer**.
+  - frozen Cuenta de Cobro v1 renderer.
 - `documents-templates/invoice-intl-en.v1.js`
-  - **approved Invoice v1 renderer**.
+  - frozen Invoice v1 renderer.
 - `documents-pdf-artifacts.js`
-  - maps immutable snapshots back to renderer views;
-  - validates snapshot hash;
-  - reads private signature bytes;
-  - renders via `BROWSER.quickAction("pdf")`;
-  - stores content-addressed private PDF;
-  - verifies artifact hash on read;
-  - exposes authenticated inline PDF response.
+  - frozen snapshot → exact renderer;
+  - snapshot/signature hash verification;
+  - Browser Rendering;
+  - private R2 PDF;
+  - artifact hash verification;
+  - authenticated inline response/download filename.
 
 ### Admin UI
 
 - `admin/documents/editor.js`
-  - base draft editor and registry behavior.
+  - base draft editor/registry.
 - `admin/documents/management.js`
-  - management/settings behavior.
+  - profile/settings management.
 - `admin/documents/pdf-artifact-ux.js`
-  - draft preview-first layout;
-  - issued-document panel;
+  - preview-first/issued-first state routing;
   - inline PDF viewer;
-  - Retry PDF;
-  - prevents finalized documents from opening in the draft editor;
-  - cleans legacy FX UI.
-- Documents correction/revision UX files should be reviewed together with the files above whenever correction behavior changes.
+  - Retry PDF.
+- `admin/documents/revision-ux.js`
+  - correction/revision actions.
+- `admin/documents/production-active-ux.js`
+  - REAL vs TEST Finalize presentation;
+  - active production copy/state.
+- `admin/documents/production-preflight-ux.js`
+  - production health UI.
+- `admin/documents/test-cleanup-ux.js`
+  - TEST scan/purge UX.
+- `admin/documents/mobile-webapp*.css/js`
+  - iPhone/iPad operational layer.
+- `admin/documents/mobile-settings-polish.css`
+  - compact mobile Settings/health/cleanup layout.
+- `admin/documents/state-router-fix.js`
+  - loads incremental UX layers and protects issued/draft state transitions.
 
 ### Worker/API mounting
 
-- `admin-stabilization-worker.js` and the Documents Admin API modules mount the authenticated `/api/admin/documents/*` routes.
+Documents authenticated routes are mounted through the current Admin worker/API chain. Inspect current `admin-stabilization-worker.js` and Documents Admin API modules before changing routing.
 
 ---
 
-## 5. Draft contract
+## 6. Draft contract
 
-A draft is mutable and has optimistic concurrency via `draftRev`.
+A draft is mutable and uses optimistic concurrency via `draftRev`.
 
 A draft:
 
-- does not consume a number;
-- does not contain a final signature;
-- may be deleted while still a draft, subject to existing guards;
-- can render a live preview;
+- does not consume an official number;
+- does not contain the final private signature;
+- may be deleted while still a draft under existing guards;
+- can render live preview;
 - may contain issuer/client document-local overrides without silently writing those overrides back to profiles.
 
-### Draft UI behavior
+### Draft UI
 
-When opening a normal draft:
+- opening a Draft prioritizes Preview first;
+- opening New Draft clears previous issued/PDF state;
+- selecting a Finalized/Void record must hide the draft editor;
+- returning from issued state to Draft/New Draft must clear the issued panel.
 
-- **Preview is the primary/first visual pane**;
-- editor controls remain available alongside/after preview;
-- any previously displayed issued/PDF panel must be fully hidden/reset.
+### Preview geometry
 
-The CSS rule that makes this reliable is important: `.document-editor-grid[hidden]` must actually resolve to `display:none`; do not assume the HTML `hidden` attribute will win against an author `display:grid` rule.
+The preview must preserve Letter layout geometry.
+
+On narrow/mobile screens, scale the Letter viewport visually instead of allowing the document renderer to reflow into a narrow responsive page. The preview should remain representative of the final PDF.
 
 ---
 
-## 6. Finalization contract
+## 7. Finalization contract
 
-Current finalize behavior is intentionally TEST-only.
-
-The core confirmation/finalize request is based on:
+The confirmation request is based on:
 
 ```json
 {
@@ -212,475 +274,426 @@ The server must:
 
 1. re-read the document;
 2. require `status = draft`;
-3. require the exact `draftRev`;
+3. require exact `draftRev`;
 4. resolve issuer/client/signature context server-side;
-5. validate document kind/type/series;
+5. validate kind/type/series;
 6. preview the next number without consuming it before confirmation;
-7. atomically consume/advance the correct sequence at Finalize;
+7. atomically consume/advance the sequence at Finalize;
 8. freeze canonical snapshot JSON + SHA-256 + template version;
 9. set `pdf_status = pending`;
-10. treat a retry with the same valid `finalizeKey` as idempotent rather than consuming another number.
+10. treat the same valid `finalizeKey` retry idempotently.
 
 Do not reimplement sequence logic in UI code.
 
----
+### REAL routing
 
-## 7. Numbering
+Canonical issuer/series routing:
 
-### TEST series currently used
+- Cuenta de Cobro → issuer `samuel-cop` → `samuel:CC`;
+- Invoice → issuer `samuel-usd` → `samuel:INV`.
 
-- `test:CC`
-- `test:INV`
+TEST issuer routes to TEST series.
 
-The TEST gate is intentionally fail-closed against real series.
-
-### Planned real series — not yet enabled by this checkpoint
-
-- `samuel:CC` — planned next base number: `21`.
-- `samuel:INV` — planned next base number: integer `19`, displayed `0019`.
-
-These values are planning/bootstrap values, **not permission to bootstrap or issue real documents**.
-
-Real sequence bootstrap must remain:
-
-- explicit;
-- audited;
-- verified against current D1 state first;
-- able to raise but never lower a sequence;
-- never a deploy side effect.
-
-### Base number vs display string
-
-Internal base-number identity must not be inferred from formatted text.
-
-Examples:
-
-- Invoice base integer `19` may display as `0019`.
-- A correction of `TEST-INV 0004` displays `TEST-INV 0004-B`, but does not consume base `0005`.
+The Finalize dialog must clearly distinguish REAL vs TEST issuance.
 
 ---
 
-## 8. Correction / revision contract
+## 8. Numbering
 
-This is one of the most important v1 behaviors.
+### TEST series
 
-### Why corrections exist
+- `test:CC`;
+- `test:INV`.
 
-Issued/finalized documents are immutable. If a client asks for a change, do not reopen or mutate the issued snapshot/PDF.
+Clean baseline after purge is next `1` for both.
 
-Instead:
+### Real series
 
-1. create a correction draft cloned from the issued document;
-2. edit the correction draft normally;
-3. finalize it as a revision of the same base number;
-4. preserve the complete supersedes chain.
+- `samuel:CC` → `{n}`;
+- `samuel:INV` → `{n:04}`.
+
+At production-ready checkpoint:
+
+- CC next `21`;
+- Invoice next `19`, display `0019`.
+
+These are historical checkpoint values only. Always read current D1 state before diagnosing numbering later.
+
+### Display pattern rule
+
+Templates render their own labels. Sequence patterns are number formatting only.
+
+Correct:
+
+- `{n}`;
+- `{n:04}`.
+
+Incorrect:
+
+- `CUENTA DE COBRO No. {n}`;
+- `Invoice No. {n:04}`.
+
+Internal base number identity must never be inferred by parsing formatted display text.
+
+---
+
+## 9. Corrections / revisions
+
+Issued documents are immutable. Client-requested changes create a correction draft, not an edit-in-place.
+
+Flow:
+
+1. create correction draft cloned from issued source;
+2. edit normally;
+3. finalize as revision of same base number;
+4. preserve supersedes chain.
 
 ### Display convention
 
-Original is implicit `A` and has no suffix.
+Original is implicit A/no suffix:
 
-- `0004`
-- `0004-B`
-- `0004-C`
-- `0004-D`
+- `21`;
+- `21-B`;
+- `21-C`.
 
-Same concept for Cuenta de Cobro:
+Invoice example:
 
-- `CC 21`
-- `CC 21-B`
-- `CC 21-C`
+- `0019`;
+- `0019-B`;
+- `0019-C`.
 
 ### Required invariants
 
-- Original remains immutable and available.
-- Revision is a new document/snapshot/PDF.
-- Revision is linked through `supersedes_id` / `superseded_by_id`.
-- Only the latest unsuperseded issued document can create the next correction.
-- Do not create two parallel `-B` revisions.
-- An already-open correction draft is reused/idempotent.
-- Revision suffix allocation uses a dedicated internal revision sequence.
-- Revision does **not** advance the normal base sequence.
-- Example already smoke-tested: `TEST-INV 0004 → 0004-B → 0004-C`, while the next independent invoice remained `0005`.
+- original remains immutable/available;
+- revision is a new document/snapshot/PDF;
+- `supersedes_id` / `superseded_by_id` chain;
+- only latest unsuperseded issued document can create next correction;
+- one open correction draft per source;
+- dedicated revision sequence/counter;
+- revision does **not** advance base sequence.
 
-### Current limitation
+Real revision counter examples:
 
-Correction/revision support is **TEST-series-only** at this checkpoint. Enabling it for real series is a separate reviewed production gate.
+- `revision:samuel:CC:21`;
+- `revision:samuel:INV:19`.
+
+Do not treat revision counters as legal base document numbers.
+
+Verified TEST interleaving proved a revision remains attached to its base even after the base sequence advances:
+
+`CC n → n-B → independent n+1 → n-C`.
 
 ---
 
-## 9. Signed PDF artifact contract
+## 10. Signed PDF artifact contract
 
-Final PDF generation uses the **frozen immutable snapshot**, not the current draft/profile state.
+Final PDF uses the **frozen snapshot**, not current profile/draft state.
 
 Pipeline:
 
 1. read finalized/void document;
-2. verify it belongs to an allowed TEST series;
-3. parse immutable `snapshot_json`;
-4. recompute canonical snapshot SHA-256 and require equality;
-5. load the exact signature asset referenced by snapshot metadata from private `DOCS_BUCKET`;
-6. verify signature hash;
-7. resolve the exact template version from the snapshot;
-8. inline logo asset if required;
-9. call `BROWSER.quickAction("pdf")` with Letter / print background / CSS page size;
-10. hash generated PDF;
-11. store it privately under a content-addressed R2 key;
-12. set `pdf_status = ready` and record artifact hash/event.
+2. parse immutable `snapshot_json`;
+3. recompute/verify snapshot SHA-256;
+4. load exact private signature asset referenced by snapshot metadata;
+5. verify signature SHA-256;
+6. resolve exact template version;
+7. inline required static assets;
+8. call Browser Rendering with Letter/print background/CSS page size;
+9. hash generated PDF;
+10. store content-addressed private PDF in `DOCS_BUCKET`;
+11. persist `pdf_status=ready` + artifact hash/event.
 
-### PDF failure semantics
+### Failure semantics
 
 If PDF generation fails:
 
 - document stays finalized;
 - number stays consumed;
 - snapshot stays frozen;
-- `pdf_status` becomes `failed`;
-- Retry PDF renders again from the frozen snapshot;
-- the base/revision number must never be released.
+- `pdf_status=failed`;
+- Retry PDF renders from frozen snapshot;
+- number is never released/reused.
 
-### PDF retrieval
+### Retrieval / filename
 
-Authenticated GET returns the private PDF with:
+Authenticated retrieval verifies artifact hash before returning the PDF.
 
-- `Content-Type: application/pdf`;
-- inline disposition for the in-app viewer;
-- private/no-store cache headers;
-- hash verification before response.
+The in-app viewer uses inline PDF response.
 
-The Admin viewer provides the inline PDF and an explicit Download PDF action.
+The explicit download filename contract is:
+
+`<DOCUMENT NUMBER> - <CLIENT>.pdf`
+
+The client component is mandatory. Filename sanitization may normalize characters for filesystem safety but must not silently omit the client.
 
 ---
 
-## 10. Finalized-document UI contract
+## 11. Finalized-document UI
 
-Selecting an issued/finalized/void row must **not** open the draft editor first.
+Selecting issued/finalized/void must **not** open the draft editor first.
 
-Issued view priority:
+Priority:
 
-1. `PDF ready` / PDF status;
-2. inline PDF viewer or Retry PDF action;
+1. PDF ready/status;
+2. inline PDF/Retry;
 3. issued metadata;
-4. correction/revision actions where allowed.
+4. correction action where allowed.
 
-When an issued record is selected:
+When issued:
 
-- draft grid is hidden;
-- Delete Draft / Finalize controls are hidden;
-- snapshot is presented as immutable;
-- old draft/PDF state must not leak when switching between records.
-
-When returning to a draft/new draft, the issued panel must be cleared/hidden.
+- draft grid hidden;
+- Delete Draft/Finalize hidden;
+- snapshot immutable;
+- old draft/PDF state must not leak between records.
 
 ---
 
-## 11. Approved visual contract — Cuenta de Cobro v1
+## 12. Cuenta de Cobro v1 visual contract
 
-Template: **`cc-co-es@1`**  
+Template: `cc-co-es@1`  
 Renderer: `documents-templates/cc-co-es.v1.js`
-
-This template keeps Colombian Cuenta de Cobro semantics while sharing the Invoice family.
 
 ### Header
 
-- Letter page.
-- Title `Cuenta de Cobro` at the same 30pt scale as Invoice.
-- Number line uses the exact pattern:
-  - `Cuenta de Cobro No. <display number>`
-- City/date remain at upper left.
+- Letter;
+- title `Cuenta de Cobro`;
+- number line `Cuenta de Cobro No. <display number>`;
+- city/date upper area.
 
-### Identity cards — intentional CC distinction
-
-These are part of the approved v1 identity and should **not** be removed merely to make CC look more like Invoice:
-
-- `LA EMPRESA` — bordered rounded card.
-- `DEBE A` — bordered rounded card.
-- `LA SUMA DE` — full-width rounded card with light violet-tinted background.
-
-The words/amount and numeric total live inside `LA SUMA DE`.
-
-### Mandatory semantic structure
+### Identity cards — intentional distinction
 
 Preserve:
 
-- `La empresa`
-- `Debe a`
-- `La suma de`
-- `Por concepto de`
+- `LA EMPRESA` bordered rounded card;
+- `DEBE A` bordered rounded card;
+- `LA SUMA DE` violet-tinted rounded card.
 
-Do not convert CC into the Invoice `Bill to / Engagement` model.
+Do not convert Cuenta de Cobro into the Invoice `Bill to / Engagement` semantic structure.
 
-### Concept/pricing behavior
+### Concepts/pricing
 
-CC supports multiple valid modes and future visual work must not collapse them:
+Preserve all modes:
 
-**Simple concepts**
-- compact concept + value representation when no structured metadata is used.
+**Simple**
+- compact concept/value.
 
 **Non-itemized**
-- one or many concepts;
-- one General rate / total;
+- one/multiple concepts;
+- one General rate/total;
 - no forced qty/unit/date/PO/per-line total.
 
 **Itemized**
-- optional quantity;
-- optional unit;
-- line type badge;
+- optional quantity/unit;
+- type badge;
 - optional date/date range;
-- optional line PO/reference;
+- optional PO/reference;
 - rate + line total.
 
 ### Legal block
 
-Preserve the Colombian retention certification block and its template-versioned legal text marker (`co-ret@2026-1`) unless legal/accounting review explicitly changes it.
+Preserve Colombian retention certification + version marker unless deliberately changed following legal/accounting review and template versioning.
 
 ### Lower page
 
-Shared with Invoice:
-
-- same two-column bottom geometry (`1.2fr / 1fr`);
-- payment information on left;
-- signature/issuer identity on right;
-- applied signature height currently 108px;
-- bottom block uses `margin-top:auto` so the page fills Letter naturally;
-- footer remains at bottom.
-
-CC may contain more issuer facts under the signature than Invoice; that difference is intentional.
+- payment information left;
+- signature/issuer identity right;
+- applied signature treatment;
+- lower block anchored naturally toward bottom;
+- footer at page bottom.
 
 ---
 
-## 12. Approved visual contract — Invoice v1
+## 13. Invoice v1 visual contract
 
-Template: **`invoice-intl-en@1`**  
+Template: `invoice-intl-en@1`  
 Renderer: `documents-templates/invoice-intl-en.v1.js`
 
-### Header / parties
+### Header/parties
 
-- `Invoice` title at 30pt.
-- `Invoice No.` metadata on upper right.
-- issuer information on upper left.
-- `BILL TO` and `ENGAGEMENT` remain the Invoice semantic structure.
+- `Invoice` title;
+- `Invoice No.` metadata;
+- issuer upper left;
+- `BILL TO` / `ENGAGEMENT` semantics.
 
 ### Table
 
-Columns:
+Core columns:
 
 `DESCRIPTION · QTY · UNIT · RATE · AMOUNT`
 
-All table header labels must use compatible typography/baselines; numeric-column headers must not accidentally inherit a monospace face that shifts their vertical alignment.
+Header typography/baselines must remain visually aligned.
 
-Grouped sections:
+Groups:
 
 - Professional services;
 - Expenses & reimbursements.
 
-Original-expense metadata may show:
+Original-expense metadata may show original currency/amount + FX convention:
 
-- original currency/amount;
-- FX convention: `1 USD = x original currency`.
+`1 USD = x original currency`
 
 No FX date is displayed.
 
 ### Total
 
-- `TOTAL DUE` remains clean, without the old black horizontal rule/box treatment.
+`TOTAL DUE` remains clean; do not restore the old black rule/box treatment.
 
 ### Lower page
 
-- Payment Information and signature use the same lower-page geometry as CC.
-- Signature height currently 108px.
-- Footer anchored at bottom through page flex + bottom `margin-top:auto`.
+Payment Information + signature share the approved lower-page geometry and bottom-anchored footer.
 
 ---
 
-## 13. Shared visual family
+## 14. Production health
 
-The two v1 templates intentionally share:
+The read-only production preflight/health check is the authoritative operational check for real Documents state.
 
-- Letter geometry;
-- sans + mono typography system;
-- violet accent language;
-- line-kind badges where applicable;
-- restrained gray borders;
-- same title scale;
-- same lower payment/signature proportions;
-- same signature image size;
-- same footer concept;
-- `SD•Live Documents` visual wordmark treatment.
+It validates:
 
-Do not force identical content layout where the document semantics differ.
+- storage bindings;
+- schema;
+- TEST root identity;
+- real series identity/pattern/current next state;
+- number collisions;
+- active private signatures;
+- signature hash match.
 
----
-
-## 14. Tests that matter before changing Documents
-
-Relevant regression coverage includes, at minimum:
-
-- `tests/documents-draft-templates.test.mjs`
-- `tests/documents-template-visual-parity.test.mjs`
-- PDF artifact tests;
-- finalize gate tests;
-- revision/correction tests;
-- Admin Documents UX tests.
-
-When changing template output, tests should verify important **contracts**, not every incidental byte of generated HTML.
-
-### Manual visual smoke matrix for renderer changes
-
-At minimum inspect newly generated PDFs for:
-
-**Cuenta de Cobro**
-- simple concept;
-- non-itemized multiple concepts;
-- itemized/detailed;
-- payment details on/off;
-- final signature;
-- revision suffix document.
-
-**Invoice**
-- professional services only;
-- services + expenses/reimbursements;
-- original-currency expense + FX;
-- payment details on/off;
-- final signature;
-- revision suffix document.
-
-Also verify:
-
-- Letter page remains one page for representative content;
-- lower section is not stranded halfway up the page;
-- no clipping/overflow;
-- title/headers remain aligned;
-- footer remains at page bottom.
+A real sequence is healthy if it preserves its correct identity/pattern and its next value is valid/above issued history. Do not require it to remain equal to the original bootstrap number after real use.
 
 ---
 
-## 15. Safe change procedure
+## 15. TEST workspace cleanup
 
-Before changing Documents in the future:
+TEST cleanup is physical maintenance, not just registry hiding.
+
+Dry-run identifies exact TEST-only state and produces a fingerprint.
+
+Purge may remove:
+
+- TEST documents/drafts/finalized/void;
+- TEST events/source links;
+- private TEST PDFs/artifacts;
+- TEST revision counters;
+- then reset `test:CC` / `test:INV` to `1`.
+
+It must never delete:
+
+- `samuel:CC` / `samuel:INV`;
+- real documents;
+- issuer/client profiles;
+- real signature assets.
+
+A fresh dry-run fingerprint + explicit confirmation are required.
+
+If the scan reports the workspace already clean, hide the destructive Purge action.
+
+---
+
+## 16. Mobile webapp contract
+
+### iPhone
+
+When a draft is open:
+
+- use a solid minimal app shell;
+- hamburger remains available;
+- compact document/client header + Close;
+- fixed Preview/Edit rail at top;
+- only central document content scrolls;
+- fixed Save/Finalize dock at bottom;
+- respect safe-area insets;
+- iOS inputs stay at safe font sizes;
+- date controls cannot overflow;
+- Issuer/Client may default collapsed;
+- registry/general page chrome stays out of the open-draft path;
+- Finalize uses mobile-friendly presentation.
+
+### iPad
+
+- touch-friendly portrait;
+- dual editor/preview in landscape where space allows.
+
+### Settings
+
+Mobile Settings should remain compact and readable:
+
+- sequence rows separate title/meta/state;
+- real rows say `Current next`, not `Planned next` once active;
+- health cards compact but legible;
+- TEST cleanup compact;
+- Safari bottom safe-area room;
+- no hamburger/content overlap.
+
+---
+
+## 17. Safe future-change procedure
+
+Before any Documents change:
 
 1. inspect current `main`;
-2. read this file;
-3. read `docs/roadmap/sdlive-documents-v1.md`;
-4. inspect the exact runtime files involved;
-5. create a short branch **before any write**;
-6. change the smallest possible surface;
-7. update/add tests;
-8. open one PR;
-9. wait for CI;
-10. if CI fails, stop and diagnose from the failing log rather than guessing;
-11. when CI is green and repository workflow allows it, squash merge;
-12. wait for Cloudflare Git deploy;
-13. hard-refresh authenticated Admin;
-14. perform a representative TEST smoke;
-15. do not perform real sequence/bootstrap/issuance operations unless separately and explicitly authorized.
+2. read the production-ready checkpoint + this guide;
+3. identify whether the change affects historical PDF output;
+4. preserve security/numbering/immutability invariants;
+5. use a short branch;
+6. add/update regression tests;
+7. open one PR;
+8. require CI green before merge;
+9. perform representative production verification when applicable;
+10. update this guide/checkpoint if the operational contract changes.
 
-### Important connector/workflow lesson
+### If changing renderer output
 
-Do not write temporary placeholder files to `main` while changing GitHub connector actions. Always create/switch to the intended branch first and verify the branch argument on write actions.
+Create a new template version.
 
----
+### If changing numbering/revisions
 
-## 16. How to make a future visual change
+Verify base sequence and revision counter independence.
 
-### If only new documents should change
+### If changing signature/PDF handling
 
-Use a new template version.
+Verify private storage and hashes; never expose public URLs.
 
-Example for Cuenta de Cobro:
+### If changing cleanup/destructive operations
 
-1. copy `cc-co-es.v1.js` → `cc-co-es.v2.js`;
-2. export `CC_CO_ES_TEMPLATE_VERSION = "cc-co-es@2"`;
-3. update kind selection for new documents;
-4. keep `@1` registered in final PDF rendering;
-5. preserve historical snapshot/PDF retry behavior;
-6. add side-by-side renderer tests;
-7. create fresh TEST docs and visually review them.
+Require read-only preflight/fingerprint + explicit confirmation + fail-closed real-data exclusion.
 
-### If a client asks to change an already-issued document
+### If changing mobile UX
 
-Do **not** change the template or mutate the issued snapshot just for that client.
+Test at least:
 
-Use the correction workflow:
-
-`original → -B → -C ...`
-
-### If legal/tax wording changes
-
-Treat it as a separate versioned legal contract. Update `legalBlockVersion` deliberately and keep the old wording available for historical snapshots.
+- iPhone 15 Pro class viewport;
+- iPad Air class portrait/landscape;
+- Safari safe areas/keyboard/date controls;
+- Preview/Edit and Save/Finalize fixed rails;
+- no excessive reflow of Letter preview.
 
 ---
 
-## 17. Production gate still pending
+## 18. Remaining backlog — not v1 blockers
 
-Even though TEST Finalize, signed private PDF, inline viewing and TEST revisions are functioning, this checkpoint does **not** authorize real-number issuance.
+- Void reason/history polish;
+- revision/supersedes history UI;
+- event/history view;
+- client document history;
+- Finance read-only prefill;
+- Quote/Cotización kinds;
+- template v2 changes when deliberately requested;
+- legal/accounting review as needed.
 
-Before enabling real Documents:
-
-1. inspect actual `DOCS_DB` sequence state;
-2. verify proposed `samuel:CC` next `21` and `samuel:INV` next `19` against real historical/current numbering;
-3. verify active real signature metadata/private object;
-4. explicitly authorize real series bootstrap;
-5. bootstrap via the audited operation only;
-6. issue one controlled real CC and one controlled real Invoice;
-7. verify number, immutable snapshot, signature, PDF and registry;
-8. then separately decide whether correction `-B/-C` is enabled for real series.
+These are future enhancements, not reasons to keep Documents v1 open as an active gate.
 
 ---
 
-## 18. Known intentional differences between CC and Invoice
+## 19. Recovery / continuation checklist
 
-Do not “fix” these as visual inconsistencies:
+If returning to Documents after months:
 
-**Cuenta de Cobro**
-- Spanish;
-- Colombian retention block;
-- `La empresa / Debe a / La suma de / Por concepto de`;
-- identity/sum cards;
-- simple/non-itemized modes;
-- more issuer facts under signature.
+1. read current `PROJECT_STATUS.md`;
+2. read `docs/checkpoints/handoff-documents-v1-production-ready-2026-09-28.md`;
+3. read this guide;
+4. inspect current `documents-kinds.js`, finalize/revision/PDF modules and Admin UX;
+5. run/read production health before diagnosing sequence/signature concerns;
+6. never assume checkpoint next values are still current;
+7. preserve frozen v1 renderers unless creating a new template version.
 
-**Invoice**
-- English;
-- `Bill to / Engagement`;
-- always itemized;
-- services vs expenses groups;
-- original-currency/FX metadata;
-- `Total due` pattern;
-- leaner signature facts.
-
-They should feel like the same product while remaining the correct document type.
-
----
-
-## 19. Definition of done for a future Documents change
-
-A future change is not done merely because code merged.
-
-It is done when:
-
-- contract/invariants are preserved or deliberately versioned;
-- CI is green;
-- Cloudflare deployed the merged main;
-- authenticated Admin behavior was smoke-tested;
-- a representative TEST PDF was visually checked if rendering changed;
-- historical renderer support remains intact;
-- real-series state was not changed without explicit authorization;
-- this guide is updated if architecture, contracts or file ownership changed.
-
----
-
-## 20. Current handoff summary
-
-As of this v1 checkpoint:
-
-- `cc-co-es@1` visual baseline is approved, including restored `La empresa`, `Debe a` and `La suma de` cards.
-- `invoice-intl-en@1` visual baseline is approved.
-- Draft opens Preview-first.
-- Finalized opens PDF/status-first without showing the draft editor.
-- TEST Finalize works with immutable snapshot + TEST number.
-- Signed private PDF generation/retry/view/download works.
-- Invoice revision smoke is validated through `-B` and `-C` while the next independent base number remains unaffected.
-- CC and Invoice share the lower payment/signature visual family.
-- Real series and real issuance remain a separate explicit production gate.
-
-When resuming work, start from current `main`, then this guide, then the current Documents roadmap. Do not reconstruct behavior from old chat history unless a code discrepancy requires historical investigation.
+**Documents v1 is a closed production-ready milestone. Normal real documents can be issued through the approved workflow without additional TEST smoke unless a regression is being investigated.**

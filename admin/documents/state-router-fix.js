@@ -74,7 +74,7 @@
   function loadTestCleanupUx() {
     if (document.querySelector("script[data-sdlive-documents-test-cleanup]")) return;
     const script = document.createElement("script");
-    script.src = "/admin/documents/test-cleanup-ux.js?v=20260928-1";
+    script.src = "/admin/documents/test-cleanup-ux.js?v=20260928-2";
     script.dataset.sdliveDocumentsTestCleanup = "true";
     document.body.appendChild(script);
   }

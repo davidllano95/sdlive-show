@@ -71,7 +71,7 @@ test("authenticated Documents API exposes TEST dry-run and purge with explicit p
   assert.match(api, /testDataPurgeCanDeleteRealDocuments:\s*false/);
 });
 
-test("TEST cleanup UI requires scan fingerprint and explicit destructive confirmation", () => {
+test("TEST cleanup UI hides destructive action when the workspace is already clean", () => {
   const ux = read("admin/documents/test-cleanup-ux.js");
   const router = read("admin/documents/state-router-fix.js");
   assert.match(ux, /Scan TEST data/);
@@ -79,6 +79,9 @@ test("TEST cleanup UI requires scan fingerprint and explicit destructive confirm
   assert.match(ux, /PURGE_DOCUMENTS_TEST_DATA/);
   assert.match(ux, /lastPreflight\.fingerprint/);
   assert.match(ux, /REAL sequences samuel:CC and samuel:INV are excluded/);
+  assert.match(ux, /setPurgeVisibility/);
+  assert.match(ux, /documents-test-cleanup__purge\[hidden\]\{display:none!important\}/);
+  assert.match(ux, /setPurgeVisibility\(purgeButton, Boolean\(data\.ready && hasAnything\)\)/);
   assert.doesNotMatch(ux, /MutationObserver/);
-  assert.match(router, /test-cleanup-ux\.js\?v=20260928-1/);
+  assert.match(router, /test-cleanup-ux\.js\?v=20260928-2/);
 });
