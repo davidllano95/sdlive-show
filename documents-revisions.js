@@ -1,4 +1,5 @@
 import { buildFinalSnapshot, canonicalJson } from "./documents-domain.js";
+import { SAMUEL_SEQUENCE_BOOTSTRAP } from "./documents-kinds.js";
 import {
   createDocumentDraftRow,
   readDocument,
@@ -8,6 +9,7 @@ import {
 
 const REVISION_SEQUENCE_PREFIX = "revision:";
 const MAX_CHAIN_DEPTH = 64;
+const TEST_SERIES_BY_TYPE = Object.freeze({ cc: "test:CC", invoice: "test:INV" });
 
 function text(value, max = 500) {
   return value == null ? "" : String(value).trim().slice(0, max);
@@ -68,6 +70,36 @@ export function revisionDisplayNumber(baseDisplayNumber, revisionCode) {
   return `${base}-${code}`;
 }
 
+function productionConfigFor(document) {
+  return Object.values(SAMUEL_SEQUENCE_BOOTSTRAP).find((config) => (
+    config.seriesKey === document?.series_key
+    && config.issuerId === document?.issuer_id
+    && config.docType === document?.doc_type
+  )) || null;
+}
+
+export async function requireRevisionSeries(env, document) {
+  if (!document?.series_key) throw new Error("document_sequence_not_found");
+  const sequence = await readDocumentSequence(env, document.series_key);
+  if (!sequence) throw new Error("document_sequence_not_found");
+  if (String(sequence.issuer_id) !== String(document.issuer_id)) throw new Error("sequence_issuer_mismatch");
+  if (String(sequence.doc_type) !== String(document.doc_type)) throw new Error("sequence_document_type_mismatch");
+
+  const testOnly = Number(sequence.is_test) === 1;
+  if (testOnly) {
+    const expected = TEST_SERIES_BY_TYPE[document.doc_type];
+    if (!expected || document.issuer_id !== "test" || document.series_key !== expected) {
+      throw new Error("sequence_environment_mismatch");
+    }
+  } else {
+    const config = productionConfigFor(document);
+    if (!config || String(sequence.display_pattern) !== String(config.displayPattern)) {
+      throw new Error("sequence_environment_mismatch");
+    }
+  }
+  return { sequence, testOnly };
+}
+
 async function readOpenCorrectionDraft(env, sourceId) {
   return dbFromEnv(env).prepare(`SELECT * FROM doc_documents
     WHERE supersedes_id = ? AND status = 'draft'
@@ -75,14 +107,7 @@ async function readOpenCorrectionDraft(env, sourceId) {
     LIMIT 1`).bind(sourceId).first();
 }
 
-async function requireTestSeries(env, seriesKey) {
-  const sequence = await readDocumentSequence(env, seriesKey);
-  if (!sequence) throw new Error("document_sequence_not_found");
-  if (Number(sequence.is_test) !== 1) throw new Error("real_document_series_disabled");
-  return sequence;
-}
-
-export async function createTestCorrectionDraft(env, {
+export async function createCorrectionDraft(env, {
   sourceDocumentId,
   actorEmail = "",
   now = () => new Date().toISOString()
@@ -91,11 +116,10 @@ export async function createTestCorrectionDraft(env, {
   if (!source) throw new Error("document_not_found");
   if (!["finalized", "void"].includes(source.status)) throw new Error("correction_source_not_issued");
   if (source.superseded_by_id) throw new Error("document_already_superseded");
-  if (!source.series_key) throw new Error("document_sequence_not_found");
-  await requireTestSeries(env, source.series_key);
+  const environment = await requireRevisionSeries(env, source);
 
   const existing = await readOpenCorrectionDraft(env, source.id);
-  if (existing) return { ok: true, idempotent: true, document: existing };
+  if (existing) return { ok: true, idempotent: true, document: existing, testOnly: environment.testOnly, production: !environment.testOnly };
 
   const at = text(now(), 80);
   const documentId = `doc-${crypto.randomUUID()}`;
@@ -125,7 +149,13 @@ export async function createTestCorrectionDraft(env, {
     .bind(source.id, text(actorEmail).toLowerCase(), at, canonicalJson({ correctionDraftId: documentId }))
     .run();
 
-  return { ok: true, idempotent: false, document: created };
+  return { ok: true, idempotent: false, document: created, testOnly: environment.testOnly, production: !environment.testOnly };
+}
+
+export async function createTestCorrectionDraft(env, options = {}) {
+  const result = await createCorrectionDraft(env, options);
+  if (!result.testOnly) throw new Error("real_document_series_disabled");
+  return result;
 }
 
 async function resolveRevisionChain(env, correctionDraft) {
@@ -151,13 +181,17 @@ async function resolveRevisionChain(env, correctionDraft) {
   if (!root?.series_key || !Number.isSafeInteger(baseNumber) || baseNumber < 1 || !root.display_number) {
     throw new Error("revision_root_not_numbered");
   }
-  const rootSequence = await requireTestSeries(env, root.series_key);
+  const environment = await requireRevisionSeries(env, root);
+  const rootSequence = environment.sequence;
   if (String(rootSequence.issuer_id) !== String(correctionDraft.issuer_id)) throw new Error("sequence_issuer_mismatch");
   if (String(rootSequence.doc_type) !== String(correctionDraft.doc_type)) throw new Error("sequence_document_type_mismatch");
   if (String(source.series_key) !== String(root.series_key)) throw new Error("revision_series_mismatch");
+  if (String(source.issuer_id) !== String(root.issuer_id) || String(source.doc_type) !== String(root.doc_type)) {
+    throw new Error("revision_series_mismatch");
+  }
 
   const completedRevisionCount = chain.length - 1;
-  return { source, root, baseNumber, completedRevisionCount, rootSequence };
+  return { source, root, baseNumber, completedRevisionCount, rootSequence, testOnly: environment.testOnly };
 }
 
 async function revisionCandidate(env, correctionDraft, { mutateCounter = false, at = "" } = {}) {
@@ -170,8 +204,15 @@ async function revisionCandidate(env, correctionDraft, { mutateCounter = false, 
     await dbFromEnv(env).prepare(`INSERT OR IGNORE INTO doc_sequences (
       series_key, issuer_id, doc_type, next_value, display_pattern,
       is_test, bootstrapped_at, bootstrap_note, updated_at
-    ) VALUES (?, ?, ?, 1, 'REV {n}', 1, ?, 'internal document revision counter', ?)`)
-      .bind(counterKey, resolved.root.issuer_id, resolved.root.doc_type, at, at)
+    ) VALUES (?, ?, ?, 1, 'REV {n}', ?, ?, 'internal document revision counter', ?)`)
+      .bind(
+        counterKey,
+        resolved.root.issuer_id,
+        resolved.root.doc_type,
+        Number(resolved.rootSequence.is_test) === 1 ? 1 : 0,
+        at,
+        at
+      )
       .run();
     counter = await readDocumentSequence(env, counterKey);
   }
@@ -179,7 +220,14 @@ async function revisionCandidate(env, correctionDraft, { mutateCounter = false, 
   const index = counter ? Number(counter.next_value) : expectedIndex;
   if (!Number.isSafeInteger(index) || index < 1) throw new Error("invalid_revision_sequence_state");
   if (index !== expectedIndex) throw new Error("revision_sequence_conflict");
-  if (counter && Number(counter.is_test) !== 1) throw new Error("real_document_series_disabled");
+  if (counter) {
+    const validCounter = String(counter.series_key) === counterKey
+      && String(counter.issuer_id) === String(resolved.root.issuer_id)
+      && String(counter.doc_type) === String(resolved.root.doc_type)
+      && String(counter.display_pattern) === "REV {n}"
+      && Number(counter.is_test) === Number(resolved.rootSequence.is_test);
+    if (!validCounter) throw new Error("invalid_revision_sequence_state");
+  }
 
   const revisionCode = revisionCodeFromIndex(index);
   return {
@@ -221,7 +269,7 @@ function sourceStatements(db, documentId, sources) {
     .bind(documentId, text(source.lineId), source.sourceSystem, source.sourceRef, canonicalJson(source.observed || {})));
 }
 
-function revisionResult(row, { idempotent = false } = {}) {
+function revisionResult(row, { idempotent = false, testOnly = null } = {}) {
   const snapshot = parseJson(row?.snapshot_json, {});
   return {
     ok: true,
@@ -233,11 +281,12 @@ function revisionResult(row, { idempotent = false } = {}) {
     displayNumber: row?.display_number || snapshot.number?.display || null,
     revisionCode: snapshot.number?.revisionCode || null,
     snapshotSha256: row?.snapshot_sha256 || null,
-    pdfStatus: row?.pdf_status || null
+    pdfStatus: row?.pdf_status || null,
+    ...(testOnly == null ? {} : { testOnly, production: !testOnly })
   };
 }
 
-export async function buildTestRevisionFinalizePreview(env, {
+export async function buildRevisionFinalizePreview(env, {
   document,
   draft,
   draftRev,
@@ -272,11 +321,18 @@ export async function buildTestRevisionFinalizePreview(env, {
     currency: document.currency,
     totalMinor: calculated.totalMinor,
     signatureApplied: Boolean(context.signatureAsset?.id && context.signatureAsset?.sha256),
-    testOnly: true
+    testOnly: candidate.testOnly,
+    production: !candidate.testOnly
   };
 }
 
-export async function finalizeTestRevision(env, {
+export async function buildTestRevisionFinalizePreview(env, options = {}) {
+  const result = await buildRevisionFinalizePreview(env, options);
+  if (!result.testOnly) throw new Error("real_document_series_disabled");
+  return result;
+}
+
+export async function finalizeRevision(env, {
   documentId,
   draftRev,
   finalizeKey,
@@ -296,7 +352,10 @@ export async function finalizeTestRevision(env, {
   const prior = await readDocumentByFinalizeKey(env, key);
   if (prior) {
     if (String(prior.id) !== id) throw new Error("finalize_key_already_used");
-    if (["finalized", "void"].includes(prior.status)) return revisionResult(prior, { idempotent: true });
+    if (["finalized", "void"].includes(prior.status)) {
+      const environment = await requireRevisionSeries(env, prior);
+      return revisionResult(prior, { idempotent: true, testOnly: environment.testOnly });
+    }
   }
 
   const store = dbFromEnv(env);
@@ -307,7 +366,10 @@ export async function finalizeTestRevision(env, {
     const document = await readDocument(env, id);
     if (!document) throw new Error("document_not_found");
     if (document.status !== "draft") {
-      if (document.finalize_key === key && ["finalized", "void"].includes(document.status)) return revisionResult(document, { idempotent: true });
+      if (document.finalize_key === key && ["finalized", "void"].includes(document.status)) {
+        const environment = await requireRevisionSeries(env, document);
+        return revisionResult(document, { idempotent: true, testOnly: environment.testOnly });
+      }
       throw new Error("document_not_draft");
     }
     if (!document.supersedes_id) throw new Error("revision_draft_required");
@@ -406,13 +468,14 @@ export async function finalizeTestRevision(env, {
         throw new Error("finalize_commit_not_observed");
       }
       if (sourceAfter?.superseded_by_id !== finalized.id) throw new Error("supersede_commit_not_observed");
-      return revisionResult(finalized);
+      return revisionResult(finalized, { testOnly: candidate.testOnly });
     } catch (error) {
       lastError = error;
       const committed = await readDocumentByFinalizeKey(env, key).catch(() => null);
       if (committed) {
         if (String(committed.id) !== id) throw new Error("finalize_key_already_used");
-        return revisionResult(committed, { idempotent: true });
+        const environment = await requireRevisionSeries(env, committed);
+        return revisionResult(committed, { idempotent: true, testOnly: environment.testOnly });
       }
     }
   }
@@ -420,9 +483,19 @@ export async function finalizeTestRevision(env, {
   throw lastError || new Error("document_finalize_conflict");
 }
 
+export async function finalizeTestRevision(env, options = {}) {
+  const result = await finalizeRevision(env, options);
+  if (!result.testOnly) throw new Error("real_document_series_disabled");
+  return result;
+}
+
 export function documentsRevisionPolicy() {
   return Object.freeze({
-    testSeriesOnly: true,
+    testSeriesOnly: false,
+    testSeriesEnabled: true,
+    realSeriesEnabled: true,
+    canonicalSeriesIdentityRequired: true,
+    revisionCounterInheritsEnvironment: true,
     originalImmutable: true,
     correctionCreatesDraft: true,
     firstCorrectionSuffix: "B",
