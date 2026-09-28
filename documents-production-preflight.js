@@ -57,6 +57,20 @@ async function readIssuedState(env, config) {
   };
 }
 
+function compactStorage(storage) {
+  const blockers = Array.isArray(storage?.blockers)
+    ? storage.blockers.map((item) => ({ area: text(item?.area, 80), reason: text(item?.reason, 120) }))
+    : [];
+  return {
+    ready: storage?.ready === true,
+    available: storage?.available === true,
+    schemaExact: storage?.schema?.exact === true,
+    testSequencesReady: storage?.testSequences?.ready === true,
+    foreignKeyViolations: Number(storage?.foreignKeyViolations || 0),
+    blockers
+  };
+}
+
 async function inspectSignature(env, issuerId, overrides = {}) {
   const issuer = overrides.readIssuerFn
     ? await overrides.readIssuerFn(env, issuerId)
@@ -154,12 +168,14 @@ export async function inspectDocumentsProductionPreflight(env, overrides = {}) {
   for (const issuerId of issuerIds) signatures.push(await inspectSignature(env, issuerId, overrides));
   const series = [];
   for (const config of configs) series.push(await inspectSeries(env, config, overrides));
-  const ready = storage?.ready === true && signatures.every((item) => item.ready) && series.every((item) => item.ready);
+  const storageSummary = compactStorage(storage);
+  const ready = storageSummary.ready && signatures.every((item) => item.ready) && series.every((item) => item.ready);
   return {
     ok: true,
     readOnly: true,
     ready,
-    storageReady: storage?.ready === true,
+    storageReady: storageSummary.ready,
+    storage: storageSummary,
     signatures,
     series,
     bootstrapEnabled: false,
