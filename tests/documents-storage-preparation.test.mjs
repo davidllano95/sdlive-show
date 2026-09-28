@@ -47,13 +47,13 @@ function canonicalObjects() {
   }));
 }
 
-function canonicalTestSequences() {
+function canonicalTestSequences({ nextCC = 1, nextINV = 1 } = {}) {
   return [
     {
       series_key: "test:CC",
       issuer_id: "test",
       doc_type: "cc",
-      next_value: 1,
+      next_value: nextCC,
       display_pattern: "TEST-CC {n}",
       is_test: 1
     },
@@ -61,7 +61,7 @@ function canonicalTestSequences() {
       series_key: "test:INV",
       issuer_id: "test",
       doc_type: "invoice",
-      next_value: 1,
+      next_value: nextINV,
       display_pattern: "TEST-INV {n:04}",
       is_test: 1
     }
@@ -97,7 +97,7 @@ test("an empty dedicated database is preparable but not ready", async () => {
   assert.equal(report.foreignKeyViolations, 0);
 });
 
-test("the exact canonical schema plus test sequences is ready", async () => {
+test("the exact canonical schema plus initialized test sequences is ready", async () => {
   const report = await inspectDocumentsStoragePreflight({
     DOCS_DB: fakeDb({
       objects: canonicalObjects(),
@@ -111,6 +111,32 @@ test("the exact canonical schema plus test sequences is ready", async () => {
   assert.deepEqual(report.blockers, []);
   assert.equal(report.schema.exact, true);
   assert.equal(report.testSequences.ready, true);
+});
+
+test("legitimately advanced TEST sequence counters remain storage-ready", async () => {
+  const report = await inspectDocumentsStoragePreflight({
+    DOCS_DB: fakeDb({
+      objects: canonicalObjects(),
+      testSequences: canonicalTestSequences({ nextCC: 8, nextINV: 6 })
+    }),
+    DOCS_BUCKET: fakeBucket()
+  });
+  assert.equal(report.ready, true);
+  assert.equal(report.testSequences.ready, true);
+  assert.deepEqual(report.testSequences.mismatched, []);
+});
+
+test("invalid TEST sequence counter still blocks storage readiness", async () => {
+  const report = await inspectDocumentsStoragePreflight({
+    DOCS_DB: fakeDb({
+      objects: canonicalObjects(),
+      testSequences: canonicalTestSequences({ nextCC: 0, nextINV: 6 })
+    }),
+    DOCS_BUCKET: fakeBucket()
+  });
+  assert.equal(report.ready, false);
+  assert.ok(report.testSequences.mismatched.includes("test:CC"));
+  assert.ok(report.blockers.some((item) => item.reason === "test_sequences_not_canonical"));
 });
 
 test("partial, changed, unknown or FK-broken schemas refuse automatic repair", async () => {
