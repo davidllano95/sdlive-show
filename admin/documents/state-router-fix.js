@@ -15,7 +15,7 @@
   function loadRevisionUx() {
     if (document.querySelector("script[data-sdlive-documents-revision-ux]")) return;
     const script = document.createElement("script");
-    script.src = "/admin/documents/revision-ux.js?v=20260927-1";
+    script.src = "/admin/documents/revision-ux.js?v=20260928-2";
     script.dataset.sdliveDocumentsRevisionUx = "true";
     document.body.appendChild(script);
   }
