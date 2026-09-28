@@ -11,6 +11,7 @@ test("Documents loads dedicated mobile webapp layers and JS", () => {
   assert.match(router, /mobile-webapp\.css\?v=20260928-1/);
   assert.match(router, /mobile-webapp-v2\.css\?v=20260928-2/);
   assert.match(router, /mobile-webapp-v3\.css\?v=20260928-1/);
+  assert.match(router, /mobile-webapp-v4\.css\?v=20260928-1/);
   assert.match(router, /mobile-webapp\.js\?v=20260928-2/);
   assert.match(router, /loadMobileWebappUx\(\)/);
 });
@@ -46,6 +47,18 @@ test("mobile draft header and Preview Edit rail are fixed to the viewport top", 
   assert.match(css, /left:0!important;right:0!important/);
   assert.match(css, /\.document-editor-grid\{\s*padding-top:101px!important/);
   assert.match(css, /env\(safe-area-inset-top\)/);
+});
+
+test("open mobile drafts replace translucent Admin topbar with one solid app shell", () => {
+  const css = read("admin/documents/mobile-webapp-v4.css");
+  assert.match(css, /\.backoffice:not\(\.editor-backoffice\) \.topbar\{\s*display:none!important/);
+  assert.match(css, /\.admin-mobile-menu-toggle\{/);
+  assert.match(css, /background:#0b0d14!important/);
+  assert.match(css, /\.editor-toolbar\{/);
+  assert.match(css, /top:0!important/);
+  assert.match(css, /padding-top:calc\(env\(safe-area-inset-top\) \+ 6px\)!important/);
+  assert.match(css, /\.documents-mobile-editor-mode\{/);
+  assert.match(css, /padding-top:calc\(105px \+ env\(safe-area-inset-top\)\)!important/);
 });
 
 test("mobile Documents uses a real fixed Save Finalize dock", () => {
