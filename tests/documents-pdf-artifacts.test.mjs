@@ -42,8 +42,8 @@ function snapshot(overrides = {}) {
   };
 }
 
-async function finalizedRow(overrides = {}) {
-  const snap = snapshot();
+async function finalizedRow(overrides = {}, snapshotOverrides = {}) {
+  const snap = snapshot(snapshotOverrides);
   const json = canonicalJson(snap);
   return {
     id: "doc-test-pdf",
@@ -64,12 +64,13 @@ async function finalizedRow(overrides = {}) {
   };
 }
 
-const testSequence = { series_key: "test:INV", issuer_id: "test", doc_type: "invoice", is_test: 1 };
+const testSequence = { series_key: "test:INV", issuer_id: "test", doc_type: "invoice", display_pattern: "TEST-INV {n:04}", is_test: 1 };
+const realSequence = { series_key: "samuel:INV", issuer_id: "samuel-usd", doc_type: "invoice", display_pattern: "{n:04}", is_test: 0 };
 
-function generationOverrides(row, calls) {
+function generationOverrides(row, calls, sequence = testSequence) {
   return {
     readDocumentFn: async () => row,
-    readSequenceFn: async () => testSequence,
+    readSequenceFn: async () => sequence,
     readSignatureFn: async () => "data:image/png;base64,ZmFrZQ==",
     inlineAssetsFn: async (_env, html) => html,
     renderPdfFn: async (_env, html, pageSize) => {
@@ -144,14 +145,38 @@ test("ready PDF generation is idempotent and never invokes Browser again", async
   assert.equal("pdfR2Key" in result, false);
 });
 
-test("PDF artifact gate fails closed for real series", async () => {
-  const row = await finalizedRow({ series_key: "samuel:INV" });
+test("PDF artifact gate supports canonical real series without exposing private storage", async () => {
+  const row = await finalizedRow({
+    id: "doc-real-pdf",
+    issuer_id: "samuel-usd",
+    series_key: "samuel:INV",
+    number: 19,
+    display_number: "0019",
+    client_name: "Real Client"
+  }, {
+    number: { seriesKey: "samuel:INV", value: 19, display: "0019" },
+    issuer: { id: "samuel-usd", legalName: "Samuel", email: "issuer@example.com", addresses: [{ text: "Issuer address" }], brandLabel: "" },
+    signature: { id: "sig-real", issuerId: "samuel-usd", contentType: "image/png", sha256: "signature-hash", private: true },
+    client: { legalName: "Real Client", billingAddress: "Client address" }
+  });
+  const calls = {};
+  const result = await generateFinalPdf({}, { documentId: row.id, actorEmail: "sam@sdlive.show" }, generationOverrides(row, calls, realSequence));
+  assert.equal(result.ok, true);
+  assert.equal(result.testOnly, false);
+  assert.equal(result.pdfStatus, "ready");
+  assert.match(calls.html, /0019/);
+  assert.match(calls.key, new RegExp(`^final/samuel-usd/invoice/${row.id}/`));
+  assert.equal("pdfR2Key" in result, false);
+});
+
+test("PDF artifact gate fails closed for noncanonical real sequence identity", async () => {
+  const row = await finalizedRow({ issuer_id: "samuel-usd", series_key: "samuel:INV" });
   await assert.rejects(
     () => generateFinalPdf({}, { documentId: row.id, actorEmail: "sam@sdlive.show" }, {
       readDocumentFn: async () => row,
-      readSequenceFn: async () => ({ ...testSequence, series_key: "samuel:INV", is_test: 0 })
+      readSequenceFn: async () => ({ ...realSequence, display_pattern: "Invoice No. {n:04}" })
     }),
-    /real_document_series_disabled/
+    /sequence_environment_mismatch/
   );
 });
 
@@ -189,10 +214,12 @@ test("authenticated PDF download returns bytes with client-aware no-store header
   assert.equal(await response.text(), "%PDF-DOWNLOAD");
 });
 
-test("PDF gate policy and Wrangler keep private/test-only boundaries explicit", () => {
+test("PDF gate policy and Wrangler keep private boundaries explicit for test and real series", () => {
   const policy = documentsPdfArtifactPolicy();
-  assert.equal(policy.testSeriesOnly, true);
-  assert.equal(policy.realSeriesEnabled, false);
+  assert.equal(policy.testSeriesOnly, false);
+  assert.equal(policy.testSeriesEnabled, true);
+  assert.equal(policy.realSeriesEnabled, true);
+  assert.equal(policy.realSeriesRequireCanonicalIdentity, true);
   assert.equal(policy.sourceOfTruth, "immutable_snapshot");
   assert.equal(policy.signatureSource, "private_DOCS_BUCKET");
   assert.equal(policy.pdfBucket, "private_DOCS_BUCKET");
