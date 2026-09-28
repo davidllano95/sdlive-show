@@ -28,6 +28,21 @@
     document.body.appendChild(script);
   }
 
+  function loadMobileWebappUx() {
+    if (!document.querySelector("link[data-sdlive-documents-mobile-webapp]")) {
+      const style = document.createElement("link");
+      style.rel = "stylesheet";
+      style.href = "/admin/documents/mobile-webapp.css?v=20260928-1";
+      style.dataset.sdliveDocumentsMobileWebapp = "true";
+      document.head.appendChild(style);
+    }
+    if (document.querySelector("script[data-sdlive-documents-mobile-webapp]")) return;
+    const script = document.createElement("script");
+    script.src = "/admin/documents/mobile-webapp.js?v=20260928-1";
+    script.dataset.sdliveDocumentsMobileWebapp = "true";
+    document.body.appendChild(script);
+  }
+
   function issuedPanel() {
     return document.getElementById("issuedDocumentPanel");
   }
@@ -64,6 +79,7 @@
   installHiddenGuard();
   loadRevisionUx();
   loadPreviewFitUx();
+  loadMobileWebappUx();
 
   document.addEventListener("click", (event) => {
     const target = event.target instanceof Element ? event.target : null;
