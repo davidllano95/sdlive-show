@@ -38,6 +38,21 @@ test("draft documents prioritize live preview before the editor", () => {
   assert.match(ux, /shell\.classList\.add\("documents-draft-preview-first"\)/);
 });
 
+test("draft preview preserves Letter geometry and scales the iframe instead of reflowing the template", () => {
+  const router = read("admin/documents/state-router-fix.js");
+  const fit = read("admin/documents/preview-fit-ux.js");
+  assert.match(router, /preview-fit-ux\.js\?v=20260928-1/);
+  assert.match(router, /loadPreviewFitUx\(\)/);
+  assert.match(fit, /const VIEWPORT_WIDTH = 960/);
+  assert.match(fit, /const VIEWPORT_HEIGHT = 1120/);
+  assert.match(fit, /new ResizeObserver\(queueFit\)/);
+  assert.match(fit, /availableWidth \/ VIEWPORT_WIDTH/);
+  assert.match(fit, /frame\.style\.width = `\$\{VIEWPORT_WIDTH\}px`/);
+  assert.match(fit, /frame\.style\.transform = `scale\(\$\{scale\}\)`/);
+  assert.match(fit, /stage\.style\.height = `\$\{Math\.ceil\(VIEWPORT_HEIGHT \* scale\)\}px`/);
+  assert.doesNotMatch(fit, /MutationObserver/);
+});
+
 test("finalized documents bypass draft row handlers and prioritize PDF preview", () => {
   const ux = read("admin/documents/pdf-artifact-ux.js");
   const artifacts = read("documents-pdf-artifacts.js");
