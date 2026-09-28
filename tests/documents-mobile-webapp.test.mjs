@@ -6,10 +6,11 @@ function read(path) {
   return readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
 }
 
-test("Documents loads dedicated mobile webapp v2 CSS and JS", () => {
+test("Documents loads dedicated mobile webapp layers and JS", () => {
   const router = read("admin/documents/state-router-fix.js");
   assert.match(router, /mobile-webapp\.css\?v=20260928-1/);
   assert.match(router, /mobile-webapp-v2\.css\?v=20260928-2/);
+  assert.match(router, /mobile-webapp-v3\.css\?v=20260928-1/);
   assert.match(router, /mobile-webapp\.js\?v=20260928-2/);
   assert.match(router, /loadMobileWebappUx\(\)/);
 });
@@ -36,6 +37,15 @@ test("mobile Documents editor provides Preview and Edit modes plus fullscreen pr
   assert.match(source, /documents-preview-fullscreen/);
   assert.match(css, /documents-mobile-mode-preview \.draft-editor\{display:none!important\}/);
   assert.match(css, /documents-mobile-mode-edit \.preview-panel\{display:none!important\}/);
+});
+
+test("mobile draft header and Preview Edit rail are fixed to the viewport top", () => {
+  const css = read("admin/documents/mobile-webapp-v3.css");
+  assert.match(css, /body\.documents-mobile-editor-open \.editor-toolbar\{\s*position:fixed!important/);
+  assert.match(css, /body\.documents-mobile-editor-open \.documents-mobile-editor-mode\{\s*position:fixed!important/);
+  assert.match(css, /left:0!important;right:0!important/);
+  assert.match(css, /\.document-editor-grid\{\s*padding-top:101px!important/);
+  assert.match(css, /env\(safe-area-inset-top\)/);
 });
 
 test("mobile Documents uses a real fixed Save Finalize dock", () => {
