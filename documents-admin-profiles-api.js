@@ -20,6 +20,11 @@ import {
   DOCUMENTS_PRODUCTION_BOOTSTRAP_CONFIRMATION,
   bootstrapDocumentsProduction
 } from "./documents-production-bootstrap.js";
+import {
+  DOCUMENTS_TEST_PURGE_CONFIRMATION,
+  inspectDocumentsTestDataPurge,
+  purgeDocumentsTestData
+} from "./documents-test-data-purge.js";
 
 const API_PREFIX = "/api/admin/documents";
 const MAX_JSON_BYTES = 64 * 1024;
@@ -70,13 +75,26 @@ function publicError(error) {
     "invalid_payment_terms_days", "invalid_finance_aliases", "issuer_not_found", "client_not_found", "signature_png_required",
     "invalid_signature_size", "documents_storage_unavailable", "documents_storage_batch_required", "documents_bucket_unavailable",
     "issuer_profile_in_use", "client_profile_in_use", "explicit_test_sequence_confirmation_required",
-    "explicit_production_bootstrap_confirmation_required", "production_preflight_not_ready", "production_bootstrap_postflight_failed"
+    "explicit_production_bootstrap_confirmation_required", "production_preflight_not_ready", "production_bootstrap_postflight_failed",
+    "explicit_test_purge_confirmation_required", "test_purge_preflight_changed", "test_purge_not_ready",
+    "test_purge_r2_delete_failed", "test_purge_postflight_failed"
   ];
   if (message.startsWith("unexpected_test_sequence_state:")) return { status: 409, error: message };
-  if (message === "production_preflight_not_ready" || message === "production_bootstrap_postflight_failed") return { status: 409, error: message };
+  if (
+    message === "production_preflight_not_ready"
+    || message === "production_bootstrap_postflight_failed"
+    || message === "test_purge_preflight_changed"
+    || message === "test_purge_not_ready"
+    || message === "test_purge_postflight_failed"
+  ) return { status: 409, error: message };
   if (message === "issuer_profile_in_use" || message === "client_profile_in_use") return { status: 409, error: message };
   if (message === "issuer_not_found" || message === "client_not_found") return { status: 404, error: message };
-  if (message === "documents_storage_unavailable" || message === "documents_storage_batch_required" || message === "documents_bucket_unavailable") {
+  if (
+    message === "documents_storage_unavailable"
+    || message === "documents_storage_batch_required"
+    || message === "documents_bucket_unavailable"
+    || message === "test_purge_r2_delete_failed"
+  ) {
     return { status: 503, error: message };
   }
   return { status: Number(error?.status) || (known.includes(message) ? 400 : 500), error: known.includes(message) ? message : "documents_request_failed" };
@@ -178,6 +196,19 @@ export async function handleDocumentsProfilesApi(request, env, { verifyAdmin } =
       return json(result, result.idempotent ? 200 : 201);
     }
 
+    if (path === `${API_PREFIX}/test-data-preflight` && request.method === "GET") {
+      return json(await inspectDocumentsTestDataPurge(env));
+    }
+
+    if (path === `${API_PREFIX}/test-data-purge` && request.method === "POST") {
+      const body = await readJson(request);
+      const result = await purgeDocumentsTestData(env, {
+        confirmation: body.confirmation,
+        fingerprint: body.fingerprint
+      });
+      return json(result);
+    }
+
     const issuerMatch = path.match(/^\/api\/admin\/documents\/issuers\/([^/]+)$/);
     if (issuerMatch && request.method === "PUT") {
       const profile = await upsertIssuerProfile(env, await readJson(request), { id: decodeURIComponent(issuerMatch[1]) });
@@ -231,6 +262,10 @@ export function documentsProfilesApiPolicy() {
     productionBootstrapConfirmation: DOCUMENTS_PRODUCTION_BOOTSTRAP_CONFIRMATION,
     productionBootstrapRequiresReadyPreflight: true,
     productionPreflightReadOnly: true,
+    testDataPurgeExposed: true,
+    testDataPurgeConfirmation: DOCUMENTS_TEST_PURGE_CONFIRMATION,
+    testDataPurgeRequiresDryRunFingerprint: true,
+    testDataPurgeCanDeleteRealDocuments: false,
     signatureMaxRequestBytes: MAX_SIGNATURE_REQUEST_BYTES,
     profileDeleteRequiresUnused: true,
     issuerDeleteRemovesPrivateSignatureAssets: true,
