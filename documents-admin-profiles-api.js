@@ -104,7 +104,8 @@ async function settings(env) {
       const bootstrapped = Boolean(existing)
         && existing.issuerId === item.issuerId
         && existing.docType === item.docType
-        && Number(existing.nextValue) === Number(item.nextValue)
+        && Number.isSafeInteger(Number(existing.nextValue))
+        && Number(existing.nextValue) >= Number(item.nextValue)
         && existing.displayPattern === item.displayPattern
         && existing.isTest === false;
       return {
@@ -116,7 +117,7 @@ async function settings(env) {
         locked: !bootstrapped,
         bootstrapped,
         note: bootstrapped
-          ? `Real series bootstrapped · next ${item.nextValue}`
+          ? `Real series active · next ${existing.nextValue}`
           : "Real series bootstrap requires READY production preflight and explicit owner authorization."
       };
     })
