@@ -50,6 +50,7 @@ async function finalizedRow(overrides = {}) {
     kind_id: "invoice-intl-en",
     doc_type: "invoice",
     issuer_id: "test",
+    client_name: "Test Client",
     status: "finalized",
     series_key: "test:INV",
     number: 4,
@@ -170,7 +171,7 @@ test("artifact failure records failed state without changing the finalized snaps
   assert.equal(row.snapshot_sha256, await sha256Hex(row.snapshot_json));
 });
 
-test("authenticated PDF download returns bytes with no-store headers and verifies hash", async () => {
+test("authenticated PDF download returns bytes with client-aware no-store headers and verifies hash", async () => {
   const pdfBytes = new TextEncoder().encode("%PDF-DOWNLOAD");
   const row = await finalizedRow({ pdf_status: "ready", pdf_r2_key: "secret/private-key.pdf", pdf_sha256: await sha256Hex(pdfBytes) });
   const response = await downloadFinalPdf({}, { documentId: row.id }, {
@@ -184,7 +185,7 @@ test("authenticated PDF download returns bytes with no-store headers and verifie
   assert.equal(response.status, 200);
   assert.equal(response.headers.get("content-type"), "application/pdf");
   assert.match(response.headers.get("cache-control"), /no-store/);
-  assert.match(response.headers.get("content-disposition"), /TEST-INV-0004\.pdf/);
+  assert.match(response.headers.get("content-disposition"), /TEST-INV-0004 - Test-Client\.pdf/);
   assert.equal(await response.text(), "%PDF-DOWNLOAD");
 });
 

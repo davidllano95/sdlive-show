@@ -277,10 +277,20 @@ export async function generateFinalPdf(env, {
   }
 }
 
+function filenamePart(value, maxLength = 80) {
+  return text(value)
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^A-Za-z0-9._-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, maxLength);
+}
+
 function safeFilename(row) {
-  const raw = text(row.display_number || row.id || "document");
-  const safe = raw.replace(/[^A-Za-z0-9._-]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 120) || "document";
-  return `${safe}.pdf`;
+  const number = filenamePart(row.display_number || row.id || "document", 100) || "document";
+  const client = filenamePart(row.client_name, 100);
+  if (!client) throw new Error("document_client_name_required_for_filename");
+  return `${number} - ${client}.pdf`;
 }
 
 export async function downloadFinalPdf(env, { documentId } = {}, overrides = {}) {
