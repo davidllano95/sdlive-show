@@ -50,6 +50,8 @@ test("Cuenta de Cobro keeps its semantic blocks while sharing the invoice visual
   assert.match(cc, />Debe a</);
   assert.match(cc, />La suma de</);
   assert.match(cc, />Por concepto de</);
+  assert.match(cc, /\.party\{border:1px solid #e3e4ea;border-radius:10px;padding:12px 14px\}/);
+  assert.match(cc, /\.sum\{margin-top:14px;border-radius:10px;background:#f5f4fb;border:1px solid #e4e0f6;padding:13px 16px/);
   assert.match(cc, /\.bottom\{display:grid;grid-template-columns:1\.2fr 1fr;gap:28px;margin-top:auto;padding-top:30px/);
   assert.match(cc, /\.signature-applied\{display:block;height:108px;max-width:250px;object-fit:contain;object-position:right bottom/);
   assert.match(cc, /<div class="label" style="margin-bottom:6px">Información de pago<\/div>/);
