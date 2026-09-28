@@ -1,9 +1,11 @@
-# Future — SD.Live Patch
+# SD.Live Patch — Active design / discovery roadmap
 
 **Added:** 2026-08-27 — America/Bogota  
-**Status:** FUTURE / NOT ACTIVE  
-**Working name:** **SD.Live Patch**  
-**Activation gate:** do not start implementation until the current Admin/Google Calendar OAuth + production smoke work is closed and the active stabilization documentation is reconciled.
+**Promoted to active gate:** 2026-09-28 — after Documents v1 production-ready closeout  
+**Status:** **ACTIVE DESIGN / DISCOVERY GATE**  
+**Working name:** **SD.Live Patch**
+
+> This roadmap is now active for product/data-model discovery. It does **not** by itself authorize schema migration or runtime implementation. The first gate is to derive the MVP model from real SD.Live patch/rider examples.
 
 ## Product intent
 
@@ -21,35 +23,48 @@ Primary goals:
 - link a patch to an existing SD.Live work/event without creating a second operations source of truth;
 - eventually support house-vs-artist patch comparison and repatch lists.
 
+## Activation context
+
+The prior blocking work is closed:
+
+- Admin/Calendar stabilization is closed;
+- Finance owner-money/third-party work is closed;
+- Documents v1 is **PRODUCTION READY** through PR #313;
+- Documents real series are active and TEST workspace is clean.
+
+Therefore Patch is now the selected major workstream, beginning with data-model discovery.
+
 ## Source-of-truth contract
 
-### D1 — Patch application state
+### D1 — future Patch application state
 
-D1 should own Patch entities and structured technical state, for example:
+D1 is the intended owner of Patch entities and structured technical state **after** the MVP schema is deliberately approved.
 
-- `patch_sheets`
-- `patch_versions`
-- `patch_channels`
-- `patch_outputs`
-- `patch_devices`
-- `patch_ports`
-- `patch_connections`
-- `patch_notes`
-- `patch_event_links`
+Conceptual entities may include:
 
-Exact schema is future design work; table names above are conceptual, not migration approval.
+- `patch_sheets`;
+- `patch_versions`;
+- `patch_channels` / inputs;
+- `patch_outputs`;
+- `patch_devices`;
+- `patch_ports`;
+- `patch_connections`;
+- `patch_notes`;
+- `patch_event_links`.
 
-### R2 — Managed technical files
+These names remain conceptual until the data contract is approved. No migration is authorized by this document alone.
 
-R2 should own uploaded/generated files such as:
+### R2 — managed technical files
+
+R2 may own uploaded/generated technical files such as:
 
 - riders;
 - stage plots;
 - reference images;
 - exported PDFs;
-- console/show files where future support is technically appropriate.
+- console/show files where future support is technically appropriate and explicitly verified.
 
-### REGISTRO / AppSheet — Event identity only
+### REGISTRO / AppSheet — event identity only
 
 REGISTRO/AppSheet remain the operational event source of truth.
 
@@ -57,15 +72,19 @@ A Patch may link to a durable REGISTRO event ID, but Patch must not become a sec
 
 - work dates;
 - client workflow state;
-- billing/finance fields;
+- billing/Finance fields;
 - AppSheet formulas;
 - payment state.
 
 A patch can exist independently of an event and later be attached/reused.
 
+### Inventory — separate future domain
+
+Patch may eventually consume or validate Inventory availability/assignment information, but must not own stock counts, allocations or equipment source-of-truth semantics.
+
 ## Core model — signal path, not only channel list
 
-The system should be able to represent a path such as:
+The system should eventually be able to represent a path such as:
 
 `Source → Mic/DI → Stagebox input → Console input → Channel → Group/DCA → Output path`
 
@@ -73,15 +92,34 @@ Example:
 
 `Kick → Audix D6 → Stagebox A / In 1 → Console In 1 → Ch 1 → Drums DCA → Main LR`
 
-This model should preserve source identity when console/stagebox mappings change.
+The structured model must preserve source identity when console/stagebox mappings change.
+
+## Current gate — derive the MVP from real shows
+
+Before writing schema or editor code:
+
+1. audit **3–5 real SD.Live patch/rider examples**;
+2. list every field/decision actually used on show day;
+3. separate recurring core data from venue/show-specific notes;
+4. define the minimum shared model for **Inputs + Stage I/O + Outputs**;
+5. decide master patch vs event snapshot/version semantics;
+6. lock stable IDs and ordering/reorder behavior;
+7. define device/port identity and assignment rules;
+8. define output identity independently from input channels where appropriate;
+9. define conflict/capacity validation;
+10. define event-link semantics without creating a second operations source of truth;
+11. sketch desktop/iPad/iPhone behavior;
+12. only then approve a schema/runtime milestone.
+
+The first conversation after activation should therefore be **analysis/design**, not coding.
 
 ## Phase 1 — MVP Patch Sheet
 
-Minimum useful show-day product:
+Minimum useful show-day product, subject to confirmation from the real-example audit.
 
 ### Inputs
 
-Per input/channel:
+Candidate per input/channel fields:
 
 - stable channel/item ID;
 - channel number/order;
@@ -118,12 +156,15 @@ Represent devices and ports:
 
 ### Editing UX
 
+Candidate requirements:
+
 - fast table/list editing;
 - drag handle for reorder;
 - accessible Move Up / Move Down fallback;
 - duplicate-channel and duplicate-port warnings;
 - autosave with explicit saved/error state;
-- desktop-first complex editor with a useful mobile/read-only or bounded show-day mode decided during design.
+- desktop-first complex editing;
+- useful iPad/iPhone show-day mode designed deliberately, not as a squeezed desktop table.
 
 ### Versions / snapshots
 
@@ -136,7 +177,7 @@ Examples:
 - Bogotá 2026;
 - venue-specific revision.
 
-A snapshot must preserve the technical state used for that performance even if the master patch later changes.
+A snapshot/version must preserve the technical state used for a performance even if the master patch later changes.
 
 ## Phase 2 — Visual Patch
 
@@ -151,6 +192,8 @@ Requirements:
 - moving a node visually must not silently change technical routing;
 - invalid/double-assigned ports are surfaced clearly;
 - accessibility must not rely on drag-and-drop alone.
+
+**Do not begin Phase 2 until the Phase 1 structured data model is production-proven.**
 
 ## Phase 3 — Console / device profiles
 
@@ -173,14 +216,14 @@ Potential validation example:
 
 Longer-term direction: an SD.Live event can expose a unified technical workspace such as:
 
-- Overview
-- Calendar
-- Patch
-- Stage I/O
-- Files / Rider
-- Site Schedule
-- Finance link/context
-- Equipment / Inventory when that future module exists
+- Overview;
+- Calendar;
+- Patch;
+- Stage I/O;
+- Files / Rider;
+- Site Schedule;
+- Finance link/context;
+- Equipment / Inventory when that future module exists.
 
 This must remain modular: opening an event workspace must not cause Finance, CMS, Patch and other heavy runtimes to execute unnecessarily.
 
@@ -199,7 +242,7 @@ Example concept:
 | Bass | 8 | 12 | Repatch |
 | Vocal | 21 | 17 | Repatch |
 
-Output may include:
+Potential output:
 
 - changed channel assignments;
 - changed stagebox ports;
@@ -209,17 +252,17 @@ Output may include:
 
 ## Documents / sharing
 
-Future output should include:
+Future Patch output may include:
 
 - printable landscape patch sheet PDF;
 - input list;
 - output list;
 - stage I/O list;
 - repatch list;
-- read-only share link protected by an appropriate bounded access model;
-- CSV import/export where it preserves identity and validation safely.
+- bounded read-only share link;
+- CSV import/export where identity and validation can be preserved safely.
 
-PDF generation is documentation only and does not create a new source of truth.
+Patch PDFs are technical documentation only and do not create a new source of truth.
 
 ## Event linkage
 
@@ -235,17 +278,16 @@ An event may:
 
 Creating or editing a Patch must never write generic fields back into REGISTRO/AppSheet.
 
-## Relationship to future Inventory
+## Relationship to Documents
 
-Patch and Inventory should be designed to integrate later but remain separate domains.
+Documents v1 is closed and production-ready. Patch may reuse architectural lessons such as:
 
-Examples of future useful cross-checks:
+- stable immutable snapshots;
+- private managed artifacts;
+- responsive Admin UX;
+- explicit source-of-truth boundaries.
 
-- patch requires 12 wireless channels but only 8 are available for the event;
-- patch references two DL32 units and Inventory has only one unallocated;
-- patch references a microphone model not assigned to the event.
-
-Inventory remains its own single source of truth; Patch consumes availability/assignment information rather than owning stock.
+Do not couple Patch numbering/state to legal/financial Documents numbering.
 
 ## Non-goals / invariants
 
@@ -256,24 +298,13 @@ Inventory remains its own single source of truth; Patch consumes availability/as
 - Do not move Rental pricing/quote logic into Patch.
 - Do not infer or modify console show files unless a future format is explicitly verified and safely supported.
 - Do not make drag-and-drop the only way to operate the editor.
-- Do not start this module while the current Admin/Calendar stabilization gate is still open.
-
-## First implementation milestone when activated
-
-Before coding:
-
-1. audit 3–5 real SD.Live patch/rider examples;
-2. define the minimum shared data model from those real shows;
-3. decide master patch vs event snapshot semantics;
-4. lock stable IDs and ordering contract;
-5. prototype Input List + Stage I/O + Outputs only;
-6. validate it against a real rehearsal/show workflow;
-7. only then begin Visual Patch and console profiles.
+- Do not make Visual Patch the source of truth.
+- Do not create a Patch schema before the real-example audit and data contract are approved.
 
 ## Roadmap sequence
 
-When promoted from FUTURE:
+**Current discovery gate → MVP Patch Sheet → Visual Patch → Device Profiles → Show Workspace / Compare Patch**
 
-**MVP Patch Sheet → Visual Patch → Device Profiles → Show Workspace / Compare Patch**
+## Exact continuation
 
-Until promoted, this document is a product/design checkpoint only and authorizes no schema migration or runtime work.
+**Open a new conversation, inspect current `main` plus the canonical status/roadmap/handoff docs, and begin by reviewing 3–5 real SD.Live patch/rider examples. Derive and document the minimum shared model for Inputs + Stage I/O + Outputs, stable IDs/order, versions/snapshots, conflict validation and event-link boundaries. Do not code or migrate D1 until that model is approved.**

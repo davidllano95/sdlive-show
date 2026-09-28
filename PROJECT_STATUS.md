@@ -10,7 +10,7 @@
 | Documents templates | **`cc-co-es@1` + `invoice-intl-en@1` frozen** |
 | Real numbering at checkpoint | **`samuel:CC` next 21 · `samuel:INV` next 19/display 0019** |
 | TEST workspace | **clean baseline · both TEST roots next 1** |
-| Active next major workstream | **SD.Live Patch / next deliberately selected roadmap gate** |
+| Active Gate | **SD.Live Patch — design/discovery** |
 | Finance | **owner-money + third-party operations closed/pass; generic write-back remains blocked** |
 | PILA | **backlog / research candidate** |
 | WhatsApp owner control | **merged; rollout intentionally paused** |
@@ -19,13 +19,22 @@
 
 1. GitHub `main` + comportamiento verificado en producción;
 2. schema/config actual;
-3. `docs/checkpoints/handoff-documents-v1-production-ready-2026-09-28.md` for the closed Documents v1 production state;
-4. `docs/operations/documents-v1-maintenance.md` for Documents architecture/versioning rules;
-5. checkpoint/handoff fechado más reciente de otros módulos;
-6. este archivo;
-7. `README.md`;
-8. `ROADMAP_MASTER_CHECKLIST.md`;
-9. docs/prompts históricos.
+3. checkpoint/handoff fechado más reciente;
+4. este archivo;
+5. `README.md`;
+6. `ROADMAP_MASTER_CHECKLIST.md`;
+7. docs/prompts históricos.
+
+Documents-specific references remain:
+
+- `docs/checkpoints/handoff-documents-v1-production-ready-2026-09-28.md`;
+- `docs/operations/documents-v1-maintenance.md`;
+- `docs/roadmap/sdlive-documents-v1.md`.
+
+Current Patch references:
+
+- `docs/roadmap/future-sdlive-patch-2026-08-27.md`;
+- `docs/checkpoints/handoff-sdlive-patch-activation-2026-09-28.md`.
 
 **Stability > novelty. `MERGED != PRODUCTION VERIFIED`. `CORE IMPLEMENTED != PRODUCTION ENABLED`.**
 
@@ -33,15 +42,20 @@
 
 Runtime:
 
-`inspect current main → short branch → implement → tests/CI → PR → CI green → squash merge when authorized → representative production smoke when applicable`
+`inspect current main → short branch → implement → tests/CI → PR → CI green → squash merge under current standing workflow → representative production smoke when applicable`
 
 Docs-only:
 
-`inspect → branch → docs → CI → PR → CI green → squash merge when authorized`
+`inspect → branch → docs → CI → PR → CI green → squash merge under current standing workflow`
+
+Current standing workflow:
+
+- if CI is green and there are no errors, squash-merge automatically;
+- if CI or another error occurs, stop and request the failing log instead of guessing.
 
 Sensitive production actions remain separate and explicit:
 
-- number-consuming real document Finalize;
+- number-consuming real document Finalize when intentionally issuing a real document;
 - destructive maintenance/purge actions;
 - manual production SQL;
 - private signature/publication changes;
@@ -59,12 +73,13 @@ Sensitive production actions remain separate and explicit:
 - Documents performs no Finance writes in v1.
 - Documents uses dedicated `DOCS_DB` + private `DOCS_BUCKET`.
 - Signature/final PDFs never use public `MEDIA_BUCKET`.
-- Finalized snapshots/numbers are immutable.
+- Finalized Documents snapshots/numbers are immutable.
 - Drafts/Preview never consume official numbers.
 - Public traffic must never migrate Documents D1 schema.
 - PDF failure never releases an issued number.
 - Corrections create a new immutable document/snapshot; they never mutate the issued source.
-- Output-affecting renderer changes require a new template version (`@2`, etc.).
+- Output-affecting Documents renderer changes require a new template version (`@2`, etc.).
+- Patch must not become a second source of truth for Finance, event workflow or Inventory stock.
 
 # SD.Live Documents v1 — CLOSED / PRODUCTION READY
 
@@ -87,15 +102,7 @@ Real series are bootstrapped and verified healthy:
 - `samuel:CC` → issuer `samuel-cop` → pattern `{n}` → **current next 21** at checkpoint;
 - `samuel:INV` → issuer `samuel-usd` → pattern `{n:04}` → **current next 19 / display 0019** at checkpoint.
 
-Production health was verified READY for:
-
-- `DOCS_DB`;
-- `DOCS_BUCKET`;
-- exact schema;
-- active private `samuel-cop` signature + SHA-256 match;
-- active private `samuel-usd` signature + SHA-256 match;
-- real sequence state/patterns;
-- no number collisions.
+Production health was verified READY for storage, schema, both private signatures, real series identity/patterns and number collision checks.
 
 No real base number had been consumed at the production-ready checkpoint. The next real Finalize will consume whichever current next number applies at that moment.
 
@@ -121,9 +128,9 @@ Frozen artifact contracts:
 - `cc-co-es@1` — Cuenta de Cobro · Colombia · Español;
 - `invoice-intl-en@1` — International Invoice · English.
 
-Do not silently alter v1 output. Future output-affecting visual/semantic changes require `@2` or later while preserving historical v1 rendering.
+Future output-affecting visual/semantic changes require `@2` or later while preserving historical v1 rendering.
 
-## Finalize/PDF
+## Finalize/PDF/corrections
 
 Production behavior includes:
 
@@ -136,19 +143,11 @@ Production behavior includes:
 - private content-addressed R2 artifact;
 - Retry PDF from frozen snapshot;
 - authenticated inline viewer + explicit download;
-- filename contract: document number + client name.
-
-## Corrections/revisions
-
-Real and TEST correction paths preserve issued-document immutability.
-
-- original = implicit A/no suffix;
-- revisions = `-B`, `-C`, ...;
-- independent revision counters;
-- revision Finalize never advances the normal base sequence;
+- filename contract: document number + client name;
+- real and TEST correction chains `-B`, `-C`, ...;
+- revision counters independent from the base series;
 - latest-unsuperseded-only correction rule;
-- one open correction draft per source;
-- supersedes chain preserved.
+- one open correction draft per source.
 
 Verified stronger CC TEST smoke:
 
@@ -156,18 +155,7 @@ Verified stronger CC TEST smoke:
 
 ## Mobile webapp
 
-Documents has an iPhone/iPad operational layer:
-
-- fixed Preview/Edit top rail while a draft is open;
-- fixed Save/Finalize bottom dock;
-- solid app shell/no translucent content bleed;
-- safe-area handling;
-- iOS-safe input sizing/date controls;
-- collapsible identity sections;
-- reduced-scroll draft workflow;
-- Letter-geometry scaled preview;
-- tablet dual editor/preview when width permits;
-- compact mobile Settings/health/cleanup cards.
+Documents has an iPhone/iPad operational layer with fixed Preview/Edit top rail, fixed Save/Finalize bottom dock, solid app shell, safe-area handling, iOS-safe inputs/date controls, collapsible identity sections, scaled Letter preview, reduced-scroll workflow and compact mobile Settings/health/cleanup cards.
 
 ## Remaining Documents backlog — not blockers
 
@@ -182,9 +170,56 @@ Documents has an iPhone/iPad operational layer:
 
 Do not reopen Documents v1 as an active roadmap blocker without a regression or an explicit v2 requirement.
 
-# Finance owner-money + third-party operations — CLOSED / PASS
+# SD.Live Patch — ACTIVE DESIGN / DISCOVERY GATE
 
-Durable status:
+Canonical roadmap:
+
+`docs/roadmap/future-sdlive-patch-2026-08-27.md`
+
+Activation handoff / new-conversation starter:
+
+`docs/checkpoints/handoff-sdlive-patch-activation-2026-09-28.md`
+
+## Current purpose
+
+Design the minimum structured Patch domain from real SD.Live workflows before writing schema or UI code.
+
+The product direction is a native Admin workspace for:
+
+- Inputs / patch sheet;
+- Stage I/O devices + ports;
+- Outputs;
+- structured signal paths;
+- versions/snapshots;
+- show-day handoff;
+- later Visual Patch and artist-vs-house comparison/repatch workflows.
+
+## First gate — no runtime implementation yet
+
+Before coding:
+
+1. review **3–5 real patch/rider examples**;
+2. identify recurring fields/decisions actually used on show day;
+3. define the minimum MVP model for **Inputs + Stage I/O + Outputs**;
+4. decide master patch vs event snapshot/version semantics;
+5. lock stable IDs and ordering behavior;
+6. define device/port identity and conflict validation;
+7. define output identity and capacity rules;
+8. define event-link semantics without taking ownership from REGISTRO/AppSheet;
+9. sketch desktop/iPad/iPhone UX;
+10. approve the data contract before any D1 migration.
+
+Do not begin with Visual Patch. The visual graph must be a projection of structured routing, not the source of truth.
+
+## Patch source-of-truth boundaries
+
+- future Patch D1 state may own patch sheets, versions, channels, outputs, devices, ports, connections and technical notes;
+- REGISTRO/AppSheet retain event dates, client workflow state and Finance facts;
+- R2 may later hold Patch-managed riders/stage plots/reference files/exports;
+- Inventory remains a separate future source of truth;
+- Patch does not own Rental pricing/quote math.
+
+# Finance owner-money + third-party operations — CLOSED / PASS
 
 - Sheets remains Finance source of truth;
 - AppSheet remains primary mobile/offline workflow;
@@ -197,7 +232,7 @@ Known Finance cleanup/debt remains backlog.
 
 # PILA — backlog only
 
-Not the selected next gate. Re-research current Colombian rules if explicitly selected later.
+Not the selected gate. Re-research current Colombian rules if explicitly selected later.
 
 # WhatsApp owner control — rollout paused
 
@@ -216,11 +251,10 @@ PR #246 merged, but live Meta/Cloudflare activation remains intentionally paused
 - Public visual stabilization.
 - Rental image-editor parity.
 - Finance dashboard/third-party/owner-money milestones through PR #259.
-- **Documents v1 production-ready milestone.**
+- **Documents v1 production-ready milestone through PR #313.**
 
-# Next roadmap candidates after Documents
+# Backlog after Patch
 
-- **SD.Live Patch** — previously selected major workstream after Documents closure.
 - Rental real-time availability / double-booking protection.
 - Mobile Rental Cart total/sticky summary.
 - Calendar/Projects additions.
@@ -231,4 +265,4 @@ PR #246 merged, but live Meta/Cloudflare activation remains intentionally paused
 
 # Exact continuation point
 
-**Documents v1 is production-ready and closed. Do not create more TEST smokes by default. For normal work, the next document Finalize may be a real document. For future Documents changes, read the production-ready checkpoint and maintenance guide first. The next major project gate should be selected from the post-Documents roadmap, with SD.Live Patch already identified as the intended major workstream.**
+**Documents v1 is closed and production-ready. SD.Live Patch is now the active design/discovery gate. Start a new conversation, inspect current `main` plus the Patch roadmap and activation handoff, and begin by reviewing 3–5 real patch/rider examples. Derive the MVP data contract for Inputs + Stage I/O + Outputs, including stable IDs/order, versions/snapshots, port/capacity conflicts and event-link boundaries. Do not code or migrate D1 until that contract is approved.**

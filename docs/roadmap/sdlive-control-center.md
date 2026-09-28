@@ -1,8 +1,8 @@
 # 14.5 — SD.Live as Control Center
 
-**Reconciled:** 2026-09-27 — America/Bogota  
-**Status:** **SD.Live Documents v1 ACTIVE GATE — Finalize/PDF production work pending**  
-**Verified GitHub base:** `561cfebbf059568fb028d2a76c28b275eebdbcad` — PR #275.
+**Reconciled:** 2026-09-28 — America/Bogota  
+**Status:** **SD.Live Patch ACTIVE DESIGN / DISCOVERY GATE**  
+**Verified production checkpoint:** `623f4a2c7e1b01f3dc6867a5d90631aff0a13659` — PR #313, Documents v1 production-ready closeout.
 
 This document owns the current Control Center workstream sequence. Current GitHub `main` + verified production behavior outrank this file when conflicts are found.
 
@@ -12,17 +12,20 @@ SD.Live is a Control Center made of focused workspaces:
 
 - `/admin/` — Dashboard / system overview + Show Day Visual QA;
 - `/admin/finance/` — Finance analytics/workflow over Google Sheets `REGISTRO`, with the already-approved narrow third-party payment fact write;
-- `/admin/documents/` — Documents registry/editor/settings over dedicated private Documents storage;
+- `/admin/documents/` — production-ready Documents registry/editor/settings over dedicated private Documents storage;
 - `/admin/calendar/` — Calendar / Operations;
 - `/admin/calendar/site-schedule/` — website-only Site Schedule / Show Day / Location state;
 - `/admin/editor/` — Site Editor / CMS;
+- future Patch workspace — technical patch/signal-flow/show-documentation domain;
 - Inbox/other workspaces remain separate modules.
 
 All Admin surfaces remain behind Cloudflare Access.
 
-Canonical primary navigation order:
+Current primary navigation order remains:
 
 `Dashboard → Finance → Documents → Calendar → Site Editor → Inbox`
+
+Patch navigation placement is a future implementation decision and should not be added until the Patch MVP information architecture is approved.
 
 ## Source-of-truth guardrails
 
@@ -32,185 +35,150 @@ Canonical primary navigation order:
 - Documents may read Finance for future prefill only; it does not write to Sheets/AppSheet.
 - Documents uses dedicated `DOCS_DB` and private `DOCS_BUCKET`.
 - Signature/final PDF artifacts never use public `MEDIA_BUCKET`.
-- Draft edits do not mutate issuer/client profiles automatically.
-- Issued document snapshots/numbers are immutable.
+- Issued Documents snapshots/numbers are immutable.
+- Patch must not become a second owner of work dates, client workflow status, Finance facts or Inventory stock.
 - Rental pricing/availability/quote math remain backend-owned.
-- Google Calendar remains secondary projection/read-only overlay, not operational truth.
+- Google Calendar remains a secondary projection/read-only overlay where applicable, not operational truth.
 
 ## Closed sequence
 
-### 1. Performance/media baseline — ✅ CLOSED
+1. Performance/media baseline — ✅ CLOSED.
+2. Security baseline — ✅ CLOSED.
+3. Finance audit / repair-vs-rewrite — ✅ CLOSED.
+4. SD.Live Track rename — ✅ CLOSED.
+5. Source-of-truth mapping — ✅ CLOSED.
+6. Finance read-only Admin — ✅ CLOSED/PASS.
+7. Multi-day operations + Admin Calendar — ✅ CLOSED/PASS.
+8. Controlled Calendar create — ✅ CLOSED/PASS.
+9. Site Schedule + automatic Show Day + Location — ✅ CLOSED/PASS.
+10. Google Calendar integration — ✅ CLOSED/PASS.
+11. Admin + public stabilization — ✅ CLOSED/PASS.
+12. Rental image-editor parity — ✅ CLOSED/PASS.
+13. Availability / Lead / Assistant foundations — ✅ CLOSED/PASS.
+14. Finance third-party + owner-money reconciliation — ✅ CLOSED/PASS through PR #259.
+15. **Documents v1 — ✅ CLOSED / PRODUCTION READY through PR #313.**
 
-### 2. Security baseline — ✅ CLOSED
+### Documents closeout state
 
-### 3. Finance audit / repair-vs-rewrite — ✅ CLOSED
-Decision remains repair/integrate rather than rewrite.
+- real `samuel:CC` active, current next `21`;
+- real `samuel:INV` active, current next integer `19` / display `0019`;
+- real corrections `-B / -C / ...` enabled;
+- private signed PDF pipeline operational;
+- TEST workspace clean;
+- mobile Documents UX production-ready;
+- `cc-co-es@1` + `invoice-intl-en@1` frozen as historical renderer contracts.
 
-### 4. SD.Live Track rename — ✅ CLOSED
+Do not reopen Documents without regression evidence or an explicit new Documents feature/version.
 
-### 5. Source-of-truth mapping — ✅ CLOSED
+# Current Active Gate — SD.Live Patch
 
-### 6. Finance read-only Admin — ✅ CLOSED/PASS
+Canonical roadmap:
 
-### 7. Multi-day operations + Admin Calendar — ✅ CLOSED/PASS
+`docs/roadmap/future-sdlive-patch-2026-08-27.md`
 
-### 8. Controlled Calendar create — ✅ CLOSED/PASS
+Activation handoff:
 
-### 9. Site Schedule + automatic Show Day + Location — ✅ CLOSED/PASS
+`docs/checkpoints/handoff-sdlive-patch-activation-2026-09-28.md`
 
-### 10. Google Calendar integration — ✅ CLOSED/PASS
+## Gate type
 
-### 11. Admin + public stabilization — ✅ CLOSED/PASS
+This is initially a **design/discovery gate**, not an implementation authorization.
 
-### 12. Rental image-editor parity — ✅ CLOSED/PASS
+Before any Patch schema migration or runtime UI:
 
-### 13. Availability / Lead / Assistant foundations — ✅ CLOSED/PASS
+1. review 3–5 real patch/rider examples;
+2. identify the recurring technical facts actually used on show day;
+3. define the minimum MVP data model;
+4. decide master patch vs event snapshot/version semantics;
+5. lock stable IDs and ordering behavior;
+6. define Stage I/O device/port representation;
+7. define output representation and signal-path boundaries;
+8. define conflict/capacity validation;
+9. define event-link boundaries without Finance/operations ownership drift;
+10. approve the MVP information architecture for **Inputs + Stage I/O + Outputs**.
 
-### 14. Finance third-party + owner-money reconciliation — ✅ CLOSED/PASS
-Finance roadmap reconciliation is closed through PR #259.
+Only after that contract is approved should implementation begin.
 
-# Current Active Gate — SD.Live Documents v1
+## Intended Patch sequence
 
-Canonical contract:
+### A. MVP Patch Sheet
 
-`docs/roadmap/sdlive-documents-v1.md`
+- input/channel list;
+- stage I/O devices + ports;
+- output list;
+- ordering/reorder semantics;
+- duplicate/conflict validation;
+- versions/snapshots;
+- autosave/saved/error state;
+- bounded mobile/show-day behavior.
 
-Initial kinds:
+### B. Visual Patch
 
-- Cuenta de cobro · Colombia · ES;
-- Invoice · International · EN.
+Structured signal-flow projection over persisted technical data.
 
-## Documents foundations already merged
+The visual graph is not the source of truth; moving nodes visually must not silently change routing.
 
-Through PR #275, the Control Center now has:
+### C. Device profiles
 
-- dedicated Documents D1/private R2 storage foundation;
-- schema, immutability, preflight/preparation;
-- document kind/domain/snapshot core;
-- atomic/idempotent finalization **storage primitive**;
-- issuer/client profiles;
-- private signature infrastructure/settings;
-- draft registry/editor/autosave;
-- preview renderers for CC + Invoice;
-- Settings hardening and protected cleanup UX;
-- line-item editing, optional quantity/unit, date ranges;
-- CC simple mode;
-- Itemize/non-itemized General-rate mode;
-- current document branding/header/footer/signature-block visual system;
-- shared Admin navigation/visual integration.
+Model real capabilities/port constraints for consoles/stageboxes actually needed by SD.Live workflows.
 
-## Core vs production-enabled Finalize
+Do not fabricate unsupported console/show-file interoperability.
 
-The internal domain/storage layer can atomically freeze a snapshot, reserve a sequence number via CAS and finalize idempotently with a `finalizeKey`.
+### D. Show Workspace / Compare Patch
 
-That does **not** mean the real product workflow is enabled yet.
+- link Patch to a durable event identity;
+- reuse/fork master patches;
+- pin event snapshots;
+- artist-vs-house comparison;
+- deterministic repatch/cross-patch checklist.
 
-Still pending:
+## Relationship to other domains
 
-- authenticated Admin Finalize route;
-- irreversible confirmation UX;
-- test-series Finalize smoke through the Admin path;
-- real `samuel:CC` / `samuel:INV` bootstrap;
-- real document issuance;
-- final signature/PDF artifact pipeline;
-- Browser binding/PDF rendering;
-- private PDF persistence/download;
-- complete Void/Reissue/final-registry UX;
-- Finance read-only prefill/linking.
+### Finance
 
-## Numbering transition
+Patch does not own billing/payment state and does not write generic Finance fields.
 
-Planned real values only, pending verification + explicit authorization:
+### Documents
 
-- `samuel:CC` proposed next = `21`;
-- `samuel:INV` proposed next integer = `19`, display `0019`.
+Patch may later reuse document/export infrastructure conceptually, but its PDFs are technical documentation, not legal/financial documents and not a source of truth.
 
-Historical numbers remain unchanged and new issued numbers are never reused.
+### Inventory
 
-## Current Documents UX
+Future integration may validate or reference availability/assignment, but Patch must not own stock counts or allocations.
 
-### Cuenta de Cobro
+### Rental
 
-Supports both simple/non-itemized concepts + one General total and a detailed itemized mode with optional quantity/unit/date-range/PO/type/rate information.
+Patch does not own Rental pricing, quote math or booking availability.
 
-### Invoice
-
-Remains itemized and supports services, expenses/reimbursements, mixed line kinds, quantity/unit/rate, date/range, PO/ref, original-currency metadata and optional bank details.
-
-Draft preview remains numberless and does not expose the real signature asset.
-
-## Immediate Control Center sequence
-
-### A. Docs reconciliation — current branch
-
-Reconcile `PROJECT_STATUS.md`, `README.md`, master roadmap, Documents contract and this Control Center roadmap through PR #275.
-
-Docs-only PR:
-
-- CI required;
-- no production smoke required;
-- no merge until explicit owner authorization.
-
-### B. Production visual verification
-
-Before irreversible Finalize, verify representative authenticated production drafts after #275.
-
-### C. Finalize Admin gate
-
-Next bounded runtime PR should:
-
-- expose authenticated Finalize API/confirmation UX;
-- display a prospective number without consuming it;
-- enforce exact draft revision and server-side validation;
-- create/use a per-confirmation `finalizeKey`;
-- call the existing finalization core instead of rebuilding numbering;
-- test duplicate/double-click/network retry paths;
-- smoke with test series only.
-
-Do not include real sequence bootstrap or PDF/BROWSER in the same PR unless the scope is explicitly expanded and reviewed.
-
-### D. Real numbering gate
-
-After test-series Finalize behavior is proven, separately verify/authorize real sequence bootstrap.
-
-### E. Signed PDF gate
-
-Then add Browser/PDF, private signature injection, private artifact persistence and authenticated download. PDF failure never releases an issued number.
-
-### F. Registry lifecycle / integration
-
-Then complete Finalized/Void/Reissue/history/download UX and later read-only Finance prefill/linking.
-
-## Later eligible workstreams
-
-Documents remains selected. Later candidates include:
+## Backlog after Patch
 
 1. Rental real-time availability / double-booking protection.
 2. Quote/Cotización kinds on the Documents foundation.
 3. Mobile Rental Cart total/sticky summary.
-4. SD.Live Patch.
-5. Controlled Calendar edit/workflow additions.
-6. CRM / Admin Inbox / Workspace association.
-7. Finance cleanup and analytics debt.
-8. PILA estimator research/planning when deliberately selected.
+4. Controlled Calendar edit/workflow additions.
+5. CRM / Admin Inbox / Workspace association.
+6. Finance cleanup and analytics debt.
+7. PILA estimator research/planning when deliberately selected.
 
 ## Availability-Aware Contact / AI relationship
 
 Availability/AI remains a closed foundation and must not silently gain ownership over unrelated domains.
 
-The AI layer must not own/invent Finance data, Rental pricing/catalog/availability, project history or owner availability state.
+The AI layer must not own/invent Finance data, Rental pricing/catalog/availability, Patch technical state, project history or owner availability state.
 
 ## Next-action rule
 
-For the current Documents workstream:
+For the Patch workstream:
 
-1. inspect current `main` and current docs/code;
-2. one coherent branch/PR at a time;
-3. tests/CI green;
-4. explain result;
-5. obtain explicit owner authorization before merge;
-6. squash merge;
-7. run one representative production smoke for runtime changes when applicable;
-8. keep real numbering/bootstrap/issuance and other irreversible production operations explicit and separate.
+1. inspect current `main` and canonical docs;
+2. use the GitHub connector directly;
+3. one coherent branch/PR at a time;
+4. do not code before the initial data-model review is complete;
+5. tests/CI green before merge;
+6. current standing workflow allows automatic squash-merge when CI is green and there are no errors;
+7. if CI or another error occurs, stop and request the failing log;
+8. destructive/irreversible production actions remain explicit and separately authorized.
+
+**Exact continuation:** start from real patch/rider examples and derive the MVP data contract for Inputs + Stage I/O + Outputs. Do not start Visual Patch or migrations first.
 
 **Stability > novelty. Closed gates are not repeated without regression evidence.**
