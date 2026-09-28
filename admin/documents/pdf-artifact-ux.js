@@ -5,9 +5,9 @@
   window.SDLiveDocumentsPdfArtifactUx = true;
 
   const API = "/api/admin/documents";
-  const FINALIZE_WARNING_COPY = "This consumes a TEST number and freezes the snapshot. Real CC/INV series remain locked. The signed PDF is generated automatically from the frozen snapshot; artifact failure never releases the number and can be retried.";
   let registryCache = null;
   let registryLoading = null;
+  let syncQueued = false;
 
   function formatMoney(minor, currency) {
     const value = Number(minor || 0) / 100;
@@ -113,10 +113,7 @@
     if (frame) frame.removeAttribute("src");
     try {
       const pdfPath = `${API}/${encodeURIComponent(documentInfo.id)}/pdf`;
-      const response = await fetch(pdfPath, {
-        credentials: "include",
-        cache: "no-store"
-      });
+      const response = await fetch(pdfPath, { credentials: "include", cache: "no-store" });
       if (response.ok) {
         status.textContent = "PDF ready · private artifact";
         const download = document.createElement("a");
@@ -164,11 +161,16 @@
     }
   }
 
+  function environmentLabel(documentInfo) {
+    return String(documentInfo.seriesKey || "").startsWith("test:") ? "TEST" : "REAL";
+  }
+
   async function showIssuedDocument(documentInfo) {
     const shell = document.getElementById("documentEditor");
     const grid = shell?.querySelector(".document-editor-grid");
     const panel = ensureIssuedPanel();
     if (!shell || !panel) return;
+    const environment = environmentLabel(documentInfo);
     shell.classList.remove("documents-draft-preview-first");
     if (grid) grid.hidden = true;
     shell.hidden = false;
@@ -182,18 +184,18 @@
     const rev = document.getElementById("draftRevChip");
     const saveState = document.getElementById("draftSaveState");
     if (title) title.textContent = documentInfo.displayNumber || documentInfo.id;
-    if (kind) kind.textContent = documentInfo.status === "void" ? "Void TEST document" : "Finalized TEST document";
+    if (kind) kind.textContent = documentInfo.status === "void" ? `Void ${environment} document` : `Finalized ${environment} document`;
     if (rev) rev.textContent = "snapshot frozen";
     if (saveState) saveState.textContent = "Issued · immutable";
     panel.innerHTML = `
-      <span class="eyebrow">Issued TEST artifact</span>
+      <span class="eyebrow">Issued ${environment} artifact</span>
       <div class="documents-issued-status" data-issued-status>Checking signed PDF…</div>
       <div class="documents-issued-actions" data-issued-actions></div>
       <div class="documents-issued-preview" data-issued-preview hidden><iframe data-issued-pdf-frame title="Finalized PDF preview"></iframe></div>
       <h4>${String(documentInfo.displayNumber || documentInfo.id).replace(/[<>&]/g, "")}</h4>
-      <div class="documents-issued-number">${String(documentInfo.seriesKey || "TEST series").replace(/[<>&]/g, "")}</div>
+      <div class="documents-issued-number">${String(documentInfo.seriesKey || "Document series").replace(/[<>&]/g, "")}</div>
       <div class="documents-issued-meta">${String(documentInfo.clientName || "No client").replace(/[<>&]/g, "")} · ${formatMoney(documentInfo.totalMinor, documentInfo.currency)}</div>
-      <p>This TEST number and snapshot are already frozen. The draft editor is disabled for issued documents.</p>`;
+      <p>This ${environment} number and snapshot are already frozen. The draft editor is disabled for issued documents.</p>`;
     shell.scrollIntoView({ behavior: "smooth", block: "start" });
     await checkPdf(documentInfo, panel);
   }
@@ -252,31 +254,27 @@
     });
   }
 
-  function patchFinalizeCopy() {
-    const warning = document.querySelector(".documents-finalize-warning");
-    if (warning && warning.textContent !== FINALIZE_WARNING_COPY) {
-      warning.textContent = FINALIZE_WARNING_COPY;
-    }
-
+  function syncArtifactUi() {
+    installRegistryCapture();
+    cleanFxUi();
+    decorateRegistry();
     const saveState = document.getElementById("draftSaveState");
     if (saveState && /Finalized\s*·\s*(?:PDF pending(?: next gate)?|signed PDF generation requested)/i.test(saveState.textContent || "")) {
       const desired = "Finalized · signed PDF requested";
       if (saveState.textContent !== desired) saveState.textContent = desired;
     }
-
-    const notices = document.querySelectorAll("#documentsWorkspace .documents-notice");
-    for (const notice of notices) {
-      if (/Finalize is intentionally unavailable until PR 5/i.test(notice.textContent || "")) {
-        notice.innerHTML = "<strong>TEST artifact stage:</strong> Draft preview remains number/signature safe. TEST Finalize now freezes the snapshot, consumes only a TEST number and generates the signed PDF privately. Real CC/INV series remain locked.";
-      }
-    }
-
-    installRegistryCapture();
-    cleanFxUi();
-    decorateRegistry();
   }
 
-  patchFinalizeCopy();
-  const observer = new MutationObserver(patchFinalizeCopy);
-  observer.observe(document.body, { childList: true, subtree: true, characterData: true });
+  function queueSync() {
+    if (syncQueued) return;
+    syncQueued = true;
+    requestAnimationFrame(() => {
+      syncQueued = false;
+      syncArtifactUi();
+    });
+  }
+
+  syncArtifactUi();
+  const observer = new MutationObserver(queueSync);
+  observer.observe(document.body, { childList: true, subtree: true });
 })();
