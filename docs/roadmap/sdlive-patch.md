@@ -1,0 +1,1260 @@
+# SD.Live Patch — canonical product/data contract
+
+**Started:** 2026-09-28 — America/Bogota  
+**Status:** **ACTIVE DESIGN / DISCOVERY — NO SCHEMA OR RUNTIME AUTHORIZED**  
+**Canonical product/design contract:** this file  
+**Historical precursor:** `docs/roadmap/future-sdlive-patch-2026-08-27.md`  
+**Activation handoff:** `docs/checkpoints/handoff-sdlive-patch-activation-2026-09-28.md`
+
+> This document is the evolving canonical contract for SD.Live Patch while discovery is active. It records approved product decisions, boundaries, terminology, examples, unresolved questions and sequencing. It does **not** authorize D1 tables, migrations, APIs, Cloudflare resources, production state or runtime UI.
+
+## 1. Product statement
+
+SD.Live Patch is the technical source of truth for describing a show's signal system:
+
+- what operational signals exist;
+- how they are captured;
+- how they travel through devices and infrastructure;
+- how they are assigned to physical/network I/O;
+- how they map into one or more consoles;
+- how output purposes are generated and routed;
+- what technical state was planned, connected and verified;
+- what exact state was used at a named moment/event.
+
+The same structured technical model should eventually project into views such as:
+
+- Input List;
+- Output List;
+- Stage I/O;
+- console-specific input tables;
+- Patch Sheet;
+- Easy Patch / routing matrix;
+- Pre-production workspace;
+- Operation / show-day workspace;
+- Line Check;
+- house-vs-artist diff/repatch list;
+- Visual Patch;
+- printable/shareable exports.
+
+Those views are projections of one technical model. They are not separate sources of truth.
+
+## 2. What Patch is not
+
+Patch is not:
+
+- a generic spreadsheet replacement;
+- a clone of Patchy or another third-party product;
+- a console show-file editor;
+- a live mixing/control engine;
+- Dante Controller or another AoIP controller replacement;
+- Inventory source of truth;
+- REGISTRO/AppSheet event source of truth;
+- Finance source of truth;
+- a drawing tool where freehand graphics define routing;
+- a cable inventory/asset-tracking system.
+
+Visual Patch, when built, remains a projection of structured data. Drag/drop must never be the only way to edit the system.
+
+## 3. Current discovery sequence
+
+The current sequence is:
+
+1. Product Concept;
+2. Patchy/workflow benchmark;
+3. User Workflows;
+4. Terminology;
+5. MVP Scope;
+6. Data Contract;
+7. UX Contract;
+8. validate against 1–2 real SD.Live patches/riders as fixtures;
+9. Product Spec;
+10. Technical Roadmap;
+11. Schema;
+12. Implementation.
+
+Earlier activation docs proposed starting by auditing 3–5 real patch/rider examples. That remains useful validation material, but the current sequence deliberately defines the product/model first and then uses real patches to break/validate it before schema approval.
+
+No schema/runtime milestone begins until this contract is sufficiently stable and validated.
+
+## 4. Source-of-truth boundaries
+
+### 4.1 Patch
+
+Patch will own structured technical state such as sources, feeds, console assignments, outputs, devices, ports/endpoints, infrastructure, internal routing, connections, operational verification state, versions/snapshots and technical notes/files when those capabilities are implemented.
+
+Exact schema/table names are **not approved**.
+
+### 4.2 REGISTRO / AppSheet
+
+REGISTRO/AppSheet remain the source of truth for event/operations identity and workflow.
+
+Patch may link to a durable event ID, but must not become a second owner of:
+
+- work dates;
+- client workflow state;
+- billing/Finance state;
+- payment state;
+- AppSheet formulas or operational business logic.
+
+A Patch may exist without an Event and be linked later.
+
+### 4.3 Inventory
+
+Inventory remains a separate future domain. Patch may eventually read/reference/validate Inventory facts, but must not own stock counts, allocation or asset availability semantics.
+
+### 4.4 Files / R2
+
+Future Patch-managed files may include riders, stage plots, reference images, exports and technically supported console/configuration files. Storage/runtime details remain deferred until implementation planning.
+
+## 5. Core product invariants
+
+1. **Structured technical data is the source of truth.**
+2. **Source identity is independent from physical/console assignment.**
+3. **Logical console channels are independent from physical/network inputs.**
+4. **Output purpose is independent from the console-specific internal path that generates it.**
+5. **Devices expose real configurable ports/endpoints; do not assume symmetric I/O.**
+6. **Infrastructure is not forced to be a Device.**
+7. **Connections represent technical relationships, not individual cable assets.**
+8. **Incomplete/TBD is valid planning state and is different from Conflict.**
+9. **Configuration changes never silently destroy existing patch information.**
+10. **Profiles/templates accelerate creation but never silently override an existing configured instance.**
+11. **No protocol/vendor capability is invented. Unknown/unverified capabilities must remain explicitly unverified.**
+12. **Console/AoIP export or write-back may exist later only through verified adapters.**
+13. **Patch documents routing/configuration, not the mix.**
+
+## 6. Patch identity, lineage and event state
+
+### 6.1 Patch
+
+A `Patch` is a concrete, editable, self-contained technical configuration.
+
+A Patch can:
+
+- exist standalone;
+- be linked to an Event later;
+- be reused as the starting point for another Patch;
+- be derived from another Patch;
+- be compared with any other Patch even when there is no lineage relationship.
+
+Do not create fundamentally different storage entities for standalone/master/event patch types unless later evidence requires it.
+
+### 6.2 Master is a semantic role, not a different species of object
+
+A Patch can act as the master/canonical base for future derived work.
+
+Expected UX concepts:
+
+- `Start blank`;
+- `Use existing Patch as starting point`.
+
+A derived Patch can diverge without mutating the master.
+
+Alternate plans can be siblings derived from the same master.
+
+### 6.3 Event Patch / Working State
+
+An Event may work from a Patch derived from a Master.
+
+Show-day changes affect the Event working state first. They must **not** silently change the Master.
+
+A future action may allow selected changes to be applied back to the Master deliberately.
+
+Conceptual relationship:
+
+```text
+Master Patch
+  -> Event Patch / Working State
+       -> Pre-production view
+       -> Operation view
+       -> Performance Snapshot(s)
+```
+
+### 6.4 Pre-production and Operation are views over the same Event state
+
+Do not duplicate the technical data into separate pre-production and operation copies.
+
+**Pre-production view** emphasizes:
+
+- planning;
+- artist/house prep;
+- cajetines/prepatches;
+- alternatives;
+- staged/ready/TBD information;
+- system completion and conflicts.
+
+**Operation view** emphasizes:
+
+- current/next/changeover;
+- what is connected;
+- what is verified;
+- important warnings;
+- damaged ports/lanes in use;
+- unresolved problems;
+- concise show-day actions.
+
+## 7. History and Snapshots
+
+Patch needs both:
+
+### 7.1 Automatic History
+
+History records relevant technical changes over time and answers:
+
+> What changed?
+
+### 7.2 Manual named Snapshots
+
+A Snapshot is a frozen named state such as:
+
+- Rehearsal;
+- Soundcheck;
+- Show;
+- Venue-specific performance state.
+
+It answers:
+
+> Exactly how was the Patch at that moment?
+
+Snapshots preserve historical state even if the working Patch or Master later changes.
+
+Snapshot semantics should be immutable unless later product review finds a compelling reason otherwise.
+
+## 8. Sources, Source Groups and Feeds
+
+Terminology in this section is approved conceptually but some final labels remain provisional.
+
+### 8.1 Source
+
+A `Source` is an atomic operational signal identity chosen by the user.
+
+Examples:
+
+- `Bass`;
+- `Lead Vocal`;
+- `Playback L`;
+- `Playback R`;
+- `OH L`;
+- `OH R`;
+- `Snare Top`;
+- `Snare Bottom`.
+
+A Source remains the same when physical or console routing changes.
+
+Example:
+
+`Bass` remains `Bass` whether it arrives at `Rio A/In 1`, `Rio B/In 24` or another console input.
+
+A microphone/DI choice also does not redefine the Source identity.
+
+### 8.2 Source atomicity is operational, not inferred from the instrument
+
+The system must not decide source granularity automatically from physical reality.
+
+Examples:
+
+- `Snare Top` and `Snare Bottom` are normally two Sources.
+- `OH L` and `OH R` are two Sources.
+- a guitar cabinet with SM57 + R121 may be represented either as one Source with two Feeds or as two grouped Sources, depending on the operator's intended processing/documentation model.
+
+The data model should avoid making later granularity changes unnecessarily destructive.
+
+### 8.3 Source Group — provisional name
+
+Sources may be related conceptually without forcing console stereo/linking/processing behavior.
+
+Examples:
+
+```text
+Playback
+  - Playback L
+  - Playback R
+
+Overheads
+  - OH L
+  - OH R
+
+Snare
+  - Snare Top
+  - Snare Bottom
+```
+
+Possible future hierarchy such as `Drums > Snare > Top/Bottom` should not be blocked, but deep hierarchy is not an MVP requirement.
+
+### 8.4 Feed — provisional concept
+
+A Feed represents a particular capture/representation/path of a Source before downstream routing branches.
+
+Example:
+
+```text
+Bass
+  -> DI feed
+  -> Amp Mic feed
+```
+
+The same Feed can branch to multiple destinations and remains the same Feed:
+
+```text
+Bass DI Feed
+  -> FOH
+  -> MON
+  -> Record
+```
+
+Do not duplicate a Feed merely because it reaches multiple consoles/destinations.
+
+The exact lifecycle/materialization of a Feed remains an open design question. UX should use progressive disclosure and must not show meaningless `Feed Main` rows for every simple Source.
+
+Capture and console assignment may be completed in either order; incomplete fields are valid planning state.
+
+## 9. Console model
+
+### 9.1 Console Instance
+
+A Console Instance is the concrete configured console used in a Patch.
+
+It may be created from:
+
+- a verified reusable profile;
+- a custom reusable profile;
+- a blank/manual configuration.
+
+A blank console is valid: the user can define the real inputs, I/O, internal path families and capabilities as required.
+
+### 9.2 Console Profile
+
+Profiles are accelerators/validators, not authority over an existing instance.
+
+A configured Console Instance can deviate from its source Profile for:
+
+- installed cards;
+- enabled options;
+- show-specific configuration;
+- actual mode/capacity.
+
+If a Profile changes later, an existing instance must not auto-update.
+
+Expected workflow:
+
+- `Keep current configuration`;
+- `Review & Update`;
+- future selective update/diff where useful.
+
+Profile changes never rewrite historical Snapshots.
+
+### 9.3 Logical Console Channel
+
+A console channel is a logical processing slot in that console.
+
+`Ch 1`, `Ch 2`, etc. are real logical slots, but they are **not** Source identities and they are **not** inherently tied to physical input socket numbers.
+
+The model must separate:
+
+1. physical/network input endpoint;
+2. console input routing/patch assignment;
+3. logical Console Channel.
+
+The same physical/network input may feed more than one logical channel when the console permits it.
+
+Moving/reordering a documentation row must never silently change technical routing.
+
+### 9.4 Per-console Input views
+
+When the same Feed reaches multiple consoles, each console gets its own Inputs table/view.
+
+Example:
+
+```text
+Bass DI Feed
+  -> FOH Ch 15
+  -> MON Ch 9
+```
+
+These views share the same underlying Source/Feed identity; they do not create duplicate Sources.
+
+### 9.5 Mono/stereo/link behavior belongs to console representation
+
+Atomic Sources such as `Playback L` and `Playback R` may map to:
+
+- two independent mono channels;
+- two linked channels;
+- one stereo logical channel;
+- other console-specific representation.
+
+Source identity does not force one representation.
+
+### 9.6 Mix parameters are out of scope
+
+Patch is not a gain-staging or mixing application.
+
+Do not model/control values such as:
+
+- analog gain values;
+- digital trim values;
+- EQ;
+- dynamics;
+- faders;
+- mix levels.
+
+Specific routing/configuration metadata may be included when it matters to system behavior. `Gain Compensation active/inactive` is explicitly desired as a future routing/shared-preamp fact.
+
+## 10. Outputs
+
+### 10.1 Output Path
+
+An `Output Path` represents the logical/system purpose of an output, independent from the socket or console-specific internal family that creates it.
+
+Examples:
+
+- `Main L`;
+- `Main R`;
+- `Subs`;
+- `Front Fill`;
+- `Delay`;
+- `Broadcast Feed`;
+- named monitor/IEM destinations where appropriate.
+
+The Output Path identity remains the same if its physical/network endpoint changes.
+
+### 10.2 Do not hardcode universal Bus/Group/Aux/Matrix/Main semantics
+
+Console architectures differ.
+
+SD.Live must not assume every platform uses the same universal taxonomy for:
+
+- groups;
+- buses;
+- auxes;
+- matrices;
+- mains.
+
+A console profile/instance defines the internal path families and capabilities available on that console.
+
+The same system Output Path may be generated by different console-specific resources:
+
+```text
+Front Fill
+  <- Matrix 3   on one console
+  <- Bus 12     on another
+  <- Main C     on another
+  <- Aux 8      on another
+```
+
+The core owns purpose; the console configuration maps an internal resource to that purpose.
+
+## 11. Devices
+
+### 11.1 Device
+
+A `Device` is equipment with a functional technical role in the signal system.
+
+Examples:
+
+- console;
+- digital stagebox;
+- interface;
+- splitter;
+- DI;
+- converter;
+- amplifier/processor where technically relevant.
+
+A splitter is always a Device because it performs explicit branching/function.
+
+### 11.2 Device Instance vs Device Profile
+
+A Device Instance is the concrete configured device in a Patch.
+
+A Device Profile may predefine known capabilities/ports, but a Device can always be configured manually if:
+
+- no profile exists;
+- the profile is unverified;
+- the real instance differs from the standard model.
+
+Verified and custom profiles use the same general mechanism but should preserve provenance/confidence.
+
+### 11.3 Device capabilities are instance-aware
+
+Do not assume a model has one fixed I/O capability under every configuration.
+
+Available capabilities may depend on:
+
+- sample rate;
+- installed card/module;
+- operating mode;
+- license/capability enabled;
+- firmware when it materially changes capability;
+- redundancy/configuration mode.
+
+The instance configuration determines what is actually available in that Patch.
+
+## 12. Ports and Endpoints
+
+### 12.1 Port definition
+
+A `Port` is an addressable technical endpoint of a Device that can participate in routing/connections.
+
+Devices are defined by their actual Ports, **not** by symmetric global counts such as `N inputs + N outputs`.
+
+Valid asymmetric example:
+
+```text
+Device X
+  AES In 1
+  AES In 2
+  AES In 3
+  AES In 4
+  AES Out 1
+  AES Out 2
+```
+
+### 12.2 Port properties
+
+Conceptually separate at least:
+
+- identity/label/index;
+- direction: input/output/bidirectional where appropriate;
+- connector/physical form: XLR, BNC, RJ45, optical, multipin, etc.;
+- signal/protocol: Analog, AES3, Dante, AES67, MADI, SoundGrid, etc.;
+- capabilities;
+- active configuration/mode when configurable;
+- capacity/lane structure when compound.
+
+Do not infer signal compatibility from connector shape alone.
+
+Example:
+
+- XLR Analog != XLR AES3.
+
+### 12.3 Physical and virtual/network endpoints are both first-class
+
+Ports/endpoints may be physical sockets or virtual transport channels.
+
+Examples:
+
+- `Analog In 12`;
+- `AES Out 1`;
+- `Dante Rx 45`;
+- `Dante Tx 17`;
+- `MADI 24`;
+- `SoundGrid Ch 32`.
+
+The model must not assume every AoIP/transport protocol behaves like Dante.
+
+### 12.4 Transport capability is device-specific
+
+Do not assume `Dante = 64x64` or any other global channel count.
+
+Each Device Profile/Instance describes the real Tx/Rx or equivalent capability for its actual configuration.
+
+Capacity and individual endpoints are separate concepts: the product can know that a device has a 64-channel capacity without forcing 64 empty rows to dominate the UI.
+
+### 12.5 Configurable/multi-mode Ports
+
+A single physical Port may support multiple modes/protocols.
+
+Example:
+
+```text
+Port: XLR 1
+Connector: XLR
+Supported modes:
+  - Analog In
+  - AES3 In
+Active mode:
+  - AES3 In
+```
+
+It remains the same physical Port identity when its mode changes.
+
+If a mode change makes an existing Connection invalid, preserve the Connection and mark it `Conflict / Invalid`. Never delete/rewrite it silently.
+
+## 13. Capacity, Availability, Assignment and Condition
+
+These are separate concepts.
+
+### 13.1 Capacity
+
+What the configured Device/Port can technically provide.
+
+### 13.2 Availability
+
+What may be used in this Patch/Event.
+
+Approved states:
+
+- `Available`;
+- `Reserved`;
+- `Unavailable`.
+
+### 13.3 Assignment
+
+Whether a Port/lane is currently free or assigned.
+
+Conceptually:
+
+- `Free`;
+- `Assigned`.
+
+### 13.4 Condition
+
+Approved technical condition states:
+
+- `OK`;
+- `Damaged`.
+
+Do **not** add `Unknown / Not tested` as a condition state. Testing/readiness is already represented by operational state.
+
+A Port can validly be:
+
+`Damaged + Available + Assigned`
+
+because a damaged channel may still work, be intermittent or have been marked damaged by mistake.
+
+`Damaged` therefore creates a strong warning, not a hard block.
+
+### 13.5 Availability warnings
+
+Approved behavior:
+
+- `Reserved + Assigned` -> important warning, allowed;
+- `Unavailable + Assigned` -> critical warning, allowed;
+- `Damaged + Assigned` -> important/critical visible warning, allowed.
+
+Patch should inform the operator without assuming it knows more than the technician on site.
+
+### 13.6 Device-wide damage/unavailability is not the primary workflow
+
+Operational defects normally belong to specific Ports/Lanes.
+
+If an entire device fails in real life, it is usually replaced and often remains patched equivalently. Patch should not require a special `Replace Device` workflow merely to document that physical swap.
+
+Only update Patch when the replacement changes technically relevant configuration/routing/capacity.
+
+## 14. Compound Ports, multipins and lanes
+
+A multi-channel physical connector is a compound Port with independent lanes/endpoints.
+
+Example:
+
+```text
+Multipin A
+  Lane 1
+  Lane 2
+  ...
+  Lane 24
+```
+
+The parent represents the physical connector. Lanes represent independent signal paths.
+
+### 14.1 Lane mappings
+
+Mappings do not need to be continuous or 1:1.
+
+Valid examples:
+
+```text
+Lane 1 -> Lane 1
+Lane 2 -> Lane 2
+Lane 4 -> Lane 4
+```
+
+or:
+
+```text
+Lane 1 -> Lane 5
+Lane 2 -> Lane 6
+Lane 4 -> Lane 8
+```
+
+Unused/skipped lanes are valid and must remain explicit rather than being compacted automatically.
+
+### 14.2 Physical connector state vs lane use
+
+A compound Port can be physically connected even when only some lanes are used.
+
+Example:
+
+```text
+Multipin A: Connected
+  Lane 1  Kick    Used
+  Lane 2  Snare   Used
+  Lane 3          Unused
+  Lane 4  Bass    Used
+```
+
+Unused lanes do not make the parent connection incomplete.
+
+### 14.3 Damage on compound Ports
+
+If an entire multipin/compound Port is marked Damaged, its lanes inherit the damage warning by default.
+
+Partial damage is represented by specific damaged lanes while the other lanes remain usable.
+
+Damage affects warning/condition; it does not automatically create a hard technical block.
+
+## 15. Infrastructure / Cabling
+
+Infrastructure is distinct from Device.
+
+Examples:
+
+- wall plates;
+- cajetines;
+- floor pockets;
+- patch panels;
+- fixed venue runs;
+- subsnakes;
+- multipairs/multicores;
+- fanouts/breakouts;
+- extensions.
+
+These transport/present signal paths without being forced into Device semantics.
+
+### 15.1 Infrastructure can expose Ports/Endpoints
+
+Example:
+
+```text
+Stage Wallplate / XLR 12
+  <-> Fixed Run
+FOH Panel / XLR 12
+```
+
+The wallplate/panel can expose connectable endpoints without being modeled as Devices.
+
+### 15.2 Fixed vs Temporary connections
+
+Connections may be classified operationally as:
+
+- `Fixed` — installed/permanent infrastructure;
+- `Temporary` — show/event connection that is physically made for the event.
+
+Fixed infrastructure participates in signal flow but does not normally require `Connected` to be re-confirmed on every event.
+
+Temporary connections participate in the show-day planned/connected/verified workflow.
+
+### 15.3 Optional Venue Infrastructure Profile
+
+Reusable fixed venue mapping is valuable, but it must not become mandatory for ordinary patches.
+
+A simple show should still be able to represent a concise route without documenting every wall plate or permanent cable run.
+
+## 16. Stage Position
+
+`Stage Position` represents a physical zone such as:
+
+- Drum Riser;
+- Stage Left;
+- Stage Right;
+- FOH;
+- Amp World.
+
+It can group Sources and technical resources located there.
+
+Stage Position is **not** itself a routing endpoint and does not own magical port counts.
+
+Its technical capacity is derived from resources located/assigned there, such as:
+
+- subsnakes;
+- wall plates;
+- stageboxes;
+- distribution points.
+
+## 17. Connections
+
+### 17.1 Connection definition
+
+A `Connection` is an explicit point-to-point technical relationship between endpoints.
+
+Examples:
+
+```text
+J48 XLR Out -> Rio A / In 12
+Rio A Dante Tx 12 -> CL5 Dante Rx 12
+Subsnake A / Ch 3 -> House Multicore / Ch 3
+```
+
+### 17.2 Branching/splits use multiple Connections
+
+A split is not a special magical Connection type.
+
+A splitter Device exposes its input/output Ports and branching is represented by multiple point-to-point Connections.
+
+Example:
+
+```text
+Splitter Input 12
+  -> Output A12 -> FOH
+  -> Output B12 -> MON
+  -> Output C12 -> Broadcast
+```
+
+### 17.3 Grouped physical actions
+
+A multipin connection may appear as one physical action in Operation while representing multiple lane-level Connections internally.
+
+This supports festival workflows where pre-patched boxes are changed by moving one multipin rather than pretending every channel is manually repatched.
+
+### 17.4 Connections do not track cable assets
+
+Do not micromanage cable IDs, lengths or Inventory assets inside normal Connections.
+
+Patch documents the technical relationship between endpoints, not which individual XLR cable from a stock room was used.
+
+## 18. Internal Routing
+
+External Connections and routing inside a Device are different concepts.
+
+Example:
+
+```text
+Mic -> Rio Analog In 12       [external Connection]
+Rio Analog In 12 -> Dante Tx 12 [Internal Routing]
+Dante Tx 12 -> CL5 Dante Rx 12  [external Connection]
+```
+
+A Device may define Internal Routing that is:
+
+- fixed by profile/device architecture;
+- configurable in the Device Instance.
+
+This mechanism also supports:
+
+- stageboxes;
+- interfaces;
+- splitters;
+- protocol bridges/converters;
+- more complex AoIP devices.
+
+## 19. Connection operational state
+
+Technical design state and physical show-day readiness are separate.
+
+For Temporary Connections, approved operational progression is:
+
+- `Planned`;
+- `Connected`;
+- `Verified`.
+
+Example:
+
+```text
+Kick -> Subsnake                Verified
+Subsnake -> Splitter            Verified
+Splitter -> Rio                 Connected
+Rio -> console mapping          Planned
+```
+
+The overall route status is derived from the relevant underlying segments rather than requiring a second manually-maintained route status.
+
+This state is expected to feed future Operation and Line Check views.
+
+Fixed infrastructure is treated differently and normally does not require per-event `Connected` confirmation.
+
+## 20. Incomplete/TBD vs Conflict
+
+A partially known route is valid during planning.
+
+Example:
+
+```text
+Kick -> Subsnake A / Ch 1 -> TBD -> FOH Ch 1
+```
+
+`Incomplete / TBD` is **not** an error.
+
+Use `Conflict` for contradictory/impossible technical assignments.
+
+## 21. Validation and routing rules
+
+### 21.1 Physical input exclusivity
+
+For a normal input endpoint:
+
+> one physical/network input endpoint accepts at most one Feed unless the device/endpoint is explicitly modeled with different capability.
+
+Two distinct Feeds assigned to the same ordinary input endpoint -> **hard error**.
+
+### 21.2 Output fan-out
+
+One logical output/path may be patched to multiple physical/network output endpoints.
+
+Valid:
+
+```text
+Main L
+  -> Local Out 1
+  -> Rio Out 5
+  -> Dante Tx 17
+```
+
+### 21.3 Multiple mixes into the same output endpoint
+
+Two different logical mixes/output paths assigned simultaneously to the same ordinary physical/network output endpoint -> **hard error**.
+
+Example:
+
+```text
+Main L -> Rio Out 1
+Front Fill -> Rio Out 1
+```
+
+is invalid unless a future explicitly-modeled device capability demonstrates otherwise.
+
+### 21.4 Compatibility validation
+
+Patch validates endpoint compatibility using signal/protocol/capabilities/configuration, not merely connector shape.
+
+Approved behavior:
+
+- verified compatible -> allowed;
+- verified incompatible -> hard error;
+- unknown/unverified profile/capability -> warning, do not falsely block.
+
+### 21.5 Converters/adapters must be explicit
+
+Patch never invents a conversion to make an incompatible route look valid.
+
+Invalid:
+
+```text
+AES Out -> Analog In
+```
+
+Valid only when the converter is explicitly present:
+
+```text
+AES Out -> AES/Analog Converter -> Analog In
+```
+
+### 21.6 Configuration changes preserve broken references
+
+If changing Device/Port mode/capability invalidates existing routing:
+
+- keep the existing Connection;
+- mark it Conflict/Invalid;
+- show what became incompatible;
+- never silently delete or rewrite it.
+
+## 22. AoIP and digital transport direction
+
+The core must support multiple transport families without assuming one protocol model.
+
+Potential examples include:
+
+- Dante;
+- AES67;
+- SoundGrid;
+- MADI;
+- AES50;
+- Optocore;
+- AVB/Milan;
+- other verified protocols required by real workflows.
+
+Initial model requirements:
+
+- represent physical and virtual transport endpoints;
+- represent protocol/capability per Device Instance;
+- represent internal routing and point-to-point/subscription intent where appropriate;
+- preserve enough structure for future verified adapters/export.
+
+Deferred protocol-specific configuration includes, where relevant:
+
+- subscriptions;
+- clock;
+- sample rate rules beyond capacity effects;
+- primary/secondary networks;
+- VLAN;
+- multicast/unicast;
+- network latency;
+- IP addressing;
+- protocol-specific export/apply.
+
+These are future subdomains, not MVP requirements unless a real validation fixture proves they are necessary earlier.
+
+## 23. Future Console Sync / Control Bridge
+
+Very future direction: Patch may write verified routing/configuration data to consoles, offline editors or network-control tools through vendor/platform adapters.
+
+Conceptual architecture:
+
+```text
+Patch desired technical state
+  -> verified platform adapter
+       -> OSC / RCP / MIDI / API / proprietary verified protocol
+            -> console / editor / network tool
+```
+
+The Patch core must remain protocol/vendor-independent.
+
+Potential future write targets include only verified supported facts such as:
+
+- channel names;
+- input/output routing;
+- source/channel assignments;
+- stereo/link configuration;
+- colors/metadata;
+- network routing/subscriptions where safely supported.
+
+This is **not** authorization to become a mixing engine. EQ, dynamics, faders, mix levels and gain-staging control remain outside the Patch product direction unless explicitly reconsidered much later.
+
+Future writes should be previewable/diffable and never silently applied.
+
+## 24. UX contract established so far
+
+### 24.1 Progressive disclosure
+
+Simple shows must remain simple.
+
+The UI should not force every Source to expose every internal concept when unnecessary. Advanced concepts such as multiple Feeds, Infrastructure, compound Ports and transport details appear when used.
+
+### 24.2 Flexible completion order
+
+The user may know capture before console assignment or console assignment before capture.
+
+Both are valid:
+
+```text
+Bass -> J48 -> channel TBD
+Bass -> FOH Ch 15 -> capture TBD
+```
+
+Do not force artificial completion order.
+
+### 24.3 Documentation reorder is not routing
+
+Reordering rows for readability must never silently change:
+
+- physical/network input assignment;
+- Console Channel assignment;
+- routing;
+- Source identity.
+
+### 24.4 Desktop / iPad / iPhone are deliberate surfaces
+
+Desktop supports dense editing and system configuration.
+
+iPad/iPhone should get purposeful show-day/operation interactions rather than a squeezed desktop table.
+
+Exact responsive contracts remain open.
+
+### 24.5 Pre-production vs Operation
+
+Both are deliberate views over the same Event Patch working state, with different information priority. They are not duplicated datasets.
+
+## 25. MVP / near-term / later scope
+
+### 25.1 Model/MVP discovery now
+
+Design now must cover enough structure for:
+
+- Project/Patch identity;
+- standalone + derived lineage;
+- Master/Event semantics;
+- Sources and conceptual grouping;
+- Feed semantics;
+- one or more Consoles;
+- Logical Console Channels;
+- console input routing;
+- Output Paths;
+- Device Instances/Profiles;
+- Ports/Endpoints;
+- configurable device modes/capacity;
+- Infrastructure;
+- Connections;
+- Internal Routing;
+- compound Ports/lanes;
+- Fixed vs Temporary paths;
+- Capacity/Availability/Assignment/Condition;
+- operational Planned/Connected/Verified state;
+- incomplete/TBD vs conflicts;
+- history + snapshots;
+- event linkage boundary;
+- stable IDs/order semantics;
+- validation rules;
+- desktop/iPad/iPhone UX contract.
+
+### 25.2 Near-term product surfaces after model approval
+
+Likely include:
+
+- fast table editor;
+- bulk patching/quick fill;
+- console-specific Inputs views;
+- Output views;
+- Stage I/O views;
+- printable Patch Sheet;
+- device/profile helpers;
+- diff/version compare;
+- house-vs-artist comparison foundation;
+- show-day Operation state;
+- files/references where needed.
+
+### 25.3 Later
+
+- Visual Patch;
+- richer line check workflow / offline PWA;
+- collaboration/read-only sharing/history UI;
+- RF/show-tech domains;
+- gear/cable quantity derivation where useful without cable asset micromanagement;
+- festival/changeover tooling;
+- deeper equipment profiles;
+- networking and power domains;
+- manuals/intelligent assistance;
+- verified console/network export/apply adapters.
+
+### 25.4 Explicitly not now
+
+- D1 tables/migrations;
+- API routes;
+- runtime UI;
+- new Cloudflare resources;
+- production state;
+- Visual Patch implementation;
+- console show-file reverse engineering;
+- live console mixing/control;
+- Inventory ownership;
+- AI/manual ingestion implementation;
+- protocol-specific network controller replacement.
+
+## 26. Patchy benchmark principles retained
+
+Patchy is a workflow/product benchmark, not a schema or UI template.
+
+Useful high-level benchmark ideas include:
+
+- build rig/system;
+- patch signals;
+- preserve event/version state;
+- share/print useful technical documents;
+- progressive complexity;
+- routing matrix/Easy Patch style workflows;
+- live technical document mentality.
+
+SD.Live should improve on the conceptual separation between:
+
+- Source;
+- Feed;
+- Device/Port;
+- Connection;
+- Console Channel;
+- Output Path;
+- Patch data vs Patch Sheet view.
+
+Do not copy proprietary code, branding, text or pixel-level UI.
+
+## 27. Validation fixtures before schema approval
+
+Before schema design, validate this contract against 1–2 real Patch/rider examples representative of actual SD.Live work.
+
+The fixtures should intentionally try to break the model, including examples such as:
+
+- multiple consoles;
+- stagebox + local I/O;
+- splitters;
+- DI thru paths;
+- mono/stereo/linked console representations;
+- multiple feeds from one operational source;
+- independent grouped sources;
+- festival multipins/prepatch/changeover;
+- output fan-out;
+- asymmetric device I/O;
+- transport/network endpoints;
+- TBD planning state;
+- damaged/reserved/unavailable ports;
+- venue fixed infrastructure where useful.
+
+The goal is not to fit the fixture by adding one-off fields. The goal is to verify that the general model explains the real workflow cleanly.
+
+## 28. Open questions — discovery continues here
+
+The following remain unresolved or intentionally provisional:
+
+1. final terminology and exact lifecycle for `Feed`;
+2. whether Source Group needs hierarchy in MVP or only future compatibility;
+3. exact capture representation for microphones vs DIs vs other front-end devices;
+4. 48V documentation semantics and where it belongs;
+5. whether/how headamp ownership must be represented apart from Gain Compensation state;
+6. exact stable-ID and ordering contract;
+7. exact Event link/pinning behavior;
+8. detailed console internal-path capability vocabulary;
+9. Groups/DCAs and other non-output console organizational constructs;
+10. exact files/notes/contacts/folders scope in MVP;
+11. collaboration/sharing/security contract;
+12. responsive desktop/iPad/iPhone layouts;
+13. snapshot/history retention and diff UX details;
+14. exact house-vs-artist comparison semantics;
+15. migration/version policy after a schema eventually exists.
+
+No schema should be inferred from the conceptual names in this document.
+
+## 29. Decision log — 2026-09-28 discovery session
+
+The following decisions are explicitly preserved so they are not lost if terminology evolves:
+
+1. Patch can be standalone or derived; Master is a role/lineage concept, not a fundamentally different object type.
+2. Patches can be compared even without lineage.
+3. A Source keeps identity when physical input, console channel, mic or DI assignment changes.
+4. Sources are atomic operational identities; stereo/linked console behavior is separate.
+5. Optional Source Groups relate atomic Sources without forcing console behavior.
+6. One Source may have multiple Feeds when operationally useful; one Feed can branch to multiple destinations without becoming multiple Feeds.
+7. Snare Top/Bottom are normally two Sources; guitar multi-mic can intentionally be represented either as one Source/multiple Feeds or grouped Sources.
+8. Capture and console assignment may be completed in either order; incomplete is valid.
+9. Each console gets its own Inputs table/view while underlying Source/Feed identity remains shared.
+10. Physical/network input endpoint, console routing and logical Console Channel are separate concepts.
+11. Same input/feed may map to multiple logical channels when console capability permits.
+12. Gain/trim/EQ/dynamics/fader/mix-level documentation/control is out of scope; Gain Compensation active/inactive is a desired routing fact.
+13. Future verified console/editor write-back is desirable, but the core is protocol-independent and not a mixing engine.
+14. Devices and Infrastructure are separate families.
+15. Wall plates/cajetines/patch panels/subsnakes/multipairs/fanouts/fixed runs are Infrastructure.
+16. A splitter is always a Device.
+17. Stage Position is physical grouping; technical capacity comes from resources located there.
+18. Reusable Venue Infrastructure is optional, never required for every Patch.
+19. Festival multipin workflows must be representable as grouped physical actions over lane-level routing.
+20. Master, Pre-production and Operation are distinct concepts; Pre-production/Operation are views over the same Event working state.
+21. Event changes never silently mutate Master; future apply-back must be deliberate.
+22. Automatic History and manual named Snapshots are both required concepts.
+23. Output purpose is independent from physical socket and console-specific Bus/Matrix/Main/Aux taxonomy.
+24. Console internal path families/capabilities are profile/instance-defined and customizable.
+25. Blank/custom consoles are valid; profiles are optional accelerators.
+26. Existing instances do not auto-update when a profile changes; preserve vs review/update is user-controlled.
+27. Devices expose configurable asymmetric Ports; no symmetric input/output assumption.
+28. Virtual/network transport endpoints are first-class Ports/endpoints.
+29. AoIP capacity/configuration is device-specific; do not assume one Dante model/count.
+30. Device capability may depend on sample rate, cards, mode, licenses, firmware or redundancy configuration.
+31. Normal physical input conflict: two Feeds into one ordinary input endpoint is a hard error.
+32. Output fan-out from one logical output to multiple output endpoints is allowed.
+33. Two different logical mixes into one ordinary output endpoint is a hard error.
+34. Capacity, Availability and Assignment are distinct.
+35. Availability states: Available / Reserved / Unavailable.
+36. Reserved+Assigned is an important warning; Unavailable+Assigned is a critical warning, both allowed.
+37. Connection = point-to-point technical relationship.
+38. Splits/fan-outs are represented through explicit device/infrastructure structure plus multiple Connections.
+39. Routes may remain Incomplete/TBD during planning; this is not Conflict.
+40. Temporary Connection operational states: Planned / Connected / Verified; route state is derived.
+41. Devices can expose Internal Routing separate from external Connections.
+42. Infrastructure can expose endpoints and fixed internal runs without becoming Devices.
+43. Connections distinguish Fixed vs Temporary where operationally useful.
+44. Individual cable asset IDs/lengths are intentionally not part of normal Connection tracking.
+45. Verified incompatible endpoints create hard errors; unknown/unverified compatibility creates warnings.
+46. Conversion must be represented by an explicit converter Device; Patch never invents it.
+47. Connector shape, signal/protocol and direction are separate Port properties.
+48. One physical Port may support multiple modes; active mode belongs to the configured instance.
+49. Mode/config changes preserve now-invalid Connections and mark them Conflict instead of silently deleting them.
+50. Compound Ports contain independent lanes; lane mappings may skip channels and need not be 1:1.
+51. Parent compound connector physical state is separate from lane Used/Unused/TBD/Conflict state.
+52. Condition is separate from Availability/Assignment/Operational state.
+53. Condition states are intentionally only OK / Damaged; no `Unknown / Not tested` condition state.
+54. Damaged is a strong warning, not a hard block; damaged ports/lanes may still be used.
+55. A fully damaged compound Port can propagate damage warning to lanes; partial damage can live on individual lanes.
+56. Device-wide failure is not a special replacement workflow by default; if replacement is technically equivalent the Patch may remain unchanged.
+
+## 30. Exact continuation
+
+Continue discovery with **Sources -> Feeds -> Console Channels** and reconcile the remaining provisional terminology/lifecycle into a coherent user workflow.
+
+Then continue through remaining Output/console internal routing, stable IDs/order, files/event links and UX contracts.
+
+After the model is sufficiently stable, validate it against 1–2 real Patch/rider fixtures. Only after those fixtures fail to expose a structural gap should Product Spec -> Technical Roadmap -> Schema begin.
+
+**Do not create D1 tables, migrations, runtime routes, Visual Patch or production resources from this document alone.**
