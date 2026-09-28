@@ -43,6 +43,14 @@
     document.body.appendChild(script);
   }
 
+  function loadTestCleanupUx() {
+    if (document.querySelector("script[data-sdlive-documents-test-cleanup]")) return;
+    const script = document.createElement("script");
+    script.src = "/admin/documents/test-cleanup-ux.js?v=20260928-1";
+    script.dataset.sdliveDocumentsTestCleanup = "true";
+    document.body.appendChild(script);
+  }
+
   function issuedPanel() {
     return document.getElementById("issuedDocumentPanel");
   }
@@ -85,6 +93,7 @@
   loadRevisionUx();
   loadPreviewFitUx();
   loadMobileWebappUx();
+  loadTestCleanupUx();
 
   document.addEventListener("click", (event) => {
     const target = event.target instanceof Element ? event.target : null;
