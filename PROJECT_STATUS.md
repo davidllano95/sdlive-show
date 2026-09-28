@@ -4,12 +4,12 @@
 
 | Campo | Valor |
 |---|---|
-| Última reconciliación | **2026-09-27 — America/Bogota** |
-| GitHub `main` verificado | **`561cfebbf059568fb028d2a76c28b275eebdbcad` · PR #275** |
+| Última reconciliación | **2026-09-27 / 2026-09-28 — America/Bogota** |
+| Documents runtime base verificado | **`32f371277f8ba7911c98494a5ea08767303f2a24` · PR #295** |
 | Producción | `https://sdlive.show` |
-| Active Gate | **SD.Live Documents v1 — Finalize production gate pending** |
-| Documents current code | **Storage + domain/finalize core + profiles/signature + draft/editor/preview + visual system merged through #275** |
-| Documents irreversible state | **Real Finalize/real sequences/PDF NOT production-enabled** |
+| Active Gate | **SD.Live Documents v1 — real-series production gate pending** |
+| Documents current code | **Draft/Preview + TEST Finalize + immutable snapshot + private signed PDF + inline viewer + TEST corrections/revisions + approved v1 visual templates merged through #295** |
+| Documents irreversible state | **TEST issuance/artifacts enabled; real `samuel:CC` / `samuel:INV` bootstrap and real-number issuance remain locked** |
 | PILA | **Backlog / research candidate** |
 | WhatsApp owner control | **PR #246 merged; rollout intentionally paused** |
 | Bloqueado | **Generic Finance write-back / D1 Finance mirror / bidirectional sync** |
@@ -18,25 +18,24 @@
 
 1. GitHub `main` + comportamiento verificado en producción;
 2. schema/config actual;
-3. checkpoint/handoff fechado más reciente;
-4. este archivo;
-5. `README.md`;
-6. `ROADMAP_MASTER_CHECKLIST.md`;
-7. docs/prompts históricos.
+3. `docs/operations/documents-v1-maintenance.md` for Documents maintenance/versioning;
+4. checkpoint/handoff fechado más reciente;
+5. este archivo;
+6. `README.md`;
+7. `ROADMAP_MASTER_CHECKLIST.md`;
+8. docs/prompts históricos.
 
 **Stability > novelty. `MERGED != PRODUCTION VERIFIED`. `CORE IMPLEMENTED != PRODUCTION ENABLED`.**
 
-## Workflow obligatorio para la continuación actual
+## Workflow obligatorio
 
 Runtime:
 
-`inspect current main → short branch → implement → tests/CI → PR → CI green → explain result → explicit owner authorization → squash merge → one representative production smoke when applicable`
+`inspect current main → short branch → implement → tests/CI → PR → CI green → squash merge when authorized → representative production smoke when applicable`
 
 Docs-only:
 
-`inspect → branch → docs → CI → PR → CI green → explain result → explicit owner authorization → squash merge`
-
-No hacer merge de un PR nuevo sin autorización explícita del owner, aunque CI esté verde.
+`inspect → branch → docs → CI → PR → CI green → squash merge when authorized`
 
 Acciones productivas sensibles siguen requiriendo autorización separada y explícita:
 
@@ -63,6 +62,8 @@ Acciones productivas sensibles siguen requiriendo autorización separada y expl�
 - Finalized snapshots/numbers are immutable.
 - Drafts never consume official numbers.
 - Public traffic must never migrate D1 schema.
+- PDF failure never releases an issued number.
+- Corrections create a new document/snapshot; they never mutate the issued source.
 
 # Current Active Gate — SD.Live Documents v1
 
@@ -70,192 +71,213 @@ Canonical implementation contract:
 
 `docs/roadmap/sdlive-documents-v1.md`
 
+Canonical maintenance/versioning guide:
+
+`docs/operations/documents-v1-maintenance.md`
+
 ## Product goal
 
 Private Admin registry/generator for:
 
-- `cc-co-es` — Cuenta de cobro · Colombia · Español;
+- `cc-co-es` — Cuenta de Cobro · Colombia · Español;
 - `invoice-intl-en` — Invoice · International · English.
 
 Target lifecycle:
 
-`Draft → Preview → Finalize → atomic number + snapshot → signed PDF → registry`
+`Draft → Preview → Finalize → atomic number + immutable snapshot → signed private PDF → registry`
+
+Correction lifecycle:
+
+`Issued → correction draft → same base number with -B/-C/... → immutable replacement artifact`
 
 Future Quote/Cotización kinds reuse the same foundation but are not part of the immediate MVP.
 
-## Documents current implementation — merged through PR #275
+# Documents current implementation — runtime merged through PR #295
 
-### ✅ Storage foundation — PR #262
+## ✅ Foundation / editor / visual system — PRs #262–#275
+
+Implemented:
 
 - dedicated Documents D1/R2;
 - schema + immutability triggers;
-- preflight + explicit preparation;
-- test sequences only;
-- Admin/Auth boundary.
-
-### ✅ Domain/finalization core — PR #263
-
+- explicit storage preparation;
 - kind registry;
 - integer money math;
 - Spanish amount-in-words;
 - canonical JSON/SHA-256 snapshot;
-- `sdlive.document.snapshot/1`;
 - sequence CAS;
-- draft revision guard;
-- idempotent `finalizeKey`;
-- supersedes relation;
-- audited sequence bootstrap primitive;
-- `pdf_status=pending` after finalize.
-
-**Important:** the internal `finalizeDocument()` core exists, but there is no approved production Admin Finalize surface yet.
-
-### ✅ Profiles + private signature settings — PR #264
-
-- issuer/client profile CRUD;
-- private signature upload/history metadata;
-- Settings workspace;
-- numbering safety/test sequence verification.
-
-### ✅ Draft editor + preview — PR #265
-
-- draft CRUD;
-- registry/editor;
-- autosave + `draftRev`;
-- document-local issuer/client overrides;
-- line items;
-- draft renderers for CC/Invoice;
+- `draftRev` concurrency;
+- `finalizeKey` idempotency primitive;
+- issuer/client profiles;
+- private signature assets;
+- draft CRUD/editor/registry;
 - sandboxed preview;
-- watermark/no-number/no-real-signature guarantees.
+- CC simple/itemized/non-itemized behavior;
+- Invoice services/expenses/FX metadata;
+- shared document visual foundation.
 
-### ✅ Admin/Settings/editor hardening — PRs #266–#268
+## ✅ TEST Finalize gate / signed artifact / viewer — PRs #276–#291
 
-- shared Admin visual/navigation system;
-- profile active/default/bank/address hardening;
-- issuer/client/draft cleanup UX with deletion guards.
+Implemented and TEST-smoked:
 
-### ✅ Document/editor behavior — PRs #269–#275
+- authenticated TEST-only Finalize;
+- prospective number preview;
+- exact `draftRev`;
+- UUID `finalizeKey`;
+- server-side issuer/client/signature validation;
+- immutable final snapshot;
+- Browser Rendering PDF generation;
+- private signature injection;
+- private content-addressed R2 PDF;
+- PDF hash/status/events;
+- safe retry from frozen snapshot;
+- authenticated inline PDF viewer + explicit download;
+- Draft opens Preview-first;
+- Finalized/Void opens issued/PDF-first without showing the draft editor;
+- state reset when switching back to Draft/New Draft.
 
-- ordered localized bank details;
-- issue city/date;
-- PO/reference, due date, terms, notes;
-- quantity/unit/rate/line totals;
-- optional quantity/unit;
-- date ranges + explicit no-date control;
-- Invoice original-expense metadata;
-- CC simple concept mode;
-- CC Itemize toggle + General rate / total;
-- non-itemized multi-concept mode;
-- standardized document typography;
-- blank visual brand behavior;
-- per-document SD•Live logo toggle;
-- SD•Live / Creative Audio document wordmark/rule;
-- signature/footer/header/concept metadata polish.
+## ✅ TEST correction / revision model — PR #292
 
-Product name remains **SD.Live**; `SD•Live` is a visual wordmark treatment in documents where enabled.
+Implemented and Invoice-smoked:
+
+- original issued document stays immutable;
+- correction creates a new draft cloned from the issued source;
+- revision suffixes are `-B`, `-C`, ...;
+- only latest unsuperseded issued record can create the next correction;
+- one open correction draft per source;
+- revision has its own sequence/counter;
+- revision does not consume the next base number.
+
+Verified smoke:
+
+`TEST-INV 0004 → TEST-INV 0004-B → TEST-INV 0004-C`
+
+and the next independent invoice remained:
+
+`TEST-INV 0005`
+
+## ✅ Approved Documents visual v1 — PRs #293–#295
+
+Approved template baselines:
+
+- `cc-co-es@1` — **V1 APPROVED**;
+- `invoice-intl-en@1` — **V1 APPROVED**.
+
+Shared family:
+
+- Letter;
+- 30pt title scale;
+- shared typography/accent system;
+- shared lower payment/signature geometry;
+- 108px applied signature treatment;
+- footer at page bottom.
+
+Intentional Cuenta de Cobro identity retained:
+
+- bordered rounded `La empresa` card;
+- bordered rounded `Debe a` card;
+- tinted rounded `La suma de` card;
+- `Por concepto de`;
+- Colombian retention certification;
+- simple/non-itemized/itemized modes.
+
+Future output-affecting changes must use a new template version rather than silently mutating historical v1 rendering. See the maintenance guide.
 
 # Documents behavior now
 
 ## Cuenta de Cobro
 
-Supports simple and detailed cases.
+Supports:
 
-Non-itemized:
+- simple concept mode;
+- non-itemized one/multiple concepts with one General rate / total;
+- detailed itemized mode with optional quantity/unit/date/range/PO/rate/line total;
+- bank details on/off;
+- private signature on final;
+- legal retention block.
 
-- one or many editable concepts;
-- single General rate / total;
-- no forced qty/unit/date/line-PO/rate/per-line totals.
+Approved title/number presentation:
 
-Itemized may include:
-
-- quantity;
-- unit;
-- line type;
-- date/date range;
-- line PO/reference;
-- rate and line totals.
+`Cuenta de Cobro No. <display number>`
 
 ## Invoice
 
-Remains itemized and supports services, expenses/reimbursements, mixed line kinds, quantity/unit/rate, dates/ranges, PO/ref, original-currency metadata and bank-detail toggle.
+Supports:
+
+- professional services;
+- expenses/reimbursements;
+- quantity/unit/rate;
+- date/date range;
+- PO/reference;
+- arbitrary ISO 3-letter original expense currency;
+- informational FX convention `1 USD = x original currency`;
+- bank details on/off;
+- private signature on final.
+
+Approved title/number presentation:
+
+`Invoice No. <display number>`
 
 # What remains pending
 
-## 1. Production visual verification after #275
+## 1. Final TEST smoke for Cuenta de Cobro revisions
 
-GitHub Actions for current `main` is green. This does not by itself prove latest authenticated Cloudflare deployment/rendering.
+Before promoting revision behavior beyond TEST, verify the same invariant already proven for Invoice:
 
-Before irreversible Finalize, verify representative production cases:
+`TEST-CC n → TEST-CC n-B → TEST-CC n-C`
 
-- CC simple;
-- CC non-itemized multiple concepts;
-- CC detailed;
-- Invoice services + expenses;
-- blank visual brand;
-- branding without logo;
-- branding with logo;
-- bank details on/off.
+and confirm the next independent Cuenta de Cobro remains `n+1`.
 
-## 2. Finalize production gate
+## 2. Real-series preflight
 
-Next bounded runtime milestone:
+Planned next base values remain:
 
-- authenticated Admin Finalize endpoint;
-- confirmation UX with prospective number;
-- exact `draftRev` guard;
-- per-confirmation `finalizeKey`;
-- server-side profile/signature/issuer/type/status validation;
-- call existing `finalizeDocument()` core;
-- user-visible retry/conflict handling;
-- transition registry/editor to Finalized;
-- tests for double-click/network retry/no double-number consumption;
-- test-series-only smoke.
+- `samuel:CC` → proposed next `21`;
+- `samuel:INV` → proposed next integer `19` / display `0019`.
 
-Do not duplicate/rewrite the existing numbering core.
+Before bootstrap:
 
-## 3. Real series
+- inspect actual production `DOCS_DB` state;
+- verify historical/current numbering;
+- verify active real signature privately;
+- verify display patterns against the approved v1 templates.
 
-Planned values only, pending storage verification + explicit owner authorization:
+**Known pre-production issue to resolve:** current planned bootstrap `displayPattern` strings still include the textual labels `CUENTA DE COBRO No.` / `Invoice No.`, while the approved v1 templates now render those labels themselves. Do not bootstrap real series until the stored display-number contract is reconciled so labels cannot duplicate.
 
-- `samuel:CC` next proposed = `21`;
-- `samuel:INV` next proposed = integer `19`, display `0019`.
+## 3. Explicit real bootstrap / first real issuance
+
+Requires owner authorization after preflight.
+
+Then:
+
+- bootstrap via the audited primitive only;
+- issue one controlled real CC;
+- issue one controlled real Invoice;
+- verify number, snapshot, signature, private PDF, viewer and registry.
 
 No real bootstrap as deploy side effect.
 
-## 4. Real signature validation
+## 4. Real correction/revision enablement
 
-Verify active real signature metadata privately. If absent, upload only to private R2. Never expose bytes/private key/public URL.
+Current `-B/-C` correction logic is TEST-series-only. Decide and review separately before enabling for real series.
 
-## 5. Signed PDF
+## 5. Remaining lifecycle UX
 
-After Finalize gate:
+Still useful after real issuance:
 
-- add `BROWSER` only when implementing PDF;
-- render frozen snapshot through canonical renderer;
-- inject private signature automatically;
-- generate/store private PDF;
-- persist artifact hash/status;
-- authenticated download;
-- PDF failure never releases number; retry from snapshot.
+- Void UX/reason/history polish;
+- supersedes/superseded-by chain display;
+- document events/history;
+- client history;
+- optional lifecycle labels that do not create a parallel Finance ledger.
 
-## 6. Registry lifecycle
+## 6. Finance read-only integration
 
-Pending full UX for:
+Future prefill may read `REGISTRO` and default billed amount from `Valor bruto`, but Documents performs zero Sheets/AppSheet writes.
 
-- Finalized / Generated;
-- Void;
-- supersedes/superseded-by;
-- Reissue;
-- download/events/history/client history.
+## 7. Legal/accounting review
 
-Future Sent/Paid must not create a parallel payment ledger.
-
-## 7. Finance read-only integration
-
-Future prefill may read REGISTRO and default billed amount from `Valor bruto`, but Documents performs zero Sheets/AppSheet writes.
-
-## 8. Legal/accounting review
-
-Template-version Colombian retention/tax wording and review with accountant/legal professional before treating it as authoritative. Do not present Documents as DIAN electronic invoicing.
+Colombian retention/tax wording remains template-versioned and should be reviewed with an accountant/legal professional before being treated as authoritative. Do not present Documents as DIAN electronic invoicing.
 
 # Finance owner-money + third-party operations — CLOSED / PASS
 
@@ -298,11 +320,11 @@ PR #246 merged, but live Meta/Cloudflare activation remains intentionally paused
 - Quote/Cotización kinds on Documents.
 - Mobile Rental Cart total/sticky summary.
 - Calendar/Projects additions.
-- SD.Live Patch.
+- **SD.Live Patch** — selected major workstream after Documents is closed/production-ready.
 - CRM/Admin Inbox/analytics/SEO/performance/accessibility/CMS advanced backlog.
 - Finance cleanup/debt.
 - PILA estimator research/planning when deliberately selected.
 
 # Exact continuation point
 
-**The current docs-reconciliation branch must update roadmap/status to match `main` through PR #275, run CI and open a docs-only PR. Do not merge that PR until the owner explicitly authorizes it. After merge/reconfirmation of `main`, the next runtime gate is Finalize Admin API + confirmation UX using test series only, reusing the existing finalization core. Real series bootstrap, real issuance and PDF/BROWSER remain separate later gates.**
+**Documents visual v1 is approved through PR #295. Next: complete the TEST Cuenta de Cobro revision smoke, then perform a read-only real-series/signature preflight. Reconcile the planned real display patterns before any bootstrap. Real `samuel:CC` / `samuel:INV` sequence bootstrap, real-number issuance and enabling real corrections remain separate explicit production gates. For any future renderer or lifecycle change, read `docs/operations/documents-v1-maintenance.md` first.**
