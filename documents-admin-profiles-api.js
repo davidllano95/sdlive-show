@@ -259,10 +259,17 @@ export function documentsProfilesApiPolicy() {
     settingsReturnsSignatureBytes: false,
     settingsReturnsSignaturePublicUrl: false,
     testEnsureConfirmation: TEST_SEQUENCE_CONFIRMATION,
+    realSequenceBootstrapExposed: true,
     productionBootstrapConfirmation: DOCUMENTS_PRODUCTION_BOOTSTRAP_CONFIRMATION,
     productionBootstrapRequiresReadyPreflight: true,
-    realSequenceBootstrapExposed: true,
-    testPurgeConfirmation: DOCUMENTS_TEST_PURGE_CONFIRMATION,
-    testDataPurgeExposed: true
+    productionPreflightReadOnly: true,
+    testDataPurgeExposed: true,
+    testDataPurgeConfirmation: DOCUMENTS_TEST_PURGE_CONFIRMATION,
+    testDataPurgeRequiresDryRunFingerprint: true,
+    testDataPurgeCanDeleteRealDocuments: false,
+    signatureMaxRequestBytes: MAX_SIGNATURE_REQUEST_BYTES,
+    profileDeleteRequiresUnused: true,
+    issuerDeleteRemovesPrivateSignatureAssets: true,
+    profileDeleteNeverDeletesDocuments: true
   });
 }
