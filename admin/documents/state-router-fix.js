@@ -28,6 +28,21 @@
     document.body.appendChild(script);
   }
 
+  function loadMobileWebappUx() {
+    if (!document.querySelector("link[data-sdlive-documents-mobile-webapp]")) {
+      const style = document.createElement("link");
+      style.rel = "stylesheet";
+      style.href = "/admin/documents/mobile-webapp.css?v=20260928-1";
+      style.dataset.sdliveDocumentsMobileWebapp = "true";
+      document.head.appendChild(style);
+    }
+    if (document.querySelector("script[data-sdlive-documents-mobile-webapp]")) return;
+    const script = document.createElement("script");
+    script.src = "/admin/documents/mobile-webapp.js?v=20260928-1";
+    script.dataset.sdliveDocumentsMobileWebapp = "true";
+    document.body.appendChild(script);
+  }
+
   function issuedPanel() {
     return document.getElementById("issuedDocumentPanel");
   }
@@ -42,6 +57,7 @@
     const panel = issuedPanel();
     const deleteButton = document.getElementById("deleteDraft");
     const finalizeButton = document.getElementById("finalizeDraft");
+    const mobileMode = document.getElementById("documentsMobileEditorMode");
 
     if (panel) {
       panel.querySelector("iframe")?.removeAttribute("src");
@@ -52,18 +68,23 @@
     if (grid) grid.hidden = false;
     if (deleteButton) deleteButton.hidden = false;
     if (finalizeButton) finalizeButton.hidden = false;
+    if (mobileMode && window.matchMedia("(max-width: 820px)").matches) mobileMode.hidden = false;
   }
 
   function prepareIssuedState() {
     const shell = editorShell();
     const grid = shell?.querySelector(".document-editor-grid");
+    const mobileMode = document.getElementById("documentsMobileEditorMode");
     if (shell) shell.classList.remove("documents-draft-preview-first");
     if (grid) grid.hidden = true;
+    if (mobileMode) mobileMode.hidden = true;
+    document.body.classList.remove("documents-preview-fullscreen");
   }
 
   installHiddenGuard();
   loadRevisionUx();
   loadPreviewFitUx();
+  loadMobileWebappUx();
 
   document.addEventListener("click", (event) => {
     const target = event.target instanceof Element ? event.target : null;
