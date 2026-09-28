@@ -1,3 +1,7 @@
+// APPROVED DOCUMENT TEMPLATE V1 BASELINES.
+// Output-affecting changes must use a new template version (for example @2)
+// so historical finalized snapshots can continue to resolve their original renderer.
+// See docs/operations/documents-v1-maintenance.md before changing these contracts.
 const KINDS = Object.freeze({
   "cc-co-es": Object.freeze({
     id: "cc-co-es",
@@ -41,6 +45,10 @@ export function listDocumentKinds() {
   return DOCUMENT_KIND_IDS.map((id) => KINDS[id]);
 }
 
+// PLANNED REAL BOOTSTRAP VALUES ONLY. Before enabling real series, verify both
+// nextValue and displayPattern against the approved template label contract.
+// The v1 templates render their own `Cuenta de Cobro No.` / `Invoice No.` labels,
+// so bootstrap display patterns must not cause those labels to be duplicated.
 export const SAMUEL_SEQUENCE_BOOTSTRAP = Object.freeze({
   "samuel:CC": Object.freeze({
     seriesKey: "samuel:CC",
