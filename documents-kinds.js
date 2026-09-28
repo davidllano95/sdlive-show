@@ -47,18 +47,20 @@ export function listDocumentKinds() {
 
 // PLANNED REAL BOOTSTRAP VALUES ONLY. The approved v1 templates render their
 // own `Cuenta de Cobro No.` / `Invoice No.` labels, so sequence display values
-// intentionally contain only the number token itself.
+// intentionally contain only the number token itself. Real kinds use the same
+// canonical issuer profiles selected by the Admin editor: COP for CC and USD
+// for international Invoice.
 export const SAMUEL_SEQUENCE_BOOTSTRAP = Object.freeze({
   "samuel:CC": Object.freeze({
     seriesKey: "samuel:CC",
-    issuerId: "samuel",
+    issuerId: "samuel-cop",
     docType: "cc",
     nextValue: 21,
     displayPattern: "{n}"
   }),
   "samuel:INV": Object.freeze({
     seriesKey: "samuel:INV",
-    issuerId: "samuel",
+    issuerId: "samuel-usd",
     docType: "invoice",
     nextValue: 19,
     displayPattern: "{n:04}"
