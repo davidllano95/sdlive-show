@@ -12,8 +12,8 @@ import {
   readDocumentSequence
 } from "./documents-storage.js";
 import {
-  buildTestRevisionFinalizePreview,
-  finalizeTestRevision
+  buildRevisionFinalizePreview,
+  finalizeRevision
 } from "./documents-revisions.js";
 
 const TEST_SERIES_BY_TYPE = Object.freeze({
@@ -160,8 +160,8 @@ function operations(overrides = {}) {
     finalizeDocument,
     resolveContext: defaultContext,
     validateDraftForFinalize,
-    buildTestRevisionFinalizePreview,
-    finalizeTestRevision,
+    buildRevisionFinalizePreview,
+    finalizeRevision,
     ...overrides
   };
 }
@@ -202,14 +202,13 @@ export async function buildFinalizePreview(env, { documentId, draftRev } = {}, o
   const current = await requireDraft(env, documentId, draftRev, ops);
 
   if (current.document.supersedes_id) {
-    const preview = await ops.buildTestRevisionFinalizePreview(env, {
+    return ops.buildRevisionFinalizePreview(env, {
       document: current.document,
       draft: current.draft,
       draftRev: current.expectedRev,
       resolveContext: ops.resolveContext,
       validateDraftForFinalize: ops.validateDraftForFinalize
     });
-    return { ...preview, testOnly: true, production: false };
   }
 
   const intended = intendedSeries(current.document);
@@ -265,7 +264,7 @@ export async function finalizeThroughSeries(env, {
   if (!document) throw new Error("document_not_found");
 
   if (document.supersedes_id) {
-    const result = await ops.finalizeTestRevision(env, {
+    return ops.finalizeRevision(env, {
       documentId: document.id,
       draftRev: expectedRev,
       finalizeKey: key,
@@ -273,7 +272,6 @@ export async function finalizeThroughSeries(env, {
       resolveContext: ops.resolveContext,
       validateDraftForFinalize: ops.validateDraftForFinalize
     });
-    return { ...result, testOnly: true, production: false };
   }
 
   const first = await standardDraftAndSeries(env, documentId, expectedRev, ops);
@@ -317,7 +315,7 @@ export function documentsFinalizeGatePolicy() {
     requiresClientGeneratedFinalizeKey: true,
     finalizeKeyFormat: "uuid",
     correctionRevisionsEnabled: true,
-    realCorrectionRevisionsEnabled: false,
+    realCorrectionRevisionsEnabled: true,
     correctionConsumesBaseNumber: false,
     firstCorrectionSuffix: "B",
     rendersPdf: false,
