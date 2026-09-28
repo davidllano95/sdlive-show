@@ -36,9 +36,16 @@
       style.dataset.sdliveDocumentsMobileWebapp = "true";
       document.head.appendChild(style);
     }
+    if (!document.querySelector("link[data-sdlive-documents-mobile-webapp-v2]")) {
+      const style = document.createElement("link");
+      style.rel = "stylesheet";
+      style.href = "/admin/documents/mobile-webapp-v2.css?v=20260928-2";
+      style.dataset.sdliveDocumentsMobileWebappV2 = "true";
+      document.head.appendChild(style);
+    }
     if (document.querySelector("script[data-sdlive-documents-mobile-webapp]")) return;
     const script = document.createElement("script");
-    script.src = "/admin/documents/mobile-webapp.js?v=20260928-1";
+    script.src = "/admin/documents/mobile-webapp.js?v=20260928-2";
     script.dataset.sdliveDocumentsMobileWebapp = "true";
     document.body.appendChild(script);
   }
@@ -86,7 +93,7 @@
     if (shell) shell.classList.remove("documents-draft-preview-first");
     if (grid) grid.hidden = true;
     if (mobileMode) mobileMode.hidden = true;
-    document.body.classList.remove("documents-preview-fullscreen");
+    document.body.classList.remove("documents-preview-fullscreen", "documents-mobile-editor-open");
   }
 
   installHiddenGuard();
