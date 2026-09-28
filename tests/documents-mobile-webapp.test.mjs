@@ -12,6 +12,7 @@ test("Documents loads dedicated mobile webapp layers and JS", () => {
   assert.match(router, /mobile-webapp-v2\.css\?v=20260928-2/);
   assert.match(router, /mobile-webapp-v3\.css\?v=20260928-1/);
   assert.match(router, /mobile-webapp-v4\.css\?v=20260928-1/);
+  assert.match(router, /mobile-settings-polish\.css\?v=20260928-1/);
   assert.match(router, /mobile-webapp\.js\?v=20260928-2/);
   assert.match(router, /loadMobileWebappUx\(\)/);
 });
@@ -91,6 +92,16 @@ test("mobile editor collapses prefilled identity sections and hides registry whi
   assert.match(source, /documents-mobile-editor-open/);
   assert.match(css, /body\.documents-mobile-editor-open \.documents-registry-layout\{display:none!important\}/);
   assert.match(css, /fieldset\.is-mobile-collapsed>:not\(legend\)\{display:none!important\}/);
+});
+
+test("mobile Settings keeps navigation chrome opaque and compacts health cards", () => {
+  const css = read("admin/documents/mobile-settings-polish.css");
+  assert.match(css, /#settingsWorkspace:not\(\[hidden\]\)/);
+  assert.match(css, /background:#06070b!important/);
+  assert.match(css, /#sequenceList \.sequence-item/);
+  assert.match(css, /documents-production-preflight__row/);
+  assert.match(css, /documents-test-cleanup/);
+  assert.match(css, /padding-bottom:calc\(120px \+ env\(safe-area-inset-bottom\)\)/);
 });
 
 test("mobile Documents avoids another MutationObserver", () => {
