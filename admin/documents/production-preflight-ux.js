@@ -40,6 +40,16 @@
 
   function render(resultNode, data) {
     resultNode.replaceChildren();
+    const storage = data.storage || { ready: data.storageReady === true, blockers: [] };
+    const storageBlockers = (storage.blockers || [])
+      .map((item) => [item.area, item.reason].filter(Boolean).join(":"))
+      .filter(Boolean)
+      .join(", ");
+    const storageDetail = storage.ready
+      ? "DOCS_DB + DOCS_BUCKET available · schema exact · TEST sequence identities valid."
+      : `Storage blocker: ${storageBlockers || "storage_not_ready"}`;
+    resultNode.append(row("Documents storage", storageDetail, Boolean(storage.ready)));
+
     for (const signature of data.signatures || []) {
       const detail = signature.ready
         ? "Active private signature object exists and its SHA-256 matches metadata."
@@ -112,7 +122,7 @@
     resultNode.className = "documents-production-preflight__result";
     const note = document.createElement("p");
     note.className = "documents-production-preflight__note";
-    note.textContent = "Checks real sequence state, number collisions and the private active signature. It cannot bootstrap or issue a real number.";
+    note.textContent = "Checks storage, real sequence state, number collisions and each private active signature. It cannot bootstrap or issue a real number.";
 
     button.addEventListener("click", () => run(button, status, resultNode, note));
     section.append(head, button, resultNode, note);
