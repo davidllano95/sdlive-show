@@ -12,8 +12,8 @@ import {
 import { downloadFinalPdf, generateFinalPdf } from "./documents-pdf-artifacts.js";
 import { deleteDocumentDraftRow } from "./documents-storage-delete.js";
 import {
-  createTestCorrectionDraft,
-  readTestCorrectionInfo
+  createCorrectionDraft,
+  readCorrectionInfo
 } from "./documents-corrections.js";
 
 const API_PREFIX = "/api/admin/documents";
@@ -183,12 +183,12 @@ export async function handleDocumentsEditorApi(request, env, { verifyAdmin, fina
 
     const correctionInfoMatch = path.match(/^\/api\/admin\/documents\/(doc-[A-Za-z0-9-]+)\/correction-info$/);
     if (correctionInfoMatch && request.method === "GET") {
-      return json(await readTestCorrectionInfo(env, correctionInfoMatch[1]));
+      return json(await readCorrectionInfo(env, correctionInfoMatch[1]));
     }
 
     const correctionMatch = path.match(/^\/api\/admin\/documents\/(doc-[A-Za-z0-9-]+)\/corrections$/);
     if (correctionMatch && request.method === "POST") {
-      return json(await createTestCorrectionDraft(env, {
+      return json(await createCorrectionDraft(env, {
         sourceDocumentId: correctionMatch[1],
         actorEmail: user.email
       }), 201);
@@ -281,8 +281,9 @@ export function documentsEditorApiPolicy() {
     testSeriesFinalizeEnabled: true,
     realSeriesFinalizeEnabled: true,
     correctionRevisionsEnabled: true,
-    correctionTestSeriesOnly: true,
-    correctionRealSeriesEnabled: false,
+    correctionTestSeriesOnly: false,
+    correctionTestSeriesEnabled: true,
+    correctionRealSeriesEnabled: true,
     correctionConsumesBaseSequence: false,
     finalizeRendersPdf: true,
     pdfRetryEndpoint: true,
