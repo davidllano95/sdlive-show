@@ -131,6 +131,7 @@ async function settings(env) {
         issuerId: item.issuerId,
         docType: item.docType,
         intendedNextValue: item.nextValue,
+        currentNextValue: bootstrapped ? Number(existing.nextValue) : null,
         displayPattern: item.displayPattern,
         locked: !bootstrapped,
         bootstrapped,
