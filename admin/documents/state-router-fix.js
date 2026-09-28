@@ -4,6 +4,14 @@
   if (window.SDLiveDocumentsStateRouterFix) return;
   window.SDLiveDocumentsStateRouterFix = true;
 
+  function installHiddenGuard() {
+    if (document.getElementById("documentsStateRouterHiddenGuard")) return;
+    const style = document.createElement("style");
+    style.id = "documentsStateRouterHiddenGuard";
+    style.textContent = ".document-editor-grid[hidden]{display:none!important}";
+    document.head.appendChild(style);
+  }
+
   function issuedPanel() {
     return document.getElementById("issuedDocumentPanel");
   }
@@ -36,6 +44,8 @@
     if (shell) shell.classList.remove("documents-draft-preview-first");
     if (grid) grid.hidden = true;
   }
+
+  installHiddenGuard();
 
   document.addEventListener("click", (event) => {
     const target = event.target instanceof Element ? event.target : null;
