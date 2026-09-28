@@ -146,10 +146,13 @@
       const title = document.createElement("strong");
       title.textContent = seq.seriesKey;
       const meta = document.createElement("span");
-      meta.textContent = `Planned next ${seq.intendedNextValue} · ${seq.displayPattern}`;
+      const next = seq.bootstrapped && Number.isSafeInteger(Number(seq.currentNextValue))
+        ? `Current next ${seq.currentNextValue}`
+        : `Planned next ${seq.intendedNextValue}`;
+      meta.textContent = `${next} · ${seq.displayPattern}`;
       left.append(title, meta);
       const stateLabel = document.createElement("span");
-      stateLabel.textContent = "LOCKED";
+      stateLabel.textContent = seq.bootstrapped ? "ACTIVE" : "LOCKED";
       row.append(left, stateLabel);
       node.append(row);
     }
