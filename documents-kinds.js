@@ -45,23 +45,22 @@ export function listDocumentKinds() {
   return DOCUMENT_KIND_IDS.map((id) => KINDS[id]);
 }
 
-// PLANNED REAL BOOTSTRAP VALUES ONLY. Before enabling real series, verify both
-// nextValue and displayPattern against the approved template label contract.
-// The v1 templates render their own `Cuenta de Cobro No.` / `Invoice No.` labels,
-// so bootstrap display patterns must not cause those labels to be duplicated.
+// PLANNED REAL BOOTSTRAP VALUES ONLY. The approved v1 templates render their
+// own `Cuenta de Cobro No.` / `Invoice No.` labels, so sequence display values
+// intentionally contain only the number token itself.
 export const SAMUEL_SEQUENCE_BOOTSTRAP = Object.freeze({
   "samuel:CC": Object.freeze({
     seriesKey: "samuel:CC",
     issuerId: "samuel",
     docType: "cc",
     nextValue: 21,
-    displayPattern: "CUENTA DE COBRO No. {n}"
+    displayPattern: "{n}"
   }),
   "samuel:INV": Object.freeze({
     seriesKey: "samuel:INV",
     issuerId: "samuel",
     docType: "invoice",
     nextValue: 19,
-    displayPattern: "Invoice No. {n:04}"
+    displayPattern: "{n:04}"
   })
 });
