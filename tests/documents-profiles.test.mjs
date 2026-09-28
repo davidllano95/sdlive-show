@@ -44,7 +44,7 @@ test("client profile normalization supports jurisdiction-aware defaults without 
   assert.throws(() => normalizeClientProfile({ displayName: "x", legalName: "x", defaultCurrency: "EUR" }), /invalid_client_currency/);
 });
 
-test("profile policy keeps signature private and real sequence bootstrap unavailable", () => {
+test("profile policy keeps signatures private and real bootstrap explicitly gated", () => {
   const policy = documentsProfilesPolicy();
   assert.equal(policy.signatureBucketPrivateOnly, true);
   assert.equal(policy.signaturePublicUrlReturned, false);
@@ -58,7 +58,9 @@ test("profile policy keeps signature private and real sequence bootstrap unavail
   assert.equal(api.adminOnly, true);
   assert.equal(api.settingsReturnsSignatureBytes, false);
   assert.equal(api.settingsReturnsSignaturePublicUrl, false);
-  assert.equal(api.realSequenceBootstrapExposed, false);
+  assert.equal(api.realSequenceBootstrapExposed, true);
+  assert.equal(api.productionBootstrapRequiresReadyPreflight, true);
+  assert.match(api.productionBootstrapConfirmation, /^BOOTSTRAP_/);
   assert.equal(api.testEnsureConfirmation, TEST_SEQUENCE_CONFIRMATION);
 });
 
