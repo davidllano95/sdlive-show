@@ -131,6 +131,7 @@ async function settings(env) {
         issuerId: item.issuerId,
         docType: item.docType,
         intendedNextValue: item.nextValue,
+        currentNextValue: bootstrapped ? Number(existing.nextValue) : null,
         displayPattern: item.displayPattern,
         locked: !bootstrapped,
         bootstrapped,
@@ -258,17 +259,10 @@ export function documentsProfilesApiPolicy() {
     settingsReturnsSignatureBytes: false,
     settingsReturnsSignaturePublicUrl: false,
     testEnsureConfirmation: TEST_SEQUENCE_CONFIRMATION,
-    realSequenceBootstrapExposed: true,
     productionBootstrapConfirmation: DOCUMENTS_PRODUCTION_BOOTSTRAP_CONFIRMATION,
     productionBootstrapRequiresReadyPreflight: true,
-    productionPreflightReadOnly: true,
-    testDataPurgeExposed: true,
-    testDataPurgeConfirmation: DOCUMENTS_TEST_PURGE_CONFIRMATION,
-    testDataPurgeRequiresDryRunFingerprint: true,
-    testDataPurgeCanDeleteRealDocuments: false,
-    signatureMaxRequestBytes: MAX_SIGNATURE_REQUEST_BYTES,
-    profileDeleteRequiresUnused: true,
-    issuerDeleteRemovesPrivateSignatureAssets: true,
-    profileDeleteNeverDeletesDocuments: true
+    realSequenceBootstrapExposed: true,
+    testPurgeConfirmation: DOCUMENTS_TEST_PURGE_CONFIRMATION,
+    testDataPurgeExposed: true
   });
 }
