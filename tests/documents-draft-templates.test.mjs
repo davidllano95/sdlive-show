@@ -71,7 +71,7 @@ test("Cuenta de cobro draft renders optional metadata, type badge, quantity and 
   }, { mode: "draft" });
 
   assert.match(html, /BORRADOR/);
-  assert.match(html, /No\. —/);
+  assert.match(html, /Cuenta de Cobro No\. <strong>—<\/strong>/);
   assert.match(html, /<div class="issue-city">Bogotá, Colombia<\/div><div class="issue-date">2 de octubre de 2026<\/div>/);
   assert.match(html, /Proyecto \/ servicio/);
   assert.match(html, /PO-DOC-77/);
