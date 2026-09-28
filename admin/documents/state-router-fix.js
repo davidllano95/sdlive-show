@@ -20,6 +20,14 @@
     document.body.appendChild(script);
   }
 
+  function loadPreviewFitUx() {
+    if (document.querySelector("script[data-sdlive-documents-preview-fit-ux]")) return;
+    const script = document.createElement("script");
+    script.src = "/admin/documents/preview-fit-ux.js?v=20260928-1";
+    script.dataset.sdliveDocumentsPreviewFitUx = "true";
+    document.body.appendChild(script);
+  }
+
   function issuedPanel() {
     return document.getElementById("issuedDocumentPanel");
   }
@@ -55,6 +63,7 @@
 
   installHiddenGuard();
   loadRevisionUx();
+  loadPreviewFitUx();
 
   document.addEventListener("click", (event) => {
     const target = event.target instanceof Element ? event.target : null;
