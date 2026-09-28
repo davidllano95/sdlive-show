@@ -16,6 +16,10 @@ import {
 } from "./documents-storage-profile-delete.js";
 import { inspectDocumentsStoragePreflight } from "./documents-storage-preparation.js";
 import { inspectDocumentsProductionPreflight } from "./documents-production-preflight.js";
+import {
+  DOCUMENTS_PRODUCTION_BOOTSTRAP_CONFIRMATION,
+  bootstrapDocumentsProduction
+} from "./documents-production-bootstrap.js";
 
 const API_PREFIX = "/api/admin/documents";
 const MAX_JSON_BYTES = 64 * 1024;
@@ -65,9 +69,11 @@ function publicError(error) {
     "invalid_client_id", "client_required_fields_missing", "invalid_client_currency", "invalid_po_policy",
     "invalid_payment_terms_days", "invalid_finance_aliases", "issuer_not_found", "client_not_found", "signature_png_required",
     "invalid_signature_size", "documents_storage_unavailable", "documents_storage_batch_required", "documents_bucket_unavailable",
-    "issuer_profile_in_use", "client_profile_in_use", "explicit_test_sequence_confirmation_required"
+    "issuer_profile_in_use", "client_profile_in_use", "explicit_test_sequence_confirmation_required",
+    "explicit_production_bootstrap_confirmation_required", "production_preflight_not_ready", "production_bootstrap_postflight_failed"
   ];
   if (message.startsWith("unexpected_test_sequence_state:")) return { status: 409, error: message };
+  if (message === "production_preflight_not_ready" || message === "production_bootstrap_postflight_failed") return { status: 409, error: message };
   if (message === "issuer_profile_in_use" || message === "client_profile_in_use") return { status: 409, error: message };
   if (message === "issuer_not_found" || message === "client_not_found") return { status: 404, error: message };
   if (message === "documents_storage_unavailable" || message === "documents_storage_batch_required" || message === "documents_bucket_unavailable") {
@@ -84,6 +90,7 @@ async function settings(env) {
     listSignatureAssets(env),
     listDocumentSequences(env)
   ]);
+  const sequenceByKey = new Map(sequences.map((item) => [item.seriesKey, item]));
   return {
     ok: true,
     storage,
@@ -92,15 +99,27 @@ async function settings(env) {
     clients,
     signatures,
     sequences,
-    intendedRealSequences: Object.values(SAMUEL_SEQUENCE_BOOTSTRAP).map((item) => ({
-      seriesKey: item.seriesKey,
-      issuerId: item.issuerId,
-      docType: item.docType,
-      intendedNextValue: item.nextValue,
-      displayPattern: item.displayPattern,
-      locked: true,
-      note: "Real series bootstrap is intentionally disabled until production preflight passes and the owner explicitly authorizes bootstrap."
-    }))
+    intendedRealSequences: Object.values(SAMUEL_SEQUENCE_BOOTSTRAP).map((item) => {
+      const existing = sequenceByKey.get(item.seriesKey) || null;
+      const bootstrapped = Boolean(existing)
+        && existing.issuerId === item.issuerId
+        && existing.docType === item.docType
+        && Number(existing.nextValue) === Number(item.nextValue)
+        && existing.displayPattern === item.displayPattern
+        && existing.isTest === false;
+      return {
+        seriesKey: item.seriesKey,
+        issuerId: item.issuerId,
+        docType: item.docType,
+        intendedNextValue: item.nextValue,
+        displayPattern: item.displayPattern,
+        locked: !bootstrapped,
+        bootstrapped,
+        note: bootstrapped
+          ? `Real series bootstrapped · next ${item.nextValue}`
+          : "Real series bootstrap requires READY production preflight and explicit owner authorization."
+      };
+    })
   };
 }
 
@@ -147,6 +166,15 @@ export async function handleDocumentsProfilesApi(request, env, { verifyAdmin } =
 
     if (path === `${API_PREFIX}/production-preflight` && request.method === "GET") {
       return json(await inspectDocumentsProductionPreflight(env));
+    }
+
+    if (path === `${API_PREFIX}/production-bootstrap` && request.method === "POST") {
+      const body = await readJson(request);
+      const result = await bootstrapDocumentsProduction(env, {
+        actorEmail: String(user.email).toLowerCase(),
+        confirmation: body.confirmation
+      });
+      return json(result, result.idempotent ? 200 : 201);
     }
 
     const issuerMatch = path.match(/^\/api\/admin\/documents\/issuers\/([^/]+)$/);
@@ -198,7 +226,9 @@ export function documentsProfilesApiPolicy() {
     settingsReturnsSignatureBytes: false,
     settingsReturnsSignaturePublicUrl: false,
     testEnsureConfirmation: TEST_SEQUENCE_CONFIRMATION,
-    realSequenceBootstrapExposed: false,
+    realSequenceBootstrapExposed: true,
+    productionBootstrapConfirmation: DOCUMENTS_PRODUCTION_BOOTSTRAP_CONFIRMATION,
+    productionBootstrapRequiresReadyPreflight: true,
     productionPreflightReadOnly: true,
     signatureMaxRequestBytes: MAX_SIGNATURE_REQUEST_BYTES,
     profileDeleteRequiresUnused: true,
