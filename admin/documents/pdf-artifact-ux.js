@@ -23,6 +23,23 @@
     }
   }
 
+  function filenamePart(value, maxLength = 80) {
+    return String(value || "")
+      .trim()
+      .normalize("NFKD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^A-Za-z0-9._-]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, maxLength);
+  }
+
+  function pdfDownloadFilename(documentInfo) {
+    const number = filenamePart(documentInfo.displayNumber || documentInfo.id || "document", 100) || "document";
+    const client = filenamePart(documentInfo.clientName, 100);
+    if (!client) throw new Error("document_client_name_required_for_filename");
+    return `${number} - ${client}.pdf`;
+  }
+
   async function readRegistry({ fresh = false } = {}) {
     if (!fresh && registryCache) return registryCache;
     if (!fresh && registryLoading) return registryLoading;
@@ -105,7 +122,7 @@
         const download = document.createElement("a");
         download.className = "button";
         download.href = pdfPath;
-        download.download = `${String(documentInfo.displayNumber || "document").replace(/[^A-Za-z0-9._-]+/g, "-")}.pdf`;
+        download.download = pdfDownloadFilename(documentInfo);
         download.textContent = "Download PDF";
         actions.append(download);
         if (frame && preview) {
