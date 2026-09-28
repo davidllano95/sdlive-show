@@ -41,6 +41,12 @@
     return item;
   }
 
+  function displayValue(series, number) {
+    const value = Number(number);
+    if (!Number.isSafeInteger(value) || value < 1) return series.intendedDisplay || "—";
+    return series.displayPattern === "{n:04}" ? String(value).padStart(4, "0") : String(value);
+  }
+
   function render(resultNode, data) {
     resultNode.replaceChildren();
     const storage = data.storage || { ready: data.storageReady === true, blockers: [] };
@@ -60,9 +66,12 @@
       resultNode.append(row(`Signature · ${signature.issuerId || "issuer"}`, detail, Boolean(signature.ready)));
     }
     for (const series of data.series || []) {
+      const current = series.sequenceState === "existing"
+        ? `Current next ${displayValue(series, series.existingNextValue)}`
+        : `Planned next ${series.intendedDisplay}`;
       const detail = series.ready
-        ? `Planned next ${series.intendedDisplay} · pattern ${series.displayPattern} · DB ${series.sequenceState} · no number collision`
-        : `Planned next ${series.intendedDisplay} · blocker: ${series.blocker || "unknown"}`;
+        ? `${current} · pattern ${series.displayPattern} · DB ${series.sequenceState} · no number collision`
+        : `${current} · blocker: ${series.blocker || "unknown"}`;
       resultNode.append(row(series.seriesKey, detail, Boolean(series.ready)));
     }
   }
@@ -75,9 +84,15 @@
     };
   }
 
+  function setBootstrapVisibility(button, visible) {
+    button.hidden = !visible;
+    button.style.display = visible ? "inline-flex" : "none";
+    button.disabled = !visible;
+  }
+
   async function run(button, status, resultNode, note, bootstrapButton) {
     button.disabled = true;
-    bootstrapButton.hidden = true;
+    setBootstrapVisibility(bootstrapButton, false);
     status.textContent = "CHECKING";
     status.className = "documents-production-preflight__state";
     resultNode.replaceChildren();
@@ -90,16 +105,15 @@
       status.className = `documents-production-preflight__state ${data.ready ? "is-ready" : "is-blocked"}`;
       render(resultNode, data);
       const state = bootstrapState(data);
-      bootstrapButton.hidden = !state.required;
-      bootstrapButton.disabled = !state.required;
+      setBootstrapVisibility(bootstrapButton, state.required);
       note.textContent = state.complete
-        ? "Production sequences are bootstrapped and still pass the read-only safety checks. No document number has been consumed."
+        ? "Production sequences are active and still pass the read-only safety checks. Finalizing a real draft will consume the current next number."
         : (data.note || "Read-only preflight complete.");
     } catch (error) {
       status.textContent = "ERROR";
       status.className = "documents-production-preflight__state is-blocked";
       note.textContent = `Preflight failed: ${String(error?.message || error)}`;
-      bootstrapButton.hidden = true;
+      setBootstrapVisibility(bootstrapButton, false);
     } finally {
       button.disabled = false;
     }
@@ -154,7 +168,7 @@
     eyebrow.className = "eyebrow";
     eyebrow.textContent = "Production gate";
     const title = document.createElement("strong");
-    title.textContent = "Read-only real-series preflight";
+    title.textContent = "Real-series health";
     copy.append(eyebrow, title);
 
     const status = document.createElement("em");
@@ -174,14 +188,14 @@
     bootstrapButton.type = "button";
     bootstrapButton.className = "button";
     bootstrapButton.textContent = "Bootstrap real series · CC 21 + INV 0019";
-    bootstrapButton.hidden = true;
+    setBootstrapVisibility(bootstrapButton, false);
     buttons.append(preflightButton, bootstrapButton);
 
     const resultNode = document.createElement("div");
     resultNode.className = "documents-production-preflight__result";
     const note = document.createElement("p");
     note.className = "documents-production-preflight__note";
-    note.textContent = "Checks storage, real sequence state, number collisions and each private active signature. Bootstrap is shown only after every check is READY.";
+    note.textContent = "Checks storage, real sequence state, number collisions and each private active signature.";
 
     preflightButton.addEventListener("click", () => run(preflightButton, status, resultNode, note, bootstrapButton));
     bootstrapButton.addEventListener("click", () => bootstrapRealSeries(bootstrapButton, preflightButton, status, resultNode, note));
