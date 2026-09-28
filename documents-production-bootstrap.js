@@ -25,7 +25,7 @@ function postflightMatches(preflight, configs) {
     const item = byKey.get(config.seriesKey);
     return item?.ready === true
       && item.sequenceState === "existing"
-      && Number(item.existingNextValue) === Number(config.nextValue)
+      && Number(item.existingNextValue) >= Number(config.nextValue)
       && item.issuerId === config.issuerId
       && item.docType === config.docType
       && item.displayPattern === config.displayPattern;
