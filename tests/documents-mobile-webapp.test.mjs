@@ -6,10 +6,11 @@ function read(path) {
   return readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
 }
 
-test("Documents loads dedicated mobile webapp CSS and JS", () => {
+test("Documents loads dedicated mobile webapp v2 CSS and JS", () => {
   const router = read("admin/documents/state-router-fix.js");
   assert.match(router, /mobile-webapp\.css\?v=20260928-1/);
-  assert.match(router, /mobile-webapp\.js\?v=20260928-1/);
+  assert.match(router, /mobile-webapp-v2\.css\?v=20260928-2/);
+  assert.match(router, /mobile-webapp\.js\?v=20260928-2/);
   assert.match(router, /loadMobileWebappUx\(\)/);
 });
 
@@ -37,14 +38,44 @@ test("mobile Documents editor provides Preview and Edit modes plus fullscreen pr
   assert.match(css, /documents-mobile-mode-edit \.preview-panel\{display:none!important\}/);
 });
 
-test("mobile Documents uses touch-sized controls without another MutationObserver", () => {
+test("mobile Documents uses a real fixed Save Finalize dock", () => {
+  const source = read("admin/documents/mobile-webapp.js");
+  const css = read("admin/documents/mobile-webapp-v2.css");
+  assert.match(source, /documentsMobileActionDock/);
+  assert.match(source, /data-mobile-action="save"/);
+  assert.match(source, /data-mobile-action="finalize"/);
+  assert.match(source, /document\.getElementById\("saveDraft"\)\?\.click\(\)/);
+  assert.match(source, /document\.getElementById\("finalizeDraft"\)\?\.click\(\)/);
+  assert.match(css, /\.documents-mobile-action-dock\{\s*position:fixed/);
+  assert.match(css, /env\(safe-area-inset-bottom\)/);
+  assert.match(css, /body\.documents-mobile-editor-open \.draft-actions\{display:none!important\}/);
+});
+
+test("mobile date controls cannot overflow their cards", () => {
+  const css = read("admin/documents/mobile-webapp-v2.css");
+  assert.match(css, /input\[type="date"\]/);
+  assert.match(css, /min-inline-size:0!important/);
+  assert.match(css, /inline-size:100%!important/);
+  assert.match(css, /::-webkit-date-and-time-value/);
+  assert.match(css, /\.draft-line \.line-field/);
+});
+
+test("mobile editor collapses prefilled identity sections and hides registry while editing", () => {
+  const source = read("admin/documents/mobile-webapp.js");
+  const css = read("admin/documents/mobile-webapp-v2.css");
+  assert.match(source, /collapsedByDefault = key === "issuer" \|\| key === "client"/);
+  assert.match(source, /documents-mobile-fieldset-toggle/);
+  assert.match(source, /documents-mobile-editor-open/);
+  assert.match(css, /body\.documents-mobile-editor-open \.documents-registry-layout\{display:none!important\}/);
+  assert.match(css, /fieldset\.is-mobile-collapsed>:not\(legend\)\{display:none!important\}/);
+});
+
+test("mobile Documents avoids another MutationObserver", () => {
   const source = read("admin/documents/mobile-webapp.js");
   const css = read("admin/documents/mobile-webapp.css");
   assert.doesNotMatch(source, /MutationObserver/);
   assert.match(css, /--documents-touch:46px/);
   assert.match(css, /font-size:16px!important/);
-  assert.match(css, /\.draft-actions\{/);
-  assert.match(css, /position:sticky/);
   assert.match(css, /documents-finalize-dialog/);
 });
 
