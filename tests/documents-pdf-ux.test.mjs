@@ -11,17 +11,23 @@ test("Documents Admin loads PDF artifact UX and deterministic state router", () 
   const ux = read("admin/documents/pdf-artifact-ux.js");
   assert.match(stabilization, /pdf-artifact-ux\.js/);
   assert.match(stabilization, /state-router-fix\.js/);
-  assert.match(ux, /signed PDF is generated automatically from the frozen snapshot/);
-  assert.match(ux, /artifact failure never releases the number and can be retried/);
-  assert.match(ux, /Real CC\/INV series remain locked/);
   assert.match(ux, /Finalized · signed PDF requested/);
+  assert.match(ux, /PDF ready · private artifact/);
+  assert.match(ux, /retry is safe/);
 });
 
-test("PDF artifact UX does not create a self-triggering MutationObserver loop", () => {
-  const ux = read("admin/documents/pdf-artifact-ux.js");
-  assert.match(ux, /const FINALIZE_WARNING_COPY =/);
-  assert.match(ux, /warning\.textContent !== FINALIZE_WARNING_COPY/);
-  assert.match(ux, /warning\.textContent = FINALIZE_WARNING_COPY/);
+test("PDF artifact UX cannot fight production finalize copy or create a characterData observer loop", () => {
+  const artifacts = read("admin/documents/pdf-artifact-ux.js");
+  const production = read("admin/documents/production-active-ux.js");
+  assert.doesNotMatch(artifacts, /FINALIZE_WARNING_COPY/);
+  assert.doesNotMatch(artifacts, /documents-finalize-warning/);
+  assert.doesNotMatch(artifacts, /characterData:\s*true/);
+  assert.match(artifacts, /new MutationObserver\(queueSync\)/);
+  assert.match(artifacts, /requestAnimationFrame/);
+  assert.match(artifacts, /observer\.observe\(document\.body, \{ childList: true, subtree: true \}\)/);
+  assert.match(production, /documents-finalize-warning/);
+  assert.match(production, /REAL document issue/);
+  assert.match(production, /TEST document issue/);
 });
 
 test("draft documents prioritize live preview before the editor", () => {
@@ -32,10 +38,11 @@ test("draft documents prioritize live preview before the editor", () => {
   assert.match(ux, /shell\.classList\.add\("documents-draft-preview-first"\)/);
 });
 
-test("finalized TEST documents bypass draft row handlers and prioritize PDF preview", () => {
+test("finalized documents bypass draft row handlers and prioritize PDF preview", () => {
   const ux = read("admin/documents/pdf-artifact-ux.js");
   const artifacts = read("documents-pdf-artifacts.js");
-  assert.match(ux, /Issued TEST artifact/);
+  assert.match(ux, /Issued \$\{environment\} artifact/);
+  assert.match(ux, /function environmentLabel/);
   assert.match(ux, /snapshot frozen/);
   assert.match(ux, /draft editor is disabled for issued documents/i);
   assert.match(ux, /Download PDF/);
