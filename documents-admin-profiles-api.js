@@ -15,6 +15,7 @@ import {
   deleteIssuerProfileStorage
 } from "./documents-storage-profile-delete.js";
 import { inspectDocumentsStoragePreflight } from "./documents-storage-preparation.js";
+import { inspectDocumentsProductionPreflight } from "./documents-production-preflight.js";
 
 const API_PREFIX = "/api/admin/documents";
 const MAX_JSON_BYTES = 64 * 1024;
@@ -98,7 +99,7 @@ async function settings(env) {
       intendedNextValue: item.nextValue,
       displayPattern: item.displayPattern,
       locked: true,
-      note: "Real series bootstrap is intentionally disabled until the signed-PDF test gate passes."
+      note: "Real series bootstrap is intentionally disabled until production preflight passes and the owner explicitly authorizes bootstrap."
     }))
   };
 }
@@ -142,6 +143,10 @@ export async function handleDocumentsProfilesApi(request, env, { verifyAdmin } =
   try {
     if (path === `${API_PREFIX}/settings` && request.method === "GET") {
       return json({ ...(await settings(env)), actor: String(user.email).toLowerCase() });
+    }
+
+    if (path === `${API_PREFIX}/production-preflight` && request.method === "GET") {
+      return json(await inspectDocumentsProductionPreflight(env));
     }
 
     const issuerMatch = path.match(/^\/api\/admin\/documents\/issuers\/([^/]+)$/);
@@ -194,6 +199,7 @@ export function documentsProfilesApiPolicy() {
     settingsReturnsSignaturePublicUrl: false,
     testEnsureConfirmation: TEST_SEQUENCE_CONFIRMATION,
     realSequenceBootstrapExposed: false,
+    productionPreflightReadOnly: true,
     signatureMaxRequestBytes: MAX_SIGNATURE_REQUEST_BYTES,
     profileDeleteRequiresUnused: true,
     issuerDeleteRemovesPrivateSignatureAssets: true,
