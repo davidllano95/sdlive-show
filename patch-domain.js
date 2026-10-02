@@ -379,7 +379,13 @@ export function assignFeedToConsoleChannel(project, {
   );
   if (occupiedBy) throw new Error("patch_console_channel_already_assigned");
 
-  const existing = next.consoleAssignments.find((item) => item.feedId === feedId);
+  const channelsById = new Map(next.consoleChannels.map((item) => [item.id, item]));
+  const existing = next.consoleAssignments.find((item) => {
+    if (item.feedId !== feedId) return false;
+    const existingChannel = channelsById.get(item.channelId);
+    return existingChannel?.deviceId === channel.deviceId;
+  });
+
   let repatched = false;
   if (existing) {
     repatched = existing.channelId !== channelId;
@@ -422,7 +428,12 @@ export function projectRouteRows(project) {
     list.push(connection);
     connectionsByFeed.set(connection.feedId, list);
   }
-  const consoleByFeed = new Map(normalized.consoleAssignments.map((item) => [item.feedId, item]));
+  const consoleByFeed = new Map();
+  for (const assignment of normalized.consoleAssignments) {
+    const list = consoleByFeed.get(assignment.feedId) || [];
+    list.push(assignment);
+    consoleByFeed.set(assignment.feedId, list);
+  }
 
   return normalized.feeds
     .map((feed) => {
@@ -432,16 +443,17 @@ export function projectRouteRows(project) {
         const device = port ? devices.get(port.deviceId) || null : null;
         return { connection, port, device };
       });
-      const assignment = consoleByFeed.get(feed.id) || null;
-      const channel = assignment ? channels.get(assignment.channelId) || null : null;
-      const consoleDevice = channel ? devices.get(channel.deviceId) || null : null;
+      const consoleAssignments = (consoleByFeed.get(feed.id) || []).map((assignment) => {
+        const channel = channels.get(assignment.channelId) || null;
+        const consoleDevice = channel ? devices.get(channel.deviceId) || null : null;
+        return { assignment, channel, device: consoleDevice };
+      });
       return {
         source,
         feed,
         connections,
-        consoleAssignment: assignment
-          ? { assignment, channel, device: consoleDevice }
-          : null
+        consoleAssignments,
+        consoleAssignment: consoleAssignments[0] || null
       };
     })
     .sort((a, b) => (a.source?.order || 0) - (b.source?.order || 0));
