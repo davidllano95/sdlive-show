@@ -6,11 +6,11 @@
   <meta name="robots" content="noindex,nofollow,noarchive" />
   <meta name="color-scheme" content="dark" />
   <base href="/admin/" />
-  <title>Patch Smoke · SD.Live Admin</title>
+  <title>Patch · SD.Live Admin</title>
   <link rel="icon" href="../assets/icons/favicon.ico" />
   <link rel="stylesheet" href="./dashboard.css" />
   <link rel="stylesheet" href="./mobile-dashboard.css" />
-  <link rel="stylesheet" href="./patch/patch.css?v=20261001-1" />
+  <link rel="stylesheet" href="./patch/patch.css?v=20261001-2" />
 </head>
 <body>
   <div class="backoffice">
@@ -24,15 +24,18 @@
         <a class="app-nav__item" href="/admin/"><span>Dashboard</span></a>
         <a class="app-nav__item" href="/admin/finance/"><span>Finance</span><small>SD.Live Track</small></a>
         <a class="app-nav__item" href="/admin/documents/"><span>Documents</span><small>v1</small></a>
-        <a class="app-nav__item is-active" href="/admin/patch/"><span>Patch</span><small>Smoke 0.1</small></a>
+        <a class="app-nav__item is-active" href="/admin/patch/"><span>Patch</span><small>Smoke 0.2</small></a>
         <a class="app-nav__item" href="/admin/editor/"><span>Site Editor</span></a>
       </nav>
       <div class="sidebar-bottom"><span class="secure"><i></i> Local-first smoke</span></div>
     </aside>
 
-    <main class="main">
+    <main class="main patch-main">
       <header class="topbar patch-topbar">
-        <div><span class="eyebrow">SD.Live Patch</span><h1>Smoke 0.1</h1></div>
+        <div>
+          <span class="eyebrow">SD.Live Patch</span>
+          <h1>Spreadsheet Smoke 0.2</h1>
+        </div>
         <div class="top-actions">
           <span class="patch-save-state" id="saveState">Loading local project…</span>
           <button class="button button--ghost" id="reloadPatch" type="button">Reload</button>
@@ -41,92 +44,98 @@
       </header>
 
       <section class="content patch-content">
-        <section class="patch-hero">
-          <div>
-            <span class="eyebrow">Build → Smoke → Expand</span>
-            <h2 id="projectHeading">Local Patch</h2>
-            <p>One structured project drives both the editable route table and the System View. This smoke is local-only and does not connect to consoles or cloud storage.</p>
+        <header class="patch-sheet-header">
+          <div class="patch-title-wrap">
+            <label class="eyebrow" for="projectName">Patch</label>
+            <input class="patch-title-input" id="projectName" autocomplete="off" aria-label="Patch name" />
+            <div class="patch-meta" id="projectMeta"></div>
           </div>
           <div class="patch-status-cluster">
             <span class="patch-chip" id="validityChip">Valid</span>
             <span class="patch-chip" id="completenessChip">Incomplete</span>
           </div>
-        </section>
+        </header>
 
-        <section class="patch-card patch-project-card">
-          <div class="patch-card__head">
-            <div><span class="eyebrow">Project</span><h3>Local working copy</h3></div>
-            <button class="button button--ghost" id="newPatch" type="button">New local project</button>
+        <section class="patch-setup-strip" aria-label="Patch hardware setup">
+          <div class="patch-setup-group">
+            <span class="patch-setup-label">Console</span>
+            <select id="consoleProfile" aria-label="Console profile"></select>
+            <button class="button button--ghost" id="addConsole" type="button">+ Add</button>
           </div>
-          <label class="patch-field patch-field--wide" for="projectName"><span>Patch name</span><input id="projectName" autocomplete="off" /></label>
-          <div class="patch-meta" id="projectMeta"></div>
-        </section>
-
-        <div class="patch-create-grid">
-          <section class="patch-card">
-            <div class="patch-card__head"><div><span class="eyebrow">Source</span><h3>Add Source</h3></div></div>
-            <form id="sourceForm" class="patch-form">
-              <label class="patch-field"><span>Name</span><input id="sourceName" placeholder="Kick" required autocomplete="off" /></label>
-              <label class="patch-field"><span>Input Method</span><select id="inputMethod"><option>Mic</option><option>DI</option><option>Line</option><option>Dante</option><option>AES3</option><option>USB</option><option>SoundGrid</option><option>Other</option></select></label>
-              <button class="button" type="submit">Add Source</button>
-            </form>
-          </section>
-
-          <section class="patch-card">
-            <div class="patch-card__head"><div><span class="eyebrow">I/O</span><h3>Add input device</h3></div></div>
-            <form id="deviceForm" class="patch-form patch-form--device">
-              <label class="patch-field"><span>Name</span><input id="deviceName" placeholder="Rio A" required autocomplete="off" /></label>
-              <label class="patch-field"><span>Inputs</span><input id="deviceInputs" type="number" value="8" min="1" max="256" required /></label>
-              <label class="patch-field"><span>Protocol</span><select id="deviceProtocol"><option>Analog</option><option>Dante</option><option>AES3</option><option>AES67</option><option>MADI</option><option>SoundGrid</option></select></label>
-              <button class="button" type="submit">Add Device</button>
-            </form>
-          </section>
-        </div>
-
-        <section class="patch-card">
-          <div class="patch-card__head">
-            <div><span class="eyebrow">Easy Patch · smoke</span><h3>Assign / Repatch</h3></div>
-            <span class="patch-help">Fan-out OFF: assigning the same Feed elsewhere repatches it.</span>
+          <div class="patch-setup-group">
+            <span class="patch-setup-label">I/O</span>
+            <select id="ioProfile" aria-label="I/O profile"></select>
+            <button class="button button--ghost" id="addIoDevice" type="button">+ Add</button>
           </div>
-          <form id="routeForm" class="patch-route-form">
-            <label class="patch-field"><span>Source / Feed</span><select id="routeFeed" required></select></label>
-            <span class="patch-route-arrow" aria-hidden="true">→</span>
-            <label class="patch-field"><span>Destination input</span><select id="routePort" required></select></label>
-            <button class="button" type="submit">Patch</button>
-            <span class="patch-inline-message" id="routeMessage" aria-live="polite"></span>
-          </form>
+          <div class="patch-device-summary" id="deviceSummary" aria-live="polite"></div>
+          <button class="patch-text-button" id="newPatch" type="button">New blank</button>
         </section>
 
-        <div class="patch-view-grid">
-          <section class="patch-card patch-card--table">
-            <div class="patch-card__head"><div><span class="eyebrow">Projection 1</span><h3>Input List</h3></div><span class="patch-help">Editable routing projection</span></div>
-            <div class="patch-table-wrap">
-              <table class="patch-table">
-                <thead><tr><th>Source</th><th>Input Method</th><th>Routing</th><th>Status</th><th></th></tr></thead>
-                <tbody id="routeRows"></tbody>
-              </table>
-            </div>
-          </section>
+        <nav class="patch-view-tabs" aria-label="Patch views">
+          <button class="patch-view-tab is-active" type="button" data-view="sheet">Input List</button>
+          <button class="patch-view-tab" type="button" data-view="io">I/O</button>
+          <button class="patch-view-tab" type="button" data-view="system">System</button>
+        </nav>
 
-          <section class="patch-card patch-card--system">
-            <div class="patch-card__head"><div><span class="eyebrow">Projection 2</span><h3>System View</h3></div><span class="patch-help">Same data · no second database</span></div>
-            <div class="system-view" id="systemView"></div>
-          </section>
-        </div>
-
-        <section class="patch-card">
-          <div class="patch-card__head"><div><span class="eyebrow">Devices</span><h3>Ports & warnings</h3></div><span class="patch-help">Change Condition/Availability to smoke validation.</span></div>
-          <div class="device-list" id="deviceList"></div>
+        <section class="patch-view is-active" id="sheetView" data-patch-view="sheet">
+          <div class="patch-grid-shell">
+            <table class="patch-grid" aria-label="Patch input list">
+              <thead>
+                <tr>
+                  <th class="patch-col-number">#</th>
+                  <th>Source</th>
+                  <th>Input Method</th>
+                  <th>Stage Position</th>
+                  <th>Input / I/O</th>
+                  <th>Console Channel</th>
+                  <th class="patch-col-status">Status</th>
+                </tr>
+              </thead>
+              <tbody id="patchGridBody"></tbody>
+            </table>
+          </div>
+          <footer class="patch-grid-footer">
+            <span>Type directly into cells. Tab moves across. Enter on the blank Source row creates the next input.</span>
+            <span id="gridFeedback" aria-live="polite"></span>
+          </footer>
         </section>
 
-        <section class="patch-card">
-          <div class="patch-card__head"><div><span class="eyebrow">Derived state</span><h3>Validation</h3></div><span class="patch-help">Incomplete is not Conflict.</span></div>
+        <section class="patch-view" id="ioView" data-patch-view="io" hidden>
+          <div class="patch-secondary-head">
+            <div><span class="eyebrow">Profile-generated capacity</span><h2>I/O Banks</h2></div>
+            <p>Profiles create capacity. Assignments fill it.</p>
+          </div>
+          <div class="patch-io-grid" id="ioBanks"></div>
+        </section>
+
+        <section class="patch-view" id="systemViewPanel" data-patch-view="system" hidden>
+          <div class="patch-secondary-head">
+            <div><span class="eyebrow">Projection</span><h2>System View</h2></div>
+            <p>Derived from the same Patch state as the spreadsheet.</p>
+          </div>
+          <div class="system-view" id="systemView"></div>
+        </section>
+
+        <section class="patch-validation-bar">
           <div id="validationPanel" class="validation-panel"></div>
         </section>
+
+        <datalist id="inputMethodOptions">
+          <option value="Mic"></option>
+          <option value="DI"></option>
+          <option value="Line"></option>
+          <option value="Dante"></option>
+          <option value="AES3"></option>
+          <option value="USB"></option>
+          <option value="SoundGrid"></option>
+          <option value="Other"></option>
+        </datalist>
+        <datalist id="inputPortOptions"></datalist>
+        <datalist id="consoleChannelOptions"></datalist>
       </section>
     </main>
   </div>
 
-  <script type="module" src="./patch/patch.js?v=20261001-1"></script>
+  <script type="module" src="./patch/patch.js?v=20261001-2"></script>
 </body>
 </html>
