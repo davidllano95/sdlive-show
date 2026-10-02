@@ -17,10 +17,10 @@ test("Patch Smoke remains isolated local-first while moving to spreadsheet UX", 
 
 test("Input List is the primary spreadsheet-like Patch surface", () => {
   assert.match(html, /aria-label="Patch input list"/);
-  assert.match(html, /<th>Source<\/th>/);
-  assert.match(html, /<th>Input Method<\/th>/);
-  assert.match(html, /<th>Stage Position<\/th>/);
-  assert.match(html, /<th>Input \/ I\/O<\/th>/);
+  assert.match(script, /<th>Source<\/th>/);
+  assert.match(script, /<th>Input Method<\/th>/);
+  assert.match(script, /<th>Stage Position<\/th>/);
+  assert.match(script, /<th>Input \/ I\/O<\/th>/);
   assert.match(html, /id="patchGridHead"/);
   assert.match(script, /renderGridHead/);
   assert.match(script, /consoleDevices\(\)/);
