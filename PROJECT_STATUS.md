@@ -4,13 +4,13 @@
 
 | Campo | Valor |
 |---|---|
-| Última reconciliación | **2026-09-28 — America/Bogota** |
+| Última reconciliación | **2026-10-01 — America/Bogota** |
 | Producción | `https://sdlive.show` |
 | Documents | **v1 PRODUCTION READY / milestone closed** |
 | Documents templates | **`cc-co-es@1` + `invoice-intl-en@1` frozen** |
 | Real numbering at checkpoint | **`samuel:CC` next 21 · `samuel:INV` next 19/display 0019** |
 | TEST workspace | **clean baseline · both TEST roots next 1** |
-| Active Gate | **SD.Live Patch — design/discovery** |
+| Active Gate | **SD.Live Patch — build / smoke / expand** |
 | Finance | **owner-money + third-party operations closed/pass; generic write-back remains blocked** |
 | PILA | **backlog / research candidate** |
 | WhatsApp owner control | **merged; rollout intentionally paused** |
@@ -33,8 +33,10 @@ Documents-specific references remain:
 
 Current Patch references:
 
-- `docs/roadmap/future-sdlive-patch-2026-08-27.md`;
-- `docs/checkpoints/handoff-sdlive-patch-activation-2026-09-28.md`.
+- `docs/roadmap/sdlive-patch.md` — canonical product/data contract;
+- `docs/checkpoints/sdlive-patch-discovery-evaluation-2026-09-28.md` — consolidated discovery checkpoint;
+- `docs/roadmap/future-sdlive-patch-2026-08-27.md` — historical precursor;
+- `docs/checkpoints/handoff-sdlive-patch-activation-2026-09-28.md` — activation handoff.
 
 **Stability > novelty. `MERGED != PRODUCTION VERIFIED`. `CORE IMPLEMENTED != PRODUCTION ENABLED`.**
 
@@ -170,54 +172,68 @@ Documents has an iPhone/iPad operational layer with fixed Preview/Edit top rail,
 
 Do not reopen Documents v1 as an active roadmap blocker without a regression or an explicit v2 requirement.
 
-# SD.Live Patch — ACTIVE DESIGN / DISCOVERY GATE
+# SD.Live Patch — ACTIVE BUILD / SMOKE / EXPAND
 
 Canonical roadmap:
 
-`docs/roadmap/future-sdlive-patch-2026-08-27.md`
+`docs/roadmap/sdlive-patch.md`
 
-Activation handoff / new-conversation starter:
+Consolidated discovery checkpoint:
 
-`docs/checkpoints/handoff-sdlive-patch-activation-2026-09-28.md`
+`docs/checkpoints/sdlive-patch-discovery-evaluation-2026-09-28.md`
 
-## Current purpose
+## Current state
 
-Design the minimum structured Patch domain from real SD.Live workflows before writing schema or UI code.
+The conceptual contract is stable enough to begin iterative implementation without freezing the final storage schema.
 
-The product direction is a native Admin workspace for:
+**Smoke 0.1 merged through PR #315** with:
 
-- Inputs / patch sheet;
-- Stage I/O devices + ports;
-- Outputs;
-- structured signal paths;
-- versions/snapshots;
-- show-day handoff;
-- later Visual Patch and artist-vs-house comparison/repatch workflows.
+- local-first Admin workspace at `/admin/patch/`;
+- pure domain core for Sources, implicit Feeds, Devices, Ports and Connections;
+- fan-out OFF -> Repatch behavior;
+- ordinary-input double-assignment protection;
+- Validity vs Completeness separation;
+- Damaged / Reserved / Unavailable warnings;
+- IndexedDB local working copy;
+- explicit Save + autosave states;
+- Input List and System View derived from the same project state;
+- focused domain/workspace tests.
 
-## First gate — no runtime implementation yet
+## Current development strategy
 
-Before coding:
+Use an iterative vertical-slice loop:
 
-1. review **3–5 real patch/rider examples**;
-2. identify recurring fields/decisions actually used on show day;
-3. define the minimum MVP model for **Inputs + Stage I/O + Outputs**;
-4. decide master patch vs event snapshot/version semantics;
-5. lock stable IDs and ordering behavior;
-6. define device/port identity and conflict validation;
-7. define output identity and capacity rules;
-8. define event-link semantics without taking ownership from REGISTRO/AppSheet;
-9. sketch desktop/iPad/iPhone UX;
-10. approve the data contract before any D1 migration.
+`design invariant -> implement smallest real slice -> smoke with real workflow -> refine contract -> expand`
 
-Do not begin with Visual Patch. The visual graph must be a projection of structured routing, not the source of truth.
+Real fixtures are now **tests during development**, not a gate that blocks all coding.
 
-## Patch source-of-truth boundaries
+The first implementation is intentionally local-only. It does not authorize or require a final D1 schema.
 
-- future Patch D1 state may own patch sheets, versions, channels, outputs, devices, ports, connections and technical notes;
-- REGISTRO/AppSheet retain event dates, client workflow state and Finance facts;
-- R2 may later hold Patch-managed riders/stage plots/reference files/exports;
-- Inventory remains a separate future source of truth;
-- Patch does not own Rental pricing/quote math.
+## Still blocked until their own validated slice
+
+Do not infer authorization for:
+
+- final D1 Patch schema/migrations;
+- cloud sync as an interactive dependency;
+- console/hardware control from Routing Sets;
+- automated console repatching;
+- REGISTRO integration design;
+- Finance or Inventory ownership changes.
+
+Patch remains separate from Finance, event workflow ownership and Inventory stock.
+
+## Immediate continuation
+
+Smoke the local 0.1 workspace with real Sources/I/O, then expand in small slices. Near-term candidates:
+
+1. richer Device/I/O editing and Console Channels;
+2. Output Paths / Handoffs;
+3. History / Undo / Redo foundation;
+4. portable `.sdlive` project file;
+5. Venue/System interaction growth;
+6. Festival Mode after the core survives normal-show smoke.
+
+Do not reopen the old blanket “no runtime implementation yet” gate unless a structural regression requires returning to discovery.
 
 # Finance owner-money + third-party operations — CLOSED / PASS
 
@@ -265,4 +281,4 @@ PR #246 merged, but live Meta/Cloudflare activation remains intentionally paused
 
 # Exact continuation point
 
-**Documents v1 is closed and production-ready. SD.Live Patch is now the active design/discovery gate. Start a new conversation, inspect current `main` plus the Patch roadmap and activation handoff, and begin by reviewing 3–5 real patch/rider examples. Derive the MVP data contract for Inputs + Stage I/O + Outputs, including stable IDs/order, versions/snapshots, port/capacity conflicts and event-link boundaries. Do not code or migrate D1 until that contract is approved.**
+**Documents v1 is closed and production-ready. SD.Live Patch is now in active build / smoke / expand iteration. Start a new conversation, inspect current `main` plus the Patch roadmap and activation handoff, and begin by reviewing 3–5 real patch/rider examples. Derive the MVP data contract for Inputs + Stage I/O + Outputs, including stable IDs/order, versions/snapshots, port/capacity conflicts and event-link boundaries. Do not code or migrate D1 until that contract is approved.**
