@@ -25,7 +25,7 @@ test("Input List is the primary spreadsheet-like Patch surface", () => {
   assert.match(script, /renderGridHead/);
   assert.match(script, /consoleDevices\(\)/);
   assert.match(script, /data-console-id/);
-  assert.match(html, /data-new-source/);
+  assert.match(script, /data-new-source/);
   assert.match(script, /data-grid-field/);
   assert.match(script, /handlePaste/);
   assert.match(script, /Type Source \+ Enter/);
