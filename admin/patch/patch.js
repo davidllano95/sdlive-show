@@ -34,9 +34,10 @@ const elements = {
   addConsole: $("addConsole"),
   addIoDevice: $("addIoDevice"),
   deviceSummary: $("deviceSummary"),
+  patchGridHead: $("patchGridHead"),
   patchGridBody: $("patchGridBody"),
   inputPortOptions: $("inputPortOptions"),
-  consoleChannelOptions: $("consoleChannelOptions"),
+  consoleChannelLists: $("consoleChannelLists"),
   gridFeedback: $("gridFeedback"),
   ioBanks: $("ioBanks"),
   systemView: $("systemView"),
@@ -136,29 +137,45 @@ function portOptionModel() {
     });
 }
 
-function channelOptionModel() {
+function consoleDevices() {
+  return project.devices.filter((device) => device.kind === "console");
+}
+
+function channelOptionModel(consoleDeviceId = null) {
   const devices = deviceMap();
-  return project.consoleChannels.map((channel) => {
-    const device = devices.get(channel.deviceId);
-    return {
-      id: channel.id,
-      label: `${device?.name || "Console"} / ${channel.name}`,
-      channel,
-      device
-    };
-  });
+  return project.consoleChannels
+    .filter((channel) => !consoleDeviceId || channel.deviceId === consoleDeviceId)
+    .map((channel) => {
+      const device = devices.get(channel.deviceId);
+      return {
+        id: channel.id,
+        label: consoleDeviceId ? channel.name : `${device?.name || "Console"} / ${channel.name}`,
+        channel,
+        device
+      };
+    });
 }
 
 function optionLookup(options) {
   return new Map(options.map((item) => [item.label.trim().toLowerCase(), item]));
 }
 
-function renderDataLists(portOptions, channelOptions) {
+function consoleListId(deviceId) {
+  return `console-list-${String(deviceId).replace(/[^A-Za-z0-9_-]/g, "-")}`;
+}
+
+function renderDataLists(portOptions) {
   elements.inputPortOptions.innerHTML = portOptions
     .map((item) => `<option value="${escapeHtml(item.label)}"></option>`)
     .join("");
-  elements.consoleChannelOptions.innerHTML = channelOptions
-    .map((item) => `<option value="${escapeHtml(item.label)}"></option>`)
+
+  elements.consoleChannelLists.innerHTML = consoleDevices()
+    .map((device) => {
+      const options = channelOptionModel(device.id)
+        .map((item) => `<option value="${escapeHtml(item.label)}"></option>`)
+        .join("");
+      return `<datalist id="${escapeHtml(consoleListId(device.id))}">${options}</datalist>`;
+    })
     .join("");
 }
 
@@ -198,14 +215,40 @@ function rowInput({ field, value, sourceId, feedId, list = "", placeholder = "" 
   return `<input ${attrs} />`;
 }
 
+function renderGridHead() {
+  const consoleHeaders = consoleDevices()
+    .map((device) => `<th class="patch-col-console">${escapeHtml(device.name)}</th>`)
+    .join("");
+  elements.patchGridHead.innerHTML = `
+    <th class="patch-col-number">#</th>
+    <th>Source</th>
+    <th>Input Method</th>
+    <th>Stage Position</th>
+    <th>Input / I/O</th>
+    ${consoleHeaders}
+    <th class="patch-col-status">Status</th>`;
+}
+
 function renderGrid(rows, validation) {
+  renderGridHead();
+  const consoles = consoleDevices();
   const body = rows.map((row, index) => {
     const physical = row.connections[0]
       ? `${row.connections[0].device?.name || "Device"} / ${row.connections[0].port?.name || "Port"}`
       : "";
-    const consoleChannel = row.consoleAssignment
-      ? `${row.consoleAssignment.device?.name || "Console"} / ${row.consoleAssignment.channel?.name || "Channel"}`
-      : "";
+    const consoleCells = consoles.map((consoleDevice) => {
+      const assignment = row.consoleAssignments.find((item) => item.device?.id === consoleDevice.id);
+      return `<td><input
+        class="patch-cell-input"
+        data-grid-field="console-channel"
+        data-feed-id="${escapeHtml(row.feed.id)}"
+        data-console-id="${escapeHtml(consoleDevice.id)}"
+        list="${escapeHtml(consoleListId(consoleDevice.id))}"
+        value="${escapeHtml(assignment?.channel?.name || "")}"
+        placeholder="TBD"
+        autocomplete="off"
+      /></td>`;
+    }).join("");
     const status = rowStatus(row, validation);
     return `<tr data-feed-row="${escapeHtml(row.feed.id)}">
       <td class="patch-row-number">${index + 1}</td>
@@ -213,18 +256,21 @@ function renderGrid(rows, validation) {
       <td>${rowInput({ field:"input-method", value:row.feed.inputMethod || "", feedId:row.feed.id, list:"inputMethodOptions" })}</td>
       <td>${rowInput({ field:"stage-position", value:row.source?.stagePosition || "", sourceId:row.source?.id, feedId:row.feed.id })}</td>
       <td>${rowInput({ field:"physical-input", value:physical, feedId:row.feed.id, list:"inputPortOptions", placeholder:"TBD" })}</td>
-      <td>${rowInput({ field:"console-channel", value:consoleChannel, feedId:row.feed.id, list:"consoleChannelOptions", placeholder:"TBD" })}</td>
+      ${consoleCells}
       <td class="patch-status-cell ${status.className}">${escapeHtml(status.label)}</td>
     </tr>`;
   });
 
+  const blankConsoleCells = consoles
+    .map(() => '<td><input class="patch-cell-input" tabindex="-1" placeholder="TBD" disabled /></td>')
+    .join("");
   body.push(`<tr class="patch-grid-new">
     <td class="patch-row-number">+</td>
     <td><input class="patch-cell-input" id="newSourceCell" data-new-source placeholder="Type Source + Enter" autocomplete="off" /></td>
     <td><input class="patch-cell-input" tabindex="-1" placeholder="Mic" disabled /></td>
     <td><input class="patch-cell-input" tabindex="-1" disabled /></td>
     <td><input class="patch-cell-input" tabindex="-1" placeholder="TBD" disabled /></td>
-    <td><input class="patch-cell-input" tabindex="-1" placeholder="TBD" disabled /></td>
+    ${blankConsoleCells}
     <td class="patch-status-cell is-incomplete">New</td>
   </tr>`);
 
@@ -329,12 +375,10 @@ function render() {
   const rows = projectRouteRows(project);
   const validation = validatePatch(project);
   const portOptions = portOptionModel();
-  const channelOptions = channelOptionModel();
-
   elements.projectName.value = project.name;
   elements.projectMeta.innerHTML = `<span>Sources ${project.sources.length}</span><span>Devices ${project.devices.length}</span><span>Connections ${project.connections.length}</span>`;
 
-  renderDataLists(portOptions, channelOptions);
+  renderDataLists(portOptions);
   renderGrid(rows, validation);
   renderDeviceSummary();
   renderIoBanks();
@@ -391,12 +435,20 @@ function handleExistingCellChange(input) {
       return;
     }
     if (field === "console-channel") {
+      const consoleId = input.dataset.consoleId;
       if (!input.value.trim()) {
-        mutate(disconnectFeedFromConsoleChannel(project, feedId), "Console Channel cleared.");
+        const next = normalizePatchProject(project);
+        const channelIds = new Set(
+          next.consoleChannels.filter((channel) => channel.deviceId === consoleId).map((channel) => channel.id)
+        );
+        next.consoleAssignments = next.consoleAssignments.filter(
+          (assignment) => !(assignment.feedId === feedId && channelIds.has(assignment.channelId))
+        );
+        mutate(next, "Console Channel cleared.");
         return;
       }
-      const option = matchOption(input.value, channelOptionModel());
-      if (!option) throw new Error("Choose an existing Console Channel.");
+      const option = matchOption(input.value, channelOptionModel(consoleId));
+      if (!option) throw new Error("Choose a Channel from this Console.");
       const result = assignFeedToConsoleChannel(project, { feedId, channelId:option.id });
       mutate(result.project, result.repatched ? "Repatched Console Channel." : "Console Channel assigned.");
     }
@@ -421,18 +473,24 @@ function applyPastedRow(cells) {
   });
   let next = result.project;
   const portText = String(cells[3] || "").trim();
-  const channelText = String(cells[4] || "").trim();
-
   if (portText) {
     const option = matchOption(portText, portOptionModel());
     if (option) next = assignFeedToPort(next, { feedId:result.feed.id, portId:option.id }).project;
   }
   project = next;
 
-  if (channelText) {
-    const option = matchOption(channelText, channelOptionModel());
-    if (option) project = assignFeedToConsoleChannel(project, { feedId:result.feed.id, channelId:option.id }).project;
-  }
+  const consoles = consoleDevices();
+  consoles.forEach((consoleDevice, consoleIndex) => {
+    const channelText = String(cells[4 + consoleIndex] || "").trim();
+    if (!channelText) return;
+    const option = matchOption(channelText, channelOptionModel(consoleDevice.id));
+    if (option) {
+      project = assignFeedToConsoleChannel(project, {
+        feedId: result.feed.id,
+        channelId: option.id
+      }).project;
+    }
+  });
 }
 
 function handlePaste(event) {
