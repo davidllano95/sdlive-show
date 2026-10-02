@@ -1890,3 +1890,72 @@ Recommended continuation:
 5. only after fixture validation, move toward Product Spec -> Technical Roadmap -> Schema.
 
 Still explicitly not authorized from this roadmap alone: D1 schema/tables; migrations; production runtime routes; console-control behavior for Routing Sets; automated hardware repatching; REGISTRO integration design; production deployment changes.
+
+## 40. Implementation transition — Smoke 0.1 authorized
+
+**Decision date:** 2026-10-01 — America/Bogota
+
+Discovery is no longer a blanket blocker on all runtime work.
+
+The approved development loop is now:
+
+```text
+stable design invariant
+  -> smallest real implementation slice
+  -> smoke with actual workflow
+  -> identify structural failure
+  -> refine contract
+  -> expand
+```
+
+### 40.1 Smoke 0.1 scope
+
+PR #315 introduced the first deliberately-small implementation slice:
+
+- local-only Admin workspace at `/admin/patch/`;
+- pure domain core for Source, implicit Feed, Device, Port and Connection;
+- single-show mode only;
+- fan-out OFF / Repatch semantics;
+- ordinary input double-assignment guard;
+- Validity and Completeness kept separate;
+- warnings for assigned Damaged / Reserved / Unavailable Ports;
+- IndexedDB local working copy;
+- explicit Save plus autosave state;
+- Input List and System View derived from the same structured project state.
+
+The purpose of Smoke 0.1 is to exercise the core model with real work, not to claim feature completeness.
+
+### 40.2 What this transition does not authorize
+
+Starting implementation does **not** mean that all conceptual names are frozen into a permanent database schema.
+
+Still gated behind later validated slices:
+
+- final D1 schema/migrations;
+- cloud synchronization architecture beyond the approved local-first abstraction;
+- console-connected routing control;
+- Routing Set hardware/application behavior;
+- automatic console repatching;
+- REGISTRO integration;
+- Festival Mode runtime before normal-show core smoke is healthy.
+
+### 40.3 Fixture validation changes role
+
+Real show/rider fixtures remain mandatory evidence, but they now run **during implementation**.
+
+They should be used to break each vertical slice as it grows rather than delaying all coding until the entire product contract is theoretically complete.
+
+### 40.4 Near-term expansion order
+
+Prefer small, testable increments:
+
+1. smoke Sources / implicit Feeds / Device Ports / Connections;
+2. expand Device/I/O editing and Console Channels;
+3. add Output Paths / Handoffs;
+4. establish History / Undo / Redo foundations;
+5. add portable `.sdlive` project workflow;
+6. grow System/Venue interaction;
+7. introduce Festival Mode only after the ordinary Patch core is stable enough to support it.
+
+Each increment should preserve the existing rule: one structured Patch state, multiple synchronized projections.
+
