@@ -1,15 +1,19 @@
 import {
-  addDevice,
-  addInputBank,
+  addDeviceFromProfile,
   addSource,
+  assignFeedToConsoleChannel,
   assignFeedToPort,
   createPatchProject,
   disconnectFeed,
+  disconnectFeedFromConsoleChannel,
+  normalizePatchProject,
   projectRouteRows,
   renamePatch,
-  setPortState,
+  updateFeed,
+  updateSource,
   validatePatch
 } from "../../patch-domain.js";
+import { listPatchProfiles } from "../../patch-profiles.js";
 import { loadLocalPatch, saveLocalPatch } from "./patch-storage.js";
 
 const LOCAL_PROJECT_ID = "patch-smoke-local";
@@ -22,30 +26,30 @@ const elements = {
   reloadPatch: $("reloadPatch"),
   newPatch: $("newPatch"),
   projectName: $("projectName"),
-  projectHeading: $("projectHeading"),
   projectMeta: $("projectMeta"),
   validityChip: $("validityChip"),
   completenessChip: $("completenessChip"),
-  sourceForm: $("sourceForm"),
-  sourceName: $("sourceName"),
-  inputMethod: $("inputMethod"),
-  deviceForm: $("deviceForm"),
-  deviceName: $("deviceName"),
-  deviceInputs: $("deviceInputs"),
-  deviceProtocol: $("deviceProtocol"),
-  routeForm: $("routeForm"),
-  routeFeed: $("routeFeed"),
-  routePort: $("routePort"),
-  routeMessage: $("routeMessage"),
-  routeRows: $("routeRows"),
+  consoleProfile: $("consoleProfile"),
+  ioProfile: $("ioProfile"),
+  addConsole: $("addConsole"),
+  addIoDevice: $("addIoDevice"),
+  deviceSummary: $("deviceSummary"),
+  patchGridHead: $("patchGridHead"),
+  patchGridBody: $("patchGridBody"),
+  inputPortOptions: $("inputPortOptions"),
+  consoleChannelLists: $("consoleChannelLists"),
+  gridFeedback: $("gridFeedback"),
+  ioBanks: $("ioBanks"),
   systemView: $("systemView"),
-  deviceList: $("deviceList"),
-  validationPanel: $("validationPanel")
+  validationPanel: $("validationPanel"),
+  viewTabs: Array.from(document.querySelectorAll("[data-view]")),
+  views: Array.from(document.querySelectorAll("[data-patch-view]"))
 };
 
 let project = null;
 let saveTimer = null;
 let saveSequence = 0;
+let activeView = "sheet";
 
 function escapeHtml(value) {
   return String(value ?? "").replace(/[&<>"']/g, (char) => ({
@@ -62,243 +66,466 @@ function setSaveState(text, className = "") {
   elements.saveState.className = `patch-save-state${className ? ` ${className}` : ""}`;
 }
 
+function setGridFeedback(text = "", type = "") {
+  elements.gridFeedback.textContent = text;
+  elements.gridFeedback.className = type ? `is-${type}` : "";
+}
+
 function markDirty() {
   setSaveState("Unsaved changes", "is-dirty");
   clearTimeout(saveTimer);
   saveTimer = setTimeout(() => saveNow("autosave"), AUTOSAVE_DELAY_MS);
 }
 
-async function saveNow(reason = "manual") {
+async function saveNow() {
   if (!project) return;
   const sequence = ++saveSequence;
   clearTimeout(saveTimer);
   setSaveState("Saving…");
   try {
     await saveLocalPatch(project);
-    if (sequence === saveSequence) {
-      setSaveState(reason === "autosave" ? "Saved locally" : "Saved locally", "is-saved");
-    }
+    if (sequence === saveSequence) setSaveState("Saved locally", "is-saved");
   } catch (error) {
-    console.error("[Patch Smoke] local save failed", error);
+    console.error("[Patch] local save failed", error);
     if (sequence === saveSequence) setSaveState("Save failed", "is-error");
   }
 }
 
-function mutate(nextProject, { message = "" } = {}) {
-  project = nextProject;
-  if (message) {
-    elements.routeMessage.textContent = message;
-    elements.routeMessage.className = "patch-inline-message is-good";
-  }
+function mutate(nextProject, feedback = "") {
+  project = normalizePatchProject(nextProject);
   render();
+  if (feedback) setGridFeedback(feedback, "good");
   markDirty();
 }
 
-function routeLabel(row) {
-  if (!row.connections.length) return "TBD";
-  return row.connections
-    .map(({ device, port }) => `${device?.name || "Unknown device"} / ${port?.name || "Unknown port"}`)
-    .join(" + ");
+function profileOptions(kind) {
+  return listPatchProfiles(kind)
+    .map((profile) =>
+      `<option value="${escapeHtml(profile.id)}">${escapeHtml(profile.manufacturer)} ${escapeHtml(profile.model)}</option>`
+    )
+    .join("");
 }
 
-function renderSelectors(rows) {
-  const previousFeed = elements.routeFeed.value;
-  const previousPort = elements.routePort.value;
+function populateProfileSelectors() {
+  elements.consoleProfile.innerHTML = profileOptions("console");
+  elements.ioProfile.innerHTML = profileOptions("stage-io");
+}
 
-  elements.routeFeed.innerHTML = rows.length
-    ? rows.map(({ source, feed }) =>
-        `<option value="${escapeHtml(feed.id)}">${escapeHtml(source?.name || "Unknown Source")}${feed.qualifier ? ` · ${escapeHtml(feed.qualifier)}` : ""}</option>`
-      ).join("")
-    : '<option value="">Add a Source first</option>';
+function deviceInstanceName(profileId) {
+  const profile = [...listPatchProfiles()].find((item) => item.id === profileId);
+  if (!profile) return "Device";
+  const count = project.devices.filter((device) => device.profileId === profileId).length;
+  return count ? `${profile.model} ${count + 1}` : profile.model;
+}
 
-  if (previousFeed && project.feeds.some((feed) => feed.id === previousFeed)) {
-    elements.routeFeed.value = previousFeed;
-  }
+function deviceMap() {
+  return new Map(project.devices.map((device) => [device.id, device]));
+}
 
-  const devices = new Map(project.devices.map((device) => [device.id, device]));
-  const eligiblePorts = project.ports.filter(
-    (port) => port.direction === "input" || port.direction === "bidirectional"
+function portOptionModel() {
+  const devices = deviceMap();
+  return project.ports
+    .filter((port) => port.direction === "input" || port.direction === "bidirectional")
+    .map((port) => {
+      const device = devices.get(port.deviceId);
+      return {
+        id: port.id,
+        label: `${device?.name || "Device"} / ${port.name}`,
+        port,
+        device
+      };
+    });
+}
+
+function consoleDevices() {
+  return project.devices.filter((device) => device.kind === "console");
+}
+
+function channelOptionModel(consoleDeviceId = null) {
+  const devices = deviceMap();
+  return project.consoleChannels
+    .filter((channel) => !consoleDeviceId || channel.deviceId === consoleDeviceId)
+    .map((channel) => {
+      const device = devices.get(channel.deviceId);
+      return {
+        id: channel.id,
+        label: consoleDeviceId ? channel.name : `${device?.name || "Console"} / ${channel.name}`,
+        channel,
+        device
+      };
+    });
+}
+
+function optionLookup(options) {
+  return new Map(options.map((item) => [item.label.trim().toLowerCase(), item]));
+}
+
+function consoleListId(deviceId) {
+  return `console-list-${String(deviceId).replace(/[^A-Za-z0-9_-]/g, "-")}`;
+}
+
+function renderDataLists(portOptions) {
+  elements.inputPortOptions.innerHTML = portOptions
+    .map((item) => `<option value="${escapeHtml(item.label)}"></option>`)
+    .join("");
+
+  elements.consoleChannelLists.innerHTML = consoleDevices()
+    .map((device) => {
+      const options = channelOptionModel(device.id)
+        .map((item) => `<option value="${escapeHtml(item.label)}"></option>`)
+        .join("");
+      return `<datalist id="${escapeHtml(consoleListId(device.id))}">${options}</datalist>`;
+    })
+    .join("");
+}
+
+function rowStatus(row, validation) {
+  const reasons = validation.incompleteReasonsByFeed?.[row.feed.id] || [];
+  const portIds = new Set(row.connections.map(({ port }) => port?.id).filter(Boolean));
+  const hasWarning = validation.issues.some(
+    (issue) => issue.severity === "warning" && issue.portId && portIds.has(issue.portId)
   );
-
-  elements.routePort.innerHTML = eligiblePorts.length
-    ? eligiblePorts.map((port) => {
-        const device = devices.get(port.deviceId);
-        const assigned = project.connections.find(
-          (connection) => connection.toPortId === port.id
-        );
-        const suffix = assigned ? " · assigned" : "";
-        return `<option value="${escapeHtml(port.id)}">${escapeHtml(device?.name || "Device")} / ${escapeHtml(port.name)}${suffix}</option>`;
-      }).join("")
-    : '<option value="">Add an input device first</option>';
-
-  if (previousPort && eligiblePorts.some((port) => port.id === previousPort)) {
-    elements.routePort.value = previousPort;
+  if (validation.issues.some((issue) => issue.severity === "conflict")) {
+    const channelId = row.consoleAssignment?.channel?.id;
+    const hasRowConflict = validation.issues.some(
+      (issue) =>
+        issue.severity === "conflict" &&
+        (portIds.has(issue.portId) || (channelId && issue.channelId === channelId))
+    );
+    if (hasRowConflict) return { label:"Conflict", className:"is-warning" };
   }
+  if (hasWarning) return { label:"Warning", className:"is-warning" };
+  if (!reasons.length) return { label:"Complete", className:"is-complete" };
+  if (reasons.length === 1 && reasons[0] === "input") return { label:"Needs input", className:"is-incomplete" };
+  if (reasons.length === 1 && reasons[0] === "console-channel") return { label:"Needs ch", className:"is-incomplete" };
+  return { label:"Incomplete", className:"is-incomplete" };
 }
 
-function renderRows(rows, validation) {
-  const incomplete = new Set(validation.incompleteFeedIds);
+function rowInput({ field, value, sourceId, feedId, list = "", placeholder = "" }) {
+  const attrs = [
+    'class="patch-cell-input"',
+    `data-grid-field="${field}"`,
+    sourceId ? `data-source-id="${escapeHtml(sourceId)}"` : "",
+    feedId ? `data-feed-id="${escapeHtml(feedId)}"` : "",
+    list ? `list="${list}"` : "",
+    `value="${escapeHtml(value)}"`,
+    placeholder ? `placeholder="${escapeHtml(placeholder)}"` : "",
+    'autocomplete="off"'
+  ].filter(Boolean).join(" ");
+  return `<input ${attrs} />`;
+}
 
-  elements.routeRows.innerHTML = rows.length
-    ? rows.map(({ source, feed, connections }) => {
-        const routing = connections.length
-          ? connections.map(({ device, port }) =>
-              `<span class="patch-route-pill">${escapeHtml(device?.name || "Unknown")} / ${escapeHtml(port?.name || "Unknown")}</span>`
-            ).join(" ")
-          : '<span class="patch-empty">TBD</span>';
+function renderGridHead() {
+  const consoleHeaders = consoleDevices()
+    .map((device) => `<th class="patch-col-console">${escapeHtml(device.name)}</th>`)
+    .join("");
+  elements.patchGridHead.innerHTML = `
+    <th class="patch-col-number">#</th>
+    <th>Source</th>
+    <th>Input Method</th>
+    <th>Stage Position</th>
+    <th>Input / I/O</th>
+    ${consoleHeaders}
+    <th class="patch-col-status">Status</th>`;
+}
 
-        const status = incomplete.has(feed.id) ? "Incomplete" : "Planned";
+function renderGrid(rows, validation) {
+  renderGridHead();
+  const consoles = consoleDevices();
+  const body = rows.map((row, index) => {
+    const physical = row.connections[0]
+      ? `${row.connections[0].device?.name || "Device"} / ${row.connections[0].port?.name || "Port"}`
+      : "";
+    const consoleCells = consoles.map((consoleDevice) => {
+      const assignment = row.consoleAssignments.find((item) => item.device?.id === consoleDevice.id);
+      return `<td><input
+        class="patch-cell-input"
+        data-grid-field="console-channel"
+        data-feed-id="${escapeHtml(row.feed.id)}"
+        data-console-id="${escapeHtml(consoleDevice.id)}"
+        list="${escapeHtml(consoleListId(consoleDevice.id))}"
+        value="${escapeHtml(assignment?.channel?.name || "")}"
+        placeholder="TBD"
+        autocomplete="off"
+      /></td>`;
+    }).join("");
+    const status = rowStatus(row, validation);
+    return `<tr data-feed-row="${escapeHtml(row.feed.id)}">
+      <td class="patch-row-number">${index + 1}</td>
+      <td>${rowInput({ field:"source-name", value:row.source?.name || "", sourceId:row.source?.id, feedId:row.feed.id })}</td>
+      <td>${rowInput({ field:"input-method", value:row.feed.inputMethod || "", feedId:row.feed.id, list:"inputMethodOptions" })}</td>
+      <td>${rowInput({ field:"stage-position", value:row.source?.stagePosition || "", sourceId:row.source?.id, feedId:row.feed.id })}</td>
+      <td>${rowInput({ field:"physical-input", value:physical, feedId:row.feed.id, list:"inputPortOptions", placeholder:"TBD" })}</td>
+      ${consoleCells}
+      <td class="patch-status-cell ${status.className}">${escapeHtml(status.label)}</td>
+    </tr>`;
+  });
 
-        return `<tr>
-          <td><strong>${escapeHtml(source?.name || "Unknown Source")}</strong></td>
-          <td>${escapeHtml(feed.inputMethod)}</td>
-          <td>${routing}</td>
-          <td>${escapeHtml(status)}</td>
-          <td>${connections.length ? `<button class="patch-mini-button" type="button" data-disconnect-feed="${escapeHtml(feed.id)}">Disconnect</button>` : ""}</td>
-        </tr>`;
+  const blankConsoleCells = consoles
+    .map(() => '<td><input class="patch-cell-input" tabindex="-1" placeholder="TBD" disabled /></td>')
+    .join("");
+  body.push(`<tr class="patch-grid-new">
+    <td class="patch-row-number">+</td>
+    <td><input class="patch-cell-input" id="newSourceCell" data-new-source placeholder="Type Source + Enter" autocomplete="off" /></td>
+    <td><input class="patch-cell-input" tabindex="-1" placeholder="Mic" disabled /></td>
+    <td><input class="patch-cell-input" tabindex="-1" disabled /></td>
+    <td><input class="patch-cell-input" tabindex="-1" placeholder="TBD" disabled /></td>
+    ${blankConsoleCells}
+    <td class="patch-status-cell is-incomplete">New</td>
+  </tr>`);
+
+  elements.patchGridBody.innerHTML = body.join("");
+}
+
+function renderDeviceSummary() {
+  elements.deviceSummary.innerHTML = project.devices.length
+    ? project.devices.map((device) => {
+        const ports = project.ports.filter((port) => port.deviceId === device.id).length;
+        const channels = project.consoleChannels.filter((channel) => channel.deviceId === device.id).length;
+        const detail = device.kind === "console" ? `${channels} ch · ${ports} I/O` : `${ports} I/O`;
+        return `<span class="patch-device-pill">${escapeHtml(device.name)} · ${escapeHtml(detail)}</span>`;
       }).join("")
-    : '<tr><td colspan="5" class="patch-empty">Add a Source to begin.</td></tr>';
+    : '<span class="patch-device-pill">No hardware profiles yet</span>';
+}
+
+function renderIoBanks() {
+  const devices = deviceMap();
+  elements.ioBanks.innerHTML = project.devices.length
+    ? project.devices.map((device) => {
+        const banks = project.ioBanks.filter((bank) => bank.deviceId === device.id);
+        const channels = project.consoleChannels.filter((channel) => channel.deviceId === device.id);
+        const bankRows = banks.map((bank) => {
+          const count = project.ports.filter((port) => port.bankId === bank.id).length;
+          return `<div class="patch-bank-row">
+            <div><strong>${escapeHtml(bank.name)}</strong><span>${escapeHtml(bank.direction)} · ${escapeHtml(bank.signalProtocol)}${bank.connector ? ` · ${escapeHtml(bank.connector)}` : ""}</span></div>
+            <span class="patch-bank-count">${count}</span>
+          </div>`;
+        }).join("");
+        const channelRow = channels.length
+          ? `<div class="patch-bank-row"><div><strong>Console Input Channels</strong><span>Logical processing slots</span></div><span class="patch-bank-count">${channels.length}</span></div>`
+          : "";
+        return `<section class="patch-io-device">
+          <div class="patch-io-device__head"><strong>${escapeHtml(device.name)}</strong><span>${escapeHtml(device.manufacturer || "")} ${escapeHtml(device.model || "")}</span></div>
+          ${bankRows || '<div class="patch-bank-row"><span>No generated banks</span></div>'}
+          ${channelRow}
+        </section>`;
+      }).join("")
+    : '<div class="patch-io-device"><div class="patch-io-device__head"><strong>No devices yet</strong><span>Add a Console or I/O Profile above.</span></div></div>';
 }
 
 function renderSystem(rows) {
   elements.systemView.innerHTML = rows.length
     ? rows.map((row) => {
-        const destination = row.connections.length
-          ? routeLabel(row)
-          : "Unassigned / TBD";
-
+        const physical = row.connections[0]
+          ? `${row.connections[0].device?.name || "Device"} / ${row.connections[0].port?.name || "Port"}`
+          : "Input TBD";
+        const channel = row.consoleAssignment
+          ? `${row.consoleAssignment.device?.name || "Console"} / ${row.consoleAssignment.channel?.name || "Channel"}`
+          : "Console Ch TBD";
         return `<div class="system-route">
-          <div class="system-node">
-            <strong>${escapeHtml(row.source?.name || "Unknown Source")}</strong>
-            <span>${escapeHtml(row.feed.inputMethod)} · implicit Feed</span>
-          </div>
-          <span class="system-arrow" aria-hidden="true">→</span>
-          <div class="system-node">
-            <strong>${escapeHtml(destination)}</strong>
-            <span>${row.connections.length ? "Input endpoint" : "Incomplete route"}</span>
-          </div>
+          <div class="system-node"><strong>${escapeHtml(row.source?.name || "Source")}</strong><span>${escapeHtml(row.feed.inputMethod || "Unknown")}</span></div>
+          <span class="system-arrow">→</span>
+          <div class="system-node ${row.connections.length ? "" : "is-tbd"}"><strong>${escapeHtml(physical)}</strong><span>Input endpoint</span></div>
+          <span class="system-arrow">→</span>
+          <div class="system-node ${row.consoleAssignment ? "" : "is-tbd"}"><strong>${escapeHtml(channel)}</strong><span>Logical channel</span></div>
         </div>`;
       }).join("")
-    : '<div class="patch-empty">No Sources yet.</div>';
-}
-
-function renderDevices() {
-  elements.deviceList.innerHTML = project.devices.length
-    ? project.devices.map((device) => {
-        const ports = project.ports.filter((port) => port.deviceId === device.id);
-
-        return `<section class="device-card">
-          <div class="device-card__head">
-            <strong>${escapeHtml(device.name)}</strong>
-            <span>${ports.length} ports${device.rackLocation ? ` · ${escapeHtml(device.rackLocation)}` : ""}</span>
-          </div>
-          <div class="port-grid">
-            ${ports.map((port) => `<div class="port-row">
-              <strong>${escapeHtml(port.name)}</strong>
-              <select data-port-availability="${escapeHtml(port.id)}" aria-label="Availability for ${escapeHtml(port.name)}">
-                <option value="available"${port.availability === "available" ? " selected" : ""}>Available</option>
-                <option value="reserved"${port.availability === "reserved" ? " selected" : ""}>Reserved</option>
-                <option value="unavailable"${port.availability === "unavailable" ? " selected" : ""}>Unavailable</option>
-              </select>
-              <select data-port-condition="${escapeHtml(port.id)}" aria-label="Condition for ${escapeHtml(port.name)}">
-                <option value="ok"${port.condition === "ok" ? " selected" : ""}>OK</option>
-                <option value="damaged"${port.condition === "damaged" ? " selected" : ""}>Damaged</option>
-              </select>
-            </div>`).join("")}
-          </div>
-        </section>`;
-      }).join("")
-    : '<div class="patch-empty">No Devices yet.</div>';
+    : '<div class="system-node is-tbd"><strong>No Sources yet</strong><span>Add one from the spreadsheet.</span></div>';
 }
 
 function issueText(issue) {
-  const port = issue.portId
-    ? project.ports.find((item) => item.id === issue.portId)
-    : null;
-  const device = port
-    ? project.devices.find((item) => item.id === port.deviceId)
-    : null;
+  const devices = deviceMap();
+  const port = issue.portId ? project.ports.find((item) => item.id === issue.portId) : null;
+  const device = port ? devices.get(port.deviceId) : null;
   const where = port ? `${device?.name || "Device"} / ${port.name}` : "Route";
-
   const labels = {
-    damaged_port_assigned: `${where}: assigned port is marked Damaged.`,
-    reserved_port_assigned: `${where}: assigned port is Reserved.`,
-    unavailable_port_assigned: `${where}: assigned port is Unavailable.`,
-    input_double_assignment: `${where}: ordinary input has multiple simultaneous Feeds.`,
-    connection_missing_feed: "Connection references a missing Feed.",
-    connection_missing_port: "Connection references a missing Port."
+    damaged_port_assigned: `${where}: Damaged port is assigned.`,
+    reserved_port_assigned: `${where}: Reserved port is assigned.`,
+    unavailable_port_assigned: `${where}: Unavailable port is assigned.`,
+    input_double_assignment: `${where}: input has multiple Feeds.`,
+    console_channel_double_assignment: "Console Channel has multiple Feeds."
   };
-
   return labels[issue.code] || issue.code;
 }
 
 function renderValidation(validation) {
-  elements.validityChip.textContent =
-    validation.validity === "valid" ? "Valid" : "Conflict";
-  elements.validityChip.className =
-    `patch-chip ${validation.validity === "valid" ? "is-good" : "is-conflict"}`;
-
-  elements.completenessChip.textContent =
-    validation.completeness === "complete"
-      ? "Complete"
-      : `Incomplete · ${validation.incompleteFeedIds.length}`;
-  elements.completenessChip.className =
-    `patch-chip ${validation.completeness === "complete" ? "is-good" : "is-warning"}`;
-
   const items = [];
-
   if (validation.incompleteFeedIds.length) {
-    items.push(
-      `<div class="validation-item">${validation.incompleteFeedIds.length} Feed(s) are incomplete/TBD. This is not a Conflict.</div>`
-    );
+    items.push(`<span class="validation-item">${validation.incompleteFeedIds.length} incomplete · not a Conflict</span>`);
   }
-
   for (const issue of validation.issues) {
-    items.push(
-      `<div class="validation-item is-${escapeHtml(issue.severity)}"><strong>${escapeHtml(issue.severity.toUpperCase())}</strong> · ${escapeHtml(issueText(issue))}</div>`
-    );
+    items.push(`<span class="validation-item is-${escapeHtml(issue.severity)}">${escapeHtml(issueText(issue))}</span>`);
   }
+  if (!items.length) items.push('<span class="validation-item">No conflicts or warnings.</span>');
+  elements.validationPanel.innerHTML = items.join("");
+}
 
-  if (!items.length) {
-    items.push(
-      '<div class="validation-item">No conflicts or warnings in the current smoke project.</div>'
-    );
-  }
-
-  elements.validationPanel.innerHTML =
-    `<div class="validation-summary">
-      <span class="patch-chip ${validation.validity === "valid" ? "is-good" : "is-conflict"}">Validity: ${escapeHtml(validation.validity)}</span>
-      <span class="patch-chip ${validation.completeness === "complete" ? "is-good" : "is-warning"}">Completeness: ${escapeHtml(validation.completeness)}</span>
-    </div>${items.join("")}`;
+function renderStatus(validation) {
+  elements.validityChip.textContent = validation.validity === "valid" ? "Valid" : "Conflict";
+  elements.validityChip.className = `patch-chip ${validation.validity === "valid" ? "is-good" : "is-conflict"}`;
+  elements.completenessChip.textContent = validation.completeness === "complete"
+    ? "Complete"
+    : `Incomplete · ${validation.incompleteFeedIds.length}`;
+  elements.completenessChip.className = `patch-chip ${validation.completeness === "complete" ? "is-good" : "is-warning"}`;
 }
 
 function render() {
   if (!project) return;
-
+  project = normalizePatchProject(project);
   const rows = projectRouteRows(project);
   const validation = validatePatch(project);
-
+  const portOptions = portOptionModel();
   elements.projectName.value = project.name;
-  elements.projectHeading.textContent = project.name;
-  elements.projectMeta.innerHTML =
-    `<span>ID: ${escapeHtml(project.id)}</span>
-     <span>Sources: ${project.sources.length}</span>
-     <span>Devices: ${project.devices.length}</span>
-     <span>Connections: ${project.connections.length}</span>`;
+  elements.projectMeta.innerHTML = `<span>Sources ${project.sources.length}</span><span>Devices ${project.devices.length}</span><span>Connections ${project.connections.length}</span>`;
 
-  renderSelectors(rows);
-  renderRows(rows, validation);
+  renderDataLists(portOptions);
+  renderGrid(rows, validation);
+  renderDeviceSummary();
+  renderIoBanks();
   renderSystem(rows);
-  renderDevices();
   renderValidation(validation);
+  renderStatus(validation);
+}
+
+function addProfile(profileId) {
+  try {
+    const result = addDeviceFromProfile(project, {
+      profileId,
+      name: deviceInstanceName(profileId)
+    });
+    mutate(result.project, `${result.device.name} capacity created.`);
+  } catch (error) {
+    setGridFeedback(error.message, "error");
+  }
+}
+
+function matchOption(value, options) {
+  return optionLookup(options).get(String(value || "").trim().toLowerCase()) || null;
+}
+
+function handleExistingCellChange(input) {
+  const field = input.dataset.gridField;
+  const sourceId = input.dataset.sourceId;
+  const feedId = input.dataset.feedId;
+  input.classList.remove("is-invalid");
+  setGridFeedback("");
+
+  try {
+    if (field === "source-name") {
+      mutate(updateSource(project, sourceId, { name:input.value }));
+      return;
+    }
+    if (field === "stage-position") {
+      mutate(updateSource(project, sourceId, { stagePosition:input.value }));
+      return;
+    }
+    if (field === "input-method") {
+      mutate(updateFeed(project, feedId, { inputMethod:input.value }));
+      return;
+    }
+    if (field === "physical-input") {
+      if (!input.value.trim()) {
+        mutate(disconnectFeed(project, feedId), "Input cleared.");
+        return;
+      }
+      const option = matchOption(input.value, portOptionModel());
+      if (!option) throw new Error("Choose an existing I/O endpoint.");
+      const result = assignFeedToPort(project, { feedId, portId:option.id });
+      mutate(result.project, result.repatched ? "Repatched input." : "Input assigned.");
+      return;
+    }
+    if (field === "console-channel") {
+      const consoleId = input.dataset.consoleId;
+      if (!input.value.trim()) {
+        const next = normalizePatchProject(project);
+        const channelIds = new Set(
+          next.consoleChannels.filter((channel) => channel.deviceId === consoleId).map((channel) => channel.id)
+        );
+        next.consoleAssignments = next.consoleAssignments.filter(
+          (assignment) => !(assignment.feedId === feedId && channelIds.has(assignment.channelId))
+        );
+        mutate(next, "Console Channel cleared.");
+        return;
+      }
+      const option = matchOption(input.value, channelOptionModel(consoleId));
+      if (!option) throw new Error("Choose a Channel from this Console.");
+      const result = assignFeedToConsoleChannel(project, { feedId, channelId:option.id });
+      mutate(result.project, result.repatched ? "Repatched Console Channel." : "Console Channel assigned.");
+    }
+  } catch (error) {
+    input.classList.add("is-invalid");
+    setGridFeedback(error.message, "error");
+  }
+}
+
+function createSourceFromBlank(name, { inputMethod = "Mic", stagePosition = "" } = {}) {
+  const result = addSource(project, { name, inputMethod, stagePosition });
+  project = result.project;
+  return result;
+}
+
+function applyPastedRow(cells) {
+  const name = String(cells[0] || "").trim();
+  if (!name) return;
+  const result = createSourceFromBlank(name, {
+    inputMethod: String(cells[1] || "").trim() || "Mic",
+    stagePosition: String(cells[2] || "").trim()
+  });
+  let next = result.project;
+  const portText = String(cells[3] || "").trim();
+  if (portText) {
+    const option = matchOption(portText, portOptionModel());
+    if (option) next = assignFeedToPort(next, { feedId:result.feed.id, portId:option.id }).project;
+  }
+  project = next;
+
+  const consoles = consoleDevices();
+  consoles.forEach((consoleDevice, consoleIndex) => {
+    const channelText = String(cells[4 + consoleIndex] || "").trim();
+    if (!channelText) return;
+    const option = matchOption(channelText, channelOptionModel(consoleDevice.id));
+    if (option) {
+      project = assignFeedToConsoleChannel(project, {
+        feedId: result.feed.id,
+        channelId: option.id
+      }).project;
+    }
+  });
+}
+
+function handlePaste(event) {
+  const input = event.target.closest("[data-new-source]");
+  if (!input) return;
+  const text = event.clipboardData?.getData("text/plain") || "";
+  if (!text.includes("\n") && !text.includes("\t")) return;
+  event.preventDefault();
+  const rows = text
+    .replace(/\r/g, "")
+    .split("\n")
+    .filter((line) => line.trim())
+    .map((line) => line.split("\t"));
+
+  try {
+    for (const cells of rows) applyPastedRow(cells);
+    mutate(project, `${rows.length} row(s) pasted.`);
+    requestAnimationFrame(() => document.querySelector("[data-new-source]")?.focus());
+  } catch (error) {
+    setGridFeedback(error.message, "error");
+  }
+}
+
+function switchView(view) {
+  activeView = view;
+  for (const tab of elements.viewTabs) tab.classList.toggle("is-active", tab.dataset.view === view);
+  for (const panel of elements.views) {
+    const active = panel.dataset.patchView === view;
+    panel.classList.toggle("is-active", active);
+    panel.hidden = !active;
+  }
 }
 
 function newLocalProject() {
-  project = createPatchProject({
-    id: LOCAL_PROJECT_ID,
-    name: "Patch Smoke"
-  });
-  elements.routeMessage.textContent = "";
+  project = createPatchProject({ id:LOCAL_PROJECT_ID, name:"Patch Smoke" });
   render();
   markDirty();
 }
@@ -306,18 +533,15 @@ function newLocalProject() {
 async function reloadLocal() {
   setSaveState("Loading…");
   try {
-    project =
-      (await loadLocalPatch(LOCAL_PROJECT_ID)) ||
-      createPatchProject({ id: LOCAL_PROJECT_ID, name: "Patch Smoke" });
-
+    const stored = await loadLocalPatch(LOCAL_PROJECT_ID);
+    project = stored
+      ? normalizePatchProject(stored)
+      : createPatchProject({ id:LOCAL_PROJECT_ID, name:"Patch Smoke" });
     render();
     setSaveState("Saved locally", "is-saved");
   } catch (error) {
-    console.error("[Patch Smoke] local load failed", error);
-    project = createPatchProject({
-      id: LOCAL_PROJECT_ID,
-      name: "Patch Smoke"
-    });
+    console.error("[Patch] local load failed", error);
+    project = createPatchProject({ id:LOCAL_PROJECT_ID, name:"Patch Smoke" });
     render();
     setSaveState("Local load failed", "is-error");
   }
@@ -327,114 +551,46 @@ elements.projectName.addEventListener("change", () => {
   try {
     mutate(renamePatch(project, elements.projectName.value));
   } catch (error) {
-    alert(error.message);
+    setGridFeedback(error.message, "error");
     render();
   }
 });
 
-elements.sourceForm.addEventListener("submit", (event) => {
-  event.preventDefault();
-  try {
-    const result = addSource(project, {
-      name: elements.sourceName.value,
-      inputMethod: elements.inputMethod.value
-    });
-    mutate(result.project);
-    elements.sourceName.value = "";
-    elements.sourceName.focus();
-  } catch (error) {
-    alert(error.message);
-  }
-});
-
-elements.deviceForm.addEventListener("submit", (event) => {
-  event.preventDefault();
-  try {
-    const created = addDevice(project, {
-      name: elements.deviceName.value
-    });
-    const bank = addInputBank(created.project, {
-      deviceId: created.device.id,
-      count: Number(elements.deviceInputs.value),
-      signalProtocol: elements.deviceProtocol.value
-    });
-    mutate(bank.project);
-    elements.deviceName.value = "";
-  } catch (error) {
-    alert(error.message);
-  }
-});
-
-elements.routeForm.addEventListener("submit", (event) => {
-  event.preventDefault();
-
-  elements.routeMessage.textContent = "";
-  elements.routeMessage.className = "patch-inline-message";
-
-  try {
-    const result = assignFeedToPort(project, {
-      feedId: elements.routeFeed.value,
-      portId: elements.routePort.value
-    });
-
-    mutate(result.project, {
-      message: result.repatched ? "Repatched." : "Patched."
-    });
-  } catch (error) {
-    elements.routeMessage.textContent =
-      error.message === "patch_input_already_assigned"
-        ? "That input is already assigned."
-        : error.message;
-    elements.routeMessage.className = "patch-inline-message is-error";
-  }
-});
-
-elements.routeRows.addEventListener("click", (event) => {
-  const button = event.target.closest("[data-disconnect-feed]");
-  if (!button) return;
-  mutate(disconnectFeed(project, button.dataset.disconnectFeed));
-});
-
-elements.deviceList.addEventListener("change", (event) => {
-  const availability = event.target.closest("[data-port-availability]");
-  const condition = event.target.closest("[data-port-condition]");
-
-  try {
-    if (availability) {
-      mutate(
-        setPortState(
-          project,
-          availability.dataset.portAvailability,
-          { availability: availability.value }
-        )
-      );
-    }
-
-    if (condition) {
-      mutate(
-        setPortState(
-          project,
-          condition.dataset.portCondition,
-          { condition: condition.value }
-        )
-      );
-    }
-  } catch (error) {
-    alert(error.message);
-    render();
-  }
-});
-
-elements.savePatch.addEventListener("click", () => saveNow("manual"));
+elements.addConsole.addEventListener("click", () => addProfile(elements.consoleProfile.value));
+elements.addIoDevice.addEventListener("click", () => addProfile(elements.ioProfile.value));
+elements.savePatch.addEventListener("click", () => saveNow());
 elements.reloadPatch.addEventListener("click", () => reloadLocal());
 
 elements.newPatch.addEventListener("click", () => {
-  if (!confirm("Replace the current local smoke project with a blank Patch?")) {
-    return;
-  }
-  newLocalProject();
+  if (confirm("Replace this local smoke project with a blank Patch?")) newLocalProject();
 });
 
-window.addEventListener("beforeunload", () => clearTimeout(saveTimer));
+elements.patchGridBody.addEventListener("change", (event) => {
+  const input = event.target.closest("[data-grid-field]");
+  if (input) handleExistingCellChange(input);
+});
 
+elements.patchGridBody.addEventListener("keydown", (event) => {
+  const input = event.target.closest("[data-new-source]");
+  if (!input || event.key !== "Enter") return;
+  event.preventDefault();
+  const name = input.value.trim();
+  if (!name) return;
+  try {
+    const result = addSource(project, { name, inputMethod:"Mic" });
+    mutate(result.project, `${name} added.`);
+    requestAnimationFrame(() => document.querySelector("[data-new-source]")?.focus());
+  } catch (error) {
+    setGridFeedback(error.message, "error");
+  }
+});
+
+elements.patchGridBody.addEventListener("paste", handlePaste);
+
+for (const tab of elements.viewTabs) {
+  tab.addEventListener("click", () => switchView(tab.dataset.view));
+}
+
+populateProfileSelectors();
+switchView(activeView);
 reloadLocal();

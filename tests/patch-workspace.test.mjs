@@ -6,21 +6,51 @@ const html = readFileSync(new URL("../admin/patch/index.html", import.meta.url),
 const script = readFileSync(new URL("../admin/patch/patch.js", import.meta.url), "utf8");
 const storage = readFileSync(new URL("../admin/patch/patch-storage.js", import.meta.url), "utf8");
 
-test("Patch Smoke workspace is an isolated local-first Admin surface", () => {
-  assert.match(html, /Patch Smoke · SD\.Live Admin/);
-  assert.match(html, /Smoke 0\.1/);
-  assert.match(html, /local-only/i);
+test("Patch Smoke remains isolated local-first while moving to spreadsheet UX", () => {
+  assert.match(html, /Spreadsheet Smoke 0\.2/);
+  assert.match(html, /Local-first smoke/);
   assert.match(html, /type="module" src="\.\/patch\/patch\.js/);
   assert.doesNotMatch(script, /fetch\s*\(/);
   assert.doesNotMatch(script, /WebSocket/);
   assert.match(storage, /indexedDB\.open/);
 });
 
-test("Input List and System View are projections mounted by the same runtime", () => {
-  assert.match(html, /id="routeRows"/);
-  assert.match(html, /id="systemView"/);
+test("Input List is the primary spreadsheet-like Patch surface", () => {
+  assert.match(html, /aria-label="Patch input list"/);
+  assert.match(script, /<th>Source<\/th>/);
+  assert.match(script, /<th>Input Method<\/th>/);
+  assert.match(script, /<th>Stage Position<\/th>/);
+  assert.match(script, /<th>Input \/ I\/O<\/th>/);
+  assert.match(html, /id="patchGridHead"/);
+  assert.match(script, /renderGridHead/);
+  assert.match(script, /consoleDevices\(\)/);
+  assert.match(script, /data-console-id/);
+  assert.match(script, /data-new-source/);
+  assert.match(script, /data-grid-field/);
+  assert.match(script, /handlePaste/);
+  assert.match(script, /Type Source \+ Enter/);
+});
+
+test("profile setup creates capacity rather than asking for arbitrary I/O counts", () => {
+  assert.match(html, /id="consoleProfile"/);
+  assert.match(html, /id="ioProfile"/);
+  assert.match(script, /addDeviceFromProfile/);
+  assert.match(script, /listPatchProfiles/);
+  assert.doesNotMatch(html, /id="deviceInputs"/);
+  assert.doesNotMatch(html, /Add input device/);
+});
+
+test("one spreadsheet column is generated per Console Instance", () => {
+  assert.match(script, /consoleHeaders/);
+  assert.match(script, /patch-col-console/);
+  assert.match(script, /channelOptionModel\(consoleDevice\.id\)/);
+});
+
+test("spreadsheet and System View derive from the same route projection", () => {
+  assert.match(html, /data-patch-view="sheet"/);
+  assert.match(html, /data-patch-view="system"/);
   assert.match(script, /projectRouteRows\(project\)/);
-  assert.match(script, /renderRows\(rows, validation\)/);
+  assert.match(script, /renderGrid\(rows, validation\)/);
   assert.match(script, /renderSystem\(rows\)/);
 });
 
