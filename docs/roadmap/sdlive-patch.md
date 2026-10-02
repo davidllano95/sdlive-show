@@ -1959,3 +1959,83 @@ Prefer small, testable increments:
 
 Each increment should preserve the existing rule: one structured Patch state, multiple synchronized projections.
 
+## 41. Smoke 0.2 — spreadsheet-first workflow and Profile-generated capacity
+
+**Decision date:** 2026-10-01 — America/Bogota  
+**Implementation:** PR #318
+
+Two product rules are now explicit:
+
+> **Spreadsheet is Home.**
+
+> **Profiles create capacity. Users create assignments.**
+
+### 41.1 Input List / Patch Grid is the primary working surface
+
+The default Patch workflow should feel closer to Excel/Numbers than to a form-driven configuration wizard.
+
+The primary grid supports direct cell editing for concepts such as:
+
+- Source;
+- Input Method;
+- Stage Position;
+- Input / I/O assignment;
+- Console Channel assignment;
+- derived status.
+
+Buttons, inspectors, pickers and dropdown/autocomplete controls remain useful contextually, but they must not dominate normal input-list entry.
+
+A blank row at the end of the grid is a valid Source-creation affordance.
+
+Tabular paste from spreadsheet tools is a first-class workflow direction.
+
+### 41.2 Console Instances create their known capacity from Profiles
+
+Adding a known Console Profile creates the concrete Console Instance capacity automatically rather than asking the user to type arbitrary counts.
+
+For supported Profiles this may include:
+
+- Local I/O banks;
+- Network I/O banks;
+- logical mono/stereo Console Channels;
+- later internal resources where relevant to the implemented slice.
+
+Empty Console Channels are first-class resources and do not require fake Sources.
+
+Profile-generated capacity is copied/materialized into the configured instance. Later Profile changes must not silently rewrite existing project state.
+
+### 41.3 I/O Device Profiles use the same rule
+
+Known stageboxes/I/O devices also materialize their verified Banks/Ports automatically.
+
+Current Smoke 0.2 built-ins include verified Yamaha CL/QL consoles and Rio3224-D2 / Rio1608-D2 stage I/O.
+
+Custom/unknown devices remain a future/manual configuration path rather than a reason to make known devices manual.
+
+### 41.4 Multi-console spreadsheet projection
+
+Each Console Instance may project its own Console Channel column into the spreadsheet.
+
+Example:
+
+```text
+# | Source | Method | Position | Input / I/O | CL5 FOH | QL5 MON | Status
+1 | Kick   | Mic    | Drums    | Rio A / In 1 | Ch 1  | Ch 1    | Complete
+```
+
+The same Feed may therefore have one logical assignment per Console Instance without duplicating Source/Feed identity.
+
+### 41.5 Smoke 0.2 implementation boundary
+
+Smoke 0.2 remains local-first and uses IndexedDB.
+
+It does not authorize:
+
+- final D1 schema;
+- cloud synchronization;
+- live console write/control;
+- Festival Mode runtime;
+- profile auto-updates of existing instances.
+
+The purpose remains to smoke the structured model and interaction workflow before expanding infrastructure.
+
