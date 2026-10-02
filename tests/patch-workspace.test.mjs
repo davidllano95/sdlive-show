@@ -21,7 +21,10 @@ test("Input List is the primary spreadsheet-like Patch surface", () => {
   assert.match(html, /<th>Input Method<\/th>/);
   assert.match(html, /<th>Stage Position<\/th>/);
   assert.match(html, /<th>Input \/ I\/O<\/th>/);
-  assert.match(html, /<th>Console Channel<\/th>/);
+  assert.match(html, /id="patchGridHead"/);
+  assert.match(script, /renderGridHead/);
+  assert.match(script, /consoleDevices\(\)/);
+  assert.match(script, /data-console-id/);
   assert.match(html, /data-new-source/);
   assert.match(script, /data-grid-field/);
   assert.match(script, /handlePaste/);
@@ -35,6 +38,12 @@ test("profile setup creates capacity rather than asking for arbitrary I/O counts
   assert.match(script, /listPatchProfiles/);
   assert.doesNotMatch(html, /id="deviceInputs"/);
   assert.doesNotMatch(html, /Add input device/);
+});
+
+test("one spreadsheet column is generated per Console Instance", () => {
+  assert.match(script, /consoleHeaders/);
+  assert.match(script, /patch-col-console/);
+  assert.match(script, /channelOptionModel\(consoleDevice\.id\)/);
 });
 
 test("spreadsheet and System View derive from the same route projection", () => {
