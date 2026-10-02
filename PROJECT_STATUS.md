@@ -186,18 +186,22 @@ Consolidated discovery checkpoint:
 
 The conceptual contract is stable enough to begin iterative implementation without freezing the final storage schema.
 
-**Smoke 0.1 merged through PR #315** with:
+**Smoke 0.2 merged through PR #318**.
 
-- local-first Admin workspace at `/admin/patch/`;
-- pure domain core for Sources, implicit Feeds, Devices, Ports and Connections;
-- fan-out OFF -> Repatch behavior;
-- ordinary-input double-assignment protection;
-- Validity vs Completeness separation;
-- Damaged / Reserved / Unavailable warnings;
-- IndexedDB local working copy;
-- explicit Save + autosave states;
-- Input List and System View derived from the same project state;
-- focused domain/workspace tests.
+Smoke 0.1 foundations remain active, plus:
+
+- **Spreadsheet is Home**: Input List/Patch Grid is now the primary working surface;
+- direct cell editing instead of form-first source/routing entry;
+- blank spreadsheet row creates the next Source;
+- tabular paste from Excel/Numbers;
+- **Profiles create capacity; users create assignments**;
+- verified Yamaha CL5/CL3/CL1 and QL5/QL1 Profile-generated Console capacity;
+- verified Rio3224-D2 / Rio1608-D2 Profile-generated I/O capacity;
+- first-class I/O Banks and logical Console Channels;
+- one dynamic spreadsheet column per Console Instance;
+- same Feed can map independently to more than one Console Instance;
+- in-memory normalization preserves the earlier local Smoke project shape;
+- IndexedDB local working copy, explicit Save + autosave remain active.
 
 ## Current development strategy
 
@@ -224,14 +228,15 @@ Patch remains separate from Finance, event workflow ownership and Inventory stoc
 
 ## Immediate continuation
 
-Smoke the local 0.1 workspace with real Sources/I/O, then expand in small slices. Near-term candidates:
+Smoke the local 0.2 spreadsheet with a real input list and real CL/Rio-style routing. Near-term candidates:
 
-1. richer Device/I/O editing and Console Channels;
-2. Output Paths / Handoffs;
-3. History / Undo / Redo foundation;
-4. portable `.sdlive` project file;
-5. Venue/System interaction growth;
-6. Festival Mode after the core survives normal-show smoke.
+1. fix spreadsheet ergonomics discovered during real use;
+2. richer Profile/Instance editing and additional console/device Profiles;
+3. Output Paths / Handoffs;
+4. History / Undo / Redo foundation;
+5. portable `.sdlive` project file;
+6. Venue/System interaction growth;
+7. Festival Mode after the ordinary Patch core survives normal-show smoke.
 
 Do not reopen the old blanket “no runtime implementation yet” gate unless a structural regression requires returning to discovery.
 
