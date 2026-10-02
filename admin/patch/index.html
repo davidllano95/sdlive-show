@@ -80,17 +80,7 @@
         <section class="patch-view is-active" id="sheetView" data-patch-view="sheet">
           <div class="patch-grid-shell">
             <table class="patch-grid" aria-label="Patch input list">
-              <thead>
-                <tr>
-                  <th class="patch-col-number">#</th>
-                  <th>Source</th>
-                  <th>Input Method</th>
-                  <th>Stage Position</th>
-                  <th>Input / I/O</th>
-                  <th>Console Channel</th>
-                  <th class="patch-col-status">Status</th>
-                </tr>
-              </thead>
+              <thead><tr id="patchGridHead"></tr></thead>
               <tbody id="patchGridBody"></tbody>
             </table>
           </div>
@@ -131,7 +121,7 @@
           <option value="Other"></option>
         </datalist>
         <datalist id="inputPortOptions"></datalist>
-        <datalist id="consoleChannelOptions"></datalist>
+        <div id="consoleChannelLists"></div>
       </section>
     </main>
   </div>
