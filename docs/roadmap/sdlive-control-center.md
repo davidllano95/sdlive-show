@@ -1,7 +1,7 @@
 # 14.5 — SD.Live as Control Center
 
 **Reconciled:** 2026-09-28 — America/Bogota  
-**Status:** **SD.Live Patch ACTIVE DESIGN / DISCOVERY GATE**  
+**Status:** **SD.Live Work ACTIVE DISCOVERY; Patch PAUSED/PRESERVED**  
 **Verified production checkpoint:** `623f4a2c7e1b01f3dc6867a5d90631aff0a13659` — PR #313, Documents v1 production-ready closeout.
 
 This document owns the current Control Center workstream sequence. Current GitHub `main` + verified production behavior outrank this file when conflicts are found.
@@ -70,7 +70,11 @@ Patch navigation placement is a future implementation decision and should not be
 
 Do not reopen Documents without regression evidence or an explicit new Documents feature/version.
 
-# Current Active Gate — SD.Live Patch
+# Current selected scope — SD.Live Work
+
+See `docs/roadmap/sdlive-work-portfolio.md`. This is a creative multimedia portfolio of **Projects** and independent **Pieces**, supporting later relationships without duplicated media, using existing CMS/Media Library foundations when suitable. First gate is design and code audit, not immediate schema or public runtime changes. Public `/cv` follows as a separate Master CV page. No Finance, Documents issuance, REGISTRO or Patch state mutations.
+
+# Previous active gate — SD.Live Patch (paused, preserved)
 
 Canonical roadmap:
 
@@ -179,6 +183,6 @@ For the Patch workstream:
 7. if CI or another error occurs, stop and request the failing log;
 8. destructive/irreversible production actions remain explicit and separately authorized.
 
-**Exact continuation:** start from real patch/rider examples and derive the MVP data contract for Inputs + Stage I/O + Outputs. Do not start Visual Patch or migrations first.
+**Historical Patch continuation while paused:** start from real patch/rider examples and derive the MVP data contract for Inputs + Stage I/O + Outputs. Do not start Visual Patch or migrations first.
 
 **Stability > novelty. Closed gates are not repeated without regression evidence.**
