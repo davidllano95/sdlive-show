@@ -211,6 +211,25 @@
             const missing = document.createElement("small");
             missing.textContent = "Source event not in current REGISTRO response (possible orphaned override).";
             row.appendChild(missing);
+            const remove = document.createElement("button");
+            remove.type = "button";
+            remove.className = "button button--ghost";
+            remove.textContent = "Remove orphaned override";
+            remove.addEventListener("click", async () => {
+              const confirmed = window.confirm(`Remove the saved Site Schedule override for "${match.label}" (${match.eventKey})? This deletes its website-only blocks, not REGISTRO data. Only proceed if this job is no longer present under a changed identity.`);
+              if (!confirmed) return;
+              remove.disabled = true;
+              try {
+                const result = await api(`/api/admin/site-schedule/events/${match.eventKey}`, { method: "DELETE" });
+                schedule = result.schedule || schedule;
+                renderEventList();
+                await renderShowdayDiagnostic();
+              } catch (error) {
+                remove.disabled = false;
+                window.alert(error.message || "Could not remove Site Schedule override.");
+              }
+            });
+            row.appendChild(remove);
           }
           diagnosticBody.appendChild(row);
         }
