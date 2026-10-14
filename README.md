@@ -64,7 +64,13 @@ Production state at closeout:
 
 Do not reopen Documents implementation without regression evidence or a deliberate new Documents feature/version. Output-affecting template changes require a new template version (`@2`, etc.).
 
-## Current Active Gate — SD.Live Patch
+## Current selected scope — SD.Live Work (2026-10-14)
+
+**ACTIVE DISCOVERY / ARCHITECTURE.** Canonical plan: `docs/roadmap/sdlive-work-portfolio.md`.
+
+Build a public creative multimedia portfolio with **Projects + standalone Pieces**, related without duplication, and a reusable CMS editing/publishing flow for audio, videos, QLab screenshots, production imagery and short process notes. Reuse existing Selected Work CMS and R2 Media Library where appropriate; audit current 5 MB upload cap and streaming/video hosting before deciding implementation. After Work, build a separate `/cv` public Master CV page with professional downloadable PDF and links to relevant Work entries. SD.Live Patch is paused/preserved, not removed.
+
+## Prior active gate — SD.Live Patch (paused)
 
 **ACTIVE DESIGN / DISCOVERY GATE. No schema migration or runtime implementation is authorized merely by this status.**
 
@@ -143,7 +149,7 @@ Production-sensitive or irreversible actions still require explicit authorizatio
 
 ## Exact continuation
 
-**Start a new conversation for SD.Live Patch. Use the GitHub connector directly. Inspect current `main`, `PROJECT_STATUS.md`, `README.md`, `ROADMAP_MASTER_CHECKLIST.md`, `docs/roadmap/sdlive-control-center.md`, `docs/roadmap/future-sdlive-patch-2026-08-27.md`, and `docs/checkpoints/handoff-sdlive-patch-activation-2026-09-28.md`. Do not code first. Begin by auditing 3–5 real patch/rider examples and defining the MVP data contract for Inputs + Stage I/O + Outputs, including stable IDs, ordering, versions/snapshots and event linkage boundaries.**
+**Historical Patch continuation (paused): start a new conversation for SD.Live Patch. Use the GitHub connector directly. Inspect current `main`, `PROJECT_STATUS.md`, `README.md`, `ROADMAP_MASTER_CHECKLIST.md`, `docs/roadmap/sdlive-control-center.md`, `docs/roadmap/future-sdlive-patch-2026-08-27.md`, and `docs/checkpoints/handoff-sdlive-patch-activation-2026-09-28.md`. Do not code first. Begin by auditing 3–5 real patch/rider examples and defining the MVP data contract for Inputs + Stage I/O + Outputs, including stable IDs, ordering, versions/snapshots and event linkage boundaries.**
 
 ## Relevant docs
 
