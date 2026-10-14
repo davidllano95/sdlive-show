@@ -9,7 +9,7 @@
   <link rel="icon" href="/assets/icons/favicon.ico" />
   <link rel="stylesheet" href="/admin/dashboard.css" />
   <link rel="stylesheet" href="/admin/mobile-dashboard.css" />
-  <link rel="stylesheet" href="/admin/calendar/site-schedule/site-schedule.css?v=20260823-1" />
+  <link rel="stylesheet" href="/admin/calendar/site-schedule/site-schedule.css?v=20261014-1" />
 </head>
 <body>
   <div class="backoffice">
@@ -67,6 +67,17 @@
           </div>
           <div class="system-pill" id="scheduleStatus"><i></i><span>Loading Site Schedule…</span></div>
         </div>
+
+        <section class="schedule-diagnostic" id="showdayDiagnostic" aria-labelledby="showdayDiagnosticTitle">
+          <div class="schedule-panel-head">
+            <div>
+              <span class="eyebrow">Live status · America/Bogota</span>
+              <h3 id="showdayDiagnosticTitle">Show Day source</h3>
+            </div>
+            <button class="button button--ghost" id="refreshShowdayDiagnostic" type="button">Refresh status</button>
+          </div>
+          <div id="showdayDiagnosticBody" class="schedule-diagnostic__body" role="status" aria-live="polite">Checking live Show Day source…</div>
+        </section>
 
         <div class="schedule-layout">
           <section class="schedule-browser" aria-labelledby="scheduleBrowserTitle">
@@ -144,7 +155,7 @@
     </article>
   </template>
 
-  <script src="/admin/calendar/site-schedule/site-schedule.js?v=20260823-1"></script>
+  <script src="/admin/calendar/site-schedule/site-schedule.js?v=20261014-1"></script>
   <script src="/admin/admin-stabilization.js?v=20260825-1"></script>
 </body>
 </html>
