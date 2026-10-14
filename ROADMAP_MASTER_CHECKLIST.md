@@ -4,7 +4,7 @@
 >
 > **Authority:** current GitHub `main` + verified production behavior → current schema/config → latest checkpoint → `PROJECT_STATUS.md` → `README.md` → this checklist → older docs/prompts.
 
-Last reconciliation: **2026-09-28 — America/Bogota**
+Last reconciliation: **2026-10-14 — America/Bogota**
 
 Current verified production checkpoint:
 
@@ -57,7 +57,22 @@ Production numbering at closeout:
 
 Documents is not the current Active Gate. Do not reopen it without regression evidence or a deliberate new feature/version. Output-affecting renderer changes require a new template version (`@2`, etc.).
 
-# 🚧 Current Active Gate — SD.Live Patch
+# 🚧 Current selected gate — SD.Live Work
+
+Canonical roadmap: `docs/roadmap/sdlive-work-portfolio.md`.
+
+- [ ] Audit current public Selected Work, CMS editor/data ownership and R2 Media Library.
+- [ ] Approve Projects + independent Pieces model and optional related-work linking.
+- [ ] Design editorial `/work` gallery with project/piece detail pages.
+- [ ] Design reusable blocks for playable audio, embedded production video, screenshots/photographs, text and credits.
+- [ ] Design bilingual draft / published lifecycle and media attribution / permissions.
+- [ ] Validate upload size, storage/delivery economics and supported media formats before adding multimedia ingestion.
+- [ ] Implement minimum vertical slice: create/edit/publish one Piece and one Project, render publicly.
+- [ ] Follow with `/cv` Master CV as separate scope, connected to Work.
+
+Patch is paused and preserved; not canceled.
+
+# ⏸ Previous gate — SD.Live Patch (paused)
 
 **ACTIVE DESIGN / DISCOVERY GATE.**
 
@@ -215,4 +230,4 @@ Research current Colombian legal/operational rules again if/when deliberately se
 
 # Exact continuation
 
-**Start SD.Live Patch as a design/discovery gate. In a new conversation, inspect current `main`, `PROJECT_STATUS.md`, `README.md`, this roadmap, `docs/roadmap/sdlive-control-center.md`, `docs/roadmap/future-sdlive-patch-2026-08-27.md`, and `docs/checkpoints/handoff-sdlive-patch-activation-2026-09-28.md`. Do not code first. Begin by reviewing 3–5 real patch/rider examples and derive the MVP data contract for Inputs + Stage I/O + Outputs, including stable IDs, ordering, version/snapshot semantics and event linkage boundaries.**
+**Historical paused Patch instruction: Start SD.Live Patch as a design/discovery gate. In a new conversation, inspect current `main`, `PROJECT_STATUS.md`, `README.md`, this roadmap, `docs/roadmap/sdlive-control-center.md`, `docs/roadmap/future-sdlive-patch-2026-08-27.md`, and `docs/checkpoints/handoff-sdlive-patch-activation-2026-09-28.md`. Do not code first. Begin by reviewing 3–5 real patch/rider examples and derive the MVP data contract for Inputs + Stage I/O + Outputs, including stable IDs, ordering, version/snapshot semantics and event linkage boundaries.**
