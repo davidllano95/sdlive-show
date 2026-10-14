@@ -158,6 +158,81 @@
     });
   }
 
+  const diagnosticBody = document.getElementById("showdayDiagnosticBody");
+  const diagnosticRefresh = document.getElementById("refreshShowdayDiagnostic");
+
+  async function renderShowdayDiagnostic() {
+    if (!diagnosticBody) return;
+    diagnosticBody.replaceChildren();
+    diagnosticBody.textContent = "Checking live Show Day source…";
+    try {
+      // Admin endpoint provides the same effective resolver used by the public site.
+      const state = await api("/api/admin/showday-override");
+      const date = state.date || todayInBogotaIso();
+      const effective = state.effective || {};
+      const automatic = state.automatic || {};
+      const override = state.override || {};
+      const info = document.createElement("p");
+      info.textContent = `Effective: ${effective.active ? "ON AIR" : "Normal"} · Source: ${effective.source === "admin-override" ? "manual Admin override" : "Site Schedule"} · Date: ${date} (Bogotá)`;
+      diagnosticBody.replaceChildren(info);
+
+      if (effective.overrideMode === "force_on" || effective.overrideMode === "force_off") {
+        const manual = document.createElement("p");
+        manual.textContent = `Admin override: ${effective.overrideMode === "force_on" ? "Force On" : "Force Off"}${override.location ? ` · ${override.location}` : ""}${override.expiresOn ? ` · Valid through ${override.expiresOn}` : ""}. To return to event-based control, select Auto in Dashboard → Manage Show Day.`;
+        diagnosticBody.appendChild(manual);
+      }
+
+      const matches = Object.entries(schedule?.overrides || {}).flatMap(([eventKey, item]) =>
+        (Array.isArray(item?.segments) ? item.segments : [])
+          .filter((segment) => segment?.showDay === true && String(segment.location || "").trim() &&
+            segment.startDate <= date && segment.endDate >= date)
+          .map((segment) => ({ eventKey, label: item.label || item.client || eventKey, segment }))
+      ).sort((a, b) => a.segment.startDate.localeCompare(b.segment.startDate) || a.label.localeCompare(b.label));
+
+      if (matches.length) {
+        const label = document.createElement("p");
+        label.textContent = `Matching Site Schedule blocks: ${matches.length} (server reports ${automatic.activeCount || 0}).`;
+        diagnosticBody.appendChild(label);
+        for (const match of matches) {
+          const row = document.createElement("div");
+          row.className = "schedule-diagnostic__match";
+          const detail = document.createElement("span");
+          detail.textContent = `${match.label} · ${formatRange(match.segment.startDate, match.segment.endDate)} · ${match.segment.location} · ${match.eventKey}`;
+          row.appendChild(detail);
+          const sourceEvent = sourceEvents.find((event) => event.eventKey === match.eventKey);
+          if (sourceEvent) {
+            const inspect = document.createElement("button");
+            inspect.type = "button";
+            inspect.className = "button button--ghost";
+            inspect.textContent = "Inspect event";
+            inspect.addEventListener("click", () => selectEvent(sourceEvent));
+            row.appendChild(inspect);
+          } else {
+            const missing = document.createElement("small");
+            missing.textContent = "Source event not in current REGISTRO response (possible orphaned override).";
+            row.appendChild(missing);
+          }
+          diagnosticBody.appendChild(row);
+        }
+      } else {
+        const noMatch = document.createElement("p");
+        noMatch.textContent = effective.active
+          ? "No matching Site Schedule event found in the loaded state. Check manual override and refresh."
+          : "No Site Schedule blocks activate Show Day today.";
+        diagnosticBody.appendChild(noMatch);
+      }
+      if (effective.location) {
+        const location = document.createElement("p");
+        location.textContent = `Public location: ${effective.location}`;
+        diagnosticBody.appendChild(location);
+      }
+    } catch (error) {
+      diagnosticBody.textContent = `Cannot read live Show Day diagnostics: ${error.message || "Unknown error"}`;
+    }
+  }
+
+  diagnosticRefresh?.addEventListener("click", renderShowdayDiagnostic);
+
   function dateFromIso(value) {
     const [year, month, day] = String(value || "").split("-").map(Number);
     if (!year || !month || !day) return null;
@@ -322,6 +397,7 @@
       segmentList.innerHTML = "";
       renderSegment(defaultSegment(selectedEvent));
       renderEventList();
+      await renderShowdayDiagnostic();
       setMessage("REGISTRO dates restored for the website.", "is-success");
     } catch (error) {
       setMessage(error.message || "Could not remove Site Schedule override.", "is-error");
@@ -362,6 +438,7 @@
       });
       schedule.overrides[selectedEvent.eventKey] = result.override;
       renderEventList();
+      await renderShowdayDiagnostic();
       setMessage("Saved. Admin Calendar and automatic Show Day now use these blocks.", "is-success");
       setStatus("Site Schedule online");
     } catch (error) {
@@ -389,6 +466,7 @@
       schedule = siteSchedule.schedule || { version: 1, overrides: {} };
       setStatus("Site Schedule online");
       renderEventList();
+      await renderShowdayDiagnostic();
     } catch (error) {
       setStatus("Site Schedule unavailable", "is-error");
       if (eventList) {
