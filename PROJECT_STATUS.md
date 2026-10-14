@@ -4,13 +4,13 @@
 
 | Campo | Valor |
 |---|---|
-| Última reconciliación | **2026-10-01 — America/Bogota** |
+| Última reconciliación | **2026-10-14 — America/Bogota** |
 | Producción | `https://sdlive.show` |
 | Documents | **v1 PRODUCTION READY / milestone closed** |
 | Documents templates | **`cc-co-es@1` + `invoice-intl-en@1` frozen** |
 | Real numbering at checkpoint | **`samuel:CC` next 21 · `samuel:INV` next 19/display 0019** |
 | TEST workspace | **clean baseline · both TEST roots next 1** |
-| Active Gate | **SD.Live Patch — build / smoke / expand** |
+| Active Gate | **SD.Live Work — portfolio discovery / architecture (Patch paused, preserved)** |
 | Finance | **owner-money + third-party operations closed/pass; generic write-back remains blocked** |
 | PILA | **backlog / research candidate** |
 | WhatsApp owner control | **merged; rollout intentionally paused** |
@@ -172,7 +172,17 @@ Documents has an iPhone/iPad operational layer with fixed Preview/Edit top rail,
 
 Do not reopen Documents v1 as an active roadmap blocker without a regression or an explicit v2 requirement.
 
-# SD.Live Patch — ACTIVE BUILD / SMOKE / EXPAND
+# SD.Live Work — ACTIVE NEXT SCOPE (2026-10-14)
+
+**Canonical plan:** `docs/roadmap/sdlive-work-portfolio.md`.
+
+The immediate selected scope is a creative, multimedia portfolio (not a technical-document library). Both complete **Projects** and standalone **Pieces** are first-class publications. Pieces may exist independently and be linked to a Project later without duplicating their media/content.
+
+First gate: inventory and reuse existing Selected Work CMS + media library, design flexible content blocks (audio, externally embedded video, screenshots/photos, text and credits), bilingual drafts/publishing, and public `/work` presentation. Validate limits and permissions before implementation. Next separate scope: public `/cv` Master CV web page with PDF and optional links to Work entries. No Patch functionality or Finance/REGISTRO changes are in scope.
+
+Patch implementation progress through PR #318 is preserved below and is **paused, not canceled**.
+
+# SD.Live Patch — PAUSED / PRESERVED BUILD / SMOKE / EXPAND
 
 Canonical roadmap:
 
@@ -285,5 +295,8 @@ PR #246 merged, but live Meta/Cloudflare activation remains intentionally paused
 - Quote/Cotización as a future Documents extension.
 
 # Exact continuation point
+
+**Current choice (2026-10-14):** Start SD.Live Work discovery using `docs/roadmap/sdlive-work-portfolio.md`; preserve Patch as a paused workstream. The older Patch continuation below is historical until reselected.
+
 
 **Documents v1 is closed and production-ready. SD.Live Patch is now in active build / smoke / expand iteration. Start a new conversation, inspect current `main` plus the Patch roadmap and activation handoff, and begin by reviewing 3–5 real patch/rider examples. Derive the MVP data contract for Inputs + Stage I/O + Outputs, including stable IDs/order, versions/snapshots, port/capacity conflicts and event-link boundaries. Do not code or migrate D1 until that contract is approved.**
