@@ -44,8 +44,21 @@ function refreshPreview(){const values=collect().overrides;const doc=frame.conte
 async function initialize(){
 try{
 entry=(await request(endpoint)).entry;draft=structuredClone(entry.draft);
-await new Promise((resolve,reject)=>{if(frame.contentDocument?.readyState==="complete")resolve();else{frame.addEventListener("load",resolve,{once:true});setTimeout(()=>reject(Error("Preview timed out")),15000)}});
-base=frame.contentWindow?.SDLIVE_CV_EDITOR_SOURCE?.()||[];
+await new Promise((resolve,reject)=>{
+  const deadline=Date.now()+15000;
+  const check=()=>{
+    try {
+      const win=frame.contentWindow;
+      if (win?.location.pathname==="/cv/" && typeof win.SDLIVE_CV_EDITOR_SOURCE==="function") {
+        resolve();return;
+      }
+    } catch { /* Cloudflare Access or cross-origin preview not ready */ }
+    if(Date.now()>deadline){reject(Error("CV preview did not initialize. Check the preview panel and reload."));return}
+    setTimeout(check,150);
+  };
+  check();
+});
+base=frame.contentWindow.SDLIVE_CV_EDITOR_SOURCE();
 if(!base.length)throw Error("CV text source unavailable");render();state("Ready · "+(entry.hasUnpublishedChanges?"unpublished draft":"published"));
 }catch(e){state("Error: "+e.message)}
 }
