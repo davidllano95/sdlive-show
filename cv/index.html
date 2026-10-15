@@ -591,7 +591,7 @@ body.editing [data-editable]{background:rgba(var(--accent-rgb),.07)}
   const back=nav.querySelector(".cv-back"),print=nav.querySelector(".cv-print");
   function setLanguage(lang){
     const es=lang==="es";
-    nodes.forEach((n,i)=>{ const o=publishedOverrides["n"+i]; n.textContent=(es?o?.es:o?.en) || (es?localized[i]:original[i]); });
+    nodes.forEach((n,i)=>{ const o=publishedOverrides["n"+i]; n.textContent=(es?o?.es:o?.en) ?? (es?localized[i]:original[i]); });
     document.documentElement.lang=es?"es":"en";
     back.textContent=es?"← Volver a Sobre mí":"← Back to About";
     print.textContent=es?"Imprimir / Guardar PDF":"Print / Save as PDF";
