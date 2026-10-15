@@ -582,6 +582,7 @@ body.editing [data-editable]{background:rgba(var(--accent-rgb),.07)}
   ]);
   nodes.forEach((node,i)=>{if(!localized[i] || localized[i]!==original[i])return;const val=original[i];for(const [en,es] of extra){if(val.includes(en)){localized[i]=val.replace(en,es);break}}});
   let publishedOverrides={};
+  window.SDLIVE_CV_EDITOR_APPLY = (overrides) => applyPublishedOverrides({overrides});
   function applyPublishedOverrides(data) {
     publishedOverrides=data?.overrides||{};
     setLanguage(document.documentElement.lang==="es"?"es":"en");
