@@ -130,10 +130,11 @@ body.editing [data-editable]{background:rgba(var(--accent-rgb),.07)}
 }
 
 .cv-public-nav{position:sticky;top:0;z-index:100;background:#0b0d14;border-bottom:1px solid rgba(244,245,247,.12);display:flex;align-items:center;justify-content:space-between;gap:18px;padding:10px max(18px,calc((100vw - 1150px)/2));color:#f4f5f7}.cv-public-brand{display:inline-flex;align-items:center}.cv-public-brand img{width:154px;height:auto;max-height:52px;object-fit:contain}.cv-nav-actions{display:flex;align-items:center;gap:12px}.cv-nav-actions a,.cv-nav-actions button{font:600 12px var(--font-label);border:1px solid rgba(244,245,247,.2);border-radius:6px;padding:10px 13px;color:#f4f5f7;text-decoration:none;background:transparent;cursor:pointer}.cv-nav-actions button{background:var(--accent);border-color:var(--accent);color:#0b0d14}.cv-nav-actions a:hover,.cv-nav-actions button:hover{opacity:.85}.sheet{margin-top:20px}.cv-identity{display:flex;align-items:center;gap:12px;font:600 9px var(--font-label);letter-spacing:.08em;text-transform:uppercase;color:var(--soft);margin:0 0 10px}.cv-identity::before{content:"";display:block;width:6px;height:6px;border-radius:100%;background:var(--accent)}@media(max-width:600px){.cv-public-nav{padding:8px 12px}.cv-public-brand img{width:103px}.cv-nav-actions{gap:6px}.cv-nav-actions a,.cv-nav-actions button{font-size:10px;padding:8px}.sheet{margin:0}}@media print{.cv-public-nav{display:none!important}.sheet{margin:0}.cv-identity{display:none}}
+.cv-languages{display:inline-flex;border:1px solid rgba(244,245,247,.22);border-radius:6px;overflow:hidden}.cv-languages button{border:0;border-radius:0;padding:10px 11px;color:#f4f5f7;background:transparent}.cv-languages button[aria-pressed="true"]{background:var(--accent);color:#0b0d14}.cv-languages button:focus-visible{outline:2px solid #fff;outline-offset:-2px}@media(max-width:600px){.cv-languages button{padding:8px}}@media print{.cv-languages{display:none}}
 </style>
 </head>
 <body>
-<nav class="cv-public-nav" aria-label="CV navigation"><a class="cv-public-brand" href="/#about"><img src="/assets/logos/sd-live-header-normal.png" alt="SD.Live — Creative Audio" width="154" height="52"></a><div class="cv-nav-actions"><a class="cv-back" href="/#about">← Back to About</a><button class="cv-print" type="button" onclick="window.print()">Print / Save as PDF</button></div></nav>
+<nav class="cv-public-nav" aria-label="CV navigation"><a class="cv-public-brand" href="/#about"><img src="/assets/logos/sd-live-header-normal.png" alt="SD.Live — Creative Audio" width="154" height="52"></a><div class="cv-nav-actions"><div class="cv-languages" role="group" aria-label="CV language"><button type="button" data-cv-lang="en" aria-pressed="true">EN</button><button type="button" data-cv-lang="es" aria-pressed="false">ES</button></div><a class="cv-back" href="/#about">← Back to About</a><button class="cv-print" type="button" onclick="window.print()">Print / Save as PDF</button></div></nav>
 <main class="sheet" id="cv">
 <header>
   <div class="topline">
@@ -441,12 +442,156 @@ body.editing [data-editable]{background:rgba(var(--accent-rgb),.07)}
 
 <footer>
   <span>SD.Live — Creative Audio · sdlive.show</span>
-  <span>Master CV v4 · Latest CV + LinkedIn audit + user-confirmed source</span>
 </footer>
 </main>
 
 
 
 
+
+<script>
+(() => {
+  const cv = document.querySelector("#cv");
+  const nav = document.querySelector(".cv-public-nav");
+  const titleTranslation = {
+    "Professional Summary":"Perfil profesional","Professional Experience":"Experiencia profesional",
+    "Selected Earlier & Ongoing Theatre / Audio Experience":"Experiencia anterior y actual en teatro y audio",
+    "Core Expertise":"Áreas de especialización","Technical & Client-Facing Capabilities":"Capacidades técnicas y de atención al cliente",
+    "Consoles & Audio Platforms":"Consolas y plataformas de audio","Show Control & Playback":"Control de espectáculos y reproducción",
+    "Networking, RF & Broadcast":"Redes, RF y broadcast","Software":"Software","Credentials":"Certificaciones",
+    "Education":"Formación académica","Selected Technical Projects":"Proyectos técnicos seleccionados",
+    "Languages & Mobility":"Idiomas y movilidad","Professional Membership":"Asociación profesional"
+  };
+  const replacements = {
+    "Sound Designer · Professional Audio Systems · Show Control · Systems Integration":"Diseñador de sonido · Sistemas de audio profesional · Show Control · Integración de sistemas",
+    "Bogotá, Colombia · Spanish / Colombian citizen":"Bogotá, Colombia · Ciudadano español y colombiano",
+    "Associate Sound Designer":"Diseñador de sonido asociado",
+    "Freelance Sound Engineer / AV Sound Designer":"Ingeniero de sonido freelance / Diseñador sonoro audiovisual",
+    "Production Stage Manager":"Jefe de escena / Production Stage Manager",
+    "Audio Technician (A1/A2)":"Técnico de audio (A1/A2)",
+    "Audio Technician":"Técnico de audio",
+    "Audiovisual Operations Manager":"Gerente de operaciones audiovisuales",
+    "Independent Sound Designer / Audio Technician (A1/A2)":"Diseñador de sonido independiente / Técnico de audio (A1/A2)",
+    "Assistant Production Manager · Project-based":"Asistente de dirección de producción · Por proyecto",
+    "Assistant Sound Designer · Seasonal / Project-based":"Asistente de diseño sonoro · Temporal / por proyecto",
+    "Sound Designer · Seasonal Projects":"Diseñador de sonido · Proyectos temporales",
+    "Audio Technician (A2) · Freelance":"Técnico de audio (A2) · Freelance",
+    "Audio Technician · Seasonal":"Técnico de audio · Temporal",
+    "Mixing Engineer · Remote Freelance":"Ingeniero de mezcla · Freelance remoto",
+    "Apr 2025 — Present":"Abr 2025 — Actualidad","2024 — Present":"2024 — Actualidad",
+    "Mar — Apr 2026":"Mar — Abr 2026","Jun 2022 — Jun 2024":"Jun 2022 — Jun 2024",
+    "Oct 2018 — Apr 2019":"Oct 2018 — Abr 2019","Jul — Sep 2024":"Jul — Sep 2024",
+    "2013 — Present":"2013 — Actualidad","2023 — Present":"2023 — Actualidad",
+    "Dec 2019":"Dic 2019","Oct 2024":"Oct 2024",
+    "Selected credit:":"Crédito destacado:","Selected credits:":"Créditos destacados:",
+    "Sound Design":"Diseño sonoro","Show Control":"Control de espectáculos",
+    "System Integration":"Integración de sistemas","Commissioning":"Puesta en marcha",
+    "Troubleshooting":"Diagnóstico y resolución de fallos","FOH / Monitors":"FOH / Monitores",
+    "RF Coordination":"Coordinación RF","Networked Audio":"Audio en red",
+    "Broadcast / Hybrid":"Broadcast / Híbrido","Technical Training":"Formación técnica",
+    "Documentation":"Documentación","Additional Studies":"Estudios adicionales",
+    "Master’s in Sound Design — Mare Nostrum Business School":"Máster en Diseño Sonoro — Mare Nostrum Business School",
+    "Associate Degree in Music — EMMAT":"Técnico en Música — EMMAT",
+    "Studies in Sound Production & Musicalization — UNITEC":"Estudios de Producción de Sonido y Musicalización — UNITEC",
+    "Musical Theatre Performance — MISI / Re-Crea":"Interpretación de teatro musical — MISI / Re-Crea",
+    "Native":"Nativo","C2 / Full Professional Proficiency":"C2 / Dominio profesional completo",
+    "Spanish:":"Español:","English:":"Inglés:",
+    "Audio Engineering Society — Associate":"Audio Engineering Society — Miembro asociado",
+    "Independent / Virtual Musical-Theatre Projects":"Proyectos independientes / Teatro musical virtual",
+    "Self-employed · Theatre / Live Audio / AV":"Independiente · Teatro / Audio en vivo / AV",
+    "Sonolux Creative LLC · Cruise Entertainment / International Productions":"Sonolux Creative LLC · Entretenimiento en cruceros / Producciones internacionales",
+    "Norwegian Cruise Line · Fleetwide Entertainment":"Norwegian Cruise Line · Entretenimiento a bordo",
+    "Dante Certification":"Certificación Dante","Q-SYS Level 1 Training":"Formación Q-SYS Nivel 1",
+    "STCW Certification":"Certificación STCW"
+  };
+  const contentTranslation = [
+    "Diseñador de sonido y especialista en sistemas de audio profesional con experiencia en teatro y producción en vivo desde 2013. Mi trayectoria abarca entretenimiento en cruceros, teatro musical, sonido en vivo, producción broadcast e híbrida y sistemas audiovisuales. Combino diseño sonoro creativo con QLab y control de espectáculos, RF, Dante/AES67, consolas digitales, diseño e integración de sistemas, puesta en marcha y resolución de problemas críticos de producción. Tengo experiencia convirtiendo sistemas complejos en flujos de trabajo fiables, formando operadores y técnicos, documentando la operación de espectáculos y sistemas, y colaborando con equipos creativos, técnicos y clientes. También cuento con experiencia en soporte técnico, desarrollo de soluciones y ejecución de proyectos."
+  ];
+  const roleBullets = [
+    "Desarrollo e implemento flujos de diseño sonoro, reproducción y sistemas de audio profesional para nuevas producciones de entretenimiento e instalaciones en cruceros.",
+    "Programo QLab con estructura de cues, timecode, integración MIDI/OSC y lógica de reproducción; optimizo el routing, la ecualización y los DCAs.",
+    "Apoyo instalaciones de audio a bordo, ajuste del PA, patching, pruebas, puesta en marcha y verificación de flujos de operación y reproducción.",
+    "Elaboro diagramas de flujo de señal, hojas de cues y guías de operación; capacito a técnicos a bordo y equipos locales en diseño de espectáculos, consolas, RF, micrófonos y operación.",
+    "Conecto la intención creativa con la ejecución técnica mediante procesos claros y repetibles para los equipos de producción y operación.",
+    "Apoyo producciones de broadcast, híbridas y audiovisuales con audio profesional, streaming y flujos de producción remota.",
+    "Creo diseños sonoros y elementos de audio para contenido audiovisual; apoyo grabación, reproducción, routing y entrega.",
+    "Trabajo con vMix, OBS, ATEM / Blackmagic y sistemas de audio profesional, con énfasis en flujo de señal y diagnóstico.",
+    "Coordiné la operación de escenario y fui el punto principal de enlace entre artistas, audio, escenario y producción.",
+    "Supervisé cues, transiciones, ajustes en vivo y prevención de problemas; apoyé FOH y monitores cuando fue necesario.",
+    "Operé y mantuve sistemas de audio teatral, mezclé voces, bandas y reproducción; gestioné RF y resolví fallos críticos durante los espectáculos.",
+    "Trabajé como A1/A2 en producciones y espectáculos con licencia y como A1/diseñador de artistas invitados; programé QLab y edité audio.",
+    "Asesoré técnicamente a clientes, traduciendo necesidades de producción en soluciones AV prácticas y escalables.",
+    "Diseñé e implementé montajes AV, coordiné equipos, proveedores e interesados y supervisé instalación y desmontaje.",
+    "Apoyé el desarrollo de negocio y la consultoría técnica identificando necesidades y proponiendo sistemas y procesos adecuados.",
+    "Gestioné incidencias, indicadores técnicos, procesos de calidad y estandarización de flujos de trabajo."
+  ];
+  const paragraphs = [
+    "Trabajo por proyectos y temporadas agrupado para mantener un CV conciso y mostrar continuidad profesional desde 2013.",
+    "Trabajo continuo por proyectos en diseño y operación de sonido teatral, audio en vivo, AV corporativo, broadcast e híbridos, alquiler de equipos, sonido directo, edición y posproducción, QA/QC de sistemas y formación básica en audio y escena.",
+    "Apoyo freelance e intermitente a la producción de grandes espectáculos y eventos. Entre los créditos destacan Roger Waters — This Is Not A Drill Tour, Diego Torres — Sinfónico Especial de Navidad, Megaland Fest y Dorthy y el Anillo de la Imaginación.",
+    "Efectos de sonido, sistemas especializados, QLab, documentación de cues y resolución de incidencias para teatro musical, incluido Sister Act / Entre Hábitos, The Rocky Horror Show, Les Misérables y Mulan.",
+    "Diseño sonoro para teatro musical durante períodos de descanso de NCL: sistemas adaptados a cada recinto, programación de QLab y consolas, integración de playback, efectos y documentación para operadores.",
+    "A2 en producciones de teatro musical con licencia como The Last 5 Years, Shrek, Grease, Beauty and the Beast, Spring Awakening y Man of La Mancha; también audio corporativo y música en vivo.",
+    "A2 con seguimiento de escena, RF y cobertura técnica de monitores.",
+    "Mezclé y mastericé proyectos de teatro musical en línea, incluidos Hamildub, Seis: El Musical y M.W.C.A.; el trabajo implicó mezcla multipista detallada y entrega de materiales.",
+    "Diseño sonoro, programación de QLab, operación de espectáculos y resolución de problemas en distintas sedes para compañías internacionales de teatro y música."
+  ];
+  const sideParagraphs = [
+    "Soporte técnico y resolución de problemas · Análisis de necesidades del cliente · Diseño de soluciones y apoyo de preventa · Formación de operadores y usuarios · Talleres y demostraciones técnicas · Presentaciones técnicas · Documentación de sistemas y procesos · Comunicación entre equipos · Planificación y ejecución de proyectos",
+    null,
+    "QLab 4 / 5 · OSC · MIDI · LTC / Timecode · Companion · Stream Deck · TheatreMix · Flujos de reproducción principal y respaldo",
+    "Dante · AES67 · Audio-over-IP · DVS · Q-SYS · Coordinación RF · Sistemas inalámbricos Shure / Sennheiser · Micrófonos miniatura y de diadema DPA · Shure Wireless Workbench · vMix · OBS · ATEM · Blackmagic · Microsoft Teams Rooms",
+    null
+  ];
+  function captureText(root) {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    const nodes=[];while(walker.nextNode()){const n=walker.currentNode;if(n.textContent.trim())nodes.push(n);}
+    return nodes;
+  }
+  const nodes=captureText(cv);
+  const original=nodes.map(n=>n.textContent);
+  const localized = nodes.map((n,i) => {
+    const key=original[i].trim();
+    const direct=replacements[key]||titleTranslation[key];
+    if(!direct)return original[i];
+    return original[i].replace(key,direct);
+  });
+  function assign(selector, strings) {
+    document.querySelectorAll(selector).forEach((element,index) => {
+      if(strings[index]===null || strings[index]===undefined)return;
+      const targets=captureText(element);
+      if(targets.length===1){const ix=nodes.indexOf(targets[0]);if(ix>=0)localized[ix]=strings[index];}
+    });
+  }
+  assign("#cv .summary",contentTranslation);
+  assign("#cv .role ul:not(.small-list) li",roleBullets);
+  assign("#cv .note, #cv .compact-role > p",paragraphs);
+  assign("#cv aside .sidebox > p",sideParagraphs);
+  assign("#cv .project p",[
+    "Desarrollo de control remoto y flujos de trabajo para sistemas Yamaha CL/QL, Companion, Stream Deck, MIDI/SysEx y feedback de estado.",
+    "Routing Dante / AES67, interoperabilidad, redundancia, diagnóstico e integración de sistemas de audio profesional."
+  ]);
+  const extra = new Map([
+    ["A2 for theatre productions including ","A2 en producciones teatrales como "],
+    [", supporting RF, backstage workflows, playback and live-show troubleshooting.",", con apoyo de RF, operaciones de backstage, playback y resolución de problemas en vivo."],
+    [" and "," y "],
+    [" Technical support & troubleshooting"," Soporte técnico y resolución de problemas"]
+  ]);
+  nodes.forEach((node,i)=>{if(!localized[i] || localized[i]!==original[i])return;const val=original[i];for(const [en,es] of extra){if(val.includes(en)){localized[i]=val.replace(en,es);break}}});
+  const back=nav.querySelector(".cv-back"),print=nav.querySelector(".cv-print");
+  function setLanguage(lang){
+    const es=lang==="es";
+    nodes.forEach((n,i)=>n.textContent=es?localized[i]:original[i]);
+    document.documentElement.lang=es?"es":"en";
+    back.textContent=es?"← Volver a Sobre mí":"← Back to About";
+    print.textContent=es?"Imprimir / Guardar PDF":"Print / Save as PDF";
+    nav.querySelectorAll("[data-cv-lang]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.cvLang===lang)));
+    try{localStorage.setItem("sdlive-language-preference",lang)}catch{}
+  }
+  nav.querySelectorAll("[data-cv-lang]").forEach(b=>b.addEventListener("click",()=>setLanguage(b.dataset.cvLang)));
+  let initial="en";try{const v=localStorage.getItem("sdlive-language-preference");if(v==="es"||v==="en")initial=v}catch{}
+  setLanguage(initial);
+})();
+</script>
 </body>
 </html>
