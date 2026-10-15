@@ -1,4 +1,5 @@
 export const CORE_SECTION_KEYS = {
+  cv: { section: "cv", market: "all", route: "root" },
   about: { section: "about", market: "all", route: "root" },
   services: { section: "services", market: "all", route: "root" },
   work: { section: "work", market: "all", route: "root" },
@@ -6,6 +7,7 @@ export const CORE_SECTION_KEYS = {
 };
 
 export const CORE_SECTION_DEFAULTS = {
+  cv: { overrides: {} },
   about: {
     eyebrow: { en: "About", es: "Sobre mí" },
     title: {
@@ -383,6 +385,20 @@ function validateInternational(value) {
   requireHref(value.cta.href.es, "international.cta.href.es");
 }
 
+function validateCv(value) {
+  if (!isPlainObject(value.overrides)) throw new Error("cv.overrides must be an object");
+  const entries = Object.entries(value.overrides);
+  if (entries.length > 450) throw new Error("Too many CV fields");
+  for (const [key, translation] of entries) {
+    if (!/^n[0-9]{1,4}$/.test(key)) throw new Error("Invalid CV field key");
+    if (!isPlainObject(translation)) throw new Error("Invalid CV translation");
+    for (const lang of ["en","es"]) {
+      if (typeof translation[lang] !== "string" || translation[lang].length > 3500) throw new Error("CV field must be text below 3500 characters");
+      if (/\+57[\s.-]*319[\s.-]*247[\s.-]*3948/.test(translation[lang])) throw new Error("Private phone number cannot be published");
+    }
+  }
+}
+
 export function cloneCoreSectionDefault(section) {
   const value = CORE_SECTION_DEFAULTS[section];
   if (!value) throw new Error(`Unknown core section: ${section}`);
@@ -392,7 +408,8 @@ export function cloneCoreSectionDefault(section) {
 export function validateCoreSectionDraft(section, value) {
   if (!CORE_SECTION_KEYS[section]) throw new Error(`Unknown core section: ${section}`);
   if (!isPlainObject(value)) throw new Error(`${section} content must be an object`);
-  if (section === "about") validateAbout(value);
+  if (section === "cv") validateCv(value);
+  else if (section === "about") validateAbout(value);
   else if (section === "services") validateServices(value);
   else if (section === "work") validateWork(value);
   else validateInternational(value);
