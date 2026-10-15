@@ -216,6 +216,14 @@ Research current Colombian legal/operational rules again if/when deliberately se
 - Finance cleanup/debt.
 - PILA estimator research/planning.
 
+# Future backlog — installable SD.Live Admin / Control Center PWA
+
+- [ ] Evaluate installability on macOS/iOS/iPadOS via existing Cloudflare Workers + Static Assets.
+- [ ] Reuse existing Admin modules and Cloudflare Access; no full rewrite.
+- [ ] Prototype app shell + manifest/icons + responsive navigation without touching private API caching.
+- [ ] Audit update lifecycle, authenticated sessions and storage/privacy before any offline functionality.
+- [ ] Schedule after CV/About closeout and SD.Live Work publishing (not the current active gate).
+
 # Non-negotiable workflow
 
 1. Inspect current `main` and current canonical docs before changing anything.
