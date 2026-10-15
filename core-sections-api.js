@@ -31,7 +31,7 @@ async function readJsonBody(request) {
 }
 
 function sectionFromPath(path) {
-  const match = path.match(/^\/api\/(?:admin\/)?content\/(about|services|work|international)(?:\/.*)?$/);
+  const match = path.match(/^\/api\/(?:admin\/)?content\/(about|services|work|international|cv)(?:\/.*)?$/);
   return match?.[1] || null;
 }
 

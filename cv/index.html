@@ -550,6 +550,9 @@ body.editing [data-editable]{background:rgba(var(--accent-rgb),.07)}
   }
   const nodes=captureText(cv);
   const original=nodes.map(n=>n.textContent);
+  window.SDLIVE_CV_EDITOR_SOURCE = () => nodes.map((n,i)=>({
+    id:"n"+i,en:original[i],es:localized[i],label:(n.parentElement?.closest("section")?.querySelector("h2")?.textContent||"CV")
+  }));
   const localized = nodes.map((n,i) => {
     const key=original[i].trim();
     const direct=replacements[key]||titleTranslation[key];
@@ -578,10 +581,17 @@ body.editing [data-editable]{background:rgba(var(--accent-rgb),.07)}
     [" Technical support & troubleshooting"," Soporte técnico y resolución de problemas"]
   ]);
   nodes.forEach((node,i)=>{if(!localized[i] || localized[i]!==original[i])return;const val=original[i];for(const [en,es] of extra){if(val.includes(en)){localized[i]=val.replace(en,es);break}}});
+  let publishedOverrides={};
+  window.SDLIVE_CV_EDITOR_APPLY = (overrides) => applyPublishedOverrides({overrides});
+  function applyPublishedOverrides(data) {
+    publishedOverrides=data?.overrides||{};
+    setLanguage(document.documentElement.lang==="es"?"es":"en");
+  }
+  fetch("/api/content/cv",{cache:"no-store"}).then(r=>r.ok?r.json():null).then(payload=>{if(payload?.content)applyPublishedOverrides(payload.content)}).catch(()=>{});
   const back=nav.querySelector(".cv-back"),print=nav.querySelector(".cv-print");
   function setLanguage(lang){
     const es=lang==="es";
-    nodes.forEach((n,i)=>n.textContent=es?localized[i]:original[i]);
+    nodes.forEach((n,i)=>{ const o=publishedOverrides["n"+i]; n.textContent=(es?o?.es:o?.en) ?? (es?localized[i]:original[i]); });
     document.documentElement.lang=es?"es":"en";
     back.textContent=es?"← Volver a Sobre mí":"← Back to About";
     print.textContent=es?"Imprimir / Guardar PDF":"Print / Save as PDF";
