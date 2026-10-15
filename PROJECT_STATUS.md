@@ -294,6 +294,15 @@ PR #246 merged, but live Meta/Cloudflare activation remains intentionally paused
 - PILA estimator research/planning when deliberately selected.
 - Quote/Cotización as a future Documents extension.
 
+## Future scope — SD.Live Control Center PWA (backlog, not active)
+
+- Evolve the existing Cloudflare-hosted Admin into an installable Progressive Web App for Mac, iPhone and iPad **without rebuilding or duplicating existing modules**.
+- Start with a PWA shell, manifest/icons, responsive navigation and standalone display; retain Cloudflare Access and the existing D1/R2/Workers/API boundaries.
+- Audit session/auth flows, installation behavior, update/service-worker lifecycle and cached resources before enabling any offline features.
+- **Do not cache private Finance, Documents, client or Admin API responses by default**; offline support is a separate security-reviewed phase.
+- Consider shared cross-module components and a unified Control Center UX incrementally. No React rewrite or new backend is implicitly authorized.
+- Priority: **after current CV/About finish and SD.Live Work portfolio publishing scope**, unless reselected.
+
 # Exact continuation point
 
 **Current choice (2026-10-14):** Start SD.Live Work discovery using `docs/roadmap/sdlive-work-portfolio.md`; preserve Patch as a paused workstream. The older Patch continuation below is historical until reselected.
