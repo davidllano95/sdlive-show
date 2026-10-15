@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Samuel David Llano — Professional CV | SD.Live</title>
+<meta name="description" content="Professional CV of Samuel David Llano — Sound Designer, professional audio systems, show control and systems integration.">
+<link rel="canonical" href="https://sdlive.show/cv/">
+<link rel="icon" href="/assets/icons/favicon.ico">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Sora:wght@500;600&display=swap" rel="stylesheet">
+<style>
+
+:root{
+  --bg:#ffffff;
+  --ink:#16171d;
+  --text:#24262d;
+  --soft:#6b6e7a;
+  --muted:#8a8d98;
+  --line:#e3e4ea;
+  --panel:#f7f7fa;
+  --accent:#a089e5;
+  --accent-rgb:160,137,229;
+  --accent-dark:#472eb4;
+  --font-display:"Manrope","Avenir Next","Segoe UI",Arial,sans-serif;
+  --font-body:"Manrope","Avenir Next","Segoe UI",Arial,sans-serif;
+  --font-label:"Sora","Avenir Next","Segoe UI",Arial,sans-serif;
+}
+*{box-sizing:border-box}
+html{background:#eef0f5}
+body{
+  margin:0;color:var(--text);
+  font-family:var(--font-body);
+  line-height:1.42;
+  -webkit-font-smoothing:antialiased;
+}
+.toolbar{
+  position:sticky;top:0;z-index:50;display:flex;gap:.55rem;align-items:center;flex-wrap:wrap;
+  padding:.7rem 1rem;background:#0b0d14;color:#f4f5f7;border-bottom:1px solid rgba(244,245,247,.12)
+}
+.toolbar strong{font-family:var(--font-label);font-size:.8rem;letter-spacing:.04em;margin-right:.35rem}
+.toolbar button{
+  border:1px solid rgba(244,245,247,.14);background:rgba(255,255,255,.04);color:#f4f5f7;
+  border-radius:6px;padding:.5rem .75rem;cursor:pointer;font:600 .78rem var(--font-label)
+}
+.toolbar button.primary{border-color:rgba(var(--accent-rgb),.7);color:var(--accent);background:rgba(var(--accent-rgb),.05)}
+.toolbar button.accent{background:var(--accent);color:#0b0d14;border-color:var(--accent)}
+.toolbar .hint{font-size:.78rem;color:rgba(244,245,247,.62);margin-left:auto}
+
+.sheet{
+  width:210mm;min-height:297mm;margin:18px auto;padding:14mm 16mm 12mm;
+  background:var(--bg);box-shadow:0 12px 42px rgba(20,20,30,.12);position:relative
+}
+.sheet::before{content:"";position:absolute;top:0;left:0;right:0;height:4px;background:var(--accent)}
+header{border-bottom:1px solid var(--ink);padding:2mm 0 8px;margin-bottom:12px}
+.topline{display:flex;justify-content:space-between;gap:18px;align-items:flex-start}
+h1{margin:0;font-family:var(--font-display);font-size:29px;line-height:1.02;letter-spacing:-.02em;font-weight:700;color:var(--ink)}
+.tagline{margin-top:5px;max-width:118mm;color:var(--soft);font-size:12.2px;font-weight:600;letter-spacing:0}
+.contact{text-align:right;font-size:9.7px;color:var(--soft);line-height:1.55;max-width:74mm}
+.contact a{color:inherit;text-decoration:none}
+.brandbar{display:none}
+
+.grid{display:grid;grid-template-columns:1.58fr .82fr;gap:16px}
+section{margin-bottom:11px}
+h2{
+  display:flex;align-items:center;gap:7px;margin:0 0 6px;
+  font-family:var(--font-label);font-size:9.2px;text-transform:uppercase;letter-spacing:.13em;
+  font-weight:600;color:var(--accent-dark)
+}
+h2::before{content:"";width:5px;height:5px;border-radius:50%;background:var(--accent);flex:0 0 auto}
+p{margin:0 0 5px;font-size:10.05px}
+.summary{font-size:10.5px;line-height:1.52;color:#2b2d34}
+.note{font-size:9.1px;color:var(--soft);margin-top:-2px}
+
+.role{margin-bottom:10px;break-inside:avoid}
+.role-head{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+.role-title{font-family:var(--font-display);font-size:11px;font-weight:700;color:var(--ink)}
+.role-date{font-family:var(--font-label);font-size:8.8px;font-weight:500;color:var(--soft);white-space:nowrap}
+.company{font-size:9.65px;font-weight:600;color:var(--accent-dark);margin:1px 0 3px}
+ul{margin:3px 0 0 15px;padding:0}
+li{font-size:9.6px;margin:2px 0;line-height:1.4}
+li::marker{color:var(--accent)}
+
+.compact-role{border-top:1px solid var(--line);padding-top:6px;margin-top:6px;break-inside:avoid}
+.compact-role:first-of-type{border-top:none;padding-top:0;margin-top:0}
+.compact-role .role-title{font-size:10.45px}
+.compact-role .company{font-size:9.3px}
+.compact-role p{font-size:9.35px;margin:0}
+
+.sidebox{
+  background:transparent;border:0;border-top:1px solid var(--line);border-radius:0;
+  padding:7px 0 0;margin-bottom:10px;break-inside:avoid
+}
+.sidebox:first-child{border-top:0;padding-top:0}
+.chips{display:flex;flex-wrap:wrap;gap:4px}
+.chip{
+  font-family:var(--font-label);font-size:8.1px;letter-spacing:.015em;
+  padding:3px 6px;border:1px solid rgba(var(--accent-rgb),.26);border-radius:999px;
+  background:rgba(var(--accent-rgb),.04);color:#4a3d7a
+}
+.kv{font-size:9.45px;margin-bottom:6px}
+.kv b{display:block;font-family:var(--font-label);font-size:8px;text-transform:uppercase;letter-spacing:.08em;color:var(--soft);font-weight:600}
+.project{border-left:2px solid var(--accent);padding-left:7px;margin-bottom:7px;break-inside:avoid}
+.project strong{font-size:10px;color:var(--ink)}
+.project p{font-size:9.2px;color:#454851;margin-top:2px}
+.creditline{font-size:9.15px;color:var(--soft);line-height:1.42;margin-top:3px}
+.small-list{margin:3px 0 0 15px}.small-list li{font-size:9.2px;margin:2px 0}
+
+footer{
+  margin-top:10px;padding-top:6px;border-top:1px solid var(--line);
+  font-family:var(--font-label);font-size:8.2px;letter-spacing:.035em;color:var(--muted);
+  display:flex;justify-content:space-between;gap:10px
+}
+[data-editable][contenteditable="true"]{outline:1px dashed rgba(var(--accent-rgb),.85);outline-offset:2px;border-radius:3px}
+body.editing [data-editable]{background:rgba(var(--accent-rgb),.07)}
+
+@media(max-width:900px){
+  .sheet{width:auto;min-height:auto;margin:0;padding:22px}
+  .grid{grid-template-columns:1fr}
+  .topline{flex-direction:column}
+  .contact{text-align:left;max-width:none}
+  .toolbar .hint{display:none}
+}
+@page{size:A4;margin:0}
+@media print{
+  html,body{background:#fff}.toolbar{display:none!important}
+  .sheet{width:210mm;min-height:297mm;margin:0;box-shadow:none;padding:13mm 15mm 11mm}
+  [data-editable][contenteditable="true"]{outline:none}
+  a{color:inherit;text-decoration:none}
+  .role,.compact-role,.sidebox,.project{break-inside:avoid}
+}
+
+.cv-public-nav{position:sticky;top:0;z-index:100;background:#0b0d14;border-bottom:1px solid rgba(244,245,247,.12);display:flex;align-items:center;justify-content:space-between;gap:18px;padding:10px max(18px,calc((100vw - 1150px)/2));color:#f4f5f7}.cv-public-brand{display:inline-flex;align-items:center}.cv-public-brand img{width:154px;height:auto;max-height:52px;object-fit:contain}.cv-nav-actions{display:flex;align-items:center;gap:12px}.cv-nav-actions a,.cv-nav-actions button{font:600 12px var(--font-label);border:1px solid rgba(244,245,247,.2);border-radius:6px;padding:10px 13px;color:#f4f5f7;text-decoration:none;background:transparent;cursor:pointer}.cv-nav-actions button{background:var(--accent);border-color:var(--accent);color:#0b0d14}.cv-nav-actions a:hover,.cv-nav-actions button:hover{opacity:.85}.sheet{margin-top:20px}.cv-identity{display:flex;align-items:center;gap:12px;font:600 9px var(--font-label);letter-spacing:.08em;text-transform:uppercase;color:var(--soft);margin:0 0 10px}.cv-identity::before{content:"";display:block;width:6px;height:6px;border-radius:100%;background:var(--accent)}@media(max-width:600px){.cv-public-nav{padding:8px 12px}.cv-public-brand img{width:103px}.cv-nav-actions{gap:6px}.cv-nav-actions a,.cv-nav-actions button{font-size:10px;padding:8px}.sheet{margin:0}}@media print{.cv-public-nav{display:none!important}.sheet{margin:0}.cv-identity{display:none}}
+</style>
+</head>
+<body>
+<nav class="cv-public-nav" aria-label="CV navigation"><a class="cv-public-brand" href="/#about"><img src="/assets/logos/sd-live-header-normal.png" alt="SD.Live — Creative Audio" width="154" height="52"></a><div class="cv-nav-actions"><a class="cv-back" href="/#about">← Back to About</a><button class="cv-print" type="button" onclick="window.print()">Print / Save as PDF</button></div></nav>
+<main class="sheet" id="cv">
+<header>
+  <div class="topline">
+    <div>
+      <h1>Samuel David Llano</h1>
+      <div class="tagline">Sound Designer · Professional Audio Systems · Show Control · Systems Integration</div>
+      
+    </div>
+    <div class="contact">
+      Bogotá, Colombia · Spanish / Colombian citizen<br>
+      <a href="mailto:sam@sdlive.show">sam@sdlive.show</a> · +57 319 247 3948<br>
+      <a href="https://sdlive.show">sdlive.show</a><br>
+      <a href="https://www.linkedin.com/in/samuel-david-llano-83b484120">linkedin.com/in/samuel-david-llano-83b484120</a>
+    </div>
+  </div>
+</header>
+
+<div class="grid">
+<div>
+
+<section>
+  <h2>Professional Summary</h2>
+  <p class="summary">
+    Sound Designer and professional audio systems specialist working across theatre and live production since 2013.
+    Experience spans cruise entertainment, musical theatre, live sound, broadcast/hybrid production and AV systems,
+    combining creative sound design with QLab/show control, RF, Dante/AES67, digital consoles, system design and integration,
+    commissioning and production-critical troubleshooting. Experienced in translating complex systems into reliable workflows,
+    training operators and technicians, documenting show and system operation, and working directly across creative, technical
+    and client teams. Additional experience includes technical support, solution development and project delivery.
+  </p>
+</section>
+
+<section>
+  <h2>Professional Experience</h2>
+
+  <div class="role">
+    <div class="role-head">
+      <div class="role-title">Associate Sound Designer</div>
+      <div class="role-date">Apr 2025 — Present</div>
+    </div>
+    <div class="company">Sonolux Creative LLC · Cruise Entertainment / International Productions</div>
+    <ul>
+      <li>Develop and implement sound-design, playback and professional-audio system workflows for new entertainment productions and cruise installs.</li>
+      <li>Program QLab with cue structuring, timecode, MIDI/OSC integration and playback logic; optimize routing, EQ and DCAs.</li>
+      <li>Support shipboard audio installation, PA tuning, patching, testing, commissioning and verification of operator/playback workflows.</li>
+      <li>Create signal-flow diagrams, cue sheets and operator guides; train onboard technicians and local crews on show design, consoles, RF, microphones and operating workflows.</li>
+      <li>Bridge creative intent with technical execution, translating complex systems into clear, repeatable workflows for production and operations teams.</li>
+    </ul>
+    <p class="creditline"><strong>Selected credit:</strong> The Wild Cards — NCL new-content project.</p>
+  </div>
+
+  <div class="role">
+    <div class="role-head">
+      <div class="role-title">Freelance Sound Engineer / AV Sound Designer</div>
+      <div class="role-date">2024 — Present</div>
+    </div>
+    <div class="company">LiventX</div>
+    <ul>
+      <li>Support broadcast, hybrid and audiovisual productions involving professional audio, streaming and remote-production workflows.</li>
+      <li>Create sound design and audio elements for audiovisual content; support recording, playback, routing and delivery.</li>
+      <li>Work across vMix, OBS, ATEM / Blackmagic and professional audio systems with emphasis on signal flow and troubleshooting.</li>
+    </ul>
+  </div>
+
+  <div class="role">
+    <div class="role-head">
+      <div class="role-title">Production Stage Manager</div>
+      <div class="role-date">Mar — Apr 2026</div>
+    </div>
+    <div class="company">Mediacoustix · V de Vinilo — “La vida es una fiesta”</div>
+    <ul>
+      <li>Led stage operations and served as the primary coordination point between artists, audio, stage and production departments.</li>
+      <li>Oversaw cue execution, transitions, live adjustments and real-time issue prevention; supported FOH/monitor workflows when required.</li>
+    </ul>
+  </div>
+
+  <div class="role">
+    <div class="role-head">
+      <div class="role-title">Audio Technician (A1/A2)</div>
+      <div class="role-date">Jun 2022 — Jun 2024</div>
+    </div>
+    <div class="company">Norwegian Cruise Line · Fleetwide Entertainment</div>
+    <ul>
+      <li>Operated and maintained theatre audio systems, mixed live vocals/bands/playback, managed RF and resolved show-critical failures.</li>
+      <li>Worked as A1/A2 across licensed and production shows and as A1/designer for guest entertainers; programmed QLab and edited show audio.</li>
+    </ul>
+    <p class="creditline"><strong>Selected credits:</strong> Swing!, The Price Is Right Live, Summer: The Donna Summer Musical (A1/A2), Blazing Boots, Get Down Tonight, Showdown and Rock You Tonight.</p>
+  </div>
+
+  <div class="role">
+    <div class="role-head">
+      <div class="role-title">Audio Technician</div>
+      <div class="role-date">Oct 2018 — Apr 2019</div>
+    </div>
+    <div class="company">Norwegian Cruise Line · Norwegian Escape</div>
+    <p>
+      A2 for theatre productions including <strong>After Midnight</strong>, <strong>The Choir of Man</strong> and
+      <strong>For The Record: The Brat Pack</strong>, supporting RF, backstage workflows, playback and live-show troubleshooting.
+    </p>
+  </div>
+
+  <div class="role">
+    <div class="role-head">
+      <div class="role-title">Audiovisual Operations Manager</div>
+      <div class="role-date">Jul — Sep 2024</div>
+    </div>
+    <div class="company">Magix Group Colombia</div>
+    <ul>
+      <li>Acted as a client-facing technical advisor, translating production requirements into practical and scalable AV solutions.</li>
+      <li>Designed and executed AV technical setups, coordinated technical teams, vendors and stakeholders, and supervised installation / dismantling.</li>
+      <li>Supported business development and technical consulting by identifying client needs and proposing appropriate system and workflow solutions.</li>
+      <li>Managed troubleshooting, technical KPIs, quality processes and workflow standardization across projects.</li>
+    </ul>
+  </div>
+</section>
+
+<section>
+  <h2>Selected Earlier & Ongoing Theatre / Audio Experience</h2>
+  <p class="note">Project-based and seasonal work is intentionally grouped to preserve a concise CV while showing continuity since 2013.</p>
+
+  <div class="compact-role">
+    <div class="role-head">
+      <div class="role-title">Independent Sound Designer / Audio Technician (A1/A2)</div>
+      <div class="role-date">2013 — Present</div>
+    </div>
+    <div class="company">Self-employed · Theatre / Live Audio / AV</div>
+    <p>Ongoing project work across theatre sound design and operation, live audio, corporate AV, broadcast/hybrid audio, equipment rental, direct sound, audio editing/post, system QA/QC and basic audio/stagecraft training.</p>
+  </div>
+
+  <div class="compact-role">
+    <div class="role-head">
+      <div class="role-title">Assistant Production Manager · Project-based</div>
+      <div class="role-date">2013 — Present</div>
+    </div>
+    <div class="company">Awake Architectural Audio</div>
+    <p>Intermittent freelance production support across large-scale shows and events. Selected credits include Roger Waters — This Is Not A Drill Tour, Diego Torres — Sinfónico Especial de Navidad, Megaland Fest and Dorthy y el Anillo de la Imaginación.</p>
+  </div>
+
+  <div class="compact-role">
+    <div class="role-head">
+      <div class="role-title">Assistant Sound Designer · Seasonal / Project-based</div>
+      <div class="role-date">2023 — Present</div>
+    </div>
+    <div class="company">TrebolM</div>
+    <p>Sound effects, specialized audio systems, QLab, cue documentation and troubleshooting for musical-theatre productions including Sister Act / Entre Hábitos, The Rocky Horror Show, Les Misérables and Mulan.</p>
+  </div>
+
+  <div class="compact-role">
+    <div class="role-head">
+      <div class="role-title">Sound Designer · Seasonal Projects</div>
+      <div class="role-date">2022 — 2024</div>
+    </div>
+    <div class="company">Universidad del Rosario</div>
+    <p>Musical-theatre sound design completed during leave periods from NCL: venue-specific system design, QLab / console programming, playback integration, effects and operator documentation.</p>
+  </div>
+
+  <div class="compact-role">
+    <div class="role-head">
+      <div class="role-title">Audio Technician (A2) · Freelance</div>
+      <div class="role-date">2016 — 2022</div>
+    </div>
+    <div class="company">Soy Gardel Producciones</div>
+    <p>A2 across licensed musical-theatre productions including The Last 5 Years, Shrek, Grease, Beauty and the Beast, Spring Awakening and Man of La Mancha; also corporate and live-music audio work.</p>
+  </div>
+
+  <div class="compact-role">
+    <div class="role-head">
+      <div class="role-title">Audio Technician · Seasonal</div>
+      <div class="role-date">Dec 2019</div>
+    </div>
+    <div class="company">Teatro Colón · Pombo: El Musical</div>
+    <p>A2 with backstage tracking, RF and monitor-technician coverage.</p>
+  </div>
+
+  <div class="compact-role">
+    <div class="role-head">
+      <div class="role-title">Mixing Engineer · Remote Freelance</div>
+      <div class="role-date">2020 — 2022</div>
+    </div>
+    <div class="company">Independent / Virtual Musical-Theatre Projects</div>
+    <p>Mixed and mastered online musical-theatre projects including Hamildub, Seis: El Musical and M.W.C.A.; the work required detailed multitrack mixing and delivery.</p>
+  </div>
+
+  <div class="compact-role">
+    <div class="role-head">
+      <div class="role-title">Audio Technician · Seasonal</div>
+      <div class="role-date">Oct 2024</div>
+    </div>
+    <div class="company">FIAV Bogotá</div>
+    <p>Multi-venue sound design, QLab programming, show operation and troubleshooting for international theatre and music companies.</p>
+  </div>
+</section>
+
+</div>
+
+<aside>
+
+<section class="sidebox">
+  <h2>Core Expertise</h2>
+  <div class="chips">
+    <span class="chip">Sound Design</span>
+    <span class="chip">QLab</span>
+    <span class="chip">Show Control</span>
+    <span class="chip">System Integration</span>
+    <span class="chip">Commissioning</span>
+    <span class="chip">Troubleshooting</span>
+    <span class="chip">FOH / Monitors</span>
+    <span class="chip">RF Coordination</span>
+    <span class="chip">Networked Audio</span>
+    <span class="chip">Broadcast / Hybrid</span>
+    <span class="chip">Technical Training</span>
+    <span class="chip">Documentation</span>
+  </div>
+</section>
+
+<section class="sidebox">
+  <h2>Technical & Client-Facing Capabilities</h2>
+  <p>
+    Technical support & troubleshooting · Client needs analysis · Solution design / pre-sales support ·
+    Operator and end-user training · Technical workshops & demos · Technical presentations ·
+    System / workflow documentation · Cross-functional communication · Project planning & delivery
+  </p>
+</section>
+
+<section class="sidebox">
+  <h2>Consoles & Audio Platforms</h2>
+  <p>
+    Yamaha CL / QL / DM / PM Rivage<br>
+    DiGiCo workflows<br>
+    Behringer WING / X32<br>
+    Midas M32<br>
+    Allen & Heath SQ / Avantis / dLive<br>
+    Waves LV1
+  </p>
+</section>
+
+<section class="sidebox">
+  <h2>Show Control & Playback</h2>
+  <p>
+    QLab 4 / 5 · OSC · MIDI · LTC / Timecode · Companion · Stream Deck · TheatreMix · Main / Backup playback workflows
+  </p>
+</section>
+
+<section class="sidebox">
+  <h2>Networking, RF & Broadcast</h2>
+  <p>
+    Dante · AES67 · Audio-over-IP · DVS · Q-SYS · RF coordination · Shure / Sennheiser wireless · DPA miniature/headset microphones · Shure Wireless Workbench · vMix · OBS · ATEM · Blackmagic · Microsoft Teams Rooms
+  </p>
+</section>
+
+<section class="sidebox">
+  <h2>Software</h2>
+  <p>QLab · Logic Pro · Pro Tools · vMix · OBS · Companion · Q-SYS · Shure Wireless Workbench</p>
+</section>
+
+<section class="sidebox">
+  <h2>Credentials</h2>
+  <ul class="small-list">
+    <li>Entertainment Systems Technician — Global Audio Solutions</li>
+    <li>Q-SYS Level 1 Training</li>
+    <li>Dante Certification</li>
+    <li>QLab Principles — Teatro Colón</li>
+    <li>Shure Wireless Workbench / RF Training</li>
+    <li>Fundamentos de Audio para Espectáculos Teatrales</li>
+    <li>STCW Certification</li>
+  </ul>
+</section>
+
+<section class="sidebox">
+  <h2>Education</h2>
+  <div class="kv"><b>Sep 2024 — Sep 2025</b>Master’s in Sound Design — Mare Nostrum Business School</div>
+  <div class="kv"><b>2014 — 2017</b>Associate Degree in Music — EMMAT</div>
+  <div class="kv"><b>2014</b>Studies in Sound Production & Musicalization — UNITEC</div>
+  <div class="kv"><b>Additional Studies</b>Musical Theatre Performance — MISI / Re-Crea</div>
+</section>
+
+<section class="sidebox">
+  <h2>Selected Technical Projects</h2>
+  <div class="project">
+    <strong>SD.Live Surface Engine</strong>
+    <p>Remote-control and workflow development around Yamaha CL/QL systems, Companion, Stream Deck, MIDI/SysEx and state feedback.</p>
+  </div>
+  <div class="project">
+    <strong>Networked Audio Lab</strong>
+    <p>Dante / AES67 routing, interoperability, redundancy, troubleshooting and integration across professional audio systems.</p>
+  </div>
+</section>
+
+<section class="sidebox">
+  <h2>Languages & Mobility</h2>
+  <p>
+    <strong>Spanish:</strong> Native<br>
+    <strong>English:</strong> C2 / Full Professional Proficiency<br><br>
+    Based in Colombia · EU work rights through Spanish citizenship · Available for international installs, commissioning, rehearsals and revisits.
+  </p>
+</section>
+
+<section class="sidebox">
+  <h2>Professional Membership</h2>
+  <p>Audio Engineering Society — Associate</p>
+</section>
+
+</aside>
+</div>
+
+<footer>
+  <span>SD.Live — Creative Audio · sdlive.show</span>
+  <span>Master CV v4 · Latest CV + LinkedIn audit + user-confirmed source</span>
+</footer>
+</main>
+
+
+
+
+</body>
+</html>
