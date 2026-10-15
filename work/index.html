@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#06070b">
+<meta name="description" content="SD.Live creative audio portfolio: selected sound design, live audio and broadcast work.">
+<link rel="canonical" href="https://sdlive.show/work/">
+<link rel="icon" href="/assets/icons/favicon.ico">
+<link rel="stylesheet" href="/styles.css?v=20260819-1">
+<title>Work — SD.Live Creative Audio</title>
+<style>
+.work-landing{min-height:100vh;padding-top:100px}
+.work-landing .eyebrow{display:block;margin-bottom:16px}
+.work-landing h1{font-size:clamp(42px,7vw,88px);font-weight:600;letter-spacing:-.055em;line-height:1.06;max-width:850px}
+.work-landing__intro{margin:22px 0 46px;max-width:640px;color:var(--color-text-soft);font-size:clamp(16px,2vw,20px)}
+.work-landing__toolbar{display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;align-items:center;margin-bottom:25px}
+.work-landing__toolbar p{color:var(--color-muted);font-size:13px}
+.work-landing__grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+.work-landing__card{padding:30px;border:1px solid var(--color-border);border-radius:var(--radius-medium);background:var(--color-panel);min-height:225px}
+.work-landing__card h2{font-size:clamp(22px,3vw,34px);letter-spacing:-.035em;margin:14px 0}
+.work-landing__card p{color:var(--color-text-soft);max-width:460px}
+.work-landing__kind{color:var(--color-accent);font-size:12px;letter-spacing:.13em;text-transform:uppercase;font-weight:700}
+.work-landing__note{margin:36px 0 65px;color:var(--color-muted);font-size:13px}
+@media(max-width:700px){.work-landing__grid{grid-template-columns:1fr}.work-landing__card{min-height:0;padding:22px}}
+</style>
+</head>
+<body>
+<main class="work-landing container">
+<a href="/#work" class="btn btn-ghost" aria-label="Back to selected work">← <span data-en="Back to SD.Live" data-es="Volver a SD.Live">Back to SD.Live</span></a>
+<div style="margin-top:62px">
+<span class="eyebrow" data-en="SD.Live · Creative Audio" data-es="SD.Live · Audio creativo">SD.Live · Creative Audio</span>
+<h1 data-en="The work behind the sound." data-es="El trabajo detrás del sonido.">The work behind the sound.</h1>
+<p class="work-landing__intro" data-en="Sound design, playback, live audio and broadcast. A growing collection of productions and individual creative pieces." data-es="Diseño sonoro, playback, audio en vivo y broadcast. Una colección en desarrollo de producciones y piezas creativas individuales.">Sound design, playback, live audio and broadcast. A growing collection of productions and individual creative pieces.</p>
+</div>
+<div class="work-landing__toolbar">
+<h2 data-en="Explore work" data-es="Explorar trabajos">Explore work</h2>
+<p data-en="Projects and independent pieces" data-es="Proyectos y piezas independientes">Projects and independent pieces</p>
+</div>
+<div class="work-landing__grid">
+<article class="work-landing__card"><span class="work-landing__kind">Projects</span><h2 data-en="Productions" data-es="Producciones">Productions</h2><p data-en="Selected production credits and the creative and technical roles behind them. Full project stories and media will be added here." data-es="Producciones seleccionadas y las responsabilidades creativas y técnicas detrás de ellas. Próximamente se agregarán proyectos y contenido multimedia.">Selected production credits and the creative and technical roles behind them. Full project stories and media will be added here.</p></article>
+<article class="work-landing__card"><span class="work-landing__kind">Pieces</span><h2 data-en="Individual work" data-es="Piezas individuales">Individual work</h2><p data-en="Sound-design excerpts, QLab sequences, audio examples and behind-the-scenes experiments. New pieces will appear as they are published." data-es="Fragmentos de diseño sonoro, secuencias de QLab, ejemplos de audio y experimentos del proceso creativo. Las piezas aparecerán a medida que se publiquen.">Sound-design excerpts, QLab sequences, audio examples and behind-the-scenes experiments. New pieces will appear as they are published.</p></article>
+</div>
+<p class="work-landing__note" data-en="Portfolio in progress · Explore current selected collaborations on the main site." data-es="Portafolio en construcción · Explora las colaboraciones actuales en la página principal.">Portfolio in progress · Explore current selected collaborations on the main site.</p>
+</main>
+<script>
+(function(){
+const es=(function(){try{return localStorage.getItem("sdlive-language-preference")==="es"}catch{return false}})();
+if(!es)return;
+document.documentElement.lang="es";
+document.querySelectorAll("[data-es]").forEach(el=>{el.textContent=el.dataset.es});
+})();
+</script>
+</body>
+</html>
