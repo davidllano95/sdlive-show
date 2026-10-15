@@ -54,4 +54,8 @@ Finish the focused audit of existing Selected Work CMS schemas/editor and Media 
 
 ## CV Master activation (2026-10-14)
 
-Public `/cv/` is the next selected slice ahead of the Work publishing editor, using the user-supplied Master CV v4 as canonical text. The About section links to `/cv/` outside the CMS-replaced root. No public HTML editing/localStorage controls; brand-aligned screen and A4 print styling. PDF is browser Print/Save as PDF, not a pre-generated downloadable file. Future CV CMS editing and Work links require separate scopes.
+Public `/cv/` is the next selected slice ahead of the Work publishing editor, using the user-supplied Master CV v4 as canonical text. The About section links to `/cv/` **inside the rendered About text column** (static fallback, server-rendered CMS and Admin preview), visible beside the image. No public HTML editing controls; EN/ES language preference may be kept locally. brand-aligned screen and A4 print styling. PDF is browser Print/Save as PDF, not a pre-generated downloadable file. EN/ES CV switch, print/save PDF and removal of the internal source-note footer are implemented through PR #327; About CTA positioning is implemented through PR #328. Production visual sign-off remains separate from CI. Future CV CMS editing and Work links require separate scopes.
+
+## Later backlog: Control Center as installable PWA
+
+An installable SD.Live Admin / Control Center for Mac, iPhone and iPad is desirable, **but deferred** until the current CV/About and Work portfolio scopes are finished. Reuse existing protected Admin and Cloudflare stack. Design a secure app shell, icons, navigation and lifecycle first; do not offline-cache private Documents, Finance or Admin API data without explicit review. This is a later architectural evaluation, not authorization for migration or rewrite.
