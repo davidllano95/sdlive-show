@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
+<script>try{document.documentElement.dataset.cvTheme=localStorage.getItem("sdlive-cv-theme")==="light"?"light":"dark"}catch(e){document.documentElement.dataset.cvTheme="dark"}</script>
 <title>Samuel David Llano — Professional CV | SD•Live</title>
 <meta name="description" content="Professional CV of Samuel David Llano — Sound Designer, professional audio systems, show control and systems integration.">
 <link rel="canonical" href="https://sdlive.show/cv/">
@@ -27,6 +28,20 @@
 }
 *{box-sizing:border-box}
 html{background:#eef0f5}
+html[data-cv-theme="dark"]{
+ --bg:#10121a;--ink:#f4f5f7;--text:#daddE8;--soft:#aab0c1;--muted:#9298ab;
+ --line:#343846;--panel:#191c27;--accent-dark:#b9a8ff;
+ background:#06070b;color-scheme:dark
+}
+html[data-cv-theme="dark"] .sheet{box-shadow:0 12px 50px rgba(0,0,0,.35)}
+html[data-cv-theme="dark"] .summary{color:#d7dae5}
+html[data-cv-theme="dark"] .chip{color:#d9ccff;background:rgba(var(--accent-rgb),.13);border-color:rgba(var(--accent-rgb),.37)}
+@media print{
+ html,html[data-cv-theme="dark"]{--bg:#fff;--ink:#16171d;--text:#24262d;--soft:#6b6e7a;--muted:#8a8d98;--line:#e3e4ea;--panel:#f7f7fa;--accent-dark:#472eb4; color-scheme:light;background:#fff!important}
+ html[data-cv-theme="dark"] .summary{color:#2b2d34}
+ html[data-cv-theme="dark"] .chip{color:#4a3d7a;background:rgba(var(--accent-rgb),.04);border-color:rgba(var(--accent-rgb),.26)}
+ html[data-cv-theme="dark"] .sheet{box-shadow:none}
+}
 body{
   margin:0;color:var(--text);
   font-family:var(--font-body);
@@ -131,10 +146,34 @@ body.editing [data-editable]{background:rgba(var(--accent-rgb),.07)}
 
 .cv-public-nav{position:sticky;top:0;z-index:100;background:#0b0d14;border-bottom:1px solid rgba(244,245,247,.12);display:flex;align-items:center;justify-content:space-between;gap:18px;padding:10px max(18px,calc((100vw - 1150px)/2));color:#f4f5f7}.cv-public-brand{display:inline-flex;align-items:center}.cv-public-brand img{width:154px;height:auto;max-height:52px;object-fit:contain}.cv-nav-actions{display:flex;align-items:center;gap:12px}.cv-nav-actions a,.cv-nav-actions button{font:600 12px var(--font-label);border:1px solid rgba(244,245,247,.2);border-radius:6px;padding:10px 13px;color:#f4f5f7;text-decoration:none;background:transparent;cursor:pointer}.cv-nav-actions button{background:var(--accent);border-color:var(--accent);color:#0b0d14}.cv-nav-actions a:hover,.cv-nav-actions button:hover{opacity:.85}.sheet{margin-top:20px}.cv-identity{display:flex;align-items:center;gap:12px;font:600 9px var(--font-label);letter-spacing:.08em;text-transform:uppercase;color:var(--soft);margin:0 0 10px}.cv-identity::before{content:"";display:block;width:6px;height:6px;border-radius:100%;background:var(--accent)}@media(max-width:600px){.cv-public-nav{padding:8px 12px}.cv-public-brand img{width:103px}.cv-nav-actions{gap:6px}.cv-nav-actions a,.cv-nav-actions button{font-size:10px;padding:8px}.sheet{margin:0}}@media print{.cv-public-nav{display:none!important}.sheet{margin:0}.cv-identity{display:none}}
 .cv-languages{display:inline-flex;border:1px solid rgba(244,245,247,.22);border-radius:6px;overflow:hidden}.cv-languages button{border:0;border-radius:0;padding:10px 11px;color:#f4f5f7;background:transparent}.cv-languages button[aria-pressed="true"]{background:var(--accent);color:#0b0d14}.cv-languages button:focus-visible{outline:2px solid #fff;outline-offset:-2px}@media(max-width:600px){.cv-languages button{padding:8px}}@media print{.cv-languages{display:none}}
+
+/* The public CV uses the same compact, dark brand navigation as SD.Live. */
+.cv-public-nav{background:#06070b;min-height:78px;padding:12px max(22px,calc((100vw - 1240px)/2))}
+.cv-public-brand{flex-direction:column;align-items:center;min-width:158px;text-decoration:none}
+.cv-public-brand img{width:174px;max-height:58px}
+.cv-brand-descriptor{font:600 9px/1.15 var(--font-label);letter-spacing:.12em;text-transform:uppercase;color:rgba(244,245,247,.7);margin-top:-8px}
+.cv-nav-actions{flex-wrap:wrap;justify-content:flex-end}
+.cv-nav-link{font-weight:500!important;border-color:transparent!important;color:rgba(244,245,247,.74)!important}
+.cv-nav-link:hover{color:var(--accent)!important}
+.cv-theme-toggle{background:transparent!important;color:#f4f5f7!important;border:1px solid rgba(244,245,247,.22)!important;white-space:nowrap}
+.cv-public-nav button:focus-visible,.cv-public-nav a:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+@media(max-width:750px){
+ .cv-public-nav{min-height:0;padding:10px 12px;gap:12px}
+ .cv-public-brand{min-width:0}
+ .cv-public-brand img{width:115px}
+ .cv-brand-descriptor{font-size:7px;margin-top:-5px}
+ .cv-nav-actions{gap:5px}
+ .cv-nav-link{display:none}
+ .cv-theme-toggle{padding:8px!important}
+}
+@media print{
+ html[data-cv-theme="dark"] body{color:#24262d}
+ .cv-public-nav{display:none!important}
+}
 </style>
 </head>
 <body>
-<nav class="cv-public-nav" aria-label="CV navigation"><a class="cv-public-brand" href="/#about"><img src="/assets/logos/sd-live-header-normal.png" alt="SD.Live — Creative Audio" width="154" height="52"></a><div class="cv-nav-actions"><div class="cv-languages" role="group" aria-label="CV language"><button type="button" data-cv-lang="en" aria-pressed="true">EN</button><button type="button" data-cv-lang="es" aria-pressed="false">ES</button></div><a class="cv-back" href="/#about">← Back to About</a><button class="cv-print" type="button" onclick="window.print()">Print / Save as PDF</button></div></nav>
+<nav class="cv-public-nav" aria-label="CV navigation"><a class="cv-public-brand" href="/" aria-label="SD.Live — Home"><img src="/assets/logos/sd-live-header-normal.png" alt="SD.Live" width="174" height="58"><span class="cv-brand-descriptor">Creative Audio</span></a><div class="cv-nav-actions"><a class="cv-nav-link" href="/work/">Work</a><div class="cv-languages" role="group" aria-label="CV language"><button type="button" data-cv-lang="en" aria-pressed="true">EN</button><button type="button" data-cv-lang="es" aria-pressed="false">ES</button></div><a class="cv-back" href="/#about">← Back to About</a><button class="cv-theme-toggle" type="button" aria-pressed="true" aria-label="Switch to light mode">☀ Light</button><button class="cv-print" type="button" onclick="window.print()">Print / Save as PDF</button></div></nav>
 <main class="sheet" id="cv">
 <header>
   <div class="topline">
@@ -589,6 +628,17 @@ body.editing [data-editable]{background:rgba(var(--accent-rgb),.07)}
   }
   fetch("/api/content/cv",{cache:"no-store"}).then(r=>r.ok?r.json():null).then(payload=>{if(payload?.content)applyPublishedOverrides(payload.content)}).catch(()=>{});
   const back=nav.querySelector(".cv-back"),print=nav.querySelector(".cv-print");
+  const themeButton=nav.querySelector(".cv-theme-toggle");
+  function setCvTheme(theme){
+    const isDark=theme!=="light";
+    document.documentElement.dataset.cvTheme=isDark?"dark":"light";
+    themeButton.setAttribute("aria-pressed",String(isDark));
+    themeButton.textContent=isDark?"☀ Light":"☾ Dark";
+    themeButton.setAttribute("aria-label",isDark?"Switch to light mode":"Switch to dark mode");
+    try{localStorage.setItem("sdlive-cv-theme",isDark?"dark":"light")}catch(e){}
+  }
+  themeButton.addEventListener("click",()=>setCvTheme(document.documentElement.dataset.cvTheme==="dark"?"light":"dark"));
+  setCvTheme(document.documentElement.dataset.cvTheme);
   function setLanguage(lang){
     const es=lang==="es";
     nodes.forEach((n,i)=>{ const o=publishedOverrides["n"+i]; n.textContent=(es?o?.es:o?.en) ?? (es?localized[i]:original[i]); });
