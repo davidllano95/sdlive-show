@@ -325,6 +325,16 @@
       applyLocalized(p, paragraph, lang, true);
       copy.appendChild(p);
     });
+    const cvLink = doc.createElement("div");
+    cvLink.className = "about-cv-link";
+    const anchor = doc.createElement("a");
+    anchor.className = "btn btn-secondary";
+    anchor.href = "/cv/";
+    anchor.dataset.en = "View full CV →";
+    anchor.dataset.es = "Ver CV completo →";
+    anchor.textContent = lang === "es" ? anchor.dataset.es : anchor.dataset.en;
+    cvLink.appendChild(anchor);
+    copy.appendChild(cvLink);
     container.append(photo, copy);
     section.replaceChildren(container);
   }

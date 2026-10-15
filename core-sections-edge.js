@@ -127,6 +127,7 @@ export function renderAboutInnerHtml(content, lang = "en") {
     `<span class="eyebrow" data-cms-editor-key="about:eyebrow" ${localizedAttributes(content.eyebrow)}>${visibleHtml(localized(content.eyebrow, safeLang))}</span>`,
     `<h2 data-cms-editor-key="about:title" ${localizedAttributes(content.title)}>${visibleHtml(localized(content.title, safeLang))}</h2>`,
     paragraphs,
+    '<div class="about-cv-link"><a class="btn btn-secondary" href="/cv/" data-en="View full CV →" data-es="Ver CV completo →">View full CV →</a></div>',
     '</div>',
     '</div>'
   ].join("");
