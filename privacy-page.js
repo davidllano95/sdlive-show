@@ -11,8 +11,8 @@
 
     document.documentElement.lang = spanish ? "es-CO" : "en";
     document.title = spanish
-      ? "Política de Tratamiento de Datos — SD.Live"
-      : "Privacy & Data Processing Policy — SD.Live";
+      ? "Política de Tratamiento de Datos — SD•Live"
+      : "Privacy & Data Processing Policy — SD•Live";
 
     esButton.setAttribute("aria-pressed", String(spanish));
     enButton.setAttribute("aria-pressed", String(!spanish));

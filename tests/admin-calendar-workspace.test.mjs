@@ -12,7 +12,7 @@ const editorShell = readFileSync(new URL("../admin/editor/admin-shell.js", impor
 const router = readFileSync(new URL("../public-form-rate-limit.js", import.meta.url), "utf8");
 
 test("Calendar is a dedicated authenticated Admin operations workspace", () => {
-  assert.ok(calendarPage.includes("Calendar · SD.Live Admin"));
+  assert.ok(calendarPage.includes("Calendar · SD•Live Admin"));
   assert.ok(calendarPage.includes('href="/admin/calendar/"'));
   assert.ok(calendarPage.includes("SD.Live Track · REGISTRO + Site Schedule"));
   assert.ok(calendarPage.includes('href="/admin/calendar/site-schedule/"'));
