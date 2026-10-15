@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow,noarchive"><title>CV Master · SD.Live Site Editor</title>
+<link rel="icon" href="/assets/icons/favicon.ico">
+<style>
+:root{font-family:Manrope,"Avenir Next",system-ui,sans-serif;color:#f4f5f7;background:#080910}*{box-sizing:border-box}body{margin:0}
+header{position:sticky;top:0;z-index:5;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding:14px 24px;background:#11121b;border-bottom:1px solid #35323f}
+header img{width:130px;vertical-align:middle}header a{color:#c1b1f5;text-decoration:none}button{cursor:pointer;border:1px solid #524a69;background:#221e2e;color:#f6f5f9;border-radius:6px;padding:10px 13px;font:600 13px inherit}button.primary{background:#a089e5;border-color:#a089e5;color:#0b0d14}button:disabled{opacity:.4;cursor:default}
+.actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.layout{display:grid;grid-template-columns:minmax(350px,46%) 1fr;height:calc(100vh - 76px)}
+aside{overflow:auto;padding:20px 24px}iframe{height:100%;width:100%;border:0;background:#fff}.item{padding:14px 0;border-bottom:1px solid #32303b}.item label{display:block;color:#aeb0c2;font-size:12px;margin-bottom:6px}.item textarea{width:100%;min-height:65px;resize:vertical;background:#171821;color:#fff;border:1px solid #3c3b4a;border-radius:6px;padding:9px;font:13px/1.45 inherit}.item textarea:focus{outline:2px solid #a089e5;outline-offset:1px}.item .pair{display:grid;grid-template-columns:1fr 1fr;gap:10px}.group{font-size:15px;margin:28px 0 10px;color:#d3c6ff}#status{font-size:12px;color:#d7cbe8}.note{color:#9b9ba9;font-size:13px;line-height:1.6}.count{color:#999;font-size:12px}
+@media(max-width:860px){.layout{grid-template-columns:1fr;height:auto}aside{height:65vh}iframe{height:70vh}.item .pair{grid-template-columns:1fr}}
+</style>
+</head><body>
+<header><div><a href="/admin/editor/">← Site Editor</a> &nbsp; <strong>CV Master</strong></div><div class="actions"><span id="status">Connecting…</span><button id="preview" type="button">Preview draft</button><button id="save" type="button" class="primary">Save draft</button><button id="publish" type="button">Publish</button></div></header>
+<div class="layout"><aside><h1>CV Master</h1><p class="note">Edit professional text in English and Spanish. The published website remains unchanged until Publish. Keep job dates and credits accurate. Contact links and page layout remain controlled in source code in this first version.</p><p id="counter" class="count"></p><div id="fields"></div></aside><iframe title="CV preview" id="frame" src="/cv/"></iframe></div>
+<script>
+(async()=>{
+const el=id=>document.getElementById(id),status=el("status"),frame=el("frame"),fields=el("fields");
+const endpoint="/api/admin/content/cv";let entry=null,base=[],draft={overrides:{}},dirty=false;
+function state(text){status.textContent=text}
+async function request(path,options={}) {
+const r=await fetch(path,{credentials:"same-origin",cache:"no-store",...options});
+if(!r.headers.get("content-type")?.includes("application/json"))throw Error("Cloudflare Access session may have expired");
+const data=await r.json();if(!r.ok||data.ok===false)throw Error(data.detail||data.error||"Request failed");return data;
+}
+function collect(){const overrides={};for(const item of base){const en=fields.querySelector('[data-id="'+item.id+'"][data-lang="en"]')?.value||"";const es=fields.querySelector('[data-id="'+item.id+'"][data-lang="es"]')?.value||"";if(en!==item.en||es!==item.es)overrides[item.id]={en,es}}return{overrides};}
+function render(){
+fields.replaceChildren();const working=draft.overrides||{};let group="";
+for(const row of base){
+if(!row.en.trim())continue;
+if(row.label!==group){group=row.label;const h=document.createElement("h2");h.className="group";h.textContent=group;fields.append(h)}
+const item=document.createElement("section");item.className="item";
+const label=document.createElement("label");label.textContent=row.id+" · "+row.en.trim().slice(0,85);item.append(label);
+const pair=document.createElement("div");pair.className="pair";
+for(const lang of ["en","es"]){
+const box=document.createElement("div"),l=document.createElement("label"),t=document.createElement("textarea");
+l.textContent=lang.toUpperCase();t.dataset.id=row.id;t.dataset.lang=lang;t.value=working[row.id]?.[lang]??row[lang];
+t.addEventListener("input",()=>{dirty=true;state("Unsaved changes")});box.append(l,t);pair.append(box)}
+item.append(pair);fields.append(item)}
+el("counter").textContent=base.filter(x=>x.en.trim()).length+" editable text fields";
+}
+function refreshPreview(){const values=collect().overrides;const doc=frame.contentDocument;const win=frame.contentWindow;if(!win?.SDLIVE_CV_EDITOR_APPLY){state("Preview unavailable. Reload the page.");return}win.SDLIVE_CV_EDITOR_APPLY(values);state("Draft preview · not public")}
+async function initialize(){
+try{
+entry=(await request(endpoint)).entry;draft=structuredClone(entry.draft);
+await new Promise((resolve,reject)=>{if(frame.contentDocument?.readyState==="complete")resolve();else{frame.addEventListener("load",resolve,{once:true});setTimeout(()=>reject(Error("Preview timed out")),15000)}});
+base=frame.contentWindow?.SDLIVE_CV_EDITOR_SOURCE?.()||[];
+if(!base.length)throw Error("CV text source unavailable");render();state("Ready · "+(entry.hasUnpublishedChanges?"unpublished draft":"published"));
+}catch(e){state("Error: "+e.message)}
+}
+el("preview").addEventListener("click",refreshPreview);
+el("save").addEventListener("click",async()=>{try{state("Saving…");const data=await request(endpoint,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({draft:collect()})});entry=data.entry;draft=structuredClone(entry.draft);dirty=false;state("Draft saved · not published")}catch(e){state("Error: "+e.message)}});
+el("publish").addEventListener("click",async()=>{if(dirty){state("Save your draft before publishing");return}if(!confirm("Publish the saved CV draft to the public site?"))return;try{state("Publishing…");const data=await request(endpoint+"/publish",{method:"POST"});entry=data.entry;draft=structuredClone(entry.draft);state("Published · refresh /cv/ to verify")}catch(e){state("Error: "+e.message)}});
+initialize();
+})();
+</script></body></html>
