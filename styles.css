@@ -4779,9 +4779,26 @@ body.rental-cart-open {
   }
 
   .rental-cart-checkout {
-    position: static;
-    padding-right: 20px;
-    padding-left: 20px;
+    position: sticky;
+    bottom: 0;
+    z-index: 6;
+    padding: 12px 20px calc(12px + env(safe-area-inset-bottom));
+    max-height: min(46dvh, 340px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .rental-cart-checkout .quote-price strong {
+    font-size: clamp(24px, 6vw, 32px);
+  }
+
+  .rental-cart-checkout .calc-result-note {
+    margin-top: 6px;
+    line-height: 1.4;
+  }
+
+  .rental-cart-checkout .btn {
+    margin-top: 10px;
   }
 
   .rental-cart-checkout .quote-price {
