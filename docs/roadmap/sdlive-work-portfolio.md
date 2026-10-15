@@ -59,3 +59,7 @@ Public `/cv/` is the next selected slice ahead of the Work publishing editor, us
 ## Later backlog: Control Center as installable PWA
 
 An installable SD.Live Admin / Control Center for Mac, iPhone and iPad is desirable, **but deferred** until the current CV/About and Work portfolio scopes are finished. Reuse existing protected Admin and Cloudflare stack. Design a secure app shell, icons, navigation and lifecycle first; do not offline-cache private Documents, Finance or Admin API data without explicit review. This is a later architectural evaluation, not authorization for migration or rewrite.
+
+## Public design-first gate (2026-10-14)
+
+The current selected slice is the responsive editorial `/work/` visual shell without fabricated production thumbnails, fake project cards, media, or links. A unified collection supports **Creative & technical**, **Artistic**, and **Both**, while Projects and Pieces remain independent content types. Overlapping roles (e.g. acting + audio) must be represented in one canonical publication with multiple areas; filters should not create duplicate entries. The present visual category panels are design placeholders, not published credits. After visual approval, implement actual D1 CMS records, detail pages, and media ingestion on separate PRs. No new uploads or production mutations in this design gate.
