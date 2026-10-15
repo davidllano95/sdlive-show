@@ -23,7 +23,7 @@ test("Site Editor exposes Finance as a sibling workspace", () => {
 });
 
 test("Finance has its own Admin route and mount", () => {
-  assert.ok(financePage.includes("Finance · SD.Live Admin"));
+  assert.ok(financePage.includes("Finance · SD•Live Admin"));
   assert.ok(financePage.includes('href="/admin/"'));
   assert.ok(financePage.includes('href="/admin/editor/"'));
   assert.ok(financePage.includes('href="/admin/finance/"'));
