@@ -147,24 +147,40 @@ body.editing [data-editable]{background:rgba(var(--accent-rgb),.07)}
 .cv-public-nav{position:sticky;top:0;z-index:100;background:#0b0d14;border-bottom:1px solid rgba(244,245,247,.12);display:flex;align-items:center;justify-content:space-between;gap:18px;padding:10px max(18px,calc((100vw - 1150px)/2));color:#f4f5f7}.cv-public-brand{display:inline-flex;align-items:center}.cv-public-brand img{width:154px;height:auto;max-height:52px;object-fit:contain}.cv-nav-actions{display:flex;align-items:center;gap:12px}.cv-nav-actions a,.cv-nav-actions button{font:600 12px var(--font-label);border:1px solid rgba(244,245,247,.2);border-radius:6px;padding:10px 13px;color:#f4f5f7;text-decoration:none;background:transparent;cursor:pointer}.cv-nav-actions button{background:var(--accent);border-color:var(--accent);color:#0b0d14}.cv-nav-actions a:hover,.cv-nav-actions button:hover{opacity:.85}.sheet{margin-top:20px}.cv-identity{display:flex;align-items:center;gap:12px;font:600 9px var(--font-label);letter-spacing:.08em;text-transform:uppercase;color:var(--soft);margin:0 0 10px}.cv-identity::before{content:"";display:block;width:6px;height:6px;border-radius:100%;background:var(--accent)}@media(max-width:600px){.cv-public-nav{padding:8px 12px}.cv-public-brand img{width:103px}.cv-nav-actions{gap:6px}.cv-nav-actions a,.cv-nav-actions button{font-size:10px;padding:8px}.sheet{margin:0}}@media print{.cv-public-nav{display:none!important}.sheet{margin:0}.cv-identity{display:none}}
 .cv-languages{display:inline-flex;border:1px solid rgba(244,245,247,.22);border-radius:6px;overflow:hidden}.cv-languages button{border:0;border-radius:0;padding:10px 11px;color:#f4f5f7;background:transparent}.cv-languages button[aria-pressed="true"]{background:var(--accent);color:#0b0d14}.cv-languages button:focus-visible{outline:2px solid #fff;outline-offset:-2px}@media(max-width:600px){.cv-languages button{padding:8px}}@media print{.cv-languages{display:none}}
 
-/* The public CV uses the same compact, dark brand navigation as SD.Live. */
-.cv-public-nav{background:#06070b;min-height:78px;padding:12px max(22px,calc((100vw - 1240px)/2))}
+/* SD.Live header controls: same restrained links, pill language selector and primary CTA. */
+.cv-public-nav{background:#06070b;min-height:78px;padding:12px max(22px,calc((100vw - 1240px)/2));gap:20px}
 .cv-public-brand{flex-direction:column;align-items:center;min-width:158px;text-decoration:none}
 .cv-public-brand img{width:174px;max-height:58px}
 .cv-brand-descriptor{font:600 9px/1.15 var(--font-label);letter-spacing:.12em;text-transform:uppercase;color:rgba(244,245,247,.7);margin-top:-8px}
-.cv-nav-actions{flex-wrap:wrap;justify-content:flex-end}
-.cv-nav-link{font-weight:500!important;border-color:transparent!important;color:rgba(244,245,247,.74)!important}
-.cv-nav-link:hover{color:var(--accent)!important}
-.cv-theme-toggle{background:transparent!important;color:#f4f5f7!important;border:1px solid rgba(244,245,247,.22)!important;white-space:nowrap}
+.cv-nav-actions{flex-wrap:wrap;justify-content:flex-end;gap:10px}
+.cv-nav-actions a,.cv-nav-actions button{box-shadow:none;transition:background .2s ease,color .2s ease,border-color .2s ease}
+.cv-nav-actions .cv-nav-link,.cv-nav-actions .cv-back{border:0;background:transparent;color:rgba(244,245,247,.74);font:500 12px var(--font-label);padding:10px 8px;border-radius:0}
+.cv-nav-actions .cv-nav-link:hover,.cv-nav-actions .cv-back:hover{color:var(--accent);opacity:1}
+.cv-nav-actions .cv-languages{display:inline-flex;flex:0 0 84px;width:84px;border:1px solid rgba(244,245,247,.12);border-radius:999px;padding:3px;gap:2px;overflow:visible}
+.cv-nav-actions .cv-languages button{flex:1;min-width:0;min-height:30px;border:0;border-radius:999px;padding:6px 0;font:500 11px var(--font-label);letter-spacing:.06em;color:rgba(244,245,247,.62);background:transparent}
+.cv-nav-actions .cv-languages button[aria-pressed="true"]{background:var(--accent);color:#06070b}
+.cv-nav-actions .cv-theme-toggle{font:500 11px var(--font-label);min-height:40px;white-space:nowrap;border:1px solid rgba(244,245,247,.16);border-radius:6px;background:transparent;color:rgba(244,245,247,.82);padding:9px 12px}
+.cv-nav-actions .cv-theme-toggle:hover{border-color:var(--accent);color:var(--accent);opacity:1}
+.cv-nav-actions .cv-print{display:inline-flex;align-items:center;justify-content:center;min-height:40px;font:600 11px var(--font-label);letter-spacing:.03em;border:1px solid var(--accent);border-radius:6px;background:var(--accent);color:#06070b;padding:10px 14px}
+.cv-nav-actions .cv-print:hover{background:#b09cf0;border-color:#b09cf0;opacity:1}
 .cv-public-nav button:focus-visible,.cv-public-nav a:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
 @media(max-width:750px){
- .cv-public-nav{min-height:0;padding:10px 12px;gap:12px}
+ .cv-public-nav{min-height:0;padding:10px 12px;gap:10px}
  .cv-public-brand{min-width:0}
  .cv-public-brand img{width:115px}
  .cv-brand-descriptor{font-size:7px;margin-top:-5px}
- .cv-nav-actions{gap:5px}
- .cv-nav-link{display:none}
- .cv-theme-toggle{padding:8px!important}
+ .cv-nav-actions{gap:6px}
+ .cv-nav-actions .cv-nav-link{display:none}
+ .cv-nav-actions .cv-back{display:none}
+ .cv-nav-actions .cv-theme-toggle{min-height:36px;padding:8px;font-size:10px}
+ .cv-nav-actions .cv-print{min-height:36px;padding:8px;font-size:10px}
+ .cv-nav-actions .cv-languages{flex-basis:74px;width:74px}
+ .cv-nav-actions .cv-languages button{min-height:28px;font-size:10px}
+}
+@media(max-width:460px){
+ .cv-public-nav{flex-wrap:wrap}
+ .cv-public-brand{margin-right:auto}
+ .cv-nav-actions{width:100%;justify-content:space-between}
 }
 @media print{
  html[data-cv-theme="dark"] body{color:#24262d}
@@ -173,7 +189,7 @@ body.editing [data-editable]{background:rgba(var(--accent-rgb),.07)}
 </style>
 </head>
 <body>
-<nav class="cv-public-nav" aria-label="CV navigation"><a class="cv-public-brand" href="/" aria-label="SD.Live — Home"><img src="/assets/logos/sd-live-header-normal.png" alt="SD.Live" width="174" height="58"><span class="cv-brand-descriptor">Creative Audio</span></a><div class="cv-nav-actions"><a class="cv-nav-link" href="/work/">Work</a><div class="cv-languages" role="group" aria-label="CV language"><button type="button" data-cv-lang="en" aria-pressed="true">EN</button><button type="button" data-cv-lang="es" aria-pressed="false">ES</button></div><a class="cv-back" href="/#about">← Back to About</a><button class="cv-theme-toggle" type="button" aria-pressed="true" aria-label="Switch to light mode">☀ Light</button><button class="cv-print" type="button" onclick="window.print()">Print / Save as PDF</button></div></nav>
+<nav class="cv-public-nav" aria-label="CV navigation"><a class="cv-public-brand" href="/" aria-label="SD.Live — Home"><img src="/assets/logos/sd-live-header-normal.png" alt="SD.Live" width="174" height="58"><span class="cv-brand-descriptor">Creative Audio</span></a><div class="cv-nav-actions"><a class="cv-nav-link" href="/work/" data-cv-work>Work</a><div class="cv-languages" role="group" aria-label="CV language"><button type="button" data-cv-lang="en" aria-pressed="true">EN</button><button type="button" data-cv-lang="es" aria-pressed="false">ES</button></div><a class="cv-back" href="/#about">← Back to About</a><button class="cv-theme-toggle" type="button" aria-pressed="true" aria-label="Switch to light mode">☀ Light</button><button class="cv-print" type="button" onclick="window.print()">Print / Save as PDF</button></div></nav>
 <main class="sheet" id="cv">
 <header>
   <div class="topline">
@@ -627,7 +643,7 @@ body.editing [data-editable]{background:rgba(var(--accent-rgb),.07)}
     setLanguage(document.documentElement.lang==="es"?"es":"en");
   }
   fetch("/api/content/cv",{cache:"no-store"}).then(r=>r.ok?r.json():null).then(payload=>{if(payload?.content)applyPublishedOverrides(payload.content)}).catch(()=>{});
-  const back=nav.querySelector(".cv-back"),print=nav.querySelector(".cv-print");
+  const back=nav.querySelector(".cv-back"),print=nav.querySelector(".cv-print"),work=nav.querySelector("[data-cv-work]");
   const themeButton=nav.querySelector(".cv-theme-toggle");
   function setCvTheme(theme){
     const isDark=theme!=="light";
@@ -644,6 +660,7 @@ body.editing [data-editable]{background:rgba(var(--accent-rgb),.07)}
     nodes.forEach((n,i)=>{ const o=publishedOverrides["n"+i]; n.textContent=(es?o?.es:o?.en) ?? (es?localized[i]:original[i]); });
     document.documentElement.lang=es?"es":"en";
     back.textContent=es?"← Volver a Sobre mí":"← Back to About";
+    work.textContent=es?"Trabajo":"Work";
     print.textContent=es?"Imprimir / Guardar PDF":"Print / Save as PDF";
     nav.querySelectorAll("[data-cv-lang]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.cvLang===lang)));
     try{localStorage.setItem("sdlive-language-preference",lang)}catch{}
