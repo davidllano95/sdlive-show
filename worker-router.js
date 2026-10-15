@@ -311,7 +311,7 @@ export default {
       const response = await handleMediaApi(request, env, { verifyAdmin: verifyAdminViaExistingApi });
       if (response) return response;
     }
-    if (/^\/api\/content\/(?:about|services|work|international)$/.test(path) || /^\/api\/admin\/content\/(?:about|services|work|international)(?:\/.*)?$/.test(path)) {
+    if (/^\/api\/content\/(?:about|services|work|international|cv)$/.test(path) || /^\/api\/admin\/content\/(?:about|services|work|international|cv)(?:\/.*)?$/.test(path)) {
       const response = await handleCoreSectionsApi(request, env, { verifyAdmin: verifyAdminViaExistingApi });
       if (response) return response;
     }
