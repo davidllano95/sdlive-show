@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#000000"><meta name="robots" content="noindex"><link rel="icon" href="/assets/icons/favicon.ico">
-<link rel="stylesheet" href="/styles.css?v=20260819-1"><title>Production — SD.Live Work</title>
+<link rel="stylesheet" href="/styles.css?v=20260819-1"><title>Production — SD•Live Work</title>
 <style>
 body{background:#000;color:var(--color-text)}.detail-wrap{max-width:var(--max-width);padding:30px 26px 110px;margin:auto}.detail-bar{display:flex;justify-content:space-between;align-items:center;gap:20px;padding-bottom:25px;border-bottom:1px solid var(--color-border)}
 .detail-bar a{color:var(--color-text-soft);font:600 13px var(--font-body)}.detail-bar a:hover{color:var(--color-accent)}.detail-bar__logo{font:700 24px var(--font-display);color:var(--color-text)!important}
@@ -21,7 +21,7 @@ body{background:#000;color:var(--color-text)}.detail-wrap{max-width:var(--max-wi
 <script src="/work/data.js"></script><script>
 (()=>{const slug=new URLSearchParams(location.search).get("show"),show=(window.SDL_WORK||[]).find(x=>x.slug===slug),$=id=>document.getElementById(id);if(!show){$("notFound").hidden=false;return;}
 const put=(id,s)=>$(id).textContent=s;
-document.title=show.title+" — SD.Live Work";$("detailMain").hidden=false;$("mediaSection").hidden=false;put("posterTitle",show.title);put("showTitle",show.title);put("credit",show.credit);put("company",show.company);put("role",show.credit);put("client",show.client||"");$("client").hidden=!show.client;$("clientLabel").hidden=!show.client;
+document.title=show.title+" — SD•Live Work";$("detailMain").hidden=false;$("mediaSection").hidden=false;put("posterTitle",show.title);put("showTitle",show.title);put("credit",show.credit);put("company",show.company);put("role",show.credit);put("client",show.client||"");$("client").hidden=!show.client;$("clientLabel").hidden=!show.client;
 $("extra").hidden=!show.extra;$("extraLabel").hidden=!show.extra;
 let lang="en";try{lang=localStorage.getItem("sdlive-language-preference")==="es"?"es":"en"}catch{}
 function translate(l){lang=l;document.documentElement.lang=l;$("back").textContent=l==="es"?"← Todos los trabajos":"← All Work";put("kicker",l==="es"?"Producción / Portafolio":"Production / Work");put("companyLabel",l==="es"?"Empresa":"Company");put("roleLabel",l==="es"?"Crédito":"Credit");put("typeLabel",l==="es"?"Trabajo":"Work");put("clientLabel",l==="es"?"Producción":"Production");put("extraLabel",l==="es"?"Servicios adicionales":"Additional services");put("type",show.discipline);put("extra",l==="es"?(show.extraEs||show.extra||""):(show.extra||""));put("mediaHeading",l==="es"?"Material de producción":"Production material");put("note",l==="es"?"Esta es la ficha inicial. La descripción y los materiales se incorporarán después de verificar los créditos y permisos de publicación.":"This is the initial production profile. Narrative and media will be added once credits and publishing permissions are verified.");put("mediaNote",l==="es"?"Próximamente: póster oficial, imágenes, video o audio según el material autorizado y disponible.":"Coming next: official poster, photos, video or audio, depending on the available approved material.");document.querySelectorAll("[data-lang]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.lang===l)));try{localStorage.setItem("sdlive-language-preference",l)}catch{}}
