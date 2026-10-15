@@ -51,3 +51,7 @@ Public `/cv` presents the user's professional **Master CV** as an editorial, rea
 ## Immediate next action
 
 Finish the focused audit of existing Selected Work CMS schemas/editor and Media Library. Present a minimal content/data contract and first vertical slice before runtime or schema changes. Preserve Patch's existing progress and do not silently start it.
+
+## CV Master activation (2026-10-14)
+
+Public `/cv/` is the next selected slice ahead of the Work publishing editor, using the user-supplied Master CV v4 as canonical text. The About section links to `/cv/` outside the CMS-replaced root. No public HTML editing/localStorage controls; brand-aligned screen and A4 print styling. PDF is browser Print/Save as PDF, not a pre-generated downloadable file. Future CV CMS editing and Work links require separate scopes.
