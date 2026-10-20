@@ -140,6 +140,14 @@ export async function createCorrectionDraft(env, {
   if (typeof store.batch !== "function") throw new Error("documents_storage_batch_required");
   const documentId = `doc-${crypto.randomUUID()}`;
   const at = text(now(), 80);
+  const issueDate = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Bogota",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).format(new Date(at));
+  const draft = JSON.parse(source.draft_json || "{}");
+  draft.issueDate = issueDate;
   await store.batch([
     store.prepare(`INSERT INTO doc_documents (
       id, kind_id, doc_type, issuer_id, client_id, status, origin,
@@ -159,9 +167,9 @@ export async function createCorrectionDraft(env, {
         source.po_numbers || "",
         source.currency,
         Number(source.total_minor || 0),
-        source.issue_date || null,
-        source.issue_year == null ? null : Number(source.issue_year),
-        source.draft_json || "{}",
+        issueDate,
+        Number(issueDate.slice(0, 4)),
+        canonicalJson(draft),
         source.id,
         at,
         at
