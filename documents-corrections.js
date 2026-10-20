@@ -140,12 +140,13 @@ export async function createCorrectionDraft(env, {
   if (typeof store.batch !== "function") throw new Error("documents_storage_batch_required");
   const documentId = `doc-${crypto.randomUUID()}`;
   const at = text(now(), 80);
-  const issueDate = new Intl.DateTimeFormat("en-CA", {
+  const dateParts = Object.fromEntries(new Intl.DateTimeFormat("en-US", {
     timeZone: "America/Bogota",
     year: "numeric",
     month: "2-digit",
     day: "2-digit"
-  }).format(new Date(at));
+  }).formatToParts(new Date(at)).map(({ type, value }) => [type, value]));
+  const issueDate = `${dateParts.year}-${dateParts.month}-${dateParts.day}`;
   const draft = JSON.parse(source.draft_json || "{}");
   draft.issueDate = issueDate;
   await store.batch([
