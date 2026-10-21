@@ -69,8 +69,8 @@ export function selectedBankDetails(draft, issuer, currency) {
     return Object.fromEntries(DETAILS.map((key) => [key, clean(account[key], 300)]));
   }
   // Historical drafts created before account selection was introduced.
-  if (plain(draft.bankDetails)) return draft.bankDetails;
-  if (plain(issuer?.bankDetails)) return issuer.bankDetails;
-  if (DETAILS.some((key) => clean(bank[key]))) return bank;
+  if (plain(draft.bankDetails)) return Object.fromEntries(DETAILS.map((key) => [key, clean(draft.bankDetails[key], 300)]));
+  if (plain(issuer?.bankDetails)) return Object.fromEntries(DETAILS.map((key) => [key, clean(issuer.bankDetails[key], 300)]));
+  if (DETAILS.some((key) => clean(bank[key]))) return Object.fromEntries(DETAILS.map((key) => [key, clean(bank[key], 300)]));
   return null;
 }
