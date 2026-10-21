@@ -604,7 +604,20 @@
   ensureCurrencyDatalist();
   ensureItemizationControls();
 
-  $("documentsTab").addEventListener("click", () => setTab("documents"));
+  $("documentsTab").addEventListener("click", async () => {
+    setTab("documents");
+    try {
+      settings = await api("/settings");
+      const previouslySelected = $("newIssuer").value;
+      populateCreateSelectors();
+      if (Array.from($("newIssuer").options).some((option) => option.value === previouslySelected)) {
+        $("newIssuer").value = previouslySelected;
+      }
+      if (activeDocument) renderDocumentBankAccounts($("draftBankAccount").value);
+    } catch (error) {
+      if ($("draftSaveState")) $("draftSaveState").textContent = `Settings unavailable · ${error.message}`;
+    }
+  });
   $("settingsTab").addEventListener("click", () => setTab("settings"));
   $("newDraft").addEventListener("click", () => { $("newDraftPanel").hidden = false; });
   $("cancelNewDraft").addEventListener("click", () => { $("newDraftPanel").hidden = true; });
