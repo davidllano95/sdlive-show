@@ -1,3 +1,4 @@
+import { selectedBankDetails } from "./documents-bank-accounts.js";
 import { requireDocumentKind } from "./documents-kinds.js";
 
 export const DOCUMENT_SNAPSHOT_SCHEMA = "sdlive.document.snapshot/1";
@@ -229,6 +230,7 @@ export function validateDraftForFinalize({ document, draft, issuer, client, sign
   const pricing = finalizedPricing(kind, draft, calculated);
   if (!issuer || !asText(issuer.id) || !asText(issuer.legalName)) throw new Error("issuer_required");
   if (asText(issuer.id) !== asText(document.issuer_id)) throw new Error("issuer_mismatch");
+  selectedBankDetails(draft, issuer, document.currency);
   if (!client || !asText(client.legalName)) throw new Error("client_required");
   if (kind.id === "cc-co-es") {
     if (!asText(issuer.idNumber || issuer.id_number)) throw new Error("issuer_id_number_required");
@@ -264,9 +266,7 @@ export async function buildFinalSnapshot({
   const showBankDetails = draft.showBankDetails == null
     ? kind.defaultShowBankDetails
     : Boolean(draft.showBankDetails);
-  const selectedBankDetails = draft.bankDetails && typeof draft.bankDetails === "object"
-    ? draft.bankDetails
-    : (issuer.bankDetails && typeof issuer.bankDetails === "object" ? issuer.bankDetails : null);
+  const paymentBankDetails = selectedBankDetails(draft, issuer, document.currency);
 
   const snapshot = {
     schema: DOCUMENT_SNAPSHOT_SCHEMA,
@@ -318,7 +318,7 @@ export async function buildFinalSnapshot({
     },
     payment: {
       showBankDetails,
-      bankDetails: showBankDetails && selectedBankDetails ? deepSort(selectedBankDetails) : null,
+      bankDetails: showBankDetails && paymentBankDetails ? deepSort(paymentBankDetails) : null,
       censorBankDetails: !showBankDetails
     },
     supersedes: document.supersedes_id ? {
