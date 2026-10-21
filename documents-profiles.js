@@ -1,3 +1,4 @@
+import { normalizeIssuerBank } from "./documents-bank-accounts.js";
 import { canonicalJson } from "./documents-domain.js";
 
 const PROFILE_ID = /^[A-Za-z0-9][A-Za-z0-9:_-]{0,79}$/;
@@ -70,7 +71,7 @@ export function normalizeIssuerProfile(input, { id } = {}) {
   const vatLabel = clean(source.vatLabel, 160);
   if (!legalName || !idType || !idNumber || !vatLabel) throw new Error("issuer_required_fields_missing");
   const addresses = jsonArray(source.addresses, "invalid_issuer_addresses").slice(0, 12);
-  const bank = jsonObject(source.bank, "invalid_issuer_bank");
+  const bank = normalizeIssuerBank(jsonObject(source.bank, "invalid_issuer_bank"));
   return {
     id: profileId,
     legalName,
