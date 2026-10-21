@@ -7,6 +7,8 @@
   const API = "/api/admin/documents";
   const $ = (id) => document.getElementById(id);
   let settings = null;
+  let issuerBankAccounts = [];
+  let selectedBankId = "";
 
   async function api(path, options = {}) {
     const response = await fetch(`${API}${path}`, {
@@ -75,6 +77,17 @@
 
     const nodes = [
       heading,
+      selectField("issuerBankPicker", "Issuer bank accounts", [["", "Legacy / new account"]]),
+      field("issuerBankAlias", "Account alias (internal)"),
+      selectField("issuerBankCurrency", "Account currency", [["COP", "COP"], ["USD", "USD"]]),
+      selectField("issuerBankDefault", "Default for this currency", [["no", "No"], ["yes", "Yes"]]),
+      selectField("issuerBankAccountActive", "Account status", [["active", "Active"], ["inactive", "Inactive"]]),
+      (() => {
+        const controls = document.createElement("div");
+        controls.className = "documents-form__actions";
+        controls.innerHTML = '<button class="button button--ghost" type="button" id="issuerBankAdd">+ Add bank account</button><span class="documents-help" id="issuerBankHint"></span>';
+        return controls;
+      })(),
       field("issuerBankBeneficiary", "Beneficiary"),
       field("issuerBankName", "Bank name"),
       field("issuerRoutingNumber", "Routing / bank code"),
@@ -136,6 +149,61 @@
     return (settings?.clients || []).find((item) => item.id === id) || null;
   }
 
+  function bankDetailsFromForm() {
+    return {
+      beneficiary: $("issuerBankBeneficiary").value.trim(),
+      beneficiaryAddress: $("issuerBeneficiaryAddress").value.trim(),
+      bankName: $("issuerBankName").value.trim(),
+      routingNumber: $("issuerRoutingNumber").value.trim(),
+      accountType: $("issuerAccountType").value.trim(),
+      accountNumber: $("issuerAccountNumber").value.trim(),
+      bankAddress: $("issuerBankAddress").value.trim()
+    };
+  }
+
+  function saveSelectedBankFields() {
+    const account = issuerBankAccounts.find((item) => item.id === selectedBankId);
+    if (!account) return;
+    Object.assign(account, bankDetailsFromForm(), {
+      alias: $("issuerBankAlias").value.trim(),
+      currency: $("issuerBankCurrency").value,
+      isDefault: $("issuerBankDefault").value === "yes",
+      active: $("issuerBankAccountActive").value === "active"
+    });
+    if (account.isDefault && account.active !== false) {
+      for (const other of issuerBankAccounts) {
+        if (other.id !== account.id && other.currency === account.currency) other.isDefault = false;
+      }
+    }
+  }
+
+  function renderBankAccountPicker() {
+    const picker = $("issuerBankPicker");
+    if (!picker) return;
+    picker.replaceChildren(new Option("Legacy / unassigned", ""));
+    for (const account of issuerBankAccounts) {
+      const name = account.alias || account.bankName || account.id;
+      picker.add(new Option(`${name} · ${account.currency}${account.active === false ? " · inactive" : ""}`, account.id));
+    }
+    picker.value = selectedBankId;
+    const account = issuerBankAccounts.find((item) => item.id === selectedBankId);
+    if ($("issuerBankAlias")) $("issuerBankAlias").value = account?.alias || "";
+    if ($("issuerBankCurrency")) $("issuerBankCurrency").value = account?.currency || "COP";
+    if ($("issuerBankDefault")) $("issuerBankDefault").value = account?.isDefault ? "yes" : "no";
+    if ($("issuerBankAccountActive")) $("issuerBankAccountActive").value = account?.active === false ? "inactive" : "active";
+    const bank = account || (!issuerBankAccounts.length ? currentIssuer()?.bank || {} : {});
+    for (const [fieldId, key] of [
+      ["issuerBankBeneficiary", "beneficiary"], ["issuerBeneficiaryAddress", "beneficiaryAddress"],
+      ["issuerBankName", "bankName"], ["issuerRoutingNumber", "routingNumber"],
+      ["issuerAccountType", "accountType"], ["issuerAccountNumber", "accountNumber"],
+      ["issuerBankAddress", "bankAddress"]
+    ]) if ($(fieldId)) $(fieldId).value = bank[key] || "";
+    const hint = $("issuerBankHint");
+    if (hint) hint.textContent = account
+      ? "Only documents in " + account.currency + " can use this account."
+      : issuerBankAccounts.length ? "Choose an account to edit it." : "Existing single-bank details have no currency. Add a bank account and assign COP or USD.";
+  }
+
   function syncIssuerFields() {
     const profile = currentIssuer();
     const bank = profile?.bank || {};
@@ -147,6 +215,9 @@
     if ($("issuerAccountNumber")) $("issuerAccountNumber").value = bank.accountNumber || "";
     if ($("issuerBankAddress")) $("issuerBankAddress").value = bank.bankAddress || "";
     if ($("issuerActive")) $("issuerActive").checked = profile ? profile.active !== false : true;
+    issuerBankAccounts = Array.isArray(bank.accounts) ? bank.accounts.map((item) => ({ ...item })) : [];
+    selectedBankId = issuerBankAccounts[0]?.id || "";
+    renderBankAccountPicker();
   }
 
   function syncClientFields() {
@@ -161,8 +232,18 @@
   }
 
   function issuerPayload() {
+    saveSelectedBankFields();
     const current = currentIssuer();
     const address = $("issuerAddress").value.trim();
+    const legacyBank = {
+      beneficiary: $("issuerBankBeneficiary").value.trim(),
+      beneficiaryAddress: $("issuerBeneficiaryAddress").value.trim(),
+      bankName: $("issuerBankName").value.trim(),
+      routingNumber: $("issuerRoutingNumber").value.trim(),
+      accountType: $("issuerAccountType").value.trim(),
+      accountNumber: $("issuerAccountNumber").value.trim(),
+      bankAddress: $("issuerBankAddress").value.trim()
+    };
     return {
       id: $("issuerId").value.trim(),
       legalName: $("issuerLegalName").value.trim(),
@@ -174,13 +255,8 @@
       email: $("issuerEmail").value.trim(),
       addresses: primaryAddressPayload(current, address),
       bank: {
-        beneficiary: $("issuerBankBeneficiary").value.trim(),
-        beneficiaryAddress: $("issuerBeneficiaryAddress").value.trim(),
-        bankName: $("issuerBankName").value.trim(),
-        routingNumber: $("issuerRoutingNumber").value.trim(),
-        accountType: $("issuerAccountType").value.trim(),
-        accountNumber: $("issuerAccountNumber").value.trim(),
-        bankAddress: $("issuerBankAddress").value.trim()
+        ...(issuerBankAccounts.length ? current?.bank || {} : legacyBank),
+        ...(issuerBankAccounts.length || Array.isArray(current?.bank?.accounts) ? { accounts: issuerBankAccounts } : {})
       },
       brandLabel: $("issuerBrandLabel").value.trim(),
       active: $("issuerActive").checked
@@ -284,6 +360,37 @@
   }
 
   function bindSyncHooks() {
+    $("issuerBankPicker")?.addEventListener("change", () => {
+      saveSelectedBankFields();
+      selectedBankId = $("issuerBankPicker").value;
+      renderBankAccountPicker();
+    });
+    $("issuerBankAdd")?.addEventListener("click", () => {
+      saveSelectedBankFields();
+      const legacy = issuerBankAccounts.length === 0 ? bankDetailsFromForm() : {};
+      const currency = $("issuerBankCurrency")?.value || "COP";
+      const account = {
+        id: "bank-" + crypto.randomUUID(), alias: "", currency,
+        isDefault: !issuerBankAccounts.some((item) => item.currency === currency && item.active !== false),
+        active: true, ...legacy
+      };
+      issuerBankAccounts.push(account);
+      selectedBankId = account.id;
+      renderBankAccountPicker();
+      $("issuerBankAlias")?.focus();
+    });
+    $("issuerBankCurrency")?.addEventListener("change", () => {
+      saveSelectedBankFields();
+      const account = issuerBankAccounts.find((item) => item.id === selectedBankId);
+      if (account) { account.currency = $("issuerBankCurrency").value; account.isDefault = false; }
+      renderBankAccountPicker();
+    });
+    $("issuerBankDefault")?.addEventListener("change", () => {
+      saveSelectedBankFields();
+      renderBankAccountPicker();
+    });
+    $("issuerProfilePicker")?.addEventListener("change", () => setTimeout(syncIssuerFields, 0));
+    $("newIssuerProfile")?.addEventListener("click", () => setTimeout(syncIssuerFields, 0));
     $("issuerId")?.addEventListener("change", () => { syncIssuerFields(); });
     $("clientList")?.addEventListener("click", () => { setTimeout(syncClientFields, 0); });
     $("newClient")?.addEventListener("click", () => {

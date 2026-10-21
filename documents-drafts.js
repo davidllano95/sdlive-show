@@ -1,3 +1,4 @@
+import { selectedBankDetails } from "./documents-bank-accounts.js";
 import { amountMinorToSpanishWords } from "./documents-domain.js";
 import { requireDocumentKind } from "./documents-kinds.js";
 import { listClientProfiles, listIssuerProfiles } from "./documents-profiles.js";
@@ -173,7 +174,8 @@ export async function createDraftDocument(env, input, { actorEmail = "", now = (
   const clientId = payload.clientId ? id(payload.clientId, "invalid_client_id") : null;
   const currency = safeCurrency(payload.currency || (kind.id === "cc-co-es" ? "COP" : "USD"));
   const { draft, json } = safeDraftJson({ ...(payload.draft || {}), kindId: kind.id, currency });
-  const { client } = await profileContext(env, issuerId, clientId);
+  const { issuer, client } = await profileContext(env, issuerId, clientId);
+  selectedBankDetails(draft, issuer, currency);
   const fields = registryFields(draft, client, kind.id);
   const documentId = `doc-${crypto.randomUUID()}`;
   const at = text(now(), 80);
@@ -203,7 +205,8 @@ export async function saveDraftDocument(env, documentId, input, { actorEmail = "
   const clientId = payload.clientId === undefined ? current.clientId : (payload.clientId ? id(payload.clientId, "invalid_client_id") : null);
   const currency = safeCurrency(payload.currency || current.currency);
   const { draft, json } = safeDraftJson({ ...(payload.draft || {}), kindId: current.kindId, currency });
-  const { client } = await profileContext(env, current.issuerId, clientId);
+  const { issuer, client } = await profileContext(env, current.issuerId, clientId);
+  selectedBankDetails(draft, issuer, currency);
   const fields = registryFields(draft, client, current.kindId);
   const at = text(now(), 80);
   const row = await saveDocumentDraftRow(env, {
@@ -314,7 +317,7 @@ export async function buildDraftPreview(env, documentId) {
     legalBlockVersion: text(draft.legalBlockVersion, 80) || "co-ret@2026-1",
     showBankDetails,
     censorBankDetails: !showBankDetails,
-    bankDetails: draft.bankDetails && typeof draft.bankDetails === "object" ? draft.bankDetails : issuer.bank,
+    bankDetails: selectedBankDetails(draft, issuer, document.currency),
     notes: text(draft.notes, 2000),
     issuer: issuerForPreview(issuer, draft.issuerOverride),
     client: clientForPreview(client, draft.clientOverride, draft)

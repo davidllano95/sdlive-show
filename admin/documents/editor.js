@@ -194,6 +194,36 @@
     checkbox.title = "Checked hides bank/payment information in both draft preview and final document.";
   }
 
+  function compatibleBankAccounts(issuer, currency) {
+    return (Array.isArray(issuer?.bank?.accounts) ? issuer.bank.accounts : [])
+      .filter((account) => account.currency === currency && account.active !== false);
+  }
+
+  function preferredBankAccount(issuer, currency) {
+    const accounts = compatibleBankAccounts(issuer, currency);
+    return accounts.find((account) => account.isDefault) || accounts[0] || null;
+  }
+
+  function renderDocumentBankAccounts(preferredId = "") {
+    const picker = $("draftBankAccount");
+    if (!picker || !activeDocument) return;
+    const issuer = selectedProfile(settings?.issuers, activeDocument.issuerId);
+    const currency = $("draftCurrency").value;
+    const accounts = compatibleBankAccounts(issuer, currency);
+    picker.replaceChildren(new Option("— No account —", ""));
+    for (const account of accounts) {
+      picker.add(new Option(
+        `${account.alias || account.bankName} · ${account.bankName} · ••••${String(account.accountNumber || "").slice(-4)}`,
+        account.id
+      ));
+    }
+    picker.value = accounts.some((account) => account.id === preferredId) ? preferredId : "";
+    const hint = $("draftBankAccountHint");
+    if (hint) hint.textContent = accounts.length
+      ? `${accounts.length} account(s) available in ${currency}. Only this currency can be used.`
+      : `No active bank accounts in ${currency} for this issuer. Add one under Settings.`;
+  }
+
   function ensureCurrencyDatalist() {
     if ($("originalCurrencyList")) return;
     const list = documentCreate("datalist");
@@ -455,6 +485,9 @@
       usesCostsDeductions: $("draftUsesCosts").checked,
       censorBankDetails,
       showBankDetails: !censorBankDetails,
+      ...( $("draftBankAccount").value
+        ? { bankAccountId: $("draftBankAccount").value }
+        : Object.hasOwn(activeDocument.draft || {}, "bankAccountId") ? { bankAccountId: null } : {}),
       notes: $("draftNotes").value.trim() || null,
       issuerOverride: {
         legalName: $("draftIssuerName").value.trim(), idType: $("draftIssuerIdType").value.trim(), idNumber: $("draftIssuerIdNumber").value.trim(),
@@ -488,7 +521,9 @@
     if ($("draftBrandLogo")) $("draftBrandLogo").checked = brand.showLogo;
     $("draftClientName").value = client.legalName || ""; $("draftClientTaxType").value = client.taxIdType || ""; $("draftClientTaxId").value = client.taxId || ""; $("draftClientAddress").value = client.billingAddress || ""; $("draftClientPhone").value = client.phone || "";
     $("draftIssueDate").value = draft.issueDate || ""; $("draftIssueCity").value = draft.issueCity || ""; $("draftProject").value = draft.projectLabel || ""; $("draftPO").value = draft.purchaseOrder || "";
-    $("draftCurrency").value = document.currency; $("draftDueDate").value = draft.dueDate || ""; $("draftTerms").value = draft.terms || ""; $("draftAmountWords").value = draft.amountWordsOverride || "";
+    $("draftCurrency").value = document.currency;
+    renderDocumentBankAccounts(draft.bankAccountId || "");
+    $("draftDueDate").value = draft.dueDate || ""; $("draftTerms").value = draft.terms || ""; $("draftAmountWords").value = draft.amountWordsOverride || "";
     $("draftUsesCosts").checked = Boolean(draft.usesCostsDeductions);
     $("draftShowBank").checked = draft.censorBankDetails == null ? (draft.showBankDetails == null ? false : !Boolean(draft.showBankDetails)) : Boolean(draft.censorBankDetails);
     $("draftNotes").value = draft.notes || "";
@@ -569,7 +604,20 @@
   ensureCurrencyDatalist();
   ensureItemizationControls();
 
-  $("documentsTab").addEventListener("click", () => setTab("documents"));
+  $("documentsTab").addEventListener("click", async () => {
+    setTab("documents");
+    try {
+      settings = await api("/settings");
+      const previouslySelected = $("newIssuer").value;
+      populateCreateSelectors();
+      if (Array.from($("newIssuer").options).some((option) => option.value === previouslySelected)) {
+        $("newIssuer").value = previouslySelected;
+      }
+      if (activeDocument) renderDocumentBankAccounts($("draftBankAccount").value);
+    } catch (error) {
+      if ($("draftSaveState")) $("draftSaveState").textContent = `Settings unavailable · ${error.message}`;
+    }
+  });
   $("settingsTab").addEventListener("click", () => setTab("settings"));
   $("newDraft").addEventListener("click", () => { $("newDraftPanel").hidden = false; });
   $("cancelNewDraft").addEventListener("click", () => { $("newDraftPanel").hidden = true; });
@@ -596,7 +644,8 @@
       const draft = {
         kindId, currency, issueDate: localToday(), issueCity: "Bogotá, Colombia",
         projectLabel: "", purchaseOrder: "", itemize: true, generalAmountMinor: 0, usesCostsDeductions: false,
-        censorBankDetails: false, showBankDetails: true, notes: null,
+        censorBankDetails: false, showBankDetails: true,
+        bankAccountId: preferredBankAccount(issuer, currency)?.id || null, notes: null,
         issuerOverride: issuerOverrideFromProfile(issuer), clientOverride: clientOverrideFromProfile(client),
         lines: [{ id: `line-${crypto.randomUUID()}`, kind: "professional_service", description: "", quantity: 0, unit: null, unitMinor: 0, amountMinor: 0, serviceDate: null, serviceDateEnd: null, poNumber: null }]
       };
@@ -619,6 +668,12 @@
     syncItemizationUi();
     scheduleSave();
   });
+  $("draftCurrency").addEventListener("change", () => {
+    const previous = $("draftBankAccount").value;
+    renderDocumentBankAccounts(previous);
+    scheduleSave();
+  });
+  $("draftBankAccount").addEventListener("change", scheduleSave);
   $("draftBrandLogo")?.addEventListener("change", scheduleSave);
   $("draftForm").addEventListener("submit", (event) => { event.preventDefault(); clearTimeout(saveTimer); saveDraft({ manual: true }); });
   $("draftForm").addEventListener("input", (event) => { if (!event.target.closest(".draft-line")) scheduleSave(); });
