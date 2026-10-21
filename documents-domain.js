@@ -290,7 +290,13 @@ export async function buildFinalSnapshot({
       terms: asText(draft.terms) || null,
       finalizedAt: asText(finalizedAt)
     },
-    issuer: copiedObject(issuer),
+    // Account catalog and unused bank numbers must never enter immutable snapshots.
+    issuer: (() => {
+      const safe = copiedObject(issuer);
+      delete safe.bank;
+      delete safe.bankDetails;
+      return safe;
+    })(),
     signature: signatureAsset ? copiedObject(signatureAsset) : null,
     client: copiedObject(client),
     project: {
