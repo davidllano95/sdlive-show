@@ -377,6 +377,7 @@
       $("issuerBankAlias")?.focus();
     });
     $("issuerBankCurrency")?.addEventListener("change", () => {
+      saveSelectedBankFields();
       const account = issuerBankAccounts.find((item) => item.id === selectedBankId);
       if (account) { account.currency = $("issuerBankCurrency").value; account.isDefault = false; }
       renderBankAccountPicker();
