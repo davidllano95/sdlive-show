@@ -235,6 +235,15 @@
     saveSelectedBankFields();
     const current = currentIssuer();
     const address = $("issuerAddress").value.trim();
+    const legacyBank = {
+      beneficiary: $("issuerBankBeneficiary").value.trim(),
+      beneficiaryAddress: $("issuerBeneficiaryAddress").value.trim(),
+      bankName: $("issuerBankName").value.trim(),
+      routingNumber: $("issuerRoutingNumber").value.trim(),
+      accountType: $("issuerAccountType").value.trim(),
+      accountNumber: $("issuerAccountNumber").value.trim(),
+      bankAddress: $("issuerBankAddress").value.trim()
+    };
     return {
       id: $("issuerId").value.trim(),
       legalName: $("issuerLegalName").value.trim(),
@@ -246,13 +255,7 @@
       email: $("issuerEmail").value.trim(),
       addresses: primaryAddressPayload(current, address),
       bank: {
-        beneficiary: $("issuerBankBeneficiary").value.trim(),
-        beneficiaryAddress: $("issuerBeneficiaryAddress").value.trim(),
-        bankName: $("issuerBankName").value.trim(),
-        routingNumber: $("issuerRoutingNumber").value.trim(),
-        accountType: $("issuerAccountType").value.trim(),
-        accountNumber: $("issuerAccountNumber").value.trim(),
-        bankAddress: $("issuerBankAddress").value.trim(),
+        ...(issuerBankAccounts.length ? current?.bank || {} : legacyBank),
         ...(issuerBankAccounts.length || Array.isArray(current?.bank?.accounts) ? { accounts: issuerBankAccounts } : {})
       },
       brandLabel: $("issuerBrandLabel").value.trim(),
