@@ -2,7 +2,7 @@
   const $ = (id) => document.getElementById(id);
   const field = (name) => document.querySelector('[data-field="' + name + '"]');
   const keys = ["slug","title","company","client","credit","discipline","kind","area","order",
-    "published","featured","coverAlt","fit","video","rightsConfirmed","description.en","description.es"];
+    "published","featured","coverAlt","fit","video","rightsConfirmed","extra","extraEs","description.en","description.es"];
   let items = [], selected = null, dirty = false, hasSavedDraft = false, busy = false;
   const copy = (value) => JSON.parse(JSON.stringify(value));
   const mediaSrc = (path) => path?.startsWith("assets/media/")
