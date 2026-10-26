@@ -23,7 +23,10 @@
     put("role", show.credit);
     put("client", show.client);
     $("client").hidden = $("clientLabel").hidden = !show.client;
-    $("extra").hidden = $("extraLabel").hidden = true;
+    const extras = lang === "es" ? (show.extraEs || show.extra) : show.extra;
+    put("extra", extras);
+    $("extra").hidden = $("extraLabel").hidden = !extras;
+    put("extraLabel", lang === "es" ? "Servicios adicionales" : "Additional services");
     put("companyLabel", lang === "es" ? "Empresa" : "Company");
     put("roleLabel", lang === "es" ? "Crédito" : "Credit");
     put("typeLabel", lang === "es" ? "Trabajo" : "Work");
