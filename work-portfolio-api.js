@@ -64,6 +64,8 @@ export function validateWorkPortfolio(value, { publishing = false } = {}) {
       client: text(item.client, 160),
       credit: text(item.credit, 180, true),
       discipline: text(item.discipline, 160),
+      extra: text(item.extra, 300),
+      extraEs: text(item.extraEs, 300),
       kind,
       area,
       featured: item.featured === true,
