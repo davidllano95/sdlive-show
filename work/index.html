@@ -139,31 +139,5 @@
 <footer class="work-footer"><span>SD.Live — Creative Audio</span><a href="/#contact" data-en="Get in touch ↗" data-es="Contáctame ↗">Get in touch ↗</a></footer>
 </main>
 <script src="/work/data.js"></script>
-<script>
-(()=>{
-const nodes=[...document.querySelectorAll("[data-en][data-es]")];
-function setLang(lang){
-document.documentElement.lang=lang;
-const stylize=html=>html.replaceAll("SD.Live",'<span class="brand-wordmark-text" aria-label="SD.Live">SD<span class="brand-wordmark-text__dot" aria-hidden="true"></span>Live</span>');
-nodes.forEach(el=>{el.innerHTML=stylize(lang==="es"?el.dataset.es:el.dataset.en)});
-document.querySelectorAll(".work-footer span").forEach(el=>{if(!el.dataset.styled){el.innerHTML=stylize(el.textContent);el.dataset.styled="true"}});
-document.querySelectorAll("[data-lang]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.lang===lang)));
-try{localStorage.setItem("sdlive-language-preference",lang)}catch{}
-}
-document.querySelectorAll("[data-lang]").forEach(b=>b.addEventListener("click",()=>setLang(b.dataset.lang)));
-let lang="en";try{lang=localStorage.getItem("sdlive-language-preference")==="es"?"es":"en"}catch{}
-setLang(lang);
-
-const records=window.SDL_WORK||[], featuredGrid=document.getElementById("featuredGrid"), groups=document.getElementById("workGroups"), companyFilter=document.getElementById("companyFilter");
-let selectedArea="all",view="posters";
-const escapeHtml=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const href=x=>"/work/show/?show="+encodeURIComponent(x.slug);
-function poster(x){return '<a class="poster-card" href="'+href(x)+'" aria-label="'+escapeHtml(x.title+" — "+x.credit)+'"><div class="poster-card__art"><span class="poster-card__fallback">'+escapeHtml(x.title)+'</span></div><div class="poster-card__meta"><div class="poster-card__title">'+escapeHtml(x.title)+'</div><div class="poster-card__credit">'+escapeHtml(x.credit)+'</div><div class="poster-card__company">'+escapeHtml(x.company)+'</div></div></a>'}
-function creditRow(x){return '<a class="work-credit-link" href="'+href(x)+'"><strong>'+escapeHtml(x.title)+'</strong><span>'+escapeHtml(x.credit)+'</span><i aria-hidden="true">↗</i></a>'}
-const companies=[...new Set(records.map(x=>x.company))];companies.sort((a,b)=>a==="Sonolux Creative"?-1:b==="Sonolux Creative"?1:a.localeCompare(b));companies.forEach(c=>{const o=document.createElement("option");o.value=c;o.textContent=c;companyFilter.append(o)});
-function render(){featuredGrid.innerHTML=records.filter(x=>x.featured).map(poster).join("");const matched=records.filter(x=>(selectedArea==="all"||x.area===selectedArea||(selectedArea==="technical"&&x.area==="both")||(selectedArea==="artistic"&&x.area==="both"))&&(companyFilter.value==="all"||companyFilter.value===x.company));groups.innerHTML=companies.map(c=>{const items=matched.filter(x=>x.company===c);if(!items.length)return "";return '<section class="work-group"><div class="work-group__head"><h3>'+escapeHtml(c)+'</h3><span>'+items.length+'</span></div><div class="'+(view==="posters"?'poster-grid':'work-credits')+'">'+items.map(view==="posters"?poster:creditRow).join("")+'</div></section>'}).join("");document.getElementById("noResults").hidden=!!matched.length;}
-companyFilter.addEventListener("change",render);document.querySelectorAll(".work-filter").forEach(btn=>btn.addEventListener("click",()=>{selectedArea=btn.dataset.area;document.querySelectorAll(".work-filter").forEach(x=>x.setAttribute("aria-pressed",String(x===btn)));render()}));document.querySelectorAll("[data-view]").forEach(btn=>btn.addEventListener("click",()=>{view=btn.dataset.view;document.querySelectorAll("[data-view]").forEach(x=>x.setAttribute("aria-pressed",String(x===btn)));render()}));render();
-
-})();
-</script>
+<script src="/work/page.js"></script>
 </body></html>
