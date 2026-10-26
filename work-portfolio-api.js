@@ -127,8 +127,9 @@ export async function handleWorkPortfolioApi(request, env, { verifyAdmin = null 
     try {
       const row = await readRow(env);
       const published = decodeRowPart(row, "published_blob");
-      return json({ ok: true, source: row ? "cms" : "seed", publishedAt: row?.published_at || null,
-        content: published ? { items: published.items.filter((item) => item.published).sort((a,b) => a.order-b.order) } : null });
+      const hasPublished = Boolean(row?.published_at);
+      return json({ ok: true, source: hasPublished ? "cms" : "seed", publishedAt: row?.published_at || null,
+        content: hasPublished && published ? { items: published.items.filter((item) => item.published).sort((a,b) => a.order-b.order) } : null });
     } catch (error) {
       console.error("Work public read failed", error);
       return json({ ok: false, error: "Portfolio temporarily unavailable" }, 503);
