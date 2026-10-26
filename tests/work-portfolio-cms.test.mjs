@@ -78,3 +78,18 @@ test("public endpoint with no CMS record retains the existing seed fallback", as
   assert.equal(result.source, "seed");
   assert.equal(result.content, null);
 });
+
+test("saving a first draft does not hide legacy public catalogue before Publish", async () => {
+  const publishedEmpty = Array.from(new TextEncoder().encode(JSON.stringify({ items: [] })));
+  const db = { prepare() {
+    return { bind() { return this; }, async first() {
+      return { published_blob: publishedEmpty, draft_blob: publishedEmpty, published_at: null };
+    } };
+  } };
+  const response = await handleWorkPortfolioApi(
+    new Request("https://sdlive.show/api/work/portfolio"), { CMS_DB: db }
+  );
+  const result = await response.json();
+  assert.equal(result.source, "seed");
+  assert.equal(result.content, null);
+});
