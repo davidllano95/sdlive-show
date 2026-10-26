@@ -2,6 +2,7 @@ import baseWorker, { isAdminPreviewRequest } from "./worker-entry.js";
 import { handleCoreSectionsApi } from "./core-sections-api.js";
 import { handlePresentationSectionsApi } from "./home-presentation-api.js";
 import { handleMediaApi } from "./media-api.js";
+import { handleWorkPortfolioApi } from "./work-portfolio-api.js";
 import { handleTestimonialsApi } from "./testimonials-api.js";
 import { handleTrustedApi } from "./trusted-api.js";
 import {
@@ -307,6 +308,10 @@ async function servePublicHome(request, env) {
 export default {
   async fetch(request, env) {
     const path = normalizedPath(request);
+    if (path === "/api/work/portfolio" || path.startsWith("/api/admin/work/portfolio")) {
+      const response = await handleWorkPortfolioApi(request, env, { verifyAdmin: verifyAdminViaExistingApi });
+      if (response) return response;
+    }
     if (path.startsWith("/api/admin/media")) {
       const response = await handleMediaApi(request, env, { verifyAdmin: verifyAdminViaExistingApi });
       if (response) return response;
