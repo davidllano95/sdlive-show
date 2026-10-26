@@ -16,7 +16,7 @@
   function seedItem(item, index) {
     return {
       slug: item.slug, title: item.title, company: item.company, client: item.client || "",
-      credit: item.credit, discipline: item.discipline || "", kind: item.kind || "project",
+      credit: item.credit, discipline: item.discipline || "", extra: item.extra || "", extraEs: item.extraEs || "", kind: item.kind || "project",
       area: item.area || "technical", featured: !!item.featured, published: true,
       order: index * 10, cover: "", coverAlt: "", fit: "cover",
       description: { en: "", es: "" }, gallery: [], video: "", rightsConfirmed: false
@@ -157,7 +157,7 @@
     while (items.some((x) => x.slug === slug)) { count++; slug = "nueva-publicacion-" + count; }
     normalizeOrder();
     items.push({ slug, title: "Nueva publicación", company: "Independent", client: "",
-      credit: "Por definir", discipline: "", kind: "project", area: "technical",
+      credit: "Por definir", discipline: "", extra: "", extraEs: "", kind: "project", area: "technical",
       featured: false, published: false, order: items.length * 10, cover: "", coverAlt: "",
       fit: "cover", gallery: [], video: "", description: { en: "", es: "" }, rightsConfirmed: false });
     selected = slug; renderList(); renderEditor(); touch();
