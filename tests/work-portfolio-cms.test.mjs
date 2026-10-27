@@ -93,3 +93,89 @@ test("saving a first draft does not hide legacy public catalogue before Publish"
   assert.equal(result.source, "seed");
   assert.equal(result.content, null);
 });
+
+
+test("Work draft save and publish respect D1 cms_entries route CHECK", async () => {
+  let row = null;
+  const seenRoutes = [];
+  const encode = (value) => Array.from(new TextEncoder().encode(JSON.stringify(value)));
+  const checkRoute = (value) => {
+    seenRoutes.push(value);
+    if (!["root", "en", "es"].includes(value)) {
+      throw new Error("D1_ERROR: CHECK constraint failed: route IN ('root', 'en', 'es')");
+    }
+  };
+  const db = {
+    prepare(sql) {
+      return {
+        sql,
+        args: [],
+        bind(...values) { this.args = values; return this; },
+        async first() {
+          if (sql.includes("FROM cms_entries")) {
+            checkRoute(this.args[2]);
+            return row;
+          }
+          return null;
+        }
+      };
+    },
+    async batch(statements) {
+      for (const statement of statements) {
+        const sql = statement.sql;
+        const args = statement.args;
+        if (sql.includes("INSERT INTO cms_entries")) {
+          checkRoute(args[2]);
+          row = {
+            id: 1,
+            draft_blob: encode(JSON.parse(args[3])),
+            published_blob: encode(JSON.parse(args[4])),
+            updated_at: "2026-10-26",
+            published_at: null
+          };
+        } else if (sql.includes("INSERT INTO cms_revisions")) {
+          checkRoute(args[2]);
+        } else if (sql.includes("UPDATE cms_entries SET published_json=")) {
+          assert.ok(row);
+          row.published_blob = encode(JSON.parse(args[0]));
+          row.published_at = "2026-10-26";
+        } else {
+          throw new Error("Unexpected D1 write in Work regression test");
+        }
+      }
+      return [];
+    }
+  };
+  const env = { CMS_DB: db };
+  const verifyAdmin = async () => ({ email: "admin@example.test" });
+  const saveResponse = await handleWorkPortfolioApi(
+    new Request("https://sdlive.show/api/admin/work/portfolio", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ draft: { items: [base] } })
+    }),
+    env,
+    { verifyAdmin }
+  );
+  assert.equal(saveResponse.status, 200, await saveResponse.text());
+
+  const unpublished = await handleWorkPortfolioApi(
+    new Request("https://sdlive.show/api/work/portfolio"), env
+  );
+  assert.equal((await unpublished.json()).source, "seed");
+
+  const publishResponse = await handleWorkPortfolioApi(
+    new Request("https://sdlive.show/api/admin/work/portfolio/publish", { method: "POST" }),
+    env,
+    { verifyAdmin }
+  );
+  assert.equal(publishResponse.status, 200, await publishResponse.text());
+
+  const publicResponse = await handleWorkPortfolioApi(
+    new Request("https://sdlive.show/api/work/portfolio"), env
+  );
+  const published = await publicResponse.json();
+  assert.deepEqual(published.content.items.map((item) => item.slug), ["the-wild-cards"]);
+  assert.ok(seenRoutes.length >= 5);
+  assert.ok(seenRoutes.every((route) => route === "root"));
+});
