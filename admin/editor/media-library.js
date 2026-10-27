@@ -11,6 +11,8 @@
   let folderSelect = null;
   let uploadInput = null;
   let uploadButton = null;
+  let optimizeToggle = null;
+  let optimizeWrap = null;
   let currentOptions = {};
   let items = [];
   let loading = false;
@@ -68,7 +70,7 @@
     style.textContent = `
       .media-library-overlay{position:fixed;inset:0;z-index:1200;display:grid;place-items:center;padding:24px;background:rgba(4,5,9,.78);backdrop-filter:blur(10px)}
       .media-library-overlay[hidden]{display:none}
-      .media-library-panel{width:min(1120px,96vw);max-height:min(820px,92vh);display:grid;grid-template-rows:auto auto minmax(0,1fr);overflow:hidden;border:1px solid rgba(255,255,255,.12);border-radius:16px;background:#0b0c12;box-shadow:0 28px 90px rgba(0,0,0,.55)}
+      .media-library-panel{width:min(1120px,96vw);max-height:min(820px,92vh);display:grid;grid-template-rows:auto auto auto minmax(0,1fr);overflow:hidden;border:1px solid rgba(255,255,255,.12);border-radius:16px;background:#0b0c12;box-shadow:0 28px 90px rgba(0,0,0,.55)}
       .media-library-head,.media-library-toolbar{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.08)}
       .media-library-head{justify-content:space-between}
       .media-library-head h2{margin:0;font-size:15px}.media-library-head p{margin:3px 0 0;color:rgba(244,245,247,.46);font-size:10px}
@@ -76,6 +78,7 @@
       .media-library-toolbar{flex-wrap:wrap}.media-library-toolbar input[type="search"],.media-library-toolbar select{min-height:36px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:#10121a;color:inherit;padding:7px 9px;font:inherit;font-size:11px}.media-library-toolbar input[type="search"]{flex:1 1 240px}.media-library-toolbar select{flex:0 0 150px}
       .media-library-button{border:1px solid rgba(255,255,255,.12);border-radius:8px;background:rgba(255,255,255,.05);color:inherit;padding:8px 10px;font:inherit;font-size:10px;cursor:pointer}.media-library-button:hover:not(:disabled){border-color:rgba(160,137,229,.55);background:rgba(160,137,229,.12)}.media-library-button:disabled{opacity:.4;cursor:not-allowed}.media-library-button.is-primary{border-color:rgba(160,137,229,.55);background:rgba(160,137,229,.16)}.media-library-button.is-danger{color:#ff9a82}
       .media-library-status{margin-left:auto;color:rgba(244,245,247,.46);font-size:10px}
+      .media-library-optimization{padding:9px 16px;border-bottom:1px solid rgba(255,255,255,.08);display:grid;gap:3px;font-size:11px;color:rgba(244,245,247,.84)}.media-library-optimization[hidden]{display:none}.media-library-optimization label{display:flex;align-items:center;gap:8px;cursor:pointer}.media-library-optimization input{accent-color:#a089e5}.media-library-optimization span{color:rgba(244,245,247,.52);font-size:10px}
       .media-library-grid{overflow:auto;padding:14px;display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;align-content:start}
       .media-library-card{min-width:0;overflow:hidden;border:1px solid rgba(255,255,255,.09);border-radius:12px;background:rgba(255,255,255,.025)}
       .media-library-thumb{aspect-ratio:4/3;display:grid;place-items:center;overflow:hidden;background:#07080d}.media-library-thumb img{width:100%;height:100%;object-fit:contain}.media-library-meta{display:grid;gap:4px;padding:10px}.media-library-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px;color:rgba(244,245,247,.86)}.media-library-sub{font-size:9px;color:rgba(244,245,247,.42)}.media-library-card-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:5px}.media-library-card-actions .media-library-button{padding:6px 7px;font-size:9px}
@@ -104,6 +107,10 @@
           <input type="file" accept="image/png,image/jpeg,image/webp" data-media-file hidden />
           <span class="media-library-status" data-media-status role="status" aria-live="polite"></span>
         </div>
+        <div class="media-library-optimization" data-media-optimize-wrap hidden>
+          <label><input type="checkbox" data-media-optimize checked /> Optimize large portfolio images before upload</label>
+          <span>For images over 1 MB, convert to WebP (up to 2400 px on the longest side), only when the result is smaller. Disable to upload the original. The source file on your computer is never changed.</span>
+        </div>
         <div class="media-library-grid" data-media-grid></div>
       </section>`;
     document.body.appendChild(overlay);
@@ -113,6 +120,8 @@
     folderSelect = overlay.querySelector("[data-media-folder]");
     uploadInput = overlay.querySelector("[data-media-file]");
     uploadButton = overlay.querySelector("[data-media-upload]");
+    optimizeToggle = overlay.querySelector("[data-media-optimize]");
+    optimizeWrap = overlay.querySelector("[data-media-optimize-wrap]");
 
     folders.forEach((folder) => {
       const option = document.createElement("option");
@@ -133,7 +142,7 @@
       window.clearTimeout(searchTimer);
       searchTimer = window.setTimeout(() => void load(), 220);
     });
-    folderSelect.addEventListener("change", () => void load());
+    folderSelect.addEventListener("change", () => { updateOptimizeVisibility(); void load(); });
     uploadButton.addEventListener("click", () => uploadInput.click());
     uploadInput.addEventListener("change", () => {
       const [file] = uploadInput.files || [];
@@ -147,6 +156,62 @@
     if (value < 1024) return `${value} B`;
     if (value < 1024 * 1024) return `${Math.round(value / 1024)} KB`;
     return `${(value / (1024 * 1024)).toFixed(1)} MB`;
+  }
+
+
+  function activeFolder() {
+    return folderSelect.value === "all" ? (currentOptions.folder || "uploads") : folderSelect.value;
+  }
+
+  function updateOptimizeVisibility() {
+    if (!optimizeWrap) return;
+    const isPortfolio = activeFolder() === "portfolio";
+    optimizeWrap.hidden = !isPortfolio;
+  }
+
+  async function optimizePortfolioImage(file) {
+    if (file.size < 1024 * 1024) return file;
+
+    // Work entirely in the browser: never alter the original file on disk.
+    const url = URL.createObjectURL(file);
+    let source;
+    try {
+      source = await new Promise((resolve, reject) => {
+        const element = new Image();
+        element.onload = () => resolve(element);
+        element.onerror = () => reject(new Error("Could not decode image for optimization"));
+        element.src = url;
+      });
+    } finally {
+      URL.revokeObjectURL(url);
+    }
+
+    const sourceWidth = source.naturalWidth, sourceHeight = source.naturalHeight;
+    if (!sourceWidth || !sourceHeight) throw new Error("Image has invalid dimensions");
+    const scale = Math.min(1, 2400 / Math.max(sourceWidth, sourceHeight));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(sourceWidth * scale));
+    canvas.height = Math.max(1, Math.round(sourceHeight * scale));
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("Image optimizer unavailable in this browser");
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
+    ctx.drawImage(source, 0, 0, canvas.width, canvas.height);
+
+    const blob = await new Promise((resolve, reject) => {
+      canvas.toBlob((result) => {
+        if (result) resolve(result);
+        else reject(new Error("Browser could not encode image"));
+      }, "image/webp", 0.88);
+    });
+    // Some browsers silently return PNG when WebP encoding isn't supported.
+    // Never substitute an unsupported format or increase the upload size.
+    if (blob.type !== "image/webp" || blob.size >= file.size) return file;
+    const basename = file.name.replace(/\.[^.]+$/, "");
+    return new File([blob], basename + ".webp", {
+      type: "image/webp",
+      lastModified: file.lastModified
+    });
   }
 
   async function copyText(value) {
@@ -245,31 +310,46 @@
     }
   }
 
+
   async function upload(file) {
-    const folder = folderSelect.value === "all"
-      ? (currentOptions.folder || "uploads")
-      : folderSelect.value;
+    const folder = activeFolder();
     if (!/^image\/(png|jpeg|webp)$/i.test(file.type)) {
       showToast("Unsupported image.", "Use PNG, JPEG or WebP.", "error");
       return;
     }
-    if (file.size <= 0 || file.size > 5 * 1024 * 1024) {
-      showToast("Image too large.", "Maximum upload size is 5 MB.", "error");
+    if (file.size <= 0) {
+      showToast("Empty image.", "Choose a valid image file.", "error");
       return;
     }
     uploadButton.disabled = true;
-    uploadButton.textContent = "Uploading…";
+    uploadButton.textContent = "Preparing…";
     try {
+      const optimize = folder === "portfolio" && optimizeToggle?.checked && file.size >= 1024 * 1024;
+      if (optimize) status.textContent = "Optimizing " + formatBytes(file.size) + " image…";
+      const uploadFile = optimize ? await optimizePortfolioImage(file) : file;
+      if (uploadFile.size > 5 * 1024 * 1024) {
+        throw new Error("Maximum upload size is 5 MB. Enable optimization or choose a smaller file.");
+      }
+      const optimized = uploadFile !== file;
+      uploadButton.textContent = "Uploading…";
+      status.textContent = "Uploading " + formatBytes(uploadFile.size) + "…";
       const form = new FormData();
       form.set("folder", folder);
-      form.set("file", file);
+      form.set("file", uploadFile);
       await fetchJson("/api/admin/media/upload", { method: "POST", body: form });
       folderSelect.value = folder;
+      updateOptimizeVisibility();
       searchInput.value = "";
-      showToast("Media uploaded to R2.", "It is now reusable from the library.");
+      const detail = optimized
+        ? formatBytes(file.size) + " → " + formatBytes(uploadFile.size) + " WebP. Original preserved on your computer."
+        : formatBytes(uploadFile.size) + " uploaded without conversion.";
+      showToast("Media uploaded to R2.", detail);
       await load();
     } catch (error) {
-      showToast("Upload failed.", error.message, "error");
+      status.textContent = "Upload failed — check the library before retrying.";
+      // A connection timeout can occur after a successful R2 write:
+      // never automatically retry POST and risk an accidental duplicate.
+      showToast("Upload failed.", error.message + " Check Refresh before retrying.", "error");
     } finally {
       uploadButton.disabled = false;
       uploadButton.textContent = "Upload";
@@ -301,6 +381,8 @@
     overlay.hidden = false;
     searchInput.value = "";
     folderSelect.value = folders.includes(currentOptions.folder) ? currentOptions.folder : "all";
+    optimizeToggle.checked = true;
+    updateOptimizeVisibility();
     void load();
     window.setTimeout(() => searchInput.focus(), 0);
   }
