@@ -83,3 +83,25 @@ test("no automatic retry of potentially successful POST upload on 408/network fa
   assert.match(source, /never automatically retry POST/);
   assert.match(source, /Check Refresh before retrying/);
 });
+
+test("multipart upload passes a Blob while preserving bytes, MIME and filename", async () => {
+  const start = source.indexOf("      const form = new FormData();", source.indexOf("  async function upload(file) {"));
+  const end = source.indexOf('      await fetchJson("/api/admin/media/upload"', start);
+  assert.ok(start >= 0 && end > start, "Upload code must construct the actual FormData");
+  const buildForm = new Function("uploadFile", "folder",
+    source.slice(start, end) + "\nreturn form;");
+  for (const type of ["image/png", "image/webp"]) {
+    const extension = type === "image/png" ? ".png" : ".webp";
+    const bytes = new Uint8Array(1024 * 1024 + 31);
+    bytes[0] = 137; bytes[256] = 42; bytes[bytes.length - 1] = 99;
+    const original = new File([bytes], "Poster" + extension, { type });
+    const form = buildForm(original, "portfolio");
+    assert.equal(form.get("folder"), "portfolio");
+    const uploaded = form.get("file");
+    assert.equal(uploaded.name, original.name);
+    assert.equal(uploaded.type, original.type);
+    assert.equal(uploaded.size, original.size);
+    assert.deepEqual(new Uint8Array(await uploaded.arrayBuffer()), bytes);
+    assert.notEqual(uploaded, original, "Uploaded part should be Blob-backed rather than the disk-backed File");
+  }
+});
