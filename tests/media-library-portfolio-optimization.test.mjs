@@ -46,7 +46,8 @@ function optimizer({ resultBytes = 400 * 1024, resultType = "image/webp" } = {})
 test("media library script parses and optimization is opt-in for portfolio only", () => {
   assert.doesNotThrow(() => new Function(source));
   assert.match(source, /folder === "portfolio" && optimizeToggle\?\.checked/);
-  assert.match(source, /form\.set\("file", uploadFile\)/);
+  assert.match(source, /const multipartBlob = uploadFile\.slice\(0, uploadFile\.size, uploadFile\.type\)/);
+  assert.match(source, /form\.set\("file", multipartBlob, uploadFile\.name\)/);
   assert.match(source, /optimizeToggle\.checked = true/);
   assert.match(source, /The source file on your computer is never changed/);
 });
