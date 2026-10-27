@@ -1,0 +1,85 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+
+const source = readFileSync(new URL("../admin/editor/media-library.js", import.meta.url), "utf8");
+
+function optimizer({ resultBytes = 400 * 1024, resultType = "image/webp" } = {}) {
+  const start = source.indexOf("  async function optimizePortfolioImage(file) {");
+  const end = source.indexOf("  async function copyText(value) {", start);
+  assert.ok(start >= 0 && end > start, "Portfolio optimization function must exist");
+  let created = 0, revoked = 0, canvas;
+  const fakeURL = {
+    createObjectURL() { created++; return "blob:test"; },
+    revokeObjectURL() { revoked++; }
+  };
+  class FakeImage {
+    naturalWidth = 1600;
+    naturalHeight = 3000;
+    set src(_) { queueMicrotask(() => this.onload()); }
+  }
+  const fakeDocument = {
+    createElement(name) {
+      assert.equal(name, "canvas");
+      canvas = {
+        width: 0,
+        height: 0,
+        getContext(type) {
+          assert.equal(type, "2d");
+          return { drawImage() {}, imageSmoothingEnabled: false, imageSmoothingQuality: "" };
+        },
+        toBlob(callback, type, quality) {
+          assert.equal(type, "image/webp");
+          assert.equal(quality, 0.88);
+          callback(new Blob([new Uint8Array(resultBytes)], { type: resultType }));
+        }
+      };
+      return canvas;
+    }
+  };
+  const declaration = source.slice(start, end);
+  const optimize = new Function("URL", "Image", "document", "File",
+    declaration + "\nreturn optimizePortfolioImage;")(fakeURL, FakeImage, fakeDocument, File);
+  return { optimize, counts: () => ({ created, revoked }), canvas: () => canvas };
+}
+
+test("media library script parses and optimization is opt-in for portfolio only", () => {
+  assert.doesNotThrow(() => new Function(source));
+  assert.match(source, /folder === "portfolio" && optimizeToggle\?\.checked/);
+  assert.match(source, /form\.set\("file", uploadFile\)/);
+  assert.match(source, /optimizeToggle\.checked = true/);
+  assert.match(source, /The source file on your computer is never changed/);
+});
+
+test("4 MB PNG poster becomes smaller WebP with longest edge 2400 pixels", async () => {
+  const { optimize, canvas, counts } = optimizer();
+  const original = new File([new Uint8Array(4 * 1024 * 1024)], "Show Poster.png", { type: "image/png" });
+  const result = await optimize(original);
+  assert.notEqual(result, original);
+  assert.equal(result.name, "Show Poster.webp");
+  assert.equal(result.type, "image/webp");
+  assert.equal(result.size, 400 * 1024);
+  assert.equal(original.size, 4 * 1024 * 1024);
+  assert.equal(original.type, "image/png");
+  assert.equal(canvas().width, 1280);
+  assert.equal(canvas().height, 2400);
+  assert.deepEqual(counts(), { created: 1, revoked: 1 });
+});
+
+test("small images are passed through with no conversion", async () => {
+  const { optimize, counts } = optimizer();
+  const original = new File([new Uint8Array(100 * 1024)], "small.png", { type: "image/png" });
+  assert.equal(await optimize(original), original);
+  assert.deepEqual(counts(), { created: 0, revoked: 0 });
+});
+
+test("optimizer never uses a larger image or a non-WebP conversion", async () => {
+  const original = new File([new Uint8Array(2 * 1024 * 1024)], "poster.png", { type: "image/png" });
+  assert.equal(await optimizer({ resultBytes: 3 * 1024 * 1024 }).optimize(original), original);
+  assert.equal(await optimizer({ resultType: "image/png" }).optimize(original), original);
+});
+
+test("no automatic retry of potentially successful POST upload on 408/network failure", () => {
+  assert.match(source, /never automatically retry POST/);
+  assert.match(source, /Check Refresh before retrying/);
+});
