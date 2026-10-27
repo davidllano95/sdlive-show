@@ -335,7 +335,11 @@
       status.textContent = "Uploading " + formatBytes(uploadFile.size) + "…";
       const form = new FormData();
       form.set("folder", folder);
-      form.set("file", uploadFile);
+      // Safari 26.6.x can fail to transmit a disk-backed File in multipart FormData.
+      // A Blob slice takes WebKit\'s in-memory/blob upload path while preserving bytes,
+      // MIME type and original filename (WebKit bug 319985). No automatic retry.
+      const multipartBlob = uploadFile.slice(0, uploadFile.size, uploadFile.type);
+      form.set("file", multipartBlob, uploadFile.name);
       await fetchJson("/api/admin/media/upload", { method: "POST", body: form });
       folderSelect.value = folder;
       updateOptimizeVisibility();
