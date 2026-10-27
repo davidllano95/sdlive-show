@@ -2,7 +2,8 @@ import { decodeD1Text } from "./media-api.js";
 
 const SECTION = "work-portfolio";
 const MARKET = "all";
-const ROUTE = "work";
+// D1 cms_entries.route CHECK allows only root/en/es; section uniquely identifies this module.
+const ROUTE = "root";
 const MAX_ITEMS = 200;
 
 function json(value, status = 200) {
