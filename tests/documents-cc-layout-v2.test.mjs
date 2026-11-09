@@ -51,8 +51,8 @@ function snapshot(version) {
   };
 }
 
-test("new Colombian collection notices select v2 and keep frozen v1 resolvable", () => {
-  assert.equal(getDocumentKind("cc-co-es").templateVersion, "cc-co-es@2");
+test("historical v1 and v2 remain resolvable while new CC template uses v3", () => {
+  assert.equal(getDocumentKind("cc-co-es").templateVersion, "cc-co-es@3");
   assert.equal(CC_CO_ES_TEMPLATE_VERSION, "cc-co-es@2");
   const old = snapshot("cc-co-es@1");
   const oldHtml = renderFinalDocumentHtml(old, signature);
