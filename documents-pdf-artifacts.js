@@ -3,6 +3,7 @@ import { SAMUEL_SEQUENCE_BOOTSTRAP } from "./documents-kinds.js";
 import { readDocument, readDocumentSequence } from "./documents-storage.js";
 import { renderCuentaDeCobro } from "./documents-templates/cc-co-es.v1.js";
 import { renderCuentaDeCobro as renderCuentaDeCobroV2 } from "./documents-templates/cc-co-es.v2.js";
+import { renderCuentaDeCobro as renderCuentaDeCobroV3 } from "./documents-templates/cc-co-es.v3.js";
 import { renderInvoice } from "./documents-templates/invoice-intl-en.v1.js";
 
 const PDF_CONTENT_TYPE = "application/pdf";
@@ -113,6 +114,9 @@ export function renderFinalDocumentHtml(snapshot, signatureDataUri) {
   }
   if (kindId === "cc-co-es" && templateVersion === "cc-co-es@2") {
     return renderCuentaDeCobroV2(view, { mode: "final", signatureDataUri });
+  }
+  if (kindId === "cc-co-es" && templateVersion === "cc-co-es@3") {
+    return renderCuentaDeCobroV3(view, { mode: "final", signatureDataUri });
   }
   if (kindId === "invoice-intl-en" && templateVersion === "invoice-intl-en@1") {
     return renderInvoice(view, { mode: "final", signatureDataUri });

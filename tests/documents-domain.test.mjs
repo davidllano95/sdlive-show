@@ -12,7 +12,7 @@ import {
 import { getDocumentKind, SAMUEL_SEQUENCE_BOOTSTRAP } from "../documents-kinds.js";
 
 test("kind registry locks v1 kinds and intended Samuel series", () => {
-  assert.equal(getDocumentKind("cc-co-es").templateVersion, "cc-co-es@2");
+  assert.equal(getDocumentKind("cc-co-es").templateVersion, "cc-co-es@3");
   assert.equal(getDocumentKind("invoice-intl-en").defaultShowBankDetails, true);
   assert.equal(SAMUEL_SEQUENCE_BOOTSTRAP["samuel:CC"].issuerId, "samuel-cop");
   assert.equal(SAMUEL_SEQUENCE_BOOTSTRAP["samuel:CC"].nextValue, 21);

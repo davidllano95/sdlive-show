@@ -515,7 +515,7 @@
     $("draftRevChip").textContent = `rev ${document.draftRev}`;
     $("editorKindLabel").textContent = document.kindId === "cc-co-es" ? "Cuenta de cobro · Colombia · ES" : "Invoice · International · EN";
     $("editorTitle").textContent = document.clientName || client.legalName || "Untitled draft";
-    $("previewTemplate").textContent = document.kindId === "cc-co-es" ? "cc-co-es@2" : "invoice-intl-en@1";
+    $("previewTemplate").textContent = document.kindId === "cc-co-es" ? "cc-co-es@3" : "invoice-intl-en@1";
     $("draftIssuerName").value = issuer.legalName || ""; $("draftIssuerIdType").value = issuer.idType || ""; $("draftIssuerIdNumber").value = issuer.idNumber || "";
     $("draftIssuerAddress").value = issuer.address || ""; $("draftIssuerPhone").value = issuer.phone || ""; $("draftIssuerEmail").value = issuer.email || ""; $("draftBrandLabel").value = brand.label;
     if ($("draftBrandLogo")) $("draftBrandLogo").checked = brand.showLogo;
