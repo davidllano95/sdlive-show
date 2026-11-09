@@ -9,7 +9,7 @@ test("combined Google Calendar sync shares a bounded write budget", async () => 
   );
 
   assert.match(source, /const MAX_COMBINED_SYNC_WRITES = 40;/);
-  assert.match(source, /const registroWrites = registro\.created \+ registro\.updated;/);
+  assert.match(source, /const registroWrites = registro\.created \+ registro\.updated \+ registro\.deleted;/);
   assert.match(source, /const remainingWrites = Math\.max\(0, MAX_COMBINED_SYNC_WRITES - registroWrites\);/);
   assert.match(source, /maxWrites:\s*remainingWrites/);
   assert.match(source, /const writeLimit = boundedWriteLimit\(maxWrites\);/);
