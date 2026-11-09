@@ -175,13 +175,23 @@ async function readRegistroProjectionRows(env, fetchImpl = fetch, accessToken = 
     if (key && !index.has(key)) index.set(key, position);
   });
   const at = (row, name) => row?.[index.get(normalizeHeader(name))];
+  for (const field of ["ID", "Fecha trabajo"]) {
+    if (!index.has(normalizeHeader(field))) throw new Error(`REGISTRO projection missing required header: ${field}`);
+  }
 
-  return values.slice(1).map((row) => {
+  // Keep invalid-date row IDs protected: a temporary data entry issue must
+  // never cause the corresponding Google Calendar projection to be deleted.
+  const invalidDateIds = new Set();
+  const events = values.slice(1).map((row) => {
     const id = clean(at(row, "ID"));
     const startDate = sheetDateToIso(at(row, "Fecha trabajo"));
     const parsedEnd = sheetDateToIso(at(row, "Fecha fin"));
     const endDate = parsedEnd || startDate;
-    if (!id || !startDate || !endDate || endDate < startDate) return null;
+    if (!id) return null;
+    if (!startDate || !endDate || endDate < startDate) {
+      invalidDateIds.add(id);
+      return null;
+    }
     return {
       id,
       startDate,
@@ -192,6 +202,7 @@ async function readRegistroProjectionRows(env, fetchImpl = fetch, accessToken = 
       state: clean(at(row, "Estado"))
     };
   }).filter(Boolean);
+  return { events, invalidDateIds };
 }
 
 export function googleProjectionResource(event) {
@@ -350,9 +361,11 @@ export async function readGoogleCalendarOverlay(env, { fetchImpl = fetch, now = 
 export async function syncRegistroToGoogleCalendar(env, { fetchImpl = fetch, now = new Date() } = {}) {
   const token = await fetchGoogleAccessToken(env, fetchImpl);
   const window = projectionWindow(now);
-  const source = (await readRegistroProjectionRows(env, fetchImpl, token)).filter(
+  const { events, invalidDateIds } = await readRegistroProjectionRows(env, fetchImpl, token);
+  const source = events.filter(
     (event) => event.endDate >= window.startDate && event.startDate <= window.endDate
   );
+  const sourceIds = new Set(source.map((event) => event.id));
   const existingData = await listGoogleEvents(env, token, window, fetchImpl);
   const existingByRegistroId = new Map();
   for (const item of Array.isArray(existingData.items) ? existingData.items : []) {
@@ -367,6 +380,7 @@ export async function syncRegistroToGoogleCalendar(env, { fetchImpl = fetch, now
     created: 0,
     updated: 0,
     unchanged: 0,
+    deleted: 0,
     failed: 0,
     capped: false,
     errors: []
@@ -393,6 +407,38 @@ export async function syncRegistroToGoogleCalendar(env, { fetchImpl = fetch, now
     } catch (error) {
       result.failed += 1;
       if (result.errors.length < 5) result.errors.push({ id: event.id, ...googleCalendarDiagnostic(error) });
+    }
+  }
+
+  // Remove only SD.Live-created REGISTRO projections no longer in the
+  // canonical valid-date source window. Never modify personal Google events,
+  // Site Schedule blocks, or records whose sheet dates are temporarily invalid.
+  for (const item of Array.isArray(existingData.items) ? existingData.items : []) {
+    const props = item?.extendedProperties?.private || {};
+    const id = clean(props[PRIVATE_ID_KEY]);
+    if (
+      !item?.id ||
+      clean(props[PRIVATE_SOURCE_KEY]) !== PRIVATE_SOURCE_VALUE ||
+      !id ||
+      sourceIds.has(id) ||
+      invalidDateIds.has(id)
+    ) continue;
+    if (writes >= MAX_SYNC_WRITES) {
+      result.capped = true;
+      continue;
+    }
+    try {
+      await googleJson(
+        fetchImpl,
+        calendarApiUrl(env, `/events/${encodeURIComponent(item.id)}`) + "?sendUpdates=none",
+        token,
+        { method: "DELETE" }
+      );
+      writes += 1;
+      result.deleted += 1;
+    } catch (error) {
+      result.failed += 1;
+      if (result.errors.length < 5) result.errors.push({ id, ...googleCalendarDiagnostic(error) });
     }
   }
   return result;
