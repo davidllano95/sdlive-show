@@ -8,7 +8,7 @@ const KINDS = Object.freeze({
     docType: "cc",
     market: "CO",
     language: "es",
-    templateVersion: "cc-co-es@1",
+    templateVersion: "cc-co-es@2",
     pageSize: "Letter",
     defaultSeriesKey: "samuel:CC",
     defaultShowBankDetails: false,
