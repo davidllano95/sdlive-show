@@ -8,7 +8,7 @@ import {
   readDocument,
   saveDocumentDraftRow
 } from "./documents-storage.js";
-import { renderCuentaDeCobro } from "./documents-templates/cc-co-es.v2.js";
+import { renderCuentaDeCobro } from "./documents-templates/cc-co-es.v3.js";
 import { renderInvoice } from "./documents-templates/invoice-intl-en.v1.js";
 
 const MAX_DRAFT_JSON_BYTES = 64 * 1024;
