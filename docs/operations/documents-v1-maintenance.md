@@ -72,6 +72,16 @@ For a future output-affecting change:
 
 A code-only fix that provably does not alter historical artifact output may stay on the same version, but the PR must explicitly say why.
 
+### CC layout follow-up — November 2026
+
+- New Colombian Cuenta de Cobro drafts/finalized snapshots use `cc-co-es@2` (`documents-templates/cc-co-es.v2.js`).
+- The original `cc-co-es@1` renderer stays byte-for-byte unchanged for issued-document historical rendering and retry.
+- V2 gives separate cell padding to rate/date/purchase-order/amount headers and rows, allocates more room to numeric and purchase-order columns, avoids unnecessary breaking of normal purchase-order references and inserts a real text-space after the concept-type badge.
+- Both v1 and v2 route on `snapshot.kind.templateVersion`; changing a previously finalized document's PDF layout is **not** part of this change.
+- **Remaining risk requiring separate page-layout validation:** the fixed 11-inch `.page` wrapper and hardcoded `Página 1 de 1` footer are not verified for long item lists, long metadata, or large legal/payment blocks. Do not assume correct multipage rendering, and do not silently stretch or overflow finalized pages without a print/PDF pagination design and visual regression tests.
+
+
+
 ---
 
 ## 3. Product boundary
