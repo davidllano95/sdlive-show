@@ -457,7 +457,7 @@ export async function syncSiteScheduleToGoogleCalendar(
 
 export async function syncCalendarProjectionToGoogleCalendar(env, options = {}) {
   const registro = await syncRegistroToGoogleCalendar(env, options);
-  const registroWrites = registro.created + registro.updated;
+  const registroWrites = registro.created + registro.updated + registro.deleted;
   const remainingWrites = Math.max(0, MAX_COMBINED_SYNC_WRITES - registroWrites);
   const siteSchedule = await syncSiteScheduleToGoogleCalendar(env, {
     ...options,
@@ -470,7 +470,7 @@ export async function syncCalendarProjectionToGoogleCalendar(env, options = {}) 
     created: registro.created + siteSchedule.created,
     updated: registro.updated + siteSchedule.updated,
     unchanged: registro.unchanged + siteSchedule.unchanged,
-    deleted: siteSchedule.deleted,
+    deleted: registro.deleted + siteSchedule.deleted,
     failed: registro.failed + siteSchedule.failed,
     capped: Boolean(registro.capped || siteSchedule.capped),
     errors: [...(registro.errors || []), ...(siteSchedule.errors || [])].slice(0, 5),

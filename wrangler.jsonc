@@ -7,6 +7,10 @@
   "preview_urls": false,
   "keep_vars": true,
 
+  "triggers": {
+    "crons": ["0 10 * * *"]
+  },
+
   "assets": {
     "directory": "./",
     "binding": "ASSETS",

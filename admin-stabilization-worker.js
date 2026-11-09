@@ -1,4 +1,5 @@
 import baseWorker from "./public-form-rate-limit.js";
+import { handleAppSheetCalendarWebhook, runCalendarReconciliation } from "./appsheet-calendar-webhook.js";
 import {
   handleSitePresentationApi,
   readPublishedSitePresentation
@@ -33,6 +34,7 @@ import {
 const PUBLIC_HOME_PATHS = new Set(["/", "/en", "/es-co"]);
 const ADMIN_CALENDAR_PATH = "/api/admin/calendar/events";
 const ADMIN_CALENDAR_SYNC_PATH = "/api/admin/calendar/google-sync";
+const APPSHEET_CALENDAR_SYNC_PATH = "/api/integrations/appsheet/calendar-sync";
 const ADMIN_SITE_SCHEDULE_EVENT_PREFIX = "/api/admin/site-schedule/events/";
 
 function normalizedPath(request) {
@@ -285,6 +287,10 @@ export default {
       if (travelResponse) return travelResponse;
     }
 
+    if (path === APPSHEET_CALENDAR_SYNC_PATH) {
+      return handleAppSheetCalendarWebhook(request, env, () => syncCalendarProjectionToGoogleCalendar(env));
+    }
+
     if (path === ADMIN_CALENDAR_SYNC_PATH) {
       return handleGoogleCalendarSync(request, env);
     }
@@ -348,5 +354,12 @@ export default {
       console.error("[SD.Live] Stabilization presentation render failed; preserving stable base response.", error);
       return response;
     }
+  },
+
+  async scheduled(controller, env) {
+    if (controller.cron !== "0 10 * * *") return;
+    // Cloudflare schedules in UTC; 10:00 UTC is 05:00 in America/Bogota.
+    const summary = await runCalendarReconciliation(() => syncCalendarProjectionToGoogleCalendar(env));
+    console.log("[SD.Live] Daily Google Calendar reconciliation completed", summary);
   }
 };
