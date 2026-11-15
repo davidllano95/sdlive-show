@@ -78,20 +78,27 @@ export function buildIncomeReport(rows, { start, end, basis = "payment", currenc
   const summary = totals();
   const monthMap = new Map();
   const clientMap = new Map();
-  const anomalies = { invalidAmounts: 0, missingPaymentAmounts: 0, invalidOwnerAllocation: 0 };
+  const anomalies = { invalidAmounts: 0, missingPaymentAmounts: 0, invalidOwnerAllocation: 0, missingBasisDate: 0, unsupportedCurrency: 0 };
   for (const row of rows || []) {
     const id = string(cell(row, "ID"));
     if (!id) continue;
     const state = string(cell(row, "Estado"));
     const isPaid = state.toLowerCase() === "pagado";
     if (basis === "payment" && !isPaid) continue;
-    const date = rowDate(cell(row, basis === "payment" ? "Fecha pago" : "Fecha trabajo"));
-    if (!date || date < start || date > end) continue;
     const currencyValue = string(cell(row, "Moneda")).toUpperCase();
     if (currency !== "ALL" && currencyValue !== currency) continue;
-    if (!CURRENCIES.has(currencyValue)) continue;
     const clientName = string(cell(row, "Cliente"));
     if (client && !clientName.toLocaleLowerCase("es").includes(client.toLocaleLowerCase("es"))) continue;
+    const date = rowDate(cell(row, basis === "payment" ? "Fecha pago" : "Fecha trabajo"));
+    if (!date) {
+      anomalies.missingBasisDate += 1;
+      continue;
+    }
+    if (date < start || date > end) continue;
+    if (!CURRENCIES.has(currencyValue)) {
+      anomalies.unsupportedCurrency += 1;
+      continue;
+    }
 
     const facts = ownerFacts(row);
     const fees = numeric(cell(row, "Impuestos / Fees"));
@@ -181,15 +188,16 @@ export function buildIncomeReport(rows, { start, end, basis = "payment", currenc
 
 function safeCsvCell(value) {
   if (value === null || value === undefined) return "";
+  if (typeof value === "number" && Number.isFinite(value)) return String(value).replace(".", ",");
   let s = String(value);
   if (/^[\s]*[=+\-@\t\r]/.test(s)) s = "'" + s;
   return '"' + s.replace(/"/g, '""') + '"';
 }
 
 export function incomeReportCsv(report) {
-  const lines = [REPORT_COLUMNS.map(([, label]) => safeCsvCell(label)).join(",")];
+  const lines = [REPORT_COLUMNS.map(([, label]) => safeCsvCell(label)).join(";")];
   for (const record of report.records) {
-    lines.push(REPORT_COLUMNS.map(([field]) => safeCsvCell(record[field])).join(","));
+    lines.push(REPORT_COLUMNS.map(([field]) => safeCsvCell(record[field])).join(";"));
   }
   return "\uFEFF" + lines.join("\r\n") + "\r\n";
 }
