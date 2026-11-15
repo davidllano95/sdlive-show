@@ -8,8 +8,8 @@
       generate: "Generar reporte", csv: "Descargar CSV completo",
       idle: "Selecciona un período y genera el informe. No modifica ningún registro.",
       loading: "Consultando Finance…", ready: "Reporte actualizado", empty: "Sin registros para este período.",
-      owner: "Ingreso propio", bank: "Recibido en banco", gross: "Bruto facturado / registrado",
-      third: "Bruto de terceros", rows: "Registros", quality: "Registros a revisar",
+      owner: "Ingreso propio", bank: "Recibido en banco", gross: "Bruto facturado / registrado", fees: "Impuestos / fees registrados", net: "Neto registrado",
+      third: "Bruto de terceros", rows: "Registros", quality: "Alertas de calidad",
       warning: "Importes ausentes o distribuciones inválidas no se incluyen en el total de ingreso propio.",
       month: "Desglose mensual", clients: "Ingresos por cliente", detail: "Detalle de registros",
       noteWork: "Por fecha de trabajo: ingreso propio bruto registrado. Los importes recibidos asociados pueden corresponder a pagos de otros períodos.",
@@ -26,8 +26,8 @@
       generate: "Generate report", csv: "Download full CSV",
       idle: "Choose a period and generate the report. No source records will be changed.",
       loading: "Reading Finance…", ready: "Report updated", empty: "No records in this period.",
-      owner: "Owner income", bank: "Bank received", gross: "Total transaction gross",
-      third: "Third-party gross", rows: "Records", quality: "Rows requiring review",
+      owner: "Owner income", bank: "Bank received", gross: "Total transaction gross", fees: "Recorded tax / fees", net: "Recorded net",
+      third: "Third-party gross", rows: "Records", quality: "Data quality alerts",
       warning: "Missing amounts or invalid owner allocations are excluded from the owner-income total.",
       month: "Monthly breakdown", clients: "Income by client", detail: "Record detail",
       noteWork: "By work date: recorded owner gross. Associated bank receipts may have been paid in a different period.",
@@ -118,6 +118,8 @@
       metric(metrics, t("gross") + " · " + currency, money(currency, row.gross || 0));
       metric(metrics, t("third") + " · " + currency, money(currency, row.thirdPartyGross || 0));
       metric(metrics, t("bank") + " · " + currency, money(currency, row.bank || 0));
+      metric(metrics, t("fees") + " · " + currency, money(currency, row.fees || 0));
+      metric(metrics, t("net") + " · " + currency, money(currency, row.net || 0));
     });
     metric(metrics, t("rows"), report.recordCount || 0);
     metric(metrics, t("quality"), warningCount);
