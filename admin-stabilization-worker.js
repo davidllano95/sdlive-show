@@ -21,6 +21,7 @@ import { handleDocumentsEditorApi } from "./documents-admin-editor-api.js";
 import { handleDocumentsProfilesApi } from "./documents-admin-profiles-api.js";
 import { handleFinanceThirdPartyDashboardApi } from "./finance-third-party-dashboard-api.js";
 import { handleFinanceThirdPartyOperationsApi } from "./finance-third-party-operations-api.js";
+import { handleFinanceIncomeReportApi } from "./finance-income-report-api.js";
 import {
   googleCalendarDiagnostic,
   mergeGoogleCalendarOverlayResponse,
@@ -263,6 +264,13 @@ export default {
         verifyAdmin: verifyAdminViaExistingApi
       });
       if (response) return response;
+    }
+
+    if (path === "/api/admin/finance/income-report") {
+      const response = await handleFinanceIncomeReportApi(request, env, {
+        verifyAdmin: verifyAdminViaExistingApi
+      });
+      if (response) return withAdminNoStore(response);
     }
 
     if (path === "/api/admin/finance/dashboard") {
