@@ -51,7 +51,7 @@ function rowDate(value) {
   return date ? date.toISOString().slice(0, 10) : "";
 }
 function totals() {
-  return { COP: { owner: 0, gross: 0, thirdPartyGross: 0, bank: 0, count: 0 }, USD: { owner: 0, gross: 0, thirdPartyGross: 0, bank: 0, count: 0 } };
+  return { COP: { owner: 0, gross: 0, thirdPartyGross: 0, bank: 0, fees: 0, net: 0, count: 0 }, USD: { owner: 0, gross: 0, thirdPartyGross: 0, bank: 0, fees: 0, net: 0, count: 0 } };
 }
 function moneyOrNull(value) {
   return value === null ? null : roundMoney(value);
@@ -146,6 +146,8 @@ export function buildIncomeReport(rows, { start, end, basis = "payment", currenc
     if (entry.gross !== null) target.gross += entry.gross;
     if (entry.thirdPartyGross !== null) target.thirdPartyGross += entry.thirdPartyGross;
     if (entry.received !== null) target.bank += entry.received;
+    if (entry.fees !== null) target.fees += entry.fees;
+    if (entry.net !== null) target.net += entry.net;
     if (amount !== null) {
       const monthKey = date.slice(0, 7) + "|" + currencyValue;
       monthMap.set(monthKey, (monthMap.get(monthKey) || 0) + amount);
@@ -159,7 +161,7 @@ export function buildIncomeReport(rows, { start, end, basis = "payment", currenc
     return first.localeCompare(second) || a.id.localeCompare(b.id);
   });
   for (const value of Object.values(summary)) {
-    for (const key of ["owner", "gross", "thirdPartyGross", "bank"]) value[key] = roundMoney(value[key]);
+    for (const key of ["owner", "gross", "thirdPartyGross", "bank", "fees", "net"]) value[key] = roundMoney(value[key]);
   }
   const monthly = [...monthMap].map(([key, amount]) => {
     const [month, currency] = key.split("|");
