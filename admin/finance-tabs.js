@@ -2,9 +2,10 @@
   if (window.SDLiveFinanceTabs) return;
 
   const COPY = Object.freeze({
-    en: { overview: "Overview", thirdParty: "Third parties" },
-    es: { overview: "Resumen", thirdParty: "Terceros" }
+    en: { overview: "Overview", thirdParty: "Third parties", reports: "Reports" },
+    es: { overview: "Resumen", thirdParty: "Terceros", reports: "Reportes" }
   });
+  const REPORT_SECTION_IDS = new Set(["financeIncomeReports"]);
   const THIRD_PARTY_SECTION_IDS = new Set([
     "financeThirdPartyReconciliation",
     "financeThirdPartyHistory"
@@ -72,6 +73,7 @@
   }
 
   function tabNameFor(element) {
+    if (REPORT_SECTION_IDS.has(element.id)) return "reports";
     return THIRD_PARTY_SECTION_IDS.has(element.id) ? "thirdParty" : "overview";
   }
 
@@ -94,6 +96,8 @@
     const thirdParty = nav.querySelector('[data-finance-tab="thirdParty"]');
     if (overview) overview.textContent = text("overview");
     if (thirdParty) thirdParty.textContent = text("thirdParty");
+    const reports = nav.querySelector('[data-finance-tab="reports"]');
+    if (reports) reports.textContent = text("reports");
   }
 
   function applyVisibility() {
@@ -113,7 +117,7 @@
   }
 
   function select(tab) {
-    if (tab !== "overview" && tab !== "thirdParty") return;
+    if (tab !== "overview" && tab !== "thirdParty" && tab !== "reports") return;
     state.active = tab;
     classifyExistingChildren();
     applyVisibility();
@@ -130,7 +134,7 @@
     nav.setAttribute("role", "tablist");
     nav.setAttribute("aria-label", "Finance views");
 
-    ["overview", "thirdParty"].forEach((tab) => {
+    ["overview", "thirdParty", "reports"].forEach((tab) => {
       const button = document.createElement("button");
       button.type = "button";
       button.className = "finance-tab";
