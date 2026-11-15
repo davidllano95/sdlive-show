@@ -67,7 +67,7 @@ function spreadsheetSerialDate(value) {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
-function parseSheetDate(value) {
+export function parseSheetDate(value) {
   if (typeof value === "number") return spreadsheetSerialDate(value);
   const text = cleanString(value);
   if (!text) return null;
@@ -111,7 +111,7 @@ function parseSheetDate(value) {
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
-function displaySheetDate(value) {
+export function displaySheetDate(value) {
   const date = parseSheetDate(value);
   if (!date) return cleanString(value);
   return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}-${String(date.getUTCDate()).padStart(2, "0")}`;
@@ -149,7 +149,7 @@ function explicitYearMonth(row, yearField, monthField, dateField) {
   return date ? { year: date.getUTCFullYear(), month: date.getUTCMonth() + 1 } : null;
 }
 
-function ownerFacts(row) {
+export function ownerFacts(row) {
   const gross = numericValue(recordCell(row, "Valor bruto"));
   const received = numericValue(recordCell(row, "Valor Recibido"));
   const rawThirdParty = numericValue(recordCell(row, "Cobro terceros"));
