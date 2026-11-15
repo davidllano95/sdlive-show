@@ -46,6 +46,8 @@ test("payment basis counts only received owner cash in payment month and separat
   assert.equal(report.summary.COP.bank, 893106);
   assert.equal(report.summary.COP.gross, 900100);
   assert.equal(report.summary.COP.thirdPartyGross, 450000);
+  assert.equal(report.summary.COP.fees, 6894);
+  assert.equal(report.summary.COP.net, 0);
   assert.equal(report.summary.USD.owner, 1000);
   assert.equal(report.anomalies.missingPaymentAmounts, 1);
   assert.deepEqual(report.monthly, [
