@@ -1,0 +1,30 @@
+.finance-income-panel{padding:4px 0 16px;max-width:100%;color:var(--text)}
+.finance-income-heading h4{font-size:19px;letter-spacing:-.025em;margin:0 0 8px;font-weight:720}
+.finance-income-heading p,.finance-income-caution,.finance-income-note{font-size:12px;line-height:1.55;color:var(--muted);max-width:850px;margin:0 0 17px}
+.finance-income-form{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding:16px;border:1px solid var(--border);border-radius:14px;background:rgba(255,255,255,.02)}
+.finance-income-form label{min-width:0;display:flex;flex-direction:column;gap:6px}
+.finance-income-form label>span{font-size:11px;font-weight:650;color:var(--soft)}
+.finance-income-form input,.finance-income-form select{width:100%;min-width:0;height:37px;padding:6px 9px;font:inherit;font-size:12px;color:var(--text);background:var(--panel);border:1px solid var(--border);border-radius:8px;color-scheme:dark}
+.finance-income-form select option{background:var(--panel);color:var(--text)}
+.finance-income-actions{display:flex;align-items:end;gap:9px;flex-wrap:wrap}
+.finance-income-actions button{min-height:37px;padding:8px 12px;border-radius:8px;font:inherit;font-size:12px;font-weight:700;cursor:pointer;background:rgba(var(--accent-rgb),.18);border:1px solid rgba(var(--accent-rgb),.4);color:var(--text)}
+.finance-income-actions button+button{background:transparent;border-color:var(--border)}
+.finance-income-actions button:disabled{opacity:.45;cursor:not-allowed}
+.finance-income-status{font-size:12px;color:var(--muted);min-height:19px;margin:13px 2px}
+.finance-income-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:16px}
+.finance-income-metric{padding:13px 12px;background:rgba(0,0,0,.14);border:1px solid var(--border);border-radius:12px;min-width:0}
+.finance-income-metric span{display:block;font-size:10px;color:var(--muted);line-height:1.45}
+.finance-income-metric strong{display:block;font-size:15px;line-height:1.4;margin-top:7px;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
+.finance-income-warning{font-size:12px;color:var(--amber);line-height:1.45}
+.finance-income-columns{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.finance-income-columns article,.finance-income-detail{min-width:0;padding:13px;border:1px solid var(--border);border-radius:12px;background:rgba(0,0,0,.12)}
+.finance-income-panel h5{font-size:13px;font-weight:720;margin:0 0 12px}
+.finance-income-detail>p{font-size:11px;color:var(--muted)}
+.finance-income-table-wrap{max-height:360px;overflow:auto;max-width:100%;border-radius:8px}
+.finance-income-table{width:100%;border-collapse:collapse;font-size:11px;font-variant-numeric:tabular-nums}
+.finance-income-table th,.finance-income-table td{padding:8px 10px;border-bottom:1px solid var(--border);white-space:normal;text-align:left;vertical-align:top}
+.finance-income-table th{position:sticky;top:0;background:var(--panel);z-index:1;font-size:10px;letter-spacing:0}
+.finance-income-table td:nth-child(n+3){overflow-wrap:anywhere}
+.finance-income-caution{margin:16px 0 0}
+@media(max-width:1000px){.finance-income-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.finance-income-form{grid-template-columns:repeat(2,minmax(0,1fr))}.finance-income-columns{grid-template-columns:1fr}}
+@media(max-width:560px){.finance-income-form,.finance-income-metrics{grid-template-columns:1fr}.finance-income-actions{grid-column:1;align-items:stretch;flex-direction:column}.finance-income-actions button{width:100%}.finance-income-metric strong{font-size:16px}.finance-income-table-wrap{overflow:auto}.finance-income-table{min-width:530px}}
